@@ -538,8 +538,10 @@ section {
 }
 
 .revenue-card.highlight {
-    background: var(--gradient-primary);
+    background: var(--gradient-primary) !important;
+    border: 2px solid var(--accent-color) !important;
     transform: scale(1.05);
+    box-shadow: 0 8px 32px rgba(255, 107, 53, 0.3) !important;
 }
 
 .revenue-card:hover {
@@ -1384,4 +1386,44 @@ section {
 
 .scenario-stats {
     margin-top: 1rem;
+}
+
+.revenue-card .revenue-icon,
+.revenue-card h4,
+.revenue-card .revenue-amount,
+.revenue-card .revenue-desc,
+.revenue-card .revenue-example {
+    opacity: 1 !important;
+    visibility: visible !important;
+}
+
+.revenue-card.highlight .revenue-icon,
+.revenue-card.highlight h4,
+.revenue-card.highlight .revenue-amount,
+.revenue-card.highlight .revenue-desc,
+.revenue-card.highlight .revenue-example {
+    color: white !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+}
+
+/* Debugging styles to ensure visibility */
+.scenario,
+.scenario.highlight,
+.scenario.premium,
+.compound-card,
+.compound-card.highlight,
+.revenue-card,
+.revenue-card.highlight {
+    min-height: 200px !important;
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+.scenario * ,
+.compound-card *,
+.revenue-card * {
+    visibility: visible !important;
+    opacity: 1 !important;
 } 
