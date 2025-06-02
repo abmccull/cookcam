@@ -591,14 +591,25 @@ section {
 .economics-title {
     text-align: center;
     font-size: 2.5rem;
-    margin-bottom: 3rem;
+    margin-bottom: 1rem;
     color: white;
+}
+
+.economics-subtitle {
+    text-align: center;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 1.125rem;
+    margin-bottom: 3rem;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 .economics-scenarios {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
     gap: 2rem;
+    margin-bottom: 4rem;
 }
 
 .scenario {
@@ -616,6 +627,26 @@ section {
     transform: scale(1.05);
 }
 
+.scenario.premium {
+    background: linear-gradient(135deg, rgba(255, 107, 53, 0.3), rgba(45, 27, 105, 0.3));
+    border-color: var(--primary-color);
+    position: relative;
+    overflow: hidden;
+}
+
+.scenario.premium::before {
+    content: "⭐ PREMIUM";
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: var(--primary-color);
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
 .scenario:hover {
     transform: translateY(-4px) scale(1.02);
 }
@@ -624,10 +655,36 @@ section {
     transform: translateY(-4px) scale(1.07);
 }
 
+.scenario.premium:hover {
+    transform: translateY(-4px) scale(1.07);
+}
+
 .scenario h4 {
     color: white;
-    margin-bottom: 1.5rem;
+    margin-bottom: 1rem;
     font-size: 1.25rem;
+}
+
+.view-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    border-left: 4px solid var(--accent-color);
+}
+
+.view-count {
+    color: var(--accent-color);
+    font-weight: 700;
+    font-size: 1.125rem;
+}
+
+.conversion-rate {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.875rem;
 }
 
 .stat-row {
@@ -659,6 +716,81 @@ section {
 .stat-row.total strong {
     color: var(--accent-color);
     font-size: 1.25rem;
+}
+
+.growth-note {
+    margin-top: 1rem;
+    padding: 0.75rem;
+    background: rgba(34, 197, 94, 0.2);
+    border: 1px solid rgba(34, 197, 94, 0.3);
+    border-radius: 8px;
+    color: #22c55e;
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-align: center;
+}
+
+/* Compound Growth Explanation */
+.compound-explanation {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 20px;
+    padding: 3rem;
+    text-align: center;
+}
+
+.compound-explanation h4 {
+    color: white;
+    font-size: 2rem;
+    margin-bottom: 2rem;
+}
+
+.compound-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 2rem;
+    margin-bottom: 2rem;
+}
+
+.compound-card {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 16px;
+    padding: 2rem;
+    transition: all 0.3s ease;
+}
+
+.compound-card.highlight {
+    background: rgba(255, 184, 0, 0.2);
+    border-color: var(--accent-color);
+    transform: scale(1.05);
+}
+
+.compound-card h5 {
+    color: white;
+    margin-bottom: 1rem;
+    font-size: 1.25rem;
+}
+
+.compound-amount {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--accent-color);
+    margin-bottom: 1rem;
+}
+
+.compound-card p {
+    color: rgba(255, 255, 255, 0.8);
+    line-height: 1.5;
+}
+
+.compound-note {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 1.125rem;
+    line-height: 1.6;
+    max-width: 800px;
+    margin: 0 auto;
 }
 
 /* Success Stories */
