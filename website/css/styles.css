@@ -613,25 +613,29 @@ section {
 }
 
 .scenario {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.15);
     backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
     border-radius: 16px;
     padding: 2rem;
     transition: all 0.3s ease;
 }
 
 .scenario.highlight {
-    background: rgba(255, 184, 0, 0.2);
+    background: rgba(255, 184, 0, 0.25);
     border-color: var(--accent-color);
+    border-width: 2px;
     transform: scale(1.05);
+    box-shadow: 0 8px 32px rgba(255, 184, 0, 0.2);
 }
 
 .scenario.premium {
-    background: linear-gradient(135deg, rgba(255, 107, 53, 0.3), rgba(45, 27, 105, 0.3));
+    background: linear-gradient(135deg, rgba(255, 107, 53, 0.4), rgba(45, 27, 105, 0.4));
     border-color: var(--primary-color);
+    border-width: 2px;
     position: relative;
     overflow: hidden;
+    box-shadow: 0 8px 32px rgba(255, 107, 53, 0.2);
 }
 
 .scenario.premium::before {
@@ -732,12 +736,13 @@ section {
 
 /* Compound Growth Explanation */
 .compound-explanation {
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
     border-radius: 20px;
     padding: 3rem;
     text-align: center;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
 }
 
 .compound-explanation h4 {
@@ -754,17 +759,19 @@ section {
 }
 
 .compound-card {
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.3);
     border-radius: 16px;
     padding: 2rem;
     transition: all 0.3s ease;
 }
 
 .compound-card.highlight {
-    background: rgba(255, 184, 0, 0.2);
+    background: rgba(255, 184, 0, 0.25);
     border-color: var(--accent-color);
+    border-width: 2px;
     transform: scale(1.05);
+    box-shadow: 0 8px 32px rgba(255, 184, 0, 0.2);
 }
 
 .compound-card h5 {
@@ -1373,4 +1380,8 @@ section {
 
 .back-link:hover {
     color: var(--secondary-color);
+}
+
+.scenario-stats {
+    margin-top: 1rem;
 } 
