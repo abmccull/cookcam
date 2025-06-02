@@ -1,0 +1,11 @@
+# Ignore everything except website folder
+backend/
+mobile/
+CookCam/
+documentation/
+scripts/
+Public/
+.DS_Store
+*.md
+!website/
+!vercel.json 
