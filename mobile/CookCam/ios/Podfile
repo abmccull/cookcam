@@ -1,0 +1,86 @@
+source 'https://cdn.cocoapods.org/'
+
+# Resolve react_native_pods.rb with node to allow for hoisting
+require Pod::Executable.execute_command('node', ['-p',
+  'require.resolve(
+    "react-native/scripts/react_native_pods.rb",
+    {paths: [process.argv[1]]},
+  )', __dir__]).strip
+
+platform :ios, '15.1'
+prepare_react_native_project!
+
+# Disable Flipper to avoid boost dependency issues
+flipper_config = FlipperConfiguration.disabled
+
+linkage = ENV['USE_FRAMEWORKS']
+if linkage != nil
+  Pod::UI.puts "Configuring Pod with #{linkage}ally linked Frameworks".green
+  use_frameworks! :linkage => linkage.to_sym
+end
+
+target 'CookCam' do
+  config = use_native_modules!
+  
+  # Add react-native-svg
+  pod 'RNSVG', :path => '../node_modules/react-native-svg'
+
+  # Flags change depending on the env values.
+  flags = get_default_flags()
+
+  use_react_native!(
+    :path => config[:reactNativePath],
+    # Disable Hermes temporarily to avoid boost dependency
+    :hermes_enabled => false,
+    :fabric_enabled => flags[:fabric_enabled],
+    # Flipper disabled
+    :flipper_configuration => flipper_config,
+    # An absolute path to your application root.
+    :app_path => "#{Pod::Config.instance.installation_root}/.."
+  )
+
+  target 'CookCamTests' do
+    inherit! :complete
+    # Pods for testing
+  end
+
+  post_install do |installer|
+    # https://github.com/facebook/react-native/blob/main/packages/react-native/scripts/react_native_pods.rb#L197-L202
+    react_native_post_install(
+      installer,
+      config[:reactNativePath],
+      :mac_catalyst_enabled => false
+    )
+    
+    # Fix for macOS compatibility issues with CocoaPods scripts
+    installer.pods_project.targets.each do |target|
+      # Fix realpath and rsync issues in resources script
+      resources_script = "Pods/Target Support Files/#{target.name}/#{target.name}-resources.sh"
+      if File.exist?(resources_script)
+        script_content = File.read(resources_script)
+        
+        # Fix realpath -mq issue
+        script_content.gsub!('realpath -mq', 'realpath -q')
+        
+        # Fix RESOURCES_TO_COPY path to use TARGET_TEMP_DIR
+        script_content.gsub!('RESOURCES_TO_COPY=${PODS_ROOT}/resources-to-copy-${TARGETNAME}.txt', 
+                           'RESOURCES_TO_COPY="${TARGET_TEMP_DIR}/resources-to-copy-${TARGETNAME}.txt"')
+        
+        # Replace rsync with cp for bundles to avoid sandbox issues
+        script_content.gsub!(/echo "\$RESOURCE_PATH" >> "\$RESOURCES_TO_COPY"/) do |match|
+          <<-SCRIPT
+      echo "$RESOURCE_PATH" || true
+      if [[ "$RESOURCE_PATH" == *.bundle ]]; then
+        echo "cp -R '$RESOURCE_PATH' '${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/'" || true
+        cp -R "$RESOURCE_PATH" "${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/" || true
+      else
+        echo "$RESOURCE_PATH" >> "$RESOURCES_TO_COPY"
+      fi
+          SCRIPT
+        end
+        
+        File.write(resources_script, script_content)
+      end
+    end
+  end
+end
