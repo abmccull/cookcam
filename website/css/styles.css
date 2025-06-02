@@ -537,19 +537,9 @@ section {
     transition: all 0.3s ease;
 }
 
-.revenue-card.highlight {
-    background: var(--gradient-primary) !important;
-    border: 2px solid var(--accent-color) !important;
-    transform: scale(1.05);
-    box-shadow: 0 8px 32px rgba(255, 107, 53, 0.3) !important;
-}
-
 .revenue-card:hover {
-    transform: translateY(-8px) scale(1.02);
-}
-
-.revenue-card.highlight:hover {
-    transform: translateY(-8px) scale(1.07);
+    transform: translateY(-4px);
+    background: rgba(255, 255, 255, 0.15);
 }
 
 .revenue-icon {
@@ -615,54 +605,17 @@ section {
 }
 
 .scenario {
-    background: rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 16px;
     padding: 2rem;
     transition: all 0.3s ease;
 }
 
-.scenario.highlight {
-    background: rgba(255, 184, 0, 0.25);
-    border-color: var(--accent-color);
-    border-width: 2px;
-    transform: scale(1.05);
-    box-shadow: 0 8px 32px rgba(255, 184, 0, 0.2);
-}
-
-.scenario.premium {
-    background: linear-gradient(135deg, rgba(255, 107, 53, 0.4), rgba(45, 27, 105, 0.4));
-    border-color: var(--primary-color);
-    border-width: 2px;
-    position: relative;
-    overflow: hidden;
-    box-shadow: 0 8px 32px rgba(255, 107, 53, 0.2);
-}
-
-.scenario.premium::before {
-    content: "⭐ PREMIUM";
-    position: absolute;
-    top: 1rem;
-    right: 1rem;
-    background: var(--primary-color);
-    color: white;
-    padding: 0.25rem 0.75rem;
-    border-radius: 12px;
-    font-size: 0.75rem;
-    font-weight: 700;
-}
-
 .scenario:hover {
-    transform: translateY(-4px) scale(1.02);
-}
-
-.scenario.highlight:hover {
-    transform: translateY(-4px) scale(1.07);
-}
-
-.scenario.premium:hover {
-    transform: translateY(-4px) scale(1.07);
+    transform: translateY(-4px);
+    background: rgba(255, 255, 255, 0.15);
 }
 
 .scenario h4 {
@@ -740,11 +693,10 @@ section {
 .compound-explanation {
     background: rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 20px;
     padding: 3rem;
     text-align: center;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
 }
 
 .compound-explanation h4 {
@@ -761,19 +713,16 @@ section {
 }
 
 .compound-card {
-    background: rgba(255, 255, 255, 0.15);
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 16px;
     padding: 2rem;
     transition: all 0.3s ease;
 }
 
-.compound-card.highlight {
-    background: rgba(255, 184, 0, 0.25);
-    border-color: var(--accent-color);
-    border-width: 2px;
-    transform: scale(1.05);
-    box-shadow: 0 8px 32px rgba(255, 184, 0, 0.2);
+.compound-card:hover {
+    transform: translateY(-4px);
+    background: rgba(255, 255, 255, 0.15);
 }
 
 .compound-card h5 {
@@ -1383,47 +1332,3 @@ section {
 .back-link:hover {
     color: var(--secondary-color);
 }
-
-.scenario-stats {
-    margin-top: 1rem;
-}
-
-.revenue-card .revenue-icon,
-.revenue-card h4,
-.revenue-card .revenue-amount,
-.revenue-card .revenue-desc,
-.revenue-card .revenue-example {
-    opacity: 1 !important;
-    visibility: visible !important;
-}
-
-.revenue-card.highlight .revenue-icon,
-.revenue-card.highlight h4,
-.revenue-card.highlight .revenue-amount,
-.revenue-card.highlight .revenue-desc,
-.revenue-card.highlight .revenue-example {
-    color: white !important;
-    opacity: 1 !important;
-    visibility: visible !important;
-}
-
-/* Debugging styles to ensure visibility */
-.scenario,
-.scenario.highlight,
-.scenario.premium,
-.compound-card,
-.compound-card.highlight,
-.revenue-card,
-.revenue-card.highlight {
-    min-height: 200px !important;
-    display: block !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-}
-
-.scenario * ,
-.compound-card *,
-.revenue-card * {
-    visibility: visible !important;
-    opacity: 1 !important;
-} 
