@@ -1577,6 +1577,73 @@ section {
     max-width: 1200px;
     margin-left: auto;
     margin-right: auto;
+    position: relative;
+}
+
+/* Winding Connection Line */
+.workflow-grid::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: 
+        /* Step 1 to 2 */
+        linear-gradient(90deg, transparent 0%, transparent 12.5%, var(--primary-color) 12.5%, var(--primary-color) 37.5%, transparent 37.5%),
+        /* Step 2 to 3 */
+        linear-gradient(90deg, transparent 0%, transparent 37.5%, var(--primary-color) 37.5%, var(--primary-color) 62.5%, transparent 62.5%),
+        /* Step 3 to 4 */
+        linear-gradient(90deg, transparent 0%, transparent 62.5%, var(--primary-color) 62.5%, var(--primary-color) 87.5%, transparent 87.5%),
+        /* Step 4 to 5 - curve down */
+        linear-gradient(0deg, transparent 0%, transparent 45%, var(--primary-color) 45%, var(--primary-color) 55%, transparent 55%),
+        /* Step 5 to 6 */
+        linear-gradient(270deg, transparent 0%, transparent 12.5%, var(--primary-color) 12.5%, var(--primary-color) 37.5%, transparent 37.5%),
+        /* Step 6 to 7 */
+        linear-gradient(270deg, transparent 0%, transparent 37.5%, var(--primary-color) 37.5%, var(--primary-color) 62.5%, transparent 62.5%),
+        /* Step 7 to 8 */
+        linear-gradient(270deg, transparent 0%, transparent 62.5%, var(--primary-color) 62.5%, var(--primary-color) 87.5%, transparent 87.5%);
+    background-size: 
+        100% 3px,
+        100% 3px,
+        100% 3px,
+        3px 100%,
+        100% 3px,
+        100% 3px,
+        100% 3px;
+    background-position: 
+        center 25%,
+        center 25%,
+        center 25%,
+        87.5% center,
+        center 75%,
+        center 75%,
+        center 75%;
+    background-repeat: no-repeat;
+    opacity: 0.8;
+    z-index: 1;
+    pointer-events: none;
+}
+
+/* Enhanced Workflow Path with SVG */
+.workflow-grid::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: url("data:image/svg+xml,%3Csvg width='100%25' height='100%25' viewBox='0 0 1200 600' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M150 150 Q300 150 300 150 Q450 150 450 150 Q600 150 600 150 Q750 150 750 150 Q750 300 750 300 Q750 450 750 450 Q600 450 600 450 Q450 450 450 450 Q300 450 300 450 Q150 450 150 450' stroke='%23FF6B35' stroke-width='4' fill='none' stroke-dasharray='10,5' opacity='0.7'/%3E%3Cpath d='M750 150 L780 140 L780 160 Z' fill='%23FF6B35' opacity='0.8'/%3E%3Cpath d='M750 450 L780 440 L780 460 Z' fill='%23FF6B35' opacity='0.8'/%3E%3C/svg%3E");
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
+    z-index: 1;
+    pointer-events: none;
+    animation: flowPath 8s ease-in-out infinite;
+}
+
+@keyframes flowPath {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 0.9; }
 }
 
 .workflow-step {
@@ -1593,6 +1660,7 @@ section {
     flex-direction: column;
     justify-content: center;
     align-items: center;
+    z-index: 2;
 }
 
 .workflow-step:hover {
@@ -1644,6 +1712,7 @@ section {
     font-size: 1rem;
     box-shadow: 0 6px 20px rgba(255, 107, 53, 0.4);
     border: 3px solid white;
+    z-index: 3;
 }
 
 .step-icon {
@@ -1701,10 +1770,26 @@ section {
 
 /* Mobile Responsive Design */
 @media (max-width: 1200px) {
+    .workflow-grid::before,
+    .workflow-grid::after {
+        display: none; /* Hide complex path on smaller screens */
+    }
+    
     .workflow-grid {
         grid-template-columns: repeat(2, 1fr);
         gap: 2rem;
         max-width: 800px;
+    }
+    
+    /* Simple connecting lines for tablet */
+    .workflow-grid::after {
+        display: block;
+        background-image: 
+            linear-gradient(135deg, transparent 40%, var(--primary-color) 45%, var(--primary-color) 55%, transparent 60%),
+            linear-gradient(45deg, transparent 40%, var(--primary-color) 45%, var(--primary-color) 55%, transparent 60%);
+        background-size: 50% 50%, 50% 50%;
+        background-position: 25% 25%, 75% 75%;
+        opacity: 0.6;
     }
     
     .workflow-step {
@@ -1725,6 +1810,11 @@ section {
 @media (max-width: 768px) {
     .how-it-works {
         padding: 80px 0;
+    }
+    
+    .workflow-grid::before,
+    .workflow-grid::after {
+        display: none; /* Hide on mobile for clean vertical layout */
     }
     
     .workflow-grid {
