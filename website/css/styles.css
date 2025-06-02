@@ -602,6 +602,7 @@ section {
     grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
     gap: 2rem;
     margin-bottom: 4rem;
+    align-items: stretch;
 }
 
 .scenario {
@@ -611,6 +612,9 @@ section {
     border-radius: 16px;
     padding: 2rem;
     transition: all 0.3s ease;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
 }
 
 .scenario:hover {
@@ -620,25 +624,29 @@ section {
 
 .scenario h4 {
     color: white;
-    margin-bottom: 1rem;
+    margin-bottom: 1.5rem;
     font-size: 1.25rem;
+    line-height: 1.3;
+    text-align: center;
 }
 
 .view-stats {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
-    margin-bottom: 1.5rem;
-    padding: 1rem;
+    gap: 0.25rem;
+    margin-bottom: 2rem;
+    padding: 1.25rem;
     background: rgba(0, 0, 0, 0.2);
     border-radius: 8px;
     border-left: 4px solid var(--accent-color);
+    text-align: center;
 }
 
 .view-count {
     color: var(--accent-color);
     font-weight: 700;
     font-size: 1.125rem;
+    margin-bottom: 0.25rem;
 }
 
 .conversion-rate {
@@ -646,30 +654,50 @@ section {
     font-size: 0.875rem;
 }
 
+.scenario-stats {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
 .stat-row {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
     margin-bottom: 0.75rem;
     padding-bottom: 0.75rem;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    min-height: 2rem;
+}
+
+.stat-row:last-of-type:not(.total) {
+    margin-bottom: 1rem;
 }
 
 .stat-row.total {
     border-bottom: none;
-    margin-top: 1rem;
+    margin-top: auto;
+    margin-bottom: 0;
     padding-top: 1rem;
     border-top: 2px solid var(--accent-color);
     font-size: 1.125rem;
+    min-height: auto;
 }
 
 .stat-row span:first-child {
     color: rgba(255, 255, 255, 0.8);
+    text-align: left;
+    flex: 1;
+    line-height: 1.3;
 }
 
 .stat-row strong {
     color: white;
     font-weight: 700;
+    text-align: right;
+    white-space: nowrap;
+    margin-left: 1rem;
+    line-height: 1.3;
 }
 
 .stat-row.total strong {
@@ -679,7 +707,7 @@ section {
 
 .growth-note {
     margin-top: 1rem;
-    padding: 0.75rem;
+    padding: 0.875rem;
     background: rgba(34, 197, 94, 0.2);
     border: 1px solid rgba(34, 197, 94, 0.3);
     border-radius: 8px;
@@ -687,6 +715,7 @@ section {
     font-size: 0.875rem;
     font-weight: 600;
     text-align: center;
+    line-height: 1.3;
 }
 
 /* Compound Growth Explanation */
