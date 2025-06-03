@@ -2,6 +2,7 @@
 .env
 .env.local
 .env.production
+.env.development
 
 # System files
 .DS_Store
@@ -93,6 +94,12 @@ mobile/CookCam/android/build/
 mobile/CookCam/android/.gradle/
 mobile/CookCam/android/local.properties
 mobile/CookCam/android/app/release/
+mobile/CookCam/android/app/src/main/assets/
+mobile/CookCam/android/app/src/main/res/drawable*/
+
+# Android keystore
+*.keystore
+*.jks
 
 # iOS
 mobile/CookCam/ios/build/
@@ -101,6 +108,10 @@ mobile/CookCam/ios/Podfile.lock
 mobile/CookCam/ios/*.xcworkspace/xcuserdata/
 mobile/CookCam/ios/*.xcodeproj/xcuserdata/
 
+# React Native Config
+.env*
+!.env.example
+
 # Supabase
 backend/api/supabase/.temp/
 
@@ -108,4 +119,12 @@ backend/api/supabase/.temp/
 *.tmp
 *.temp
 temp/
-tmp/ 
+tmp/
+
+# APK files
+*.apk
+*.aab
+
+# Google Services
+google-services.json
+GoogleService-Info.plist 

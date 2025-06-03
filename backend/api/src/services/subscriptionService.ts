@@ -536,6 +536,219 @@ export class SubscriptionService {
       return null;
     }
   }
+
+  // Get user's active subscription (alias for getUserSubscription)
+  async getActiveSubscription(userId: string): Promise<UserSubscription | null> {
+    return this.getUserSubscription(userId);
+  }
+
+  // Create or update subscription (for receipt validation)
+  async createOrUpdateSubscription(params: {
+    userId: string;
+    productId: string;
+    purchaseToken: string;
+    platform: 'ios' | 'android';
+    validationResult: any;
+  }): Promise<UserSubscription> {
+    try {
+      // Determine tier based on product ID
+      let tierId = SUBSCRIPTION_TIERS.REGULAR.id;
+      if (params.productId.includes('creator') || params.productId.includes('premium')) {
+        tierId = SUBSCRIPTION_TIERS.CREATOR.id;
+      }
+
+      // Check if subscription already exists
+      const existing = await this.getUserSubscription(params.userId);
+      
+      if (existing && existing.provider_subscription_id === params.purchaseToken) {
+        // Update existing subscription
+        const { data, error } = await supabase
+          .from('user_subscriptions')
+          .update({
+            status: 'active',
+            current_period_end: new Date(parseInt(params.validationResult.expiryTimeMillis || params.validationResult.expires_date_ms)).toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existing.id)
+          .select()
+          .single();
+
+        if (error) throw error;
+        return data;
+      } else {
+        // Create new subscription
+        return this.createSubscription({
+          userId: params.userId,
+          tierId,
+          provider: params.platform,
+          providerSubscriptionId: params.purchaseToken,
+          periodEnd: new Date(parseInt(params.validationResult.expiryTimeMillis || params.validationResult.expires_date_ms))
+        });
+      }
+    } catch (error) {
+      logger.error('❌ Failed to create/update subscription', { error, params });
+      throw error;
+    }
+  }
+
+  // Update user JWT claims (for real-time feature access)
+  async updateUserJWTClaims(userId: string, subscription: UserSubscription | null): Promise<void> {
+    try {
+      const tier = subscription ? await this.getTierById(subscription.tier_id) : await this.getTierById(SUBSCRIPTION_TIERS.FREE.id);
+      const features = await this.getUserFeatures(userId);
+
+      // Update user metadata with subscription info
+      const { error } = await supabase.auth.admin.updateUserById(userId, {
+        user_metadata: {
+          subscription_tier: tier.slug,
+          subscription_status: subscription?.status || 'free',
+          features: features
+        }
+      });
+
+      if (error) {
+        logger.error('❌ Failed to update user JWT claims', { error, userId });
+      } else {
+        logger.info('✅ Updated user JWT claims', { userId, tier: tier.slug });
+      }
+    } catch (error) {
+      logger.error('❌ Failed to update user JWT claims', { error, userId });
+    }
+  }
+
+  // Mark subscription as expired
+  async markSubscriptionExpired(subscriptionId: string): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from('user_subscriptions')
+        .update({
+          status: 'expired',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', subscriptionId);
+
+      if (error) {
+        logger.error('❌ Failed to mark subscription expired', { error, subscriptionId });
+        throw error;
+      }
+
+      logger.info('✅ Marked subscription as expired', { subscriptionId });
+    } catch (error) {
+      logger.error('❌ Failed to mark subscription expired', { error, subscriptionId });
+      throw error;
+    }
+  }
+
+  // Mark subscription for cancellation at period end
+  async markSubscriptionForCancellation(userId: string): Promise<void> {
+    try {
+      const subscription = await this.getUserSubscription(userId);
+      if (!subscription) {
+        throw new Error('No active subscription found');
+      }
+
+      const { error } = await supabase
+        .from('user_subscriptions')
+        .update({
+          cancel_at_period_end: true,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', subscription.id);
+
+      if (error) {
+        logger.error('❌ Failed to mark subscription for cancellation', { error, userId });
+        throw error;
+      }
+
+      // Log the cancellation
+      await this.logSubscriptionHistory({
+        userId,
+        subscriptionId: subscription.id,
+        action: 'marked_for_cancellation'
+      });
+
+      logger.info('✅ Marked subscription for cancellation', { userId, subscriptionId: subscription.id });
+    } catch (error) {
+      logger.error('❌ Failed to mark subscription for cancellation', { error, userId });
+      throw error;
+    }
+  }
+
+  // Upgrade user to creator tier
+  async upgradeUserToCreator(userId: string, metadata: any): Promise<any> {
+    try {
+      // Create creator subscription
+      const subscription = await this.createSubscription({
+        userId,
+        tierId: SUBSCRIPTION_TIERS.CREATOR.id,
+        provider: 'manual',
+        periodEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000) // 1 year
+      });
+
+      // Update user profile to creator
+      const { data: updatedUser, error: userError } = await supabase
+        .from('profiles')
+        .update({
+          user_type: 'creator',
+          creator_metadata: metadata,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', userId)
+        .select()
+        .single();
+
+      if (userError) {
+        logger.error('❌ Failed to update user to creator', { userError, userId });
+        throw userError;
+      }
+
+      logger.info('✅ Upgraded user to creator', { userId });
+      return updatedUser;
+    } catch (error) {
+      logger.error('❌ Failed to upgrade user to creator', { error, userId });
+      throw error;
+    }
+  }
+
+  // Setup creator-specific features
+  async setupCreatorFeatures(userId: string): Promise<void> {
+    try {
+      // Create creator dashboard entry
+      const { error: dashboardError } = await supabase
+        .from('creator_dashboards')
+        .upsert({
+          user_id: userId,
+          total_recipes: 0,
+          total_followers: 0,
+          total_revenue: 0,
+          created_at: new Date().toISOString()
+        });
+
+      if (dashboardError) {
+        logger.error('❌ Failed to create creator dashboard', { dashboardError, userId });
+      }
+
+      // Setup default creator settings
+      const { error: settingsError } = await supabase
+        .from('creator_settings')
+        .upsert({
+          user_id: userId,
+          allow_affiliate_links: true,
+          revenue_sharing_enabled: true,
+          public_profile: true,
+          created_at: new Date().toISOString()
+        });
+
+      if (settingsError) {
+        logger.error('❌ Failed to create creator settings', { settingsError, userId });
+      }
+
+      logger.info('✅ Setup creator features', { userId });
+    } catch (error) {
+      logger.error('❌ Failed to setup creator features', { error, userId });
+      throw error;
+    }
+  }
 }
 
 // Export singleton instance

@@ -1,14 +1,29 @@
 import https from 'https';
-import { google } from 'googleapis';
+import { logger } from '../utils/logger';
+import { googlePlayService } from './googlePlayService';
 
-interface ValidationResult {
+export interface ValidationResult {
   isValid: boolean;
   productId?: string;
+  purchaseToken?: string;
   transactionId?: string;
-  originalTransactionId?: string;
+  platform: 'ios' | 'android';
+  error?: string;
   expiresAt?: Date;
   isTrialPeriod?: boolean;
-  error?: string;
+  // Android specific fields
+  acknowledgmentState?: number;
+  autoRenewing?: boolean;
+  paymentState?: number;
+  cancelReason?: number;
+  orderId?: string;
+  linkedPurchaseToken?: string;
+  purchaseType?: number;
+  countryCode?: string;
+  priceAmountMicros?: string;
+  priceCurrencyCode?: string;
+  startTimeMillis?: string;
+  introductoryPriceInfo?: any;
 }
 
 // Apple App Store receipt validation
@@ -39,22 +54,22 @@ export class AppStoreReceiptValidator {
             isValid: isActive,
             productId: latestReceiptInfo.product_id,
             transactionId: latestReceiptInfo.transaction_id,
-            originalTransactionId: latestReceiptInfo.original_transaction_id,
-            expiresAt: expiresDate,
-            isTrialPeriod: latestReceiptInfo.is_trial_period === 'true',
+            platform: 'ios' as const
           };
         }
       }
       
       return {
         isValid: false,
+        platform: 'ios' as const,
         error: `Apple validation failed with status: ${response.status}`
       };
       
     } catch (error) {
-      console.error('Apple receipt validation error:', error);
+      logger.error('Apple receipt validation error:', error);
       return {
         isValid: false,
+        platform: 'ios' as const,
         error: 'Failed to validate Apple receipt'
       };
     }
@@ -101,20 +116,8 @@ export class AppStoreReceiptValidator {
 
 // Google Play receipt validation
 export class GooglePlayReceiptValidator {
-  private androidPublisher: any;
-
   constructor() {
-    // Initialize Google Play API client
-    // You'll need to set up service account credentials
-    const auth = new google.auth.GoogleAuth({
-      keyFile: process.env.GOOGLE_SERVICE_ACCOUNT_KEY_FILE, // Path to service account JSON
-      scopes: ['https://www.googleapis.com/auth/androidpublisher']
-    });
-
-    this.androidPublisher = google.androidpublisher({
-      version: 'v3',
-      auth
-    });
+    // No longer need to initialize googleapis - using our lightweight service
   }
 
   async validatePurchase(productId: string, purchaseToken: string): Promise<ValidationResult & {
@@ -132,21 +135,13 @@ export class GooglePlayReceiptValidator {
     introductoryPriceInfo?: any;
   }> {
     try {
-      const packageName = process.env.ANDROID_PACKAGE_NAME || 'com.cookcam.app';
-      
-      const response = await this.androidPublisher.purchases.subscriptions.get({
-        packageName,
-        subscriptionId: productId,
-        token: purchaseToken
-      });
-
-      const subscription = response.data;
+      // Use our lightweight Google Play service
+      const subscription = await googlePlayService.validateSubscription(productId, purchaseToken);
       
       if (subscription) {
         const expiryTimeMillis = parseInt(subscription.expiryTimeMillis || '0');
         const startTimeMillis = parseInt(subscription.startTimeMillis || '0');
         const expiresAt = new Date(expiryTimeMillis);
-        const startedAt = new Date(startTimeMillis);
         
         // Enhanced validation logic
         const isExpired = expiresAt <= new Date();
@@ -167,8 +162,9 @@ export class GooglePlayReceiptValidator {
         return {
           isValid: isActive,
           productId,
+          purchaseToken,
           transactionId: purchaseToken,
-          originalTransactionId: subscription.linkedPurchaseToken || purchaseToken,
+          platform: 'android' as const,
           expiresAt,
           isTrialPeriod,
           
@@ -184,35 +180,22 @@ export class GooglePlayReceiptValidator {
           priceAmountMicros: subscription.priceAmountMicros,
           priceCurrencyCode: subscription.priceCurrencyCode,
           startTimeMillis: subscription.startTimeMillis,
-          introductoryPriceInfo: subscription.introductoryPriceInfo,
-          
-          error: needsAcknowledgment ? 'Subscription needs acknowledgment' : undefined
+          introductoryPriceInfo: subscription.introductoryPriceInfo
         };
       }
       
       return {
         isValid: false,
+        platform: 'android' as const,
         error: 'Google Play subscription not found'
       };
       
     } catch (error: any) {
-      console.error('Google Play validation error:', error);
-      
-      // Handle specific Google Play API errors
-      if (error.code === 410) {
-        return {
-          isValid: false,
-          error: 'Subscription purchase token is no longer valid'
-        };
-      } else if (error.code === 404) {
-        return {
-          isValid: false,
-          error: 'Subscription not found'
-        };
-      }
+      logger.error('Google Play validation error:', error);
       
       return {
         isValid: false,
+        platform: 'android' as const,
         error: `Google Play validation failed: ${error.message}`
       };
     }
@@ -221,39 +204,21 @@ export class GooglePlayReceiptValidator {
   // Acknowledge a subscription purchase (required for Google Play)
   async acknowledgePurchase(productId: string, purchaseToken: string): Promise<boolean> {
     try {
-      const packageName = process.env.ANDROID_PACKAGE_NAME || 'com.cookcam.app';
-      
-      await this.androidPublisher.purchases.subscriptions.acknowledge({
-        packageName,
-        subscriptionId: productId,
-        token: purchaseToken
-      });
-      
-      console.log('✅ Google Play subscription acknowledged:', purchaseToken);
+      await googlePlayService.acknowledgeSubscription(productId, purchaseToken);
       return true;
-      
     } catch (error: any) {
-      console.error('❌ Failed to acknowledge Google Play subscription:', error);
+      logger.error('Google Play acknowledgment error:', error);
       return false;
     }
   }
 
-  // Cancel a subscription (for admin/support use)
+  // Cancel a subscription
   async cancelSubscription(productId: string, purchaseToken: string): Promise<boolean> {
     try {
-      const packageName = process.env.ANDROID_PACKAGE_NAME || 'com.cookcam.app';
-      
-      await this.androidPublisher.purchases.subscriptions.cancel({
-        packageName,
-        subscriptionId: productId,
-        token: purchaseToken
-      });
-      
-      console.log('✅ Google Play subscription cancelled:', purchaseToken);
+      await googlePlayService.cancelSubscription(productId, purchaseToken);
       return true;
-      
     } catch (error: any) {
-      console.error('❌ Failed to cancel Google Play subscription:', error);
+      logger.error('Google Play cancellation error:', error);
       return false;
     }
   }
@@ -261,24 +226,10 @@ export class GooglePlayReceiptValidator {
   // Defer a subscription (change renewal date)
   async deferSubscription(productId: string, purchaseToken: string, newExpiryTime: Date): Promise<boolean> {
     try {
-      const packageName = process.env.ANDROID_PACKAGE_NAME || 'com.cookcam.app';
-      
-      await this.androidPublisher.purchases.subscriptions.defer({
-        packageName,
-        subscriptionId: productId,
-        token: purchaseToken,
-        requestBody: {
-          deferralInfo: {
-            expectedExpiryTimeMillis: newExpiryTime.getTime().toString()
-          }
-        }
-      });
-      
-      console.log('✅ Google Play subscription deferred:', purchaseToken);
+      await googlePlayService.deferSubscription(productId, purchaseToken, newExpiryTime);
       return true;
-      
     } catch (error: any) {
-      console.error('❌ Failed to defer Google Play subscription:', error);
+      logger.error('Google Play deferral error:', error);
       return false;
     }
   }

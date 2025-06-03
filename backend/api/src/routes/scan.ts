@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { supabase } from '../index';
 import { authenticateUser } from '../middleware/auth';
-import multer from 'multer';
+import express from 'express';
 import sharp from 'sharp';
 import OpenAI from 'openai';
 import fs from 'fs';
@@ -36,20 +36,10 @@ const getOpenAIClient = (): OpenAI => {
   return openai;
 };
 
-// Configure multer for image uploads
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB limit
-  },
-  fileFilter: (req, file, cb) => {
-    if (file.mimetype.startsWith('image/')) {
-      cb(null, true);
-    } else {
-      const error = new Error('Only image files are allowed') as any;
-      cb(error, false);
-    }
-  },
+// Replace multer with express.raw() for file handling
+const upload = express.raw({
+  type: ['image/jpeg', 'image/png', 'image/webp'],
+  limit: '10mb'
 });
 
 // Real ingredient detection using OpenAI Vision
@@ -345,17 +335,27 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 // Scan image for ingredients
-router.post('/ingredients', authenticateUser, upload.single('image'), async (req: Request, res: Response) => {
+router.post('/ingredients', authenticateUser, upload, async (req: express.Request, res: express.Response) => {
   try {
-    if (!req.file) {
-      return res.status(400).json({ error: 'Image file is required' });
+    console.log('🔍 Scan ingredient request received');
+
+    // Check if file data exists in request body
+    if (!req.body || !Buffer.isBuffer(req.body)) {
+      console.log('❌ No file data found in request');
+      return res.status(400).json({ 
+        error: 'No image file provided',
+        details: 'Please provide an image file in the request body'
+      });
     }
 
-    const userId = (req as any).user.id;
+    console.log(`📷 Processing image, size: ${req.body.length} bytes`);
 
-    // Process image
-    const processedImage = await sharp(req.file.buffer)
-      .resize(1024, 1024, { fit: 'inside', withoutEnlargement: true })
+    // Process the image using sharp
+    const processedImage = await sharp(req.body)
+      .resize(800, 800, { 
+        fit: 'inside',
+        withoutEnlargement: true 
+      })
       .jpeg({ quality: 85 })
       .toBuffer();
 
@@ -376,12 +376,12 @@ router.post('/ingredients', authenticateUser, upload.single('image'), async (req
     const { data: scanResult, error: scanError } = await supabase
       .from('ingredient_scans')
       .insert([{
-        user_id: userId,
+        user_id: (req as any).user.id,
         detected_ingredients: detectedIngredients,
         image_url: null, // Would store actual image URL after uploading to storage
         confidence_score: detectedIngredients.reduce((acc, ing) => acc + ing.confidence, 0) / detectedIngredients.length,
         scan_metadata: {
-          image_size: req.file.size,
+          image_size: req.body.length,
           processing_time: 1000
         }
       }])
@@ -395,7 +395,7 @@ router.post('/ingredients', authenticateUser, upload.single('image'), async (req
 
     // Award XP for scanning
     await supabase.rpc('add_user_xp', {
-      p_user_id: userId,
+      p_user_id: (req as any).user.id,
       p_xp_amount: 10,
       p_action: 'ingredient_scan',
       p_metadata: { scan_id: scanResult.id, ingredients_count: detectedIngredients.length }
@@ -498,37 +498,34 @@ router.put('/:scanId/ingredients', authenticateUser, async (req: Request, res: R
 });
 
 // Also add a new endpoint specifically for mobile app image analysis
-router.post('/analyze', authenticateUser, validateScanInput, async (req: Request, res: Response) => {
+router.post('/analyze', authenticateUser, validateScanInput, async (req: express.Request, res: express.Response) => {
   try {
-    const { image_data } = req.body;
-    const userId = (req as any).user.id;
-
-    if (!image_data) {
-      return res.status(400).json({ error: 'Image data is required' });
-    }
-
     console.log('🔍 Analyzing image for ingredients...');
 
-    // Convert base64 image to buffer
-    let imageBuffer: Buffer;
-    try {
-      if (image_data.startsWith('data:image/')) {
-        // Extract base64 part from data URL
-        const base64Data = image_data.split(',')[1];
-        imageBuffer = Buffer.from(base64Data, 'base64');
-      } else {
-        // Assume it's already base64
-        imageBuffer = Buffer.from(image_data, 'base64');
-      }
-    } catch (error: unknown) {
-      console.error('Image conversion error', { error });
-      return res.status(400).json({ error: 'Invalid image data format' });
+    // Check if file data exists in request body
+    if (!req.body || !Buffer.isBuffer(req.body)) {
+      console.log('❌ No file data found in request');
+      return res.status(400).json({ 
+        error: 'No image file provided',
+        details: 'Please provide an image file in the request body'
+      });
     }
+
+    console.log(`📷 Processing image, size: ${req.body.length} bytes`);
+
+    // Process the image using sharp
+    const processedImage = await sharp(req.body)
+      .resize(800, 800, { 
+        fit: 'inside',
+        withoutEnlargement: true 
+      })
+      .jpeg({ quality: 85 })
+      .toBuffer();
 
     // Analyze the image - this will now throw errors instead of returning mock data
     let detectedIngredients: DetectedIngredient[];
     try {
-      detectedIngredients = await detectIngredients(imageBuffer);
+      detectedIngredients = await detectIngredients(processedImage);
     } catch (analysisError) {
       console.error('Image analysis failed:', analysisError);
       return res.status(422).json({ 
@@ -543,7 +540,7 @@ router.post('/analyze', authenticateUser, validateScanInput, async (req: Request
     const { data: scanResult, error: scanError } = await supabase
       .from('ingredient_scans')
       .insert([{
-        user_id: userId,
+        user_id: (req as any).user.id,
         detected_ingredients: detectedIngredients,
         image_url: null, // Not storing image for privacy
         confidence_score: detectedIngredients.reduce((acc, ing) => acc + ing.confidence, 0) / detectedIngredients.length,
@@ -563,7 +560,7 @@ router.post('/analyze', authenticateUser, validateScanInput, async (req: Request
     // Award XP for scanning
     try {
       await supabase.rpc('add_user_xp', {
-        p_user_id: userId,
+        p_user_id: (req as any).user.id,
         p_xp_amount: 15,
         p_action: 'image_scan_analysis',
         p_metadata: { 
