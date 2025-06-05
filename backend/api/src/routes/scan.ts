@@ -11,6 +11,7 @@ import { logger } from '../utils/logger';
 
 // Test CI/CD pipeline deployment
 // Testing CI/CD pipeline second time
+// Testing with new SSH key (no passphrase)
 const router = Router();
 
 // Interface for detected ingredients
