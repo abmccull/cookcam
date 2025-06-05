@@ -205,7 +205,7 @@ Be creative with flavor combinations while respecting dietary restrictions and p
     }
 
     if (userPreferences.cuisinePreferences && userPreferences.cuisinePreferences.length > 0) {
-      prompt += `🌍 Cuisine Preferences: ${userPreferences.cuisinePreferences.join(', ')}\n`;
+      prompt += `🌍 REQUIRED CUISINE STYLE: ${userPreferences.cuisinePreferences.join(', ')} - The recipe MUST be authentic to this cuisine style with appropriate spices, cooking techniques, and flavor profiles.\n`;
     }
 
     if (userPreferences.kitchenEquipment && userPreferences.kitchenEquipment.length > 0) {
@@ -241,15 +241,16 @@ Be creative with flavor combinations while respecting dietary restrictions and p
 
     prompt += `\n📋 Requirements:
 1. Create a complete recipe with the exact JSON structure
-2. Use realistic cooking times and temperatures
-3. Provide detailed, easy-to-follow instructions
-4. Include accurate nutritional estimates
-5. Add 3-5 helpful cooking tips
-6. Suggest 2-3 recipe variations
-7. Include storage instructions
-8. Recommend food pairings
-9. Ensure the recipe matches the specified skill level
-10. Make it delicious and satisfying!
+2. STRICTLY follow the specified cuisine style - use authentic ingredients, spices, and cooking methods
+3. Use realistic cooking times and temperatures
+4. Provide detailed, easy-to-follow instructions
+5. Include accurate nutritional estimates
+6. Add 3-5 helpful cooking tips
+7. Suggest 2-3 recipe variations
+8. Include storage instructions
+9. Recommend food pairings
+10. Ensure the recipe matches the specified skill level
+11. Make it delicious and satisfying!
 
 Return the recipe as a JSON object with this exact structure:
 {
@@ -263,7 +264,7 @@ Return the recipe as a JSON object with this exact structure:
     "totalTime": 45,
     "servings": 4,
     "difficulty": "medium",
-    "cuisineType": "Mediterranean",
+    "cuisineType": "MUST match the specified cuisine preference",
     "dietaryTags": ["vegetarian"],
     "skillLevel": "intermediate"
   },

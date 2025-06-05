@@ -229,15 +229,36 @@ router.post('/generate-full', authenticateUser, async (req: Request, res: Respon
 router.post('/generate', authenticateUser, async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user.id;
-    const { ingredients, detectedIngredients, preferences, recipeType, nutritionGoals, context } = req.body;
+    const { 
+      ingredients, 
+      detectedIngredients, 
+      preferences, 
+      recipeType, 
+      nutritionGoals, 
+      context,
+      // Handle frontend format (top-level preference fields)
+      dietaryTags,
+      cuisinePreferences,
+      timeAvailable,
+      skillLevel
+    } = req.body;
     
     // Handle both 'ingredients' and 'detectedIngredients' field names for compatibility
     const ingredientsList = ingredients || detectedIngredients;
     
+    // Map frontend preferences format to backend format
+    const userPreferences = preferences || {
+      dietaryRestrictions: dietaryTags,
+      cuisinePreferences: cuisinePreferences,
+      availableTime: timeAvailable === 'quick' ? 20 : timeAvailable === 'medium' ? 35 : timeAvailable === 'long' ? 60 : undefined,
+      skillLevel: skillLevel === 'easy' ? 'beginner' : skillLevel === 'medium' ? 'intermediate' : skillLevel === 'hard' ? 'advanced' : undefined
+    };
+    
     logger.info('🍳 Enhanced recipe generation request', {
       userId: userId,
       ingredients: ingredientsList?.length,
-      hasPreferences: !!preferences,
+      hasPreferences: !!userPreferences,
+      mappedPreferences: userPreferences,
       recipeType,
       requestBody: req.body
     });
@@ -252,7 +273,7 @@ router.post('/generate', authenticateUser, async (req: Request, res: Response) =
     // Use enhanced recipe generation service
     const recipe = await enhancedRecipeService.generateRecipe({
       ingredients: ingredientsList,
-      userPreferences: preferences,
+      userPreferences: userPreferences,
       recipeType,
       nutritionGoals,
       context
