@@ -10,6 +10,7 @@ import { validateScanInput } from '../middleware/validation';
 import { logger } from '../utils/logger';
 
 // Test CI/CD pipeline deployment
+// Testing CI/CD pipeline second time
 const router = Router();
 
 // Interface for detected ingredients
