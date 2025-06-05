@@ -222,14 +222,14 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
         
         console.log('📥 Backend response received:', response);
         
-        if (response.success && response.data && response.data.data && response.data.data.ingredients) {
-          console.log('🎯 Backend analysis successful:', response.data.data.ingredients);
+        if (response.success && response.data && response.data.ingredients) {
+          console.log('🎯 Backend analysis successful:', response.data.ingredients);
           
           // Convert backend response to our ingredient format and search USDA
           const foundIngredients: Ingredient[] = [];
           
-          for (let i = 0; i < response.data.data.ingredients.length; i++) {
-            const detectedIng = response.data.data.ingredients[i];
+          for (let i = 0; i < response.data.ingredients.length; i++) {
+            const detectedIng = response.data.ingredients[i];
             console.log(`🔍 Processing detected ingredient ${i + 1}:`, detectedIng);
             
             try {
