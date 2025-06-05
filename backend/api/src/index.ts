@@ -134,4 +134,4 @@ httpServer.listen(PORT, () => {
       logger.info('Monitoring service started');
     });
   }
-}); 
+}); console.log('🚀 CI/CD Pipeline Active');
