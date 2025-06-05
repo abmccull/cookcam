@@ -89,8 +89,23 @@ export class EnhancedRecipeGenerationService {
         type: options.recipeType
       });
 
+      // Validate OpenAI API key exists
+      if (!process.env.OPENAI_API_KEY) {
+        throw new Error('OPENAI_API_KEY environment variable is not set');
+      }
+
+      logger.info('🔑 OpenAI API key check', { 
+        hasKey: !!process.env.OPENAI_API_KEY,
+        keyPrefix: process.env.OPENAI_API_KEY?.substring(0, 15) + '...'
+      });
+
       const prompt = this.buildEnhancedPrompt(options);
       
+      logger.info('📤 Sending request to OpenAI...', {
+        model: 'gpt-4o',
+        promptLength: prompt.length
+      });
+
       const response = await this.openai.chat.completions.create({
         model: 'gpt-4o',
         messages: [
@@ -108,10 +123,21 @@ export class EnhancedRecipeGenerationService {
         response_format: { type: 'json_object' }
       });
 
+      logger.info('📥 OpenAI response received', {
+        hasResponse: !!response,
+        hasChoices: !!(response?.choices?.length),
+        firstChoiceContent: !!response?.choices?.[0]?.message?.content
+      });
+
       const content = response.choices[0]?.message?.content;
       if (!content) {
-        throw new Error('No recipe content generated');
+        throw new Error('No recipe content generated from OpenAI');
       }
+
+      logger.info('🔄 Parsing OpenAI response...', {
+        contentLength: content.length,
+        contentPreview: content.substring(0, 100) + '...'
+      });
 
       const recipe = JSON.parse(content) as GeneratedRecipe;
       
@@ -127,8 +153,19 @@ export class EnhancedRecipeGenerationService {
       return enhancedRecipe;
 
     } catch (error) {
-      logger.error('❌ Enhanced recipe generation failed', { error });
-      throw new Error('Failed to generate enhanced recipe: ' + (error as Error).message);
+      // Improved error logging
+      logger.error('❌ Enhanced recipe generation failed', { 
+        error: error instanceof Error ? {
+          message: error.message,
+          stack: error.stack,
+          name: error.name
+        } : error,
+        errorType: typeof error,
+        errorConstructor: error?.constructor?.name,
+        hasOpenAIKey: !!process.env.OPENAI_API_KEY
+      });
+      
+      throw new Error('Failed to generate enhanced recipe: ' + (error instanceof Error ? error.message : 'Unknown error'));
     }
   }
 
