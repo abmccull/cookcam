@@ -139,6 +139,9 @@ export class EnhancedRecipeGenerationService {
         contentPreview: content.substring(0, 100) + '...'
       });
 
+      // Log the full response for debugging
+      console.log('🤖 FULL OPENAI RESPONSE:', content);
+
       const recipe = JSON.parse(content) as GeneratedRecipe;
       
       // Validate and enhance the generated recipe
