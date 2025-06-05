@@ -229,18 +229,29 @@ router.post('/generate-full', authenticateUser, async (req: Request, res: Respon
 router.post('/generate', authenticateUser, async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user.id;
-    const { ingredients, preferences, recipeType, nutritionGoals, context } = req.body;
+    const { ingredients, detectedIngredients, preferences, recipeType, nutritionGoals, context } = req.body;
+    
+    // Handle both 'ingredients' and 'detectedIngredients' field names for compatibility
+    const ingredientsList = ingredients || detectedIngredients;
     
     logger.info('🍳 Enhanced recipe generation request', {
       userId: userId,
-      ingredients: ingredients?.length,
+      ingredients: ingredientsList?.length,
       hasPreferences: !!preferences,
-      recipeType
+      recipeType,
+      requestBody: req.body
     });
+
+    if (!ingredientsList || !Array.isArray(ingredientsList) || ingredientsList.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Ingredients list is required (as "ingredients" or "detectedIngredients")'
+      });
+    }
 
     // Use enhanced recipe generation service
     const recipe = await enhancedRecipeService.generateRecipe({
-      ingredients,
+      ingredients: ingredientsList,
       userPreferences: preferences,
       recipeType,
       nutritionGoals,
@@ -258,7 +269,7 @@ router.post('/generate', authenticateUser, async (req: Request, res: Response) =
             xp_earned: 25,
             metadata: { 
               recipe_title: recipe.title,
-              ingredients_count: ingredients?.length || 0,
+              ingredients_count: ingredientsList?.length || 0,
               difficulty: recipe.metadata.difficulty
             }
           });
@@ -278,7 +289,7 @@ router.post('/generate', authenticateUser, async (req: Request, res: Response) =
     logger.error('❌ Enhanced recipe generation failed', { 
       error,
       userId: (req as any).user?.id,
-      ingredients: req.body.ingredients 
+      ingredients: req.body.ingredients || req.body.detectedIngredients
     });
     
     res.status(500).json({
