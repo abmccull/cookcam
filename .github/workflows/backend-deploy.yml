@@ -16,6 +16,14 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
       
+    - name: Debug environment
+      run: |
+        echo "🔍 Debug Info:"
+        echo "GitHub Actor: ${{ github.actor }}"
+        echo "Event name: ${{ github.event_name }}"
+        echo "Ref: ${{ github.ref }}"
+        echo "SHA: ${{ github.sha }}"
+      
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
@@ -38,18 +46,7 @@ jobs:
         cd backend/api
         npm run build
         
-    - name: Prepare deployment files
-      run: |
-        cd backend/api
-        # Create deployment package
-        tar -czf deployment.tar.gz \
-          --exclude=node_modules \
-          --exclude=src_server_backup \
-          --exclude=test-images \
-          --exclude=*.backup.* \
-          dist/ package*.json .env.example
-          
-    - name: Deploy to Digital Ocean
+    - name: Test SSH Connection
       uses: appleboy/ssh-action@v1.0.3
       with:
         host: ${{ secrets.DO_HOST }}
@@ -57,16 +54,25 @@ jobs:
         key: ${{ secrets.DO_SSH_KEY }}
         port: 22
         script: |
-          set -e
-          
-          # Create backup of current deployment
-          cd /var/www/cookcam-api
-          cp -r dist dist.backup.$(date +%Y%m%d_%H%M%S) || true
-          cp package.json package.json.backup.$(date +%Y%m%d_%H%M%S) || true
-          
-          echo "✅ Backup created"
-          
-    - name: Upload files
+          echo "✅ SSH Connection successful!"
+          echo "Current directory: $(pwd)"
+          echo "Server time: $(date)"
+          echo "Disk space: $(df -h /var/www/cookcam-api)"
+        
+    - name: Prepare deployment files
+      run: |
+        cd backend/api
+        # Create deployment package with only essential files
+        tar -czf deployment.tar.gz \
+          --exclude=node_modules \
+          --exclude=test-images \
+          --exclude='*.backup.*' \
+          --exclude=coverage \
+          --exclude=.nyc_output \
+          dist/ package*.json
+        ls -la deployment.tar.gz
+        
+    - name: Upload and Deploy
       uses: appleboy/scp-action@v0.1.7
       with:
         host: ${{ secrets.DO_HOST }}
@@ -85,44 +91,38 @@ jobs:
         port: 22
         script: |
           set -e
+          echo "🚀 Starting deployment..."
           
           cd /var/www/cookcam-api
           
+          # Create backup
+          if [ -d "dist" ]; then
+            cp -r dist dist.backup.$(date +%Y%m%d_%H%M%S)
+            echo "✅ Backup created"
+          fi
+          
           # Extract new files
           tar -xzf /tmp/backend/api/deployment.tar.gz
+          echo "✅ Files extracted"
           
-          # Install/update dependencies
+          # Install dependencies
           npm ci --only=production
-          
           echo "✅ Dependencies installed"
           
-          # Health check before restart
-          curl -f http://localhost:3000/health || echo "Service not running, will start fresh"
-          
-          # Restart PM2 service
+          # Restart service
           pm2 restart cookcam-api || pm2 start dist/index.js --name cookcam-api
-          
-          # Wait for service to start
-          sleep 5
+          echo "✅ Service restarted"
           
           # Verify deployment
+          sleep 3
           if curl -f http://localhost:3000/health; then
-            echo "✅ Deployment successful! Service is healthy"
-            # Clean up old backups (keep last 5)
-            ls -t dist.backup.* 2>/dev/null | tail -n +6 | xargs rm -rf || true
-            ls -t package.json.backup.* 2>/dev/null | tail -n +6 | xargs rm -f || true
+            echo "✅ Deployment successful!"
+            # Clean up
             rm -f /tmp/backend/api/deployment.tar.gz
+            # Keep only last 3 backups
+            ls -t dist.backup.* 2>/dev/null | tail -n +4 | xargs rm -rf || true
           else
-            echo "❌ Deployment failed! Service is not healthy"
-            echo "Rolling back..."
-            # Find the most recent backup
-            LATEST_BACKUP=$(ls -t dist.backup.* 2>/dev/null | head -1)
-            if [ ! -z "$LATEST_BACKUP" ]; then
-              rm -rf dist
-              mv "$LATEST_BACKUP" dist
-              pm2 restart cookcam-api
-              echo "✅ Rollback completed"
-            fi
+            echo "❌ Health check failed!"
             exit 1
           fi
           
