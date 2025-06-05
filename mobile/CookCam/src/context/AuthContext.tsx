@@ -113,6 +113,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
           creatorCode: userData.creator_code,
         };
         setUser(formattedUser);
+        
+        // Store tokens if available
+        if (response.data.session?.access_token) {
+          await AsyncStorage.setItem(TOKEN_KEY, response.data.session.access_token);
+        }
+        if (response.data.session?.refresh_token) {
+          await AsyncStorage.setItem('@cookcam_refresh_token', response.data.session.refresh_token);
+        }
       }
     } catch (error) {
       console.error('Login error:', error);
@@ -165,10 +173,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
     try {
       await authService.signOut();
       setUser(null);
+      // Clear all stored tokens
+      await AsyncStorage.multiRemove([TOKEN_KEY, '@cookcam_refresh_token']);
     } catch (error) {
       console.error('Logout error:', error);
       // Even if server logout fails, clear local state
       setUser(null);
+      await AsyncStorage.multiRemove([TOKEN_KEY, '@cookcam_refresh_token']);
     }
   };
 
