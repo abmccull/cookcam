@@ -108,6 +108,12 @@ class AnalyticsService {
         await this.initializeSession();
       }
 
+      // Double-check session exists after initialization
+      if (!this.currentSession) {
+        console.error('Failed to initialize analytics session');
+        return;
+      }
+
       const event: AnalyticsEvent = {
         eventName,
         properties: {
@@ -116,14 +122,14 @@ class AnalyticsService {
           timestamp: new Date().toISOString(),
         },
         timestamp: new Date(),
-        sessionId: this.currentSession!.sessionId,
+        sessionId: this.currentSession.sessionId,
         userId: await this.getUserId(),
       };
 
       // Add to queue and session
       this.eventQueue.push(event);
-      this.currentSession!.events.push(event);
-      this.currentSession!.lastActivity = new Date();
+      this.currentSession.events.push(event);
+      this.currentSession.lastActivity = new Date();
 
       // Save session periodically
       await this.saveSession();

@@ -366,7 +366,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
            new Date(state.currentSubscription.trial_ends_at) > new Date()) || false;
   };
 
-  // Load data on mount and periodically refresh
+  // Load data on mount and when authentication changes
   useEffect(() => {
     loadSubscriptionData();
     
@@ -378,7 +378,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     }, 60000); // Check every minute
 
     return () => clearInterval(interval);
-  }, []);
+  }, [isAuthenticated]); // Depend on authentication status
 
   // Load creator data when subscription changes
   useEffect(() => {
