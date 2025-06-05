@@ -501,24 +501,26 @@ router.put('/:scanId/ingredients', authenticateUser, async (req: Request, res: R
 router.post('/analyze', authenticateUser, validateScanInput, async (req: express.Request, res: express.Response) => {
   try {
     console.log('🔍 Analyzing image for ingredients...');
-    console.log("DEBUG req.body type:", typeof req.body);
-    console.log("DEBUG req.body keys:", Object.keys(req.body));
-    console.log("DEBUG req.body:", req.body);
 
-    const base64Data = req.body.image_data.includes("base64,") ? req.body.image_data.split("base64,")[1] : req.body.image_data;
-    // Check if file data exists in request body
-    if (!req.body || !Buffer.isBuffer(req.body)) {
-      console.log('❌ No file data found in request');
+    // Check if image data exists in request body
+    if (!req.body || !req.body.image_data) {
+      console.log('❌ No image data found in request');
       return res.status(400).json({ 
-        error: 'No image file provided',
-        details: 'Please provide an image file in the request body'
+        error: 'No image data provided',
+        details: 'Please provide base64 image data in the image_data field'
       });
     }
 
-    console.log(`📷 Processing image, size: ${req.body.length} bytes`);
+    // Convert base64 to buffer
+    const base64Data = req.body.image_data.includes('base64,') 
+      ? req.body.image_data.split('base64,')[1] 
+      : req.body.image_data;
+    const imageBuffer = Buffer.from(base64Data, 'base64');
+    
+    console.log(`📷 Processing image, size: ${imageBuffer.length} bytes`);
 
     // Process the image using sharp
-    const processedImage = await sharp(req.body)
+    const processedImage = await sharp(imageBuffer)
       .resize(800, 800, { 
         fit: 'inside',
         withoutEnlargement: true 

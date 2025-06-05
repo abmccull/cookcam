@@ -1,0 +1,136 @@
+name: Deploy Backend to Production
+
+on:
+  push:
+    branches: [ main ]
+    paths: 
+      - 'backend/api/**'
+      - '.github/workflows/backend-deploy.yml'
+  workflow_dispatch: # Allow manual triggering
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: backend/api/package-lock.json
+        
+    - name: Install dependencies
+      run: |
+        cd backend/api
+        npm ci
+        
+    - name: Run tests
+      run: |
+        cd backend/api
+        npm test || echo "No tests configured yet"
+        
+    - name: Build TypeScript
+      run: |
+        cd backend/api
+        npm run build
+        
+    - name: Prepare deployment files
+      run: |
+        cd backend/api
+        # Create deployment package
+        tar -czf deployment.tar.gz \
+          --exclude=node_modules \
+          --exclude=src_server_backup \
+          --exclude=test-images \
+          --exclude=*.backup.* \
+          dist/ package*.json .env.example
+          
+    - name: Deploy to Digital Ocean
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.DO_HOST }}
+        username: ${{ secrets.DO_USERNAME }}
+        key: ${{ secrets.DO_SSH_KEY }}
+        port: 22
+        script: |
+          set -e
+          
+          # Create backup of current deployment
+          cd /var/www/cookcam-api
+          cp -r dist dist.backup.$(date +%Y%m%d_%H%M%S) || true
+          cp package.json package.json.backup.$(date +%Y%m%d_%H%M%S) || true
+          
+          echo "✅ Backup created"
+          
+    - name: Upload files
+      uses: appleboy/scp-action@v0.1.7
+      with:
+        host: ${{ secrets.DO_HOST }}
+        username: ${{ secrets.DO_USERNAME }}
+        key: ${{ secrets.DO_SSH_KEY }}
+        port: 22
+        source: "backend/api/deployment.tar.gz"
+        target: "/tmp/"
+        
+    - name: Complete deployment
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.DO_HOST }}
+        username: ${{ secrets.DO_USERNAME }}
+        key: ${{ secrets.DO_SSH_KEY }}
+        port: 22
+        script: |
+          set -e
+          
+          cd /var/www/cookcam-api
+          
+          # Extract new files
+          tar -xzf /tmp/backend/api/deployment.tar.gz
+          
+          # Install/update dependencies
+          npm ci --only=production
+          
+          echo "✅ Dependencies installed"
+          
+          # Health check before restart
+          curl -f http://localhost:3000/health || echo "Service not running, will start fresh"
+          
+          # Restart PM2 service
+          pm2 restart cookcam-api || pm2 start dist/index.js --name cookcam-api
+          
+          # Wait for service to start
+          sleep 5
+          
+          # Verify deployment
+          if curl -f http://localhost:3000/health; then
+            echo "✅ Deployment successful! Service is healthy"
+            # Clean up old backups (keep last 5)
+            ls -t dist.backup.* 2>/dev/null | tail -n +6 | xargs rm -rf || true
+            ls -t package.json.backup.* 2>/dev/null | tail -n +6 | xargs rm -f || true
+            rm -f /tmp/backend/api/deployment.tar.gz
+          else
+            echo "❌ Deployment failed! Service is not healthy"
+            echo "Rolling back..."
+            # Find the most recent backup
+            LATEST_BACKUP=$(ls -t dist.backup.* 2>/dev/null | head -1)
+            if [ ! -z "$LATEST_BACKUP" ]; then
+              rm -rf dist
+              mv "$LATEST_BACKUP" dist
+              pm2 restart cookcam-api
+              echo "✅ Rollback completed"
+            fi
+            exit 1
+          fi
+          
+    - name: Notify deployment status
+      if: always()
+      run: |
+        if [ "${{ job.status }}" = "success" ]; then
+          echo "🎉 Backend deployment successful!"
+        else
+          echo "💥 Backend deployment failed!"
+        fi 

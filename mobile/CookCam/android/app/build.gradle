@@ -81,6 +81,14 @@ android {
         versionCode 1
         versionName "1.0"
     }
+
+    flavorDimensions "store"
+    productFlavors {
+        play {
+            dimension "store"
+        }
+    }
+
     signingConfigs {
         debug {
             storeFile file('debug.keystore')
