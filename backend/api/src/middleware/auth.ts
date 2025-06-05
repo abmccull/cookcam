@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt, { SignOptions } from 'jsonwebtoken';
 import { logger } from '../utils/logger';
+import { supabase } from '../index';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-jwt-secret-key-for-development';
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'fallback-refresh-secret-key-for-development';
@@ -73,21 +74,105 @@ export const authenticateUser = async (req: AuthenticatedRequest, res: Response,
       return next();
     }
 
-    // Verify JWT token
+    // Production mode - use Supabase auth validation
     try {
-      const decoded = verifyAccessToken(token);
-      req.user = { id: decoded.userId, email: decoded.email };
+      logger.info('🔐 Validating Supabase token:', {
+        tokenLength: token.length,
+        tokenPrefix: token.substring(0, 20) + '...'
+      });
+
+      const { data: { user }, error } = await supabase.auth.getUser(token);
+      
+      if (error || !user) {
+        logger.warn('❌ Supabase token validation failed:', {
+          error: error?.message,
+          hasUser: !!user,
+          tokenPrefix: token.substring(0, 20) + '...'
+        });
+        return res.status(401).json({ 
+          error: 'Token expired or invalid',
+          code: 'TOKEN_EXPIRED',
+          message: 'Please refresh your session'
+        });
+      }
+
+      logger.info('✅ Supabase token validation successful:', {
+        userId: user.id,
+        email: user.email
+      });
+
+      req.user = { id: user.id, email: user.email };
       next();
-    } catch {
-      // Token might be expired, suggest using refresh token
+    } catch (validationError) {
+      logger.error('❌ Supabase token validation error:', {
+        error: validationError instanceof Error ? validationError.message : 'Unknown error',
+        tokenPrefix: token.substring(0, 20) + '...'
+      });
+      
       return res.status(401).json({ 
         error: 'Token expired or invalid',
         code: 'TOKEN_EXPIRED',
-        message: 'Please use refresh token to get a new access token'
+        message: 'Please refresh your session'
       });
     }
   } catch (error) {
     logger.error('Auth middleware error', { error: error instanceof Error ? error.message : 'Unknown error' });
     res.status(401).json({ error: 'Authentication failed' });
+  }
+};
+
+// Optional authentication - allows both authenticated and guest users
+export const optionalAuth = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    console.log('👥 OptionalAuth middleware called for:', req.path);
+    const authHeader = req.headers.authorization;
+    
+    // No auth header = continue as guest
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      console.log('👤 No auth header - continuing as guest');
+      req.user = undefined;
+      req.isFreeTier = true;
+      return next();
+    }
+
+    const token = authHeader.substring(7);
+
+    // Demo mode support
+    if (process.env.DEMO_MODE === 'true' && token.startsWith('demo_token_')) {
+      const demoUserId = token.replace('demo_token_', '');
+      req.user = { id: demoUserId };
+      req.isFreeTier = false;
+      return next();
+    }
+
+    // Production mode - use Supabase auth validation for optional auth
+    try {
+      const { data: { user }, error } = await supabase.auth.getUser(token);
+      
+      if (error || !user) {
+        console.log('❌ Invalid token - continuing as guest');
+        req.user = undefined;
+        req.isFreeTier = true;
+        next();
+      } else {
+        console.log('✅ Valid token - authenticated user');
+        req.user = { id: user.id, email: user.email };
+        req.isFreeTier = false;
+        next();
+      }
+    } catch {
+      // Invalid token = continue as guest (don't fail)
+      console.log('❌ Token validation error - continuing as guest');
+      req.user = undefined;
+      req.isFreeTier = true;
+      next();
+    }
+  } catch (error) {
+    logger.error('Optional auth middleware error', { error: error instanceof Error ? error.message : 'Unknown error' });
+    // Even on error, continue as guest
+    console.log('⚠️ Error in optionalAuth - continuing as guest');
+    req.user = undefined;
+    req.isFreeTier = true;
+    next();
   }
 }; 

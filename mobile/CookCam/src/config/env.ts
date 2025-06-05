@@ -1,5 +1,5 @@
 // Environment configuration
-// For production, replace these values with production URLs
+// Reads from .env file using react-native-config
 
 import Config from 'react-native-config';
 
@@ -9,23 +9,13 @@ interface EnvConfig {
   API_BASE_URL: string;
 }
 
-const development: EnvConfig = {
-  SUPABASE_URL: Config.SUPABASE_URL || 'https://your-project.supabase.co',
-  SUPABASE_ANON_KEY: Config.SUPABASE_ANON_KEY || 'your_supabase_anon_key_here',
-  API_BASE_URL: Config.API_BASE_URL || 'http://localhost:3000/api/v1',
-};
-
-const production: EnvConfig = {
-  SUPABASE_URL: Config.SUPABASE_URL || 'https://your-project.supabase.co',
-  SUPABASE_ANON_KEY: Config.SUPABASE_ANON_KEY || 'your_supabase_anon_key_here',
-  API_BASE_URL: Config.API_BASE_URL || 'http://64.23.236.43:3000/api/v1',
-};
-
 const getEnvVars = (): EnvConfig => {
-  if (__DEV__) {
-    return development;
-  }
-  return production;
+  // Always use values from .env file first, with sensible fallbacks
+  return {
+    SUPABASE_URL: Config.SUPABASE_URL || 'https://prpvrnxtpvilxakxzajm.supabase.co',
+    SUPABASE_ANON_KEY: Config.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBycHZybnh0cHZpbHhha3h6YWptIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg1NDI3OTMsImV4cCI6MjA2NDExODc5M30.Yy-sEHdASoSnjjoi0DjeICSvnWj0g5svYS5Crok8J8k',
+    API_BASE_URL: Config.API_BASE_URL || 'http://64.23.236.43:3000',
+  };
 };
 
 export default getEnvVars; 

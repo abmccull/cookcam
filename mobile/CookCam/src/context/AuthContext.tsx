@@ -31,7 +31,6 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string, name: string, isCreator: boolean) => Promise<void>;
   logout: () => Promise<void>;
-  loginDemo: () => Promise<void>;
   updateUser: (updates: Partial<User>) => void;
 }
 
@@ -129,9 +128,32 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
         throw new Error(response.error || 'Signup failed');
       }
 
-      // User created successfully but may need email confirmation
-      // For now, we'll show a success message and let them sign in
-      console.log('User created successfully:', response.data?.message);
+      // If signup is successful and returns user data, sign them in immediately
+      if (response.data?.user && response.data?.session) {
+        const userData = response.data.user;
+        const formattedUser: User = {
+          id: userData.id,
+          email: userData.email,
+          name: userData.name || name || userData.email,
+          isCreator: userData.is_creator || isCreator,
+          creatorTier: userData.creator_tier || undefined,
+          level: userData.level || 1,
+          xp: userData.xp || 0,
+          streak: userData.streak_current || 0,
+          badges: userData.badges || [],
+          avatarUrl: userData.avatar_url,
+          creatorCode: userData.creator_code,
+        };
+        setUser(formattedUser);
+        
+        // Store the session token if available
+        if (response.data.session?.access_token) {
+          await AsyncStorage.setItem(TOKEN_KEY, response.data.session.access_token);
+        }
+      } else {
+        // User created successfully but may need email confirmation
+        console.log('User created successfully:', response.data?.message);
+      }
       
     } catch (error) {
       console.error('Signup error:', error);
@@ -150,31 +172,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
     }
   };
 
-  const loginDemo = async () => {
-    try {
-      // Create a demo user for testing
-      const demoUser: User = {
-        id: 'demo-user-123',
-        email: 'demo@cookcam.com',
-        name: 'Demo User',
-        isCreator: false,
-        level: 1,
-        xp: 0,
-        streak: 0,
-        badges: [],
-      };
-      
-      // Store demo token
-      await AsyncStorage.setItem(TOKEN_KEY, `demo_token_${demoUser.id}`);
-      setUser(demoUser);
-      
-      console.log('✅ Demo login successful');
-    } catch (error) {
-      console.error('Demo login error:', error);
-      throw error;
-    }
-  };
-
   const updateUser = (updates: Partial<User>) => {
     if (user) {
       setUser({...user, ...updates});
@@ -188,7 +185,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
     login,
     signup,
     logout,
-    loginDemo,
     updateUser,
   };
 

@@ -13,11 +13,20 @@ import {
   ScrollView,
   Switch,
 } from 'react-native';
-import {Mail, Lock, Eye, EyeOff, User, ChevronLeft, DollarSign} from 'lucide-react-native';
+import {Mail, Lock, Eye, EyeOff, User, ChevronLeft, DollarSign, Check, X} from 'lucide-react-native';
 import {useAuth} from '../context/AuthContext';
 
 interface SignupScreenProps {
   navigation: any;
+}
+
+interface PasswordValidation {
+  hasLowercase: boolean;
+  hasUppercase: boolean;
+  hasNumber: boolean;
+  hasSpecialChar: boolean;
+  minLength: boolean;
+  isValid: boolean;
 }
 
 const SignupScreen: React.FC<SignupScreenProps> = ({navigation}) => {
@@ -29,11 +38,50 @@ const SignupScreen: React.FC<SignupScreenProps> = ({navigation}) => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isCreator, setIsCreator] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [passwordValidation, setPasswordValidation] = useState<PasswordValidation>({
+    hasLowercase: false,
+    hasUppercase: false,
+    hasNumber: false,
+    hasSpecialChar: false,
+    minLength: false,
+    isValid: false,
+  });
   const {signup} = useAuth();
+
+  // Password validation function that matches Supabase requirements
+  const validatePassword = (pwd: string): PasswordValidation => {
+    const hasLowercase = /[a-z]/.test(pwd);
+    const hasUppercase = /[A-Z]/.test(pwd);
+    const hasNumber = /[0-9]/.test(pwd);
+    // Special characters allowed by Supabase
+    const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|<>?,./`~]/.test(pwd);
+    const minLength = pwd.length >= 8;
+    
+    const isValid = hasLowercase && hasUppercase && hasNumber && hasSpecialChar && minLength;
+    
+    return {
+      hasLowercase,
+      hasUppercase,
+      hasNumber,
+      hasSpecialChar,
+      minLength,
+      isValid,
+    };
+  };
+
+  const handlePasswordChange = (text: string) => {
+    setPassword(text);
+    setPasswordValidation(validatePassword(text));
+  };
 
   const handleSignup = async () => {
     if (!name || !email || !password || !confirmPassword) {
       Alert.alert('Error', 'Please fill in all fields');
+      return;
+    }
+    
+    if (!passwordValidation.isValid) {
+      Alert.alert('Error', 'Please ensure your password meets all requirements');
       return;
     }
     
@@ -42,8 +90,10 @@ const SignupScreen: React.FC<SignupScreenProps> = ({navigation}) => {
       return;
     }
     
-    if (password.length < 6) {
-      Alert.alert('Error', 'Password must be at least 6 characters');
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      Alert.alert('Error', 'Please enter a valid email address');
       return;
     }
     
@@ -52,8 +102,9 @@ const SignupScreen: React.FC<SignupScreenProps> = ({navigation}) => {
     try {
       await signup(email, password, name, isCreator);
       // Navigation will be handled by auth state change
-    } catch (error) {
-      Alert.alert('Error', 'Failed to create account');
+    } catch (error: any) {
+      console.error('Signup error:', error);
+      Alert.alert('Error', error.message || 'Failed to create account');
     } finally {
       setLoading(false);
     }
@@ -62,6 +113,19 @@ const SignupScreen: React.FC<SignupScreenProps> = ({navigation}) => {
   const handleBack = () => {
     navigation.goBack();
   };
+
+  const PasswordRequirement = ({ isValid, text }: { isValid: boolean; text: string }) => (
+    <View style={styles.passwordRequirement}>
+      {isValid ? (
+        <Check size={16} color="#66BB6A" />
+      ) : (
+        <X size={16} color="#FF5252" />
+      )}
+      <Text style={[styles.requirementText, { color: isValid ? '#66BB6A' : '#FF5252' }]}>
+        {text}
+      </Text>
+    </View>
+  );
 
   return (
     <SafeAreaView style={styles.container}>
@@ -118,7 +182,7 @@ const SignupScreen: React.FC<SignupScreenProps> = ({navigation}) => {
                 placeholder="Password"
                 placeholderTextColor="#8E8E93"
                 value={password}
-                onChangeText={setPassword}
+                onChangeText={handlePasswordChange}
                 secureTextEntry={!showPassword}
                 autoCapitalize="none"
               />
@@ -132,6 +196,33 @@ const SignupScreen: React.FC<SignupScreenProps> = ({navigation}) => {
                 )}
               </TouchableOpacity>
             </View>
+
+            {/* Password Requirements - Only show when user starts typing */}
+            {password.length > 0 && (
+              <View style={styles.passwordRequirementsContainer}>
+                <Text style={styles.requirementsTitle}>Password Requirements:</Text>
+                <PasswordRequirement 
+                  isValid={passwordValidation.minLength} 
+                  text="At least 8 characters" 
+                />
+                <PasswordRequirement 
+                  isValid={passwordValidation.hasLowercase} 
+                  text="One lowercase letter (a-z)" 
+                />
+                <PasswordRequirement 
+                  isValid={passwordValidation.hasUppercase} 
+                  text="One uppercase letter (A-Z)" 
+                />
+                <PasswordRequirement 
+                  isValid={passwordValidation.hasNumber} 
+                  text="One number (0-9)" 
+                />
+                <PasswordRequirement 
+                  isValid={passwordValidation.hasSpecialChar} 
+                  text="One special character (!@#$%^&*)" 
+                />
+              </View>
+            )}
 
             {/* Confirm Password Input */}
             <View style={styles.inputContainer}>
@@ -156,6 +247,22 @@ const SignupScreen: React.FC<SignupScreenProps> = ({navigation}) => {
               </TouchableOpacity>
             </View>
 
+            {/* Password Match Indicator */}
+            {confirmPassword.length > 0 && (
+              <View style={styles.passwordRequirement}>
+                {password === confirmPassword ? (
+                  <Check size={16} color="#66BB6A" />
+                ) : (
+                  <X size={16} color="#FF5252" />
+                )}
+                <Text style={[styles.requirementText, { 
+                  color: password === confirmPassword ? '#66BB6A' : '#FF5252' 
+                }]}>
+                  Passwords match
+                </Text>
+              </View>
+            )}
+
             {/* Creator Program */}
             <View style={styles.creatorContainer}>
               <View style={styles.creatorContent}>
@@ -177,9 +284,12 @@ const SignupScreen: React.FC<SignupScreenProps> = ({navigation}) => {
 
             {/* Sign Up Button */}
             <TouchableOpacity
-              style={[styles.signupButton, loading && styles.disabledButton]}
+              style={[
+                styles.signupButton, 
+                (loading || !passwordValidation.isValid || password !== confirmPassword) && styles.disabledButton
+              ]}
               onPress={handleSignup}
-              disabled={loading}>
+              disabled={loading || !passwordValidation.isValid || password !== confirmPassword}>
               {loading ? (
                 <ActivityIndicator color="#F8F8FF" />
               ) : (
@@ -271,6 +381,30 @@ const styles = StyleSheet.create({
   },
   eyeIcon: {
     padding: 4,
+  },
+  passwordRequirementsContainer: {
+    backgroundColor: '#F8F9FA',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#E5E5E7',
+  },
+  requirementsTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#2D1B69',
+    marginBottom: 12,
+  },
+  passwordRequirement: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  requirementText: {
+    fontSize: 14,
+    marginLeft: 8,
+    fontWeight: '500',
   },
   creatorContainer: {
     flexDirection: 'row',

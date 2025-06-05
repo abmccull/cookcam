@@ -42,7 +42,7 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
 }) => {
   const {imageUri, isSimulator} = route.params;
   const {addXP, unlockBadge} = useGamification();
-  const {user, isAuthenticated, loginDemo} = useAuth();
+  const {user, isAuthenticated} = useAuth();
   const [showMysteryBox, setShowMysteryBox] = useState(() => {
     // 25% chance (1/4) of mystery box appearing
     return Math.random() < 0.25;
@@ -70,25 +70,68 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
   
   // Animation values
   const addAnimScale = useRef(new Animated.Value(1)).current;
+  const aiPulseAnim = useRef(new Animated.Value(1)).current;
+  const aiOpacityAnim = useRef(new Animated.Value(0.7)).current;
   const [showConfetti, setShowConfetti] = useState(false);
+
+  // AI Analysis animation effect
+  useEffect(() => {
+    if (loading) {
+      // Start pulsing animation when loading
+      const pulse = Animated.loop(
+        Animated.sequence([
+          Animated.timing(aiPulseAnim, {
+            toValue: 1.1,
+            duration: 1000,
+            useNativeDriver: true,
+          }),
+          Animated.timing(aiPulseAnim, {
+            toValue: 1,
+            duration: 1000,
+            useNativeDriver: true,
+          }),
+        ])
+      );
+
+      const opacity = Animated.loop(
+        Animated.sequence([
+          Animated.timing(aiOpacityAnim, {
+            toValue: 1,
+            duration: 1500,
+            useNativeDriver: true,
+          }),
+          Animated.timing(aiOpacityAnim, {
+            toValue: 0.7,
+            duration: 1500,
+            useNativeDriver: true,
+          }),
+        ])
+      );
+
+      pulse.start();
+      opacity.start();
+
+      return () => {
+        pulse.stop();
+        opacity.stop();
+      };
+    }
+  }, [loading]);
 
   // Load real ingredients from image analysis (for both simulator and real device)
   useEffect(() => {
-    if (imageUri && imageUri !== 'demo-image-uri') {
+    if (imageUri) {
       // Ensure authentication before analysis
       if (!isAuthenticated) {
-        console.log('🔐 Not authenticated, logging in with demo credentials...');
-        loginDemo().then(() => {
-          analyzeImageIngredients();
-        }).catch(error => {
-          console.error('Demo login failed:', error);
-          analyzeImageIngredients(); // Try anyway
-        });
+        console.log('🔐 Not authenticated, redirecting to login...');
+        // Redirect to login screen instead of using demo
+        navigation.navigate('Auth', { screen: 'SignIn' });
+        return;
       } else {
         analyzeImageIngredients();
       }
     }
-  }, [imageUri, isAuthenticated]);
+  }, [imageUri, isAuthenticated, navigation]);
 
   const analyzeImageIngredients = async () => {
     try {
@@ -97,7 +140,7 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
       console.log('📍 Current imageUri:', imageUri);
       console.log('📍 Is simulator:', isSimulator);
       
-      if (!imageUri || imageUri === 'demo-image-uri') {
+      if (!imageUri) {
         console.log('⚠️ No valid image URI, using fallback ingredients');
         
         // Fallback to searching some common ingredients in USDA database
@@ -179,14 +222,14 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
         
         console.log('📥 Backend response received:', response);
         
-        if (response.success && response.data && response.data.ingredients) {
-          console.log('🎯 Backend analysis successful:', response.data.ingredients);
+        if (response.success && response.data && response.data.data && response.data.data.ingredients) {
+          console.log('🎯 Backend analysis successful:', response.data.data.ingredients);
           
           // Convert backend response to our ingredient format and search USDA
           const foundIngredients: Ingredient[] = [];
           
-          for (let i = 0; i < response.data.ingredients.length; i++) {
-            const detectedIng = response.data.ingredients[i];
+          for (let i = 0; i < response.data.data.ingredients.length; i++) {
+            const detectedIng = response.data.data.ingredients[i];
             console.log(`🔍 Processing detected ingredient ${i + 1}:`, detectedIng);
             
             try {
@@ -593,6 +636,37 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
         </View>
       )}
       
+      {/* AI Analysis Modal */}
+      <Modal
+        visible={loading}
+        transparent
+        animationType="fade">
+        <View style={styles.aiAnalysisOverlay}>
+          <Animated.View style={[
+            styles.aiAnalysisModal,
+            {
+              transform: [{ scale: aiPulseAnim }],
+              opacity: aiOpacityAnim,
+            }
+          ]}>
+            <View style={styles.aiAnalysisIcon}>
+              <Sparkles size={moderateScale(32)} color="#FFFFFF" />
+            </View>
+            <Text style={styles.aiAnalysisTitle}>
+              🤖 AI Chef Analyzing...
+            </Text>
+            <Text style={styles.aiAnalysisSubtitle}>
+              Identifying ingredients with computer vision
+            </Text>
+            <View style={styles.aiAnalysisSteps}>
+              <Text style={styles.aiAnalysisStep}>🔍 Scanning image patterns</Text>
+              <Text style={styles.aiAnalysisStep}>🧠 Processing with neural networks</Text>
+              <Text style={styles.aiAnalysisStep}>✨ Matching to ingredient database</Text>
+            </View>
+          </Animated.View>
+        </View>
+      </Modal>
+
       {/* Mystery Box Reward Modal */}
       <Modal
         visible={showRewardModal}
@@ -888,6 +962,61 @@ const styles = StyleSheet.create({
     fontSize: responsive.fontSize.medium,
     fontWeight: 'bold',
     color: '#FFFFFF',
+  },
+  // AI Analysis Modal Styles
+  aiAnalysisOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(45, 27, 105, 0.85)',
+  },
+  aiAnalysisModal: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: responsive.borderRadius.large,
+    padding: responsive.spacing.xl,
+    margin: responsive.spacing.m,
+    alignItems: 'center',
+    shadowColor: '#2D1B69',
+    shadowOffset: {
+      width: 0,
+      height: 8,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 8,
+    borderWidth: 2,
+    borderColor: '#FFB800',
+  },
+  aiAnalysisIcon: {
+    width: moderateScale(64),
+    height: moderateScale(64),
+    borderRadius: moderateScale(32),
+    backgroundColor: '#FFB800',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: verticalScale(16),
+  },
+  aiAnalysisTitle: {
+    fontSize: responsive.fontSize.xlarge,
+    fontWeight: 'bold',
+    color: '#2D1B69',
+    marginBottom: verticalScale(8),
+    textAlign: 'center',
+  },
+  aiAnalysisSubtitle: {
+    fontSize: responsive.fontSize.medium,
+    color: '#8E8E93',
+    marginBottom: verticalScale(20),
+    textAlign: 'center',
+  },
+  aiAnalysisSteps: {
+    alignItems: 'flex-start',
+    gap: verticalScale(8),
+  },
+  aiAnalysisStep: {
+    fontSize: responsive.fontSize.regular,
+    color: '#6B46C1',
+    fontWeight: '500',
   },
 });
 

@@ -26,8 +26,8 @@ interface LoginScreenProps {
 }
 
 const LoginScreen: React.FC<LoginScreenProps> = ({navigation}) => {
-  const [email, setEmail] = useState('test@example.com'); // Pre-filled for demo
-  const [password, setPassword] = useState('password123'); // Pre-filled for demo
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const {login} = useAuth();
@@ -65,7 +65,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({navigation}) => {
       await login(email, password);
       // Navigation will be handled by the auth state change in App.tsx
     } catch (error) {
-      Alert.alert('Error', 'Login failed. Try any email/password for demo.');
+      Alert.alert('Error', 'Login failed. Please check your credentials and try again.');
     } finally {
       setLoading(false);
     }
@@ -77,8 +77,8 @@ const LoginScreen: React.FC<LoginScreenProps> = ({navigation}) => {
 
   const handleForgotPassword = () => {
     Alert.alert(
-      'Demo Mode', 
-      'This is a demo app. Use any email/password to login, or tap Sign Up to create a new account.'
+      'Forgot Password', 
+      'Password reset functionality will be available soon. Please contact support if you need help accessing your account.'
     );
   };
 
@@ -99,10 +99,6 @@ const LoginScreen: React.FC<LoginScreenProps> = ({navigation}) => {
 
         {/* Login Form */}
         <View style={styles.form}>
-          {/* Demo Notice */}
-          <View style={styles.demoNotice}>
-            <Text style={styles.demoText}>🎮 Demo Mode: Use any credentials</Text>
-          </View>
 
           {/* Email Input */}
           <View style={styles.inputContainer}>
@@ -207,18 +203,6 @@ const styles = StyleSheet.create({
   },
   form: {
     paddingHorizontal: 24,
-  },
-  demoNotice: {
-    backgroundColor: '#E8F8EA',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 16,
-    alignItems: 'center',
-  },
-  demoText: {
-    fontSize: 14,
-    color: '#66BB6A',
-    fontWeight: '500',
   },
   inputContainer: {
     flexDirection: 'row',

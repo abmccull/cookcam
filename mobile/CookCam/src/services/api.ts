@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import config from '../config/env';
 
 // Use configuration for API URL
-const API_URL = config.API_URL;
+const API_URL = config().API_BASE_URL;
 
 // Configuration
 const TOKEN_KEY = '@cookcam_token';
@@ -34,7 +34,7 @@ class ApiClient {
 
   static getInstance(): ApiClient {
     if (!ApiClient.instance) {
-      ApiClient.instance = new ApiClient(`${API_URL}/api`);
+      ApiClient.instance = new ApiClient(`${API_URL}/api/v1`);
     }
     return ApiClient.instance;
   }

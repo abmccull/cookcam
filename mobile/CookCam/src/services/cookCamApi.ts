@@ -288,15 +288,15 @@ class CookCamApi {
 
   // Subscription Methods
   async getSubscriptionTiers(): Promise<ApiResponse<SubscriptionTier[]>> {
-    return apiService.get<SubscriptionTier[]>('/api/v1/subscription/tiers');
+    return apiService.get<SubscriptionTier[]>(API_ENDPOINTS.subscription.tiers);
   }
 
   async getSubscriptionStatus(): Promise<ApiResponse<UserSubscription>> {
-    return apiService.get<UserSubscription>('/api/v1/subscription/status');
+    return apiService.get<UserSubscription>(API_ENDPOINTS.subscription.status);
   }
 
   async createCheckoutSession(tierId: string): Promise<ApiResponse<{ checkoutUrl: string }>> {
-    return apiService.post<{ checkoutUrl: string }>('/api/v1/subscription/checkout', {
+    return apiService.post<{ checkoutUrl: string }>(API_ENDPOINTS.subscription.checkout, {
       tier_id: tierId
     });
   }
@@ -304,42 +304,42 @@ class CookCamApi {
   async cancelSubscription(): Promise<ApiResponse> {
     // This will mark subscription as cancelled in our system
     // Actual cancellation happens through App Store/Google Play
-    return apiService.post('/api/v1/subscription/cancel');
+    return apiService.post(API_ENDPOINTS.subscription.cancel);
   }
 
   async checkFeatureAccess(feature: string): Promise<ApiResponse<{ hasAccess: boolean; usage?: any }>> {
-    return apiService.get<{ hasAccess: boolean; usage?: any }>(`/api/v1/subscription/feature/${feature}`);
+    return apiService.get<{ hasAccess: boolean; usage?: any }>(API_ENDPOINTS.subscription.feature(feature));
   }
 
   // Creator Methods
   async getCreatorRevenue(): Promise<ApiResponse<CreatorRevenue>> {
-    return apiService.get<CreatorRevenue>('/api/v1/subscription/creator/revenue');
+    return apiService.get<CreatorRevenue>(API_ENDPOINTS.subscription.creator.revenue);
   }
 
   async generateAffiliateLink(campaignName?: string, customSlug?: string): Promise<ApiResponse<AffiliateLink>> {
-    return apiService.post<AffiliateLink>('/api/v1/subscription/affiliate/generate', {
+    return apiService.post<AffiliateLink>(API_ENDPOINTS.subscription.affiliate.generate, {
       campaign_name: campaignName,
       custom_slug: customSlug
     });
   }
 
   async getAffiliateLinks(): Promise<ApiResponse<AffiliateLink[]>> {
-    return apiService.get<AffiliateLink[]>('/api/v1/subscription/affiliate/links');
+    return apiService.get<AffiliateLink[]>(API_ENDPOINTS.subscription.affiliate.links);
   }
 
   async requestPayout(amount: number, method: 'stripe' | 'paypal' | 'bank_transfer' = 'stripe'): Promise<ApiResponse> {
-    return apiService.post('/api/v1/subscription/creator/payout', {
+    return apiService.post(API_ENDPOINTS.subscription.creator.payout, {
       amount,
       method
     });
   }
 
   async getCreatorAnalytics(period: 'week' | 'month' | 'year' = 'month'): Promise<ApiResponse<any>> {
-    return apiService.get(`/api/v1/subscription/creator/analytics?period=${period}`);
+    return apiService.get(`${API_ENDPOINTS.subscription.creator.analytics}?period=${period}`);
   }
 
   async tipCreator(recipeId: string, amount: number, message?: string): Promise<ApiResponse> {
-    return apiService.post(`/api/v1/recipe/${recipeId}/tip`, {
+    return apiService.post(API_ENDPOINTS.recipes.tip(recipeId), {
       amount,
       message
     });
@@ -353,11 +353,11 @@ class CookCamApi {
     transactionId?: string;
     productId?: string;
   }): Promise<ApiResponse> {
-    return apiService.post('/api/v1/subscription/validate-purchase', validationData);
+    return apiService.post(API_ENDPOINTS.subscription.validatePurchase, validationData);
   }
 
   async refreshSubscriptionStatus(): Promise<ApiResponse> {
-    return apiService.post('/api/v1/subscription/refresh-status');
+    return apiService.post(API_ENDPOINTS.subscription.refreshStatus);
   }
 
   // Creator upgrade method
@@ -368,7 +368,7 @@ class CookCamApi {
       tier: 'creator';
     };
   }): Promise<ApiResponse<User>> {
-    return apiService.post('/api/v1/subscription/upgrade-to-creator', data);
+    return apiService.post(API_ENDPOINTS.subscription.upgradeToCreator, data);
   }
 
   // Subscription Management (App Store based)
@@ -388,14 +388,18 @@ class CookCamApi {
       };
     }>;
   }>> {
-    return apiService.get('/api/v1/subscription/products');
+    return apiService.get(API_ENDPOINTS.subscription.products);
   }
 
   // Analytics Methods
   async trackEvent(eventName: string, properties?: Record<string, any>): Promise<ApiResponse> {
-    return apiService.post('/api/v1/analytics/track', {
-      event: eventName,
-      properties
+    return apiService.post(API_ENDPOINTS.analytics.track, {
+      event_type: eventName,
+      event_data: properties || {},
+      metadata: {
+        timestamp: new Date().toISOString(),
+        platform: 'mobile'
+      }
     });
   }
 
@@ -417,7 +421,7 @@ class CookCamApi {
       revenueGrowth: Array<{ date: string; amount: number }>;
     };
   }>> {
-    return apiService.get(`/api/v1/analytics/dashboard?period=${period}`);
+    return apiService.get(`${API_ENDPOINTS.analytics.dashboard}?period=${period}`);
   }
 
   // Utility Methods

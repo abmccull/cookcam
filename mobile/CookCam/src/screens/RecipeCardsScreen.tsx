@@ -1,4 +1,4 @@
-import React, {useState, useRef} from 'react';
+import React, {useState, useRef, useEffect} from 'react';
 import {
   View,
   StyleSheet,
@@ -10,12 +10,24 @@ import {
   ScrollView,
   Alert,
   Animated,
+  ActivityIndicator,
 } from 'react-native';
-import Swiper from 'react-native-deck-swiper';
+// import Swiper from 'react-native-deck-swiper'; // Temporarily disabled due to PropTypes issue
 import {Clock, Users, X, Heart, Info, TrendingUp, Star, Sparkles, Trophy} from 'lucide-react-native';
 import {useGamification, XP_VALUES} from '../context/GamificationContext';
 import ChefBadge from '../components/ChefBadge';
 import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
+import {recipeService, authService} from '../services/api';
+import {useAuth} from '../context/AuthContext';
+
+// Temporary simple swiper replacement
+const SimpleSwiper = ({ children, onSwipedRight, onSwipedLeft }: any) => {
+  return (
+    <View style={styles.swiperContainer}>
+      {children}
+    </View>
+  );
+};
 
 interface Recipe {
   id: string;
@@ -53,17 +65,23 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
 }) => {
   const {ingredients, imageUri, preferences} = route.params || {};
   const {xp} = useGamification();
+  const {user} = useAuth();
   const swiperRef = useRef<any>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
   const [showDetails, setShowDetails] = useState(false);
+  const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [sessionId, setSessionId] = useState<string>('');
   
   // Animation values
   const xpAnimScale = useRef(new Animated.Value(1)).current;
   const trendingPulse = useRef(new Animated.Value(1)).current;
+  const aiPulseAnim = useRef(new Animated.Value(1)).current;
+  const aiOpacityAnim = useRef(new Animated.Value(0.7)).current;
 
-  // Enhanced dummy data with creator info and ratings
-  const [recipes] = useState<Recipe[]>([
+  // Enhanced dummy data with creator info and ratings (fallback)
+  const fallbackRecipes: Recipe[] = [
     {
       id: '1',
       title: 'Mediterranean Vegetable Pasta',
@@ -134,10 +152,178 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
       isTrending: false,
       isCreatorRecipe: false,
     },
-  ]);
+  ];
+
+  // Generate recipes from AI based on ingredients and preferences
+  useEffect(() => {
+    generateRecipes();
+  }, [ingredients, preferences]);
+
+  const generateRecipes = async () => {
+    try {
+      setIsLoading(true);
+      console.log('🤖 Generating AI recipes with ingredients:', ingredients);
+      console.log('🎯 User preferences:', preferences);
+
+      if (!ingredients || ingredients.length === 0) {
+        console.log('⚠️ No ingredients provided, using fallback recipes');
+        setRecipes(fallbackRecipes);
+        setIsLoading(false);
+        return;
+      }
+
+      // Convert ingredients to strings for API
+      const detectedIngredients = ingredients.map((ing: any) => 
+        typeof ing === 'string' ? ing : ing.name || ing.toString()
+      );
+
+      // Debug: Check if user is authenticated and what token we have
+      const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+      const token = await AsyncStorage.getItem('@cookcam_token');
+      console.log('🔐 Debug - Token check:', {
+        hasToken: !!token,
+        tokenLength: token?.length,
+        tokenPrefix: token?.substring(0, 20) + '...',
+        isAuthenticated: user ? true : false,
+        userId: user?.id
+      });
+
+      console.log('📤 Sending to API:', {
+        detectedIngredients,
+        dietaryTags: preferences?.dietary || [],
+        cuisinePreferences: preferences?.cuisine || [],
+        timeAvailable: preferences?.cookingTime || 'any',
+        skillLevel: preferences?.difficulty || 'any'
+      });
+
+      // Call the recipe generation API
+      const response = await recipeService.generateSuggestions({
+        detectedIngredients,
+        dietaryTags: preferences?.dietary || [],
+        cuisinePreferences: preferences?.cuisine || [],
+        timeAvailable: preferences?.cookingTime || 'any',
+        skillLevel: preferences?.difficulty || 'any'
+      });
+
+      console.log('📥 API Response:', response);
+
+      if (response.success && response.data) {
+        // Store session ID for full recipe generation later
+        if (response.data.sessionId) {
+          setSessionId(response.data.sessionId);
+        }
+
+        // Convert API response to our Recipe format
+        if (response.data.suggestions && Array.isArray(response.data.suggestions)) {
+          const aiRecipes: Recipe[] = response.data.suggestions.map((suggestion: any, index: number) => ({
+            id: `ai-${index}`,
+            title: suggestion.title || suggestion.name || 'AI Generated Recipe',
+            image: suggestion.image || `https://via.placeholder.com/400x300/4CAF50/FFFFFF?text=${encodeURIComponent(suggestion.title || 'Recipe')}`,
+            cookingTime: suggestion.cookingTime || suggestion.prepTime || '30 min',
+            servings: suggestion.servings || 4,
+            difficulty: suggestion.difficulty || 'Medium',
+            macros: {
+              calories: suggestion.calories || 350,
+              protein: suggestion.protein || 15,
+              carbs: suggestion.carbs || 45,
+              fat: suggestion.fat || 12,
+            },
+            tags: [
+              ...(preferences?.dietary || []),
+              ...(preferences?.cuisine || []),
+              'AI Generated'
+            ],
+            description: suggestion.description || 'A delicious AI-generated recipe using your detected ingredients.',
+            ingredients: detectedIngredients,
+            creatorName: 'AI Chef',
+            creatorTier: 5,
+            rating: 4.5 + Math.random() * 0.5, // Random rating between 4.5-5.0
+            ratingCount: Math.floor(Math.random() * 200) + 50, // Random count 50-250
+            viewCount: Math.floor(Math.random() * 10000) + 1000, // Random views 1000-11000
+            isTrending: index === 0, // First recipe is trending
+            isCreatorRecipe: false,
+          }));
+
+          console.log('✅ Successfully converted AI recipes:', aiRecipes.length);
+          setRecipes(aiRecipes);
+        } else {
+          console.log('⚠️ Invalid API response format, using fallback');
+          setRecipes(fallbackRecipes);
+        }
+      } else {
+        console.log('❌ API call failed:', response.error);
+        
+        // Handle authentication errors specifically
+        if (response.error?.includes('Token expired') || response.error?.includes('invalid')) {
+          console.log('🔐 Authentication issue detected - checking session...');
+          // Try to refresh the user profile to see if session is still valid
+          try {
+                         const profileResponse = await authService.getProfile();
+            if (profileResponse?.success) {
+              console.log('✅ Session is valid, retrying recipe generation...');
+              // Retry the API call once
+              const retryResponse = await recipeService.generateSuggestions({
+                detectedIngredients,
+                dietaryTags: preferences?.dietary || [],
+                cuisinePreferences: preferences?.cuisine || [],
+                timeAvailable: preferences?.cookingTime || 'any',
+                skillLevel: preferences?.difficulty || 'any'
+              });
+              
+              if (retryResponse.success && retryResponse.data?.suggestions) {
+                console.log('✅ Retry successful!');
+                const aiRecipes: Recipe[] = retryResponse.data.suggestions.map((suggestion: any, index: number) => ({
+                  id: `ai-${index}`,
+                  title: suggestion.title || suggestion.name || 'AI Generated Recipe',
+                  image: suggestion.image || `https://via.placeholder.com/400x300/4CAF50/FFFFFF?text=${encodeURIComponent(suggestion.title || 'Recipe')}`,
+                  cookingTime: suggestion.cookingTime || suggestion.prepTime || '30 min',
+                  servings: suggestion.servings || 4,
+                  difficulty: suggestion.difficulty || 'Medium',
+                  macros: {
+                    calories: suggestion.calories || 350,
+                    protein: suggestion.protein || 15,
+                    carbs: suggestion.carbs || 45,
+                    fat: suggestion.fat || 12,
+                  },
+                  tags: [
+                    ...(preferences?.dietary || []),
+                    ...(preferences?.cuisine || []),
+                    'AI Generated'
+                  ],
+                  description: suggestion.description || 'A delicious AI-generated recipe using your detected ingredients.',
+                  ingredients: detectedIngredients,
+                  creatorName: 'AI Chef',
+                  creatorTier: 5,
+                  rating: 4.5 + Math.random() * 0.5,
+                  ratingCount: Math.floor(Math.random() * 200) + 50,
+                  viewCount: Math.floor(Math.random() * 10000) + 1000,
+                  isTrending: index === 0,
+                  isCreatorRecipe: false,
+                }));
+                setRecipes(aiRecipes);
+                return; // Success, exit early
+              }
+            }
+          } catch (sessionError) {
+            console.log('❌ Session validation failed:', sessionError);
+          }
+        }
+        
+        console.log('🔄 Using fallback recipes due to API error');
+        setRecipes(fallbackRecipes);
+      }
+
+    } catch (error) {
+      console.error('❌ Recipe generation error:', error);
+      console.log('🔄 Using fallback recipes due to error');
+      setRecipes(fallbackRecipes);
+    } finally {
+      setIsLoading(false);
+    }
+  };
   
   // Start animations
-  React.useEffect(() => {
+  useEffect(() => {
     // Pulse animation for XP badge
     Animated.loop(
       Animated.sequence([
@@ -170,6 +356,50 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
       ]),
     ).start();
   }, []);
+
+  // AI Analysis animation effect
+  useEffect(() => {
+    if (isLoading) {
+      // Start pulsing animation when loading
+      const pulse = Animated.loop(
+        Animated.sequence([
+          Animated.timing(aiPulseAnim, {
+            toValue: 1.1,
+            duration: 1000,
+            useNativeDriver: true,
+          }),
+          Animated.timing(aiPulseAnim, {
+            toValue: 1,
+            duration: 1000,
+            useNativeDriver: true,
+          }),
+        ])
+      );
+
+      const opacity = Animated.loop(
+        Animated.sequence([
+          Animated.timing(aiOpacityAnim, {
+            toValue: 1,
+            duration: 1500,
+            useNativeDriver: true,
+          }),
+          Animated.timing(aiOpacityAnim, {
+            toValue: 0.7,
+            duration: 1500,
+            useNativeDriver: true,
+          }),
+        ])
+      );
+
+      pulse.start();
+      opacity.start();
+
+      return () => {
+        pulse.stop();
+        opacity.stop();
+      };
+    }
+  }, [isLoading]);
   
   // Calculate potential XP for a recipe
   const calculateRecipeXP = (recipe: Recipe) => {
@@ -338,42 +568,57 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
       </View>
 
       <View style={styles.swiperContainer}>
-        {recipes.length > 0 ? (
-          <Swiper
-            ref={swiperRef}
-            cards={recipes}
-            renderCard={renderCard}
+        {isLoading ? (
+          <View style={styles.aiLoadingContainer}>
+            <Text style={styles.noRecipes}>Loading AI recipes...</Text>
+            <ActivityIndicator size="large" color="#FF6B35" />
+          </View>
+        ) : recipes.length > 0 ? (
+          <SimpleSwiper
             onSwipedLeft={handleSwipeLeft}
-            onSwipedRight={handleSwipeRight}
-            onSwipedAll={() => {
-              Alert.alert('No more recipes', "You've seen all available recipes!");
-            }}
-            cardIndex={currentIndex}
-            stackSize={3}
-            stackSeparation={15}
-            animateCardOpacity
-            animateOverlayLabelsOpacity
-            overlayLabels={{
-              left: {
-                title: 'SKIP',
-                style: {
-                  label: styles.skipLabel,
-                  wrapper: styles.skipWrapper,
-                },
-              },
-              right: {
-                title: 'COOK',
-                style: {
-                  label: styles.cookLabel,
-                  wrapper: styles.cookWrapper,
-                },
-              },
-            }}
-          />
+            onSwipedRight={handleSwipeRight}>
+            {recipes.map(recipe => (
+              <View key={recipe.id}>
+                {renderCard(recipe)}
+              </View>
+            ))}
+          </SimpleSwiper>
         ) : (
           <Text style={styles.noRecipes}>No recipes available</Text>
         )}
       </View>
+
+      {/* AI Recipe Generation Loading Modal */}
+      <Modal
+        visible={isLoading}
+        animationType="fade"
+        transparent={true}>
+        <View style={styles.aiModalOverlay}>
+          <Animated.View style={[
+            styles.aiModal,
+            {
+              transform: [{scale: aiPulseAnim}],
+              opacity: aiOpacityAnim,
+            }
+          ]}>
+            <View style={styles.aiModalContent}>
+              <Animated.View style={[
+                styles.sparklesIcon,
+                { transform: [{ scale: aiPulseAnim }] }
+              ]}>
+                <Sparkles size={40} color="#FFB800" />
+              </Animated.View>
+              <Text style={styles.aiModalTitle}>🤖 AI Chef Analyzing...</Text>
+              <Text style={styles.aiModalSubtitle}>Computer vision & recipe generation</Text>
+              <View style={styles.processingSteps}>
+                <Text style={styles.stepText}>• Processing your ingredients</Text>
+                <Text style={styles.stepText}>• Applying your preferences</Text>
+                <Text style={styles.stepText}>• Generating custom recipes</Text>
+              </View>
+            </View>
+          </Animated.View>
+        </View>
+      </Modal>
 
       {/* Recipe Details Modal */}
       <Modal
@@ -434,6 +679,11 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F8F8FF',
   },
+  swiperContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   header: {
     paddingHorizontal: 20,
     paddingTop: 16,
@@ -455,12 +705,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#8E8E93',
     marginTop: 2,
-  },
-  swiperContainer: {
-    flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: 5,
-    paddingBottom: 20,
   },
   card: {
     height: '95%',
@@ -784,6 +1028,64 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#8E8E93',
     marginLeft: 'auto',
+  },
+  // AI Loading styles
+  aiLoadingContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  aiModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(139, 69, 19, 0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  aiModal: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 30,
+    margin: 40,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 8,
+    borderWidth: 2,
+    borderColor: '#FFB800',
+  },
+  aiModalContent: {
+    alignItems: 'center',
+  },
+  sparklesIcon: {
+    backgroundColor: '#FFB800',
+    borderRadius: 30,
+    padding: 15,
+    marginBottom: 20,
+  },
+  aiModalTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#2D1B69',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  aiModalSubtitle: {
+    fontSize: 16,
+    color: '#8E8E93',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  processingSteps: {
+    alignItems: 'flex-start',
+  },
+  stepText: {
+    fontSize: 14,
+    color: '#2D1B69',
+    marginBottom: 5,
+    fontWeight: '500',
   },
 });
 

@@ -96,108 +96,26 @@ router.post('/signup', authRateLimiter, validateAuthInput, async (req: Request, 
       });
     }
 
-    // Production mode - use Supabase with retry logic for 504 errors
-    logger.info('Attempting Supabase signup:', {
+    // Production mode - use Supabase
+    const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
-      nameProvided: !!name,
-      nameLength: name?.length,
-      passwordLength: password?.length,
-      emailFormat: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
-    });
-    
-    // Retry logic for AuthRetryableFetchError (504 timeouts)
-    const maxRetries = 3;
-    let authData: any = null;
-    let authError: any = null;
-    
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      try {
-        logger.info(`Supabase signup attempt ${attempt}/${maxRetries}`);
-        
-        const result = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            data: {
-              name: name
-            }
-          }
-        });
-        
-        authData = result.data;
-        authError = result.error;
-        
-        // If no error or non-retryable error, break the loop
-        if (!authError || 
-            (authError as any).name !== 'AuthRetryableFetchError' || 
-            (authError as any).status !== 504) {
-          break;
+      password,
+      options: {
+        data: {
+          name: name
         }
-        
-        // Log retry attempt for 504 errors
-        logger.warn(`Supabase signup 504 timeout on attempt ${attempt}/${maxRetries}:`, {
-          errorName: (authError as any).name,
-          status: (authError as any).status,
-          willRetry: attempt < maxRetries
-        });
-        
-        // Wait before retry (exponential backoff: 1s, 2s, 4s)
-        if (attempt < maxRetries) {
-          const delay = Math.pow(2, attempt - 1) * 1000;
-          logger.info(`Waiting ${delay}ms before retry...`);
-          await new Promise(resolve => setTimeout(resolve, delay));
-        }
-        
-      } catch (unexpectedError) {
-        logger.error('Unexpected error during Supabase signup:', unexpectedError);
-        authError = unexpectedError as any;
-        break;
       }
-    }
-    
-    logger.info('Supabase signup final response:', {
-      hasAuthData: !!authData,
-      hasUser: !!authData?.user,
-      hasSession: !!authData?.session,
-      hasError: !!authError,
-      userId: authData?.user?.id,
-      finalAttempt: true
     });
 
     if (authError) {
-      // Enhanced debugging for Supabase auth errors
-      logger.error('Supabase signup error - DETAILED DEBUG:', {
-        errorType: typeof authError,
-        errorConstructor: authError.constructor.name,
+      logger.error('Supabase signup error:', {
         message: authError.message,
-        name: authError.name,
-        code: (authError as any).code,
-        status: (authError as any).status,
-        statusCode: (authError as any).statusCode,
-        details: (authError as any).details,
-        hint: (authError as any).hint,
-        errorDescription: (authError as any).error_description,
-        fullError: authError,
-        // Try to serialize to see full structure
-        stringified: JSON.stringify(authError, null, 2),
-        // Check all enumerable properties
-        ownProps: Object.getOwnPropertyNames(authError),
-        // Input data for context
-        requestData: { email, name }
+        code: authError.name,
+        details: authError
       });
-      
-      const errorMessage = authError.message || 
-                          (authError as any).error_description || 
-                          (authError as any).details || 
-                          'Signup failed - unknown error';
-      
       return res.status(400).json({ 
-        error: errorMessage,
-        code: 'SIGNUP_ERROR',
-        debug: process.env.NODE_ENV === 'development' ? {
-          supabaseError: authError,
-          type: typeof authError
-        } : undefined
+        error: authError.message || 'Signup failed',
+        code: 'SIGNUP_ERROR'
       });
     }
 

@@ -501,11 +501,7 @@ router.put('/:scanId/ingredients', authenticateUser, async (req: Request, res: R
 router.post('/analyze', authenticateUser, validateScanInput, async (req: express.Request, res: express.Response) => {
   try {
     console.log('🔍 Analyzing image for ingredients...');
-    console.log("DEBUG req.body type:", typeof req.body);
-    console.log("DEBUG req.body keys:", Object.keys(req.body));
-    console.log("DEBUG req.body:", req.body);
 
-    const base64Data = req.body.image_data.includes("base64,") ? req.body.image_data.split("base64,")[1] : req.body.image_data;
     // Check if file data exists in request body
     if (!req.body || !Buffer.isBuffer(req.body)) {
       console.log('❌ No file data found in request');

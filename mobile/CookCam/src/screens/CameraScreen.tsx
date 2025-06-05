@@ -35,10 +35,10 @@ const isSimulator = Platform.OS === 'ios' && !Platform.isPad;
 
 // Mock camera images for simulator testing
 const MOCK_CAMERA_IMAGES = [
+  'file:///Users/abmccull/Desktop/cookcam1/Public/261038-1600x1030-homemade-raw-dog-food-recipes-grain-free.jpg', // Local test image with raw meat and vegetables
   'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80', // Mixed vegetables
   'https://images.unsplash.com/photo-1542838132-92c53300491e?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80', // Fresh produce
   'https://images.unsplash.com/photo-1506368249639-73a05d6f6488?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80', // Cooking ingredients
-  'https://images.unsplash.com/photo-1498837167922-ddd27525d352?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80', // Salad ingredients
 ];
 
 // 100 Fun Food Trivia Facts
@@ -255,8 +255,8 @@ const CameraScreen: React.FC<CameraScreenProps> = ({navigation}) => {
       // Simulate photo capture delay
       await new Promise(resolve => setTimeout(resolve, 1500));
       
-      // Use random mock image
-      const mockImageUri = MOCK_CAMERA_IMAGES[Math.floor(Math.random() * MOCK_CAMERA_IMAGES.length)];
+      // Use the first mock image (our test image)
+      const mockImageUri = MOCK_CAMERA_IMAGES[0];
       setPhotoUri(mockImageUri);
       
       ReactNativeHapticFeedback.trigger('notificationSuccess', {
@@ -264,12 +264,7 @@ const CameraScreen: React.FC<CameraScreenProps> = ({navigation}) => {
         ignoreAndroidSystemSettings: false,
       });
       
-      // Show simulator notice
-      Alert.alert(
-        '📱 Simulator Mode', 
-        'Camera simulation active! This mock image will be analyzed by our AI ingredient detection system.',
-        [{ text: 'Analyze Image!' }]
-      );
+      // Auto-proceed without popup for seamless experience
       
       await addXP(XP_VALUES.SCAN_INGREDIENTS, 'SCAN_INGREDIENTS');
       
@@ -315,20 +310,17 @@ const CameraScreen: React.FC<CameraScreenProps> = ({navigation}) => {
           imageUri: `file://${photo.path}`
         });
       } else {
-        // Fallback to demo mode
-        console.log('Camera ref not available, using demo mode');
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        
-        ReactNativeHapticFeedback.trigger('notificationSuccess', {
+        // Camera ref not available - show error
+        console.error('Camera ref not available');
+        ReactNativeHapticFeedback.trigger('notificationError', {
           enableVibrateFallback: true,
           ignoreAndroidSystemSettings: false,
         });
-        
-        await addXP(XP_VALUES.SCAN_INGREDIENTS, 'SCAN_INGREDIENTS');
-        
-        navigation.navigate('IngredientReview', {
-          imageUri: 'demo-image-uri'
-        });
+        Alert.alert(
+          'Camera Error',
+          'Camera is not available. Please check permissions and try again.',
+          [{text: 'OK'}]
+        );
       }
     } catch (error) {
       console.error('Failed to take photo:', error);
@@ -337,10 +329,12 @@ const CameraScreen: React.FC<CameraScreenProps> = ({navigation}) => {
         ignoreAndroidSystemSettings: false,
       });
       
-      // Fallback to demo mode on error
-      navigation.navigate('IngredientReview', {
-        imageUri: 'demo-image-uri'
-      });
+      // Show error message instead of fallback
+      Alert.alert(
+        'Photo Error',
+        'Failed to take photo. Please try again.',
+        [{text: 'OK'}]
+      );
     } finally {
       setIsProcessing(false);
     }
@@ -425,8 +419,8 @@ const CameraScreen: React.FC<CameraScreenProps> = ({navigation}) => {
                 <View style={styles.cornerBL} />
                 <View style={styles.cornerBR} />
                 
-                {/* Simulator indicator */}
-                {isSimulator && (
+                {/* Simulator indicator - Hidden for cleaner UI */}
+                {false && isSimulator && (
                   <View style={styles.simulatorBadge}>
                     <Text style={styles.simulatorText}>📱 SIMULATOR</Text>
                   </View>
@@ -434,7 +428,7 @@ const CameraScreen: React.FC<CameraScreenProps> = ({navigation}) => {
                 
                 <Camera size={moderateScale(48)} color="#F8F8FF" strokeWidth={1.5} />
                 <Text style={styles.cameraText}>
-                  {isSimulator ? 'Tap to simulate photo' : 'Point at ingredients'}
+                  Tap to detect your ingredients
                 </Text>
                 
                 {/* Fun animated elements */}
@@ -445,7 +439,7 @@ const CameraScreen: React.FC<CameraScreenProps> = ({navigation}) => {
                     {transform: [{scale: pulseAnim}]}
                   ]}
                 >
-                  <Text style={[styles.emojiText, isSmallDevice && styles.emojiTextSmall]}>🥗</Text>
+                  <Text style={[styles.emojiText, isSmallDevice && styles.emojiTextSmall]}>🥕</Text>
                 </Animated.View>
                 <Animated.View 
                   style={[
@@ -454,7 +448,7 @@ const CameraScreen: React.FC<CameraScreenProps> = ({navigation}) => {
                     {transform: [{scale: pulseAnim}]}
                   ]}
                 >
-                  <Text style={[styles.emojiText, isSmallDevice && styles.emojiTextSmall]}>🍕</Text>
+                  <Text style={[styles.emojiText, isSmallDevice && styles.emojiTextSmall]}>🧄</Text>
                 </Animated.View>
               </View>
             </View>

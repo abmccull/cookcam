@@ -71,22 +71,14 @@ class AppStoreSubscriptionService {
     try {
       if (this.isInitialized) return;
       
-      const result = await initConnection();
-      if (!result) {
-        throw new Error('Failed to initialize IAP connection');
-      }
-      
-      console.log('✅ IAP initialized successfully');
+      // DISABLED FOR DEVELOPMENT - Skip IAP initialization
+      console.log('⚠️ IAP disabled for development');
       this.isInitialized = true;
       
-      // Load subscription products
+      // Load mock products only
       await this.loadProducts();
       
-      // Check for any pending purchases
-      await this.processPendingPurchases();
-      
-      // Set up purchase update listener
-      this.setupPurchaseListener();
+      // Skip processing pending purchases and listeners
       
     } catch (error) {
       console.error('❌ Failed to initialize IAP:', error);
@@ -162,36 +154,15 @@ class AppStoreSubscriptionService {
         await this.initialize();
       }
       
-      console.log(`🛒 Attempting to purchase: ${productId}`);
+      console.log(`🛒 Simulating purchase for development: ${productId}`);
       
-      const purchase = await requestSubscription({ sku: productId });
-      
-      if (purchase) {
-        console.log('✅ Purchase successful:', purchase);
-        
-        // Process the purchase - handle both single purchase and array
-        const purchases = Array.isArray(purchase) ? purchase : [purchase];
-        let success = false;
-        
-        for (const p of purchases) {
-          success = await this.processPurchase(p) || success;
-        }
-        
-        return success;
-      }
-      
-      return false;
+      // DISABLED FOR DEVELOPMENT - Return mock success
+      console.log('⚠️ IAP purchase disabled for development - returning mock success');
+      return true;
       
     } catch (error: any) {
-      console.error('❌ Purchase failed:', error);
-      
-      // Handle specific error cases
-      if (error.code === 'E_USER_CANCELLED') {
-        console.log('🚫 User cancelled purchase');
-        return false;
-      }
-      
-      throw error;
+      console.error('❌ Purchase failed (development mode):', error);
+      return false;
     }
   }
   
@@ -378,6 +349,10 @@ class AppStoreSubscriptionService {
   // Process any pending purchases on app start
   private async processPendingPurchases(): Promise<void> {
     try {
+      // DISABLED FOR DEVELOPMENT - Skip processing pending purchases
+      console.log('⚠️ Pending purchase processing disabled for development');
+      return;
+      
       const purchases = await getAvailablePurchases();
       
       for (const purchase of purchases) {

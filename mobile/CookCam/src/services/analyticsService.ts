@@ -54,6 +54,7 @@ class AnalyticsService {
           // Resume existing session
           this.currentSession = {
             ...session,
+            startTime: new Date(session.startTime), // Convert back to Date object
             lastActivity: now,
             events: [] // Don't load old events, they should have been flushed
           };
@@ -192,6 +193,8 @@ class AnalyticsService {
     this.track('screen_view', {
       screen_name: screenName,
       ...properties
+    }).catch(error => {
+      console.error('Failed to track screen view:', error);
     });
   }
 
@@ -200,12 +203,16 @@ class AnalyticsService {
     this.track('user_action', {
       action,
       ...properties
+    }).catch(error => {
+      console.error('Failed to track user action:', error);
     });
   }
 
   // Track app lifecycle events
   trackAppStateChange(state: 'active' | 'background' | 'inactive') {
-    this.track('app_state_change', { state });
+    this.track('app_state_change', { state }).catch(error => {
+      console.error('Failed to track app state change:', error);
+    });
     
     if (state === 'background') {
       this.flush(); // Flush immediately when app goes to background
@@ -224,6 +231,8 @@ class AnalyticsService {
       average_confidence: result.confidence,
       processing_time_ms: result.processingTime,
       image_size_bytes: result.imageSize,
+    }).catch(error => {
+      console.error('Failed to track ingredient scan:', error);
     });
   }
 
@@ -239,6 +248,8 @@ class AnalyticsService {
       recipe_complexity: result.recipeComplexity,
       generation_time_ms: result.generationTime,
       success: result.success,
+    }).catch(error => {
+      console.error('Failed to track recipe generation:', error);
     });
   }
 
@@ -287,8 +298,14 @@ class AnalyticsService {
 
   // Get session duration
   getSessionDuration(): number {
-    if (!this.currentSession) return 0;
-    return Date.now() - this.currentSession.startTime.getTime();
+    if (!this.currentSession || !this.currentSession.startTime) return 0;
+    
+    // Ensure startTime is a Date object
+    const startTime = this.currentSession.startTime instanceof Date 
+      ? this.currentSession.startTime 
+      : new Date(this.currentSession.startTime);
+    
+    return Date.now() - startTime.getTime();
   }
 
   // End current session
