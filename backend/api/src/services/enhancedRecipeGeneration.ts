@@ -102,12 +102,12 @@ export class EnhancedRecipeGenerationService {
       const prompt = this.buildEnhancedPrompt(options);
       
       logger.info('📤 Sending request to OpenAI...', {
-        model: 'gpt-4o',
+        model: 'gpt-4o-mini',
         promptLength: prompt.length
       });
 
       const response = await this.openai.chat.completions.create({
-        model: 'gpt-4o',
+        model: 'gpt-4o-mini',
         messages: [
           {
             role: 'system',
@@ -383,7 +383,7 @@ Return the recipe as a JSON object with this exact structure:
         const variationPrompt = this.buildVariationPrompt(baseRecipe, i + 1);
         
         const response = await this.openai.chat.completions.create({
-          model: 'gpt-4o',
+          model: 'gpt-4o-mini',
           messages: [
             {
               role: 'system',
