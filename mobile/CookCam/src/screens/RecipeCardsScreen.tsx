@@ -673,7 +673,12 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
                   <View style={styles.modalSection}>
                     <Text style={styles.sectionTitle}>Ingredients Used</Text>
                     {selectedRecipe.ingredients?.map((ing, index) => (
-                      <Text key={index} style={styles.ingredientItem}>• {ing}</Text>
+                      <Text key={index} style={styles.ingredientItem}>
+                        • {typeof ing === 'string' 
+                            ? ing 
+                            : `${ing.amount} ${ing.unit} ${ing.name}`
+                          }
+                      </Text>
                     ))}
                   </View>
 

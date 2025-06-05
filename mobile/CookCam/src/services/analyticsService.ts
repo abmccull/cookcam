@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { cookCamApi } from './cookCamApi';
+import { apiService } from './apiService';
 
 // Event types
 interface AnalyticsEvent {
@@ -158,6 +159,13 @@ class AnalyticsService {
       return;
     }
 
+    // Check if user is authenticated before sending events
+    const isAuthenticated = await this.checkAuthentication();
+    if (!isAuthenticated) {
+      console.log('⚠️ User not authenticated, skipping analytics flush');
+      return;
+    }
+
     const eventsToSend = [...this.eventQueue];
     this.eventQueue = [];
 
@@ -178,6 +186,17 @@ class AnalyticsService {
       if (this.eventQueue.length > 100) {
         this.eventQueue = this.eventQueue.slice(0, 100);
       }
+    }
+  }
+
+  // Check if user is authenticated
+  private async checkAuthentication(): Promise<boolean> {
+    try {
+      const token = await AsyncStorage.getItem('@cookcam_token');
+      return !!token;
+    } catch (error) {
+      console.error('Failed to check authentication status:', error);
+      return false;
     }
   }
 

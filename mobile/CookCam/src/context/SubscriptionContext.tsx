@@ -2,6 +2,7 @@ import React, { createContext, useContext, useReducer, useEffect, ReactNode } fr
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { cookCamApi, SubscriptionTier, UserSubscription, CreatorRevenue } from '../services/cookCamApi';
 import { subscriptionService, SubscriptionProduct } from '../services/subscriptionService';
+import { useAuth } from './AuthContext';
 
 // Types
 interface SubscriptionState {
@@ -138,6 +139,7 @@ const SubscriptionContext = createContext<SubscriptionContextType | null>(null);
 // Provider component
 export function SubscriptionProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(subscriptionReducer, initialState);
+  const { isAuthenticated } = useAuth();
 
   // Load subscription data from API
   const loadSubscriptionData = async () => {
@@ -145,24 +147,39 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       dispatch({ type: 'SET_LOADING', loading: true });
       dispatch({ type: 'SET_ERROR', error: null });
 
-      // Load subscription tiers
+      // Load subscription tiers (public endpoint, no auth required)
       const tiersResponse = await cookCamApi.getSubscriptionTiers();
       if (tiersResponse.success && tiersResponse.data) {
         dispatch({ type: 'SET_TIERS', tiers: tiersResponse.data });
       }
 
-      // Load App Store/Google Play products
+      // Load App Store/Google Play products (local IAP, no auth required)
       const productsResponse = await subscriptionService.getAvailableProducts();
       dispatch({ type: 'SET_PRODUCTS', products: productsResponse });
 
-      // Load current subscription
-      const subscriptionResponse = await cookCamApi.getSubscriptionStatus();
-      if (subscriptionResponse.success) {
-        dispatch({ type: 'SET_SUBSCRIPTION', subscription: subscriptionResponse.data || null });
-        
-        // Cache subscription data locally
-        if (subscriptionResponse.data) {
-          await AsyncStorage.setItem('subscription_data', JSON.stringify(subscriptionResponse.data));
+      // Only load user-specific subscription data if authenticated
+      if (isAuthenticated) {
+        // Load current subscription (auth required)
+        const subscriptionResponse = await cookCamApi.getSubscriptionStatus();
+        if (subscriptionResponse.success) {
+          dispatch({ type: 'SET_SUBSCRIPTION', subscription: subscriptionResponse.data || null });
+          
+          // Cache subscription data locally
+          if (subscriptionResponse.data) {
+            await AsyncStorage.setItem('subscription_data', JSON.stringify(subscriptionResponse.data));
+          }
+        }
+      } else {
+        console.log('⚠️ User not authenticated, skipping subscription status check');
+        // Try to load from cache if available
+        try {
+          const cachedData = await AsyncStorage.getItem('subscription_data');
+          if (cachedData) {
+            const subscription = JSON.parse(cachedData);
+            dispatch({ type: 'SET_SUBSCRIPTION', subscription });
+          }
+        } catch (cacheError) {
+          console.error('Failed to load cached subscription data:', cacheError);
         }
       }
 
@@ -170,17 +187,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error('Failed to load subscription data:', error);
       dispatch({ type: 'SET_ERROR', error: 'Failed to load subscription data' });
-      
-      // Try to load from cache
-      try {
-        const cachedData = await AsyncStorage.getItem('subscription_data');
-        if (cachedData) {
-          const subscription = JSON.parse(cachedData);
-          dispatch({ type: 'SET_SUBSCRIPTION', subscription });
-        }
-      } catch (cacheError) {
-        console.error('Failed to load cached subscription data:', cacheError);
-      }
+      dispatch({ type: 'SET_LOADING', loading: false });
     }
   };
 
