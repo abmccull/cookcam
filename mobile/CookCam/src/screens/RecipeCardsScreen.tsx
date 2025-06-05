@@ -44,7 +44,20 @@ interface Recipe {
   };
   tags: string[];
   description?: string;
-  ingredients?: string[];
+  ingredients?: string[] | Array<{
+    name: string;
+    amount: string;
+    unit: string;
+    notes?: string;
+  }>;
+  instructions?: Array<{
+    step: number;
+    instruction: string;
+    time?: number;
+    temperature?: string;
+    tips?: string;
+  }>;
+  tips?: string[];
   creatorName?: string;
   creatorTier?: 1 | 2 | 3 | 4 | 5;
   rating?: number;
@@ -213,41 +226,52 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
           setSessionId(response.data.sessionId);
         }
 
-        // Convert API response to our Recipe format
-        if (response.data.suggestions && Array.isArray(response.data.suggestions)) {
-          const aiRecipes: Recipe[] = response.data.suggestions.map((suggestion: any, index: number) => ({
-            id: `ai-${index}`,
-            title: suggestion.title || suggestion.name || 'AI Generated Recipe',
-            image: suggestion.image || `https://via.placeholder.com/400x300/4CAF50/FFFFFF?text=${encodeURIComponent(suggestion.title || 'Recipe')}`,
-            cookingTime: suggestion.cookingTime || suggestion.prepTime || '30 min',
-            servings: suggestion.servings || 4,
-            difficulty: suggestion.difficulty || 'Medium',
+        // Handle enhanced recipe generation response (single recipe)
+        const recipeData = response.data.data || response.data;
+        
+        if (recipeData && recipeData.title) {
+          // Debug: Log the nutrition data we're receiving
+          console.log('📊 Backend nutrition data:', JSON.stringify(recipeData.nutrition, null, 2));
+          
+          // Convert the single enhanced recipe to our Recipe format
+          const aiRecipe: Recipe = {
+            id: 'ai-enhanced-0',
+            title: recipeData.title || 'AI Generated Recipe',
+            image: `https://via.placeholder.com/400x300/4CAF50/FFFFFF?text=${encodeURIComponent(recipeData.title || 'Recipe')}`,
+            cookingTime: `${recipeData.metadata?.totalTime || 30} min`,
+            servings: recipeData.metadata?.servings || 4,
+            difficulty: recipeData.metadata?.difficulty || 'Medium',
             macros: {
-              calories: suggestion.calories || 350,
-              protein: suggestion.protein || 15,
-              carbs: suggestion.carbs || 45,
-              fat: suggestion.fat || 12,
+              calories: Math.round(recipeData.nutrition?.calories || 350),
+              protein: Math.round(recipeData.nutrition?.protein || 15),
+              carbs: Math.round(recipeData.nutrition?.carbohydrates || 45),
+              fat: Math.round(recipeData.nutrition?.fat || 12),
             },
             tags: [
               ...(preferences?.dietary || []),
               ...(preferences?.cuisine || []),
-              'AI Generated'
+              'AI Generated',
+              recipeData.metadata?.cuisineType || 'International'
             ],
-            description: suggestion.description || 'A delicious AI-generated recipe using your detected ingredients.',
-            ingredients: detectedIngredients,
+            description: recipeData.description || 'A delicious AI-generated recipe using your detected ingredients.',
+            ingredients: recipeData.ingredients || detectedIngredients,
+            instructions: recipeData.instructions || [],
+            tips: recipeData.tips || [],
             creatorName: 'AI Chef',
             creatorTier: 5,
-            rating: 4.5 + Math.random() * 0.5, // Random rating between 4.5-5.0
-            ratingCount: Math.floor(Math.random() * 200) + 50, // Random count 50-250
-            viewCount: Math.floor(Math.random() * 10000) + 1000, // Random views 1000-11000
-            isTrending: index === 0, // First recipe is trending
+            // No rating/reviews for fresh AI recipes
+            rating: undefined,
+            ratingCount: undefined,
+            viewCount: undefined,
+            isTrending: false, // Fresh recipes aren't trending yet
             isCreatorRecipe: false,
-          }));
+          };
 
-          console.log('✅ Successfully converted AI recipes:', aiRecipes.length);
-          setRecipes(aiRecipes);
+          console.log('✅ Successfully converted enhanced AI recipe:', aiRecipe.title);
+          setRecipes([aiRecipe]);
         } else {
-          console.log('⚠️ Invalid API response format, using fallback');
+          console.log('⚠️ Invalid enhanced API response format, using fallback');
+          console.log('Response data structure:', JSON.stringify(response.data, null, 2));
           setRecipes(fallbackRecipes);
         }
       } else {
@@ -270,37 +294,42 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
                 skillLevel: preferences?.difficulty || 'any'
               });
               
-              if (retryResponse.success && retryResponse.data?.suggestions) {
+              const retryRecipeData = retryResponse.data?.data || retryResponse.data;
+              if (retryResponse.success && retryRecipeData?.title) {
                 console.log('✅ Retry successful!');
-                const aiRecipes: Recipe[] = retryResponse.data.suggestions.map((suggestion: any, index: number) => ({
-                  id: `ai-${index}`,
-                  title: suggestion.title || suggestion.name || 'AI Generated Recipe',
-                  image: suggestion.image || `https://via.placeholder.com/400x300/4CAF50/FFFFFF?text=${encodeURIComponent(suggestion.title || 'Recipe')}`,
-                  cookingTime: suggestion.cookingTime || suggestion.prepTime || '30 min',
-                  servings: suggestion.servings || 4,
-                  difficulty: suggestion.difficulty || 'Medium',
-                  macros: {
-                    calories: suggestion.calories || 350,
-                    protein: suggestion.protein || 15,
-                    carbs: suggestion.carbs || 45,
-                    fat: suggestion.fat || 12,
-                  },
-                  tags: [
-                    ...(preferences?.dietary || []),
-                    ...(preferences?.cuisine || []),
-                    'AI Generated'
-                  ],
-                  description: suggestion.description || 'A delicious AI-generated recipe using your detected ingredients.',
-                  ingredients: detectedIngredients,
-                  creatorName: 'AI Chef',
-                  creatorTier: 5,
-                  rating: 4.5 + Math.random() * 0.5,
-                  ratingCount: Math.floor(Math.random() * 200) + 50,
-                  viewCount: Math.floor(Math.random() * 10000) + 1000,
-                  isTrending: index === 0,
-                  isCreatorRecipe: false,
-                }));
-                setRecipes(aiRecipes);
+                                 const aiRecipe: Recipe = {
+                   id: 'ai-enhanced-retry',
+                   title: retryRecipeData.title || 'AI Generated Recipe',
+                   image: `https://via.placeholder.com/400x300/4CAF50/FFFFFF?text=${encodeURIComponent(retryRecipeData.title || 'Recipe')}`,
+                   cookingTime: `${retryRecipeData.metadata?.totalTime || 30} min`,
+                   servings: retryRecipeData.metadata?.servings || 4,
+                   difficulty: retryRecipeData.metadata?.difficulty || 'Medium',
+                   macros: {
+                     calories: Math.round(retryRecipeData.nutrition?.calories || 350),
+                     protein: Math.round(retryRecipeData.nutrition?.protein || 15),
+                     carbs: Math.round(retryRecipeData.nutrition?.carbohydrates || 45),
+                     fat: Math.round(retryRecipeData.nutrition?.fat || 12),
+                   },
+                   tags: [
+                     ...(preferences?.dietary || []),
+                     ...(preferences?.cuisine || []),
+                     'AI Generated',
+                     retryRecipeData.metadata?.cuisineType || 'International'
+                   ],
+                   description: retryRecipeData.description || 'A delicious AI-generated recipe using your detected ingredients.',
+                   ingredients: retryRecipeData.ingredients || detectedIngredients,
+                   instructions: retryRecipeData.instructions || [],
+                   tips: retryRecipeData.tips || [],
+                   creatorName: 'AI Chef',
+                   creatorTier: 5,
+                   // No rating/reviews for fresh AI recipes
+                   rating: undefined,
+                   ratingCount: undefined,
+                   viewCount: undefined,
+                   isTrending: false, // Fresh recipes aren't trending yet
+                   isCreatorRecipe: false,
+                 };
+                setRecipes([aiRecipe]);
                 return; // Success, exit early
               }
             }
@@ -489,11 +518,11 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
             
             <Text style={styles.cardTitle}>{recipe.title}</Text>
             
-            {/* Rating */}
-            {recipe.rating && (
+            {/* Rating - Only show for established recipes with ratings */}
+            {recipe.rating && recipe.ratingCount && (
               <View style={styles.ratingRow}>
                 <Star size={16} color="#FFB800" fill="#FFB800" />
-                <Text style={styles.ratingText}>{recipe.rating}</Text>
+                <Text style={styles.ratingText}>{recipe.rating.toFixed(1)}</Text>
                 <Text style={styles.ratingCount}>({recipe.ratingCount} reviews)</Text>
                 {recipe.viewCount && (
                   <Text style={styles.viewCount}>{(recipe.viewCount / 1000).toFixed(1)}k views</Text>

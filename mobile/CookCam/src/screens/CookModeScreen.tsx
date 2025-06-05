@@ -56,37 +56,33 @@ const CookModeScreen: React.FC<CookModeScreenProps> = ({navigation, route}) => {
   const claimPreviewScale = useRef(new Animated.Value(0.95)).current;
   const stepTranslateX = useRef(new Animated.Value(0)).current;
 
-  // Dummy cooking steps for validation
-  const [steps, setSteps] = useState<CookingStep[]>([
-    {
-      id: 1,
-      instruction:
-        'Preheat oven to 400°F (200°C). Wash and chop all vegetables into even pieces.',
-      duration: 300, // 5 minutes
+  // Convert recipe instructions to cooking steps
+  const initializeSteps = (recipeInstructions: any[]): CookingStep[] => {
+    if (!recipeInstructions || recipeInstructions.length === 0) {
+      console.warn('⚠️ No recipe instructions found, using fallback steps');
+      // Fallback steps if no instructions available
+      return [
+        {
+          id: 1,
+          instruction: 'Follow the recipe instructions as provided.',
+          duration: 300,
+          completed: false,
+        },
+      ];
+    }
+
+    return recipeInstructions.map((instruction, index) => ({
+      id: instruction.step || index + 1,
+      instruction: instruction.instruction || instruction,
+      duration: instruction.time ? instruction.time * 60 : 300, // Convert minutes to seconds, default 5 min
       completed: false,
-    },
-    {
-      id: 2,
-      instruction:
-        'Heat olive oil in a large skillet over medium heat. Add onions and garlic, cook until fragrant.',
-      duration: 180, // 3 minutes
-      completed: false,
-    },
-    {
-      id: 3,
-      instruction:
-        'Add tomatoes and bell peppers. Season with salt and pepper. Cook until vegetables are tender.',
-      duration: 420, // 7 minutes
-      completed: false,
-    },
-    {
-      id: 4,
-      instruction:
-        'Add fresh basil and cook for another minute. Taste and adjust seasoning as needed.',
-      duration: 60, // 1 minute
-      completed: false,
-    },
-  ]);
+    }));
+  };
+
+  const [steps, setSteps] = useState<CookingStep[]>(() => {
+    console.log('🧑‍🍳 Initializing recipe with instructions:', recipe?.instructions);
+    return initializeSteps(recipe?.instructions || []);
+  });
 
   const [currentStep, setCurrentStep] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -400,6 +396,25 @@ const CookModeScreen: React.FC<CookModeScreenProps> = ({navigation, route}) => {
       <View style={styles.recipeHeader}>
         <Text style={styles.recipeName}>{recipe?.title || 'Garlic Herb Roasted Vegetables'}</Text>
       </View>
+
+      {/* Ingredients Section */}
+      {recipe?.ingredients && recipe.ingredients.length > 0 && (
+        <View style={styles.ingredientsSection}>
+          <Text style={styles.ingredientsTitle}>Ingredients</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.ingredientsList}>
+            {recipe.ingredients.map((ingredient, index) => (
+              <View key={index} style={styles.ingredientCard}>
+                <Text style={styles.ingredientText}>
+                  {typeof ingredient === 'string' 
+                    ? ingredient 
+                    : `${ingredient.amount} ${ingredient.unit} ${ingredient.name}`
+                  }
+                </Text>
+              </View>
+            ))}
+          </ScrollView>
+        </View>
+      )}
 
       {/* Enhanced Progress Bar */}
       <View style={styles.progressContainer}>
@@ -887,6 +902,33 @@ const styles = StyleSheet.create({
   },
   headerPauseButton: {
     backgroundColor: '#2D1B69',
+  },
+  ingredientsSection: {
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E5E7',
+  },
+  ingredientsTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#2D1B69',
+    marginBottom: 8,
+  },
+  ingredientsList: {
+    flexDirection: 'row',
+  },
+  ingredientCard: {
+    backgroundColor: '#F0F0F0',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    marginRight: 8,
+  },
+  ingredientText: {
+    fontSize: 12,
+    color: '#2D1B69',
+    fontWeight: '500',
   },
 });
 
