@@ -33,6 +33,7 @@ import { scale, verticalScale, moderateScale, responsive } from '../utils/respon
 import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
 import { useAuth } from '../context/AuthContext';
 import { useGamification, XP_VALUES } from '../context/GamificationContext';
+import KitchenApplianceIcon from '../components/KitchenApplianceIcon';
 
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
 
@@ -105,18 +106,18 @@ const EnhancedPreferencesScreen: React.FC<EnhancedPreferencesScreenProps> = ({
   
   // Kitchen appliances - All 12 from database
   const [appliances, setAppliances] = useState<Appliance[]>([
-    { id: 'oven', name: 'Oven', category: 'cooking', icon: '🔥', description: 'Standard kitchen oven', selected: true },
-    { id: 'stove', name: 'Stove', category: 'cooking', icon: '🔥', description: 'Stovetop cooking', selected: true },
-    { id: 'air-fryer', name: 'Air Fryer', category: 'appliance', icon: '💨', description: 'Crispy cooking', selected: false },
-    { id: 'slow-cooker', name: 'Slow Cooker', category: 'appliance', icon: '🍲', description: 'Long, slow cooking', selected: false },
-    { id: 'grill', name: 'Grill', category: 'outdoor', icon: '🍖', description: 'Outdoor grilling', selected: false },
-    { id: 'smoker', name: 'Smoker', category: 'outdoor', icon: '🔥', description: 'BBQ smoking', selected: false },
-    { id: 'microwave', name: 'Microwave', category: 'appliance', icon: '📱', description: 'Quick heating', selected: true },
-    { id: 'instant-pot', name: 'Instant Pot', category: 'appliance', icon: '⚡', description: 'Pressure cooking', selected: false },
-    { id: 'food-processor', name: 'Food Processor', category: 'tool', icon: '🔪', description: 'Chopping and mixing', selected: false },
-    { id: 'stand-mixer', name: 'Stand Mixer', category: 'tool', icon: '🥧', description: 'Baking and mixing', selected: false },
-    { id: 'blender', name: 'Blender', category: 'tool', icon: '🥤', description: 'Smoothies and sauces', selected: false },
-    { id: 'toaster-oven', name: 'Toaster Oven', category: 'appliance', icon: '🍞', description: 'Small countertop oven', selected: false },
+    { id: 'oven', name: 'Oven', category: 'cooking', icon: 'oven', description: 'Standard kitchen oven', selected: true },
+    { id: 'stove', name: 'Stove', category: 'cooking', icon: 'stove', description: 'Stovetop cooking', selected: true },
+    { id: 'air-fryer', name: 'Air Fryer', category: 'appliance', icon: 'air fryer', description: 'Crispy cooking', selected: false },
+    { id: 'slow-cooker', name: 'Slow Cooker', category: 'appliance', icon: 'slow cooker', description: 'Long, slow cooking', selected: false },
+    { id: 'grill', name: 'Grill', category: 'outdoor', icon: 'grill', description: 'Outdoor grilling', selected: false },
+    { id: 'smoker', name: 'BBQ Smoker', category: 'outdoor', icon: 'bbq smoker', description: 'BBQ smoking', selected: false },
+    { id: 'microwave', name: 'Microwave', category: 'appliance', icon: 'microwave', description: 'Quick heating', selected: true },
+    { id: 'instant-pot', name: 'Pressure Cooker', category: 'appliance', icon: 'pressure cooker', description: 'Pressure cooking', selected: false },
+    { id: 'food-processor', name: 'Food Processor', category: 'tool', icon: 'food processor', description: 'Chopping and mixing', selected: false },
+    { id: 'stand-mixer', name: 'Stand Mixer', category: 'tool', icon: 'rice cooker', description: 'Baking and mixing', selected: false },
+    { id: 'blender', name: 'Blender', category: 'tool', icon: 'blender', description: 'Smoothies and sauces', selected: false },
+    { id: 'toaster-oven', name: 'Toaster Oven', category: 'appliance', icon: 'toaster oven', description: 'Small countertop oven', selected: false },
   ]);
   
   // Standard preferences
@@ -587,7 +588,12 @@ const EnhancedPreferencesScreen: React.FC<EnhancedPreferencesScreenProps> = ({
             ]}
             onPress={() => toggleAppliance(appliance.id)}
           >
-            <Text style={styles.applianceIcon}>{appliance.icon}</Text>
+            <View style={styles.applianceIconContainer}>
+              <KitchenApplianceIcon 
+                appliance={appliance.icon} 
+                size={moderateScale(40)} 
+              />
+            </View>
             <Text style={[
               styles.applianceName,
               appliance.selected && styles.applianceNameSelected,
@@ -1514,9 +1520,12 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(76, 175, 80, 0.1)',
     borderColor: '#4CAF50',
   },
-  applianceIcon: {
-    fontSize: moderateScale(32),
+  applianceIconContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: verticalScale(8),
+    height: moderateScale(48),
+    width: moderateScale(48),
   },
   applianceName: {
     fontSize: responsive.fontSize.regular,
