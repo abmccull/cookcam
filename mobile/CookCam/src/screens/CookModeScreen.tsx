@@ -467,10 +467,34 @@ const CookModeScreen: React.FC<CookModeScreenProps> = ({navigation, route}) => {
             contentContainerStyle={styles.heroInstructionContent}
             showsVerticalScrollIndicator={false}>
             
-            {/* HERO INSTRUCTION - Large, prominent text */}
-            <Text style={styles.heroInstruction}>
+            {/* HERO INSTRUCTION - Large, prominent text with delight */}
+            <Animated.Text 
+              style={[
+                styles.heroInstruction,
+                {transform: [{scale: stepTranslateX.interpolate({
+                  inputRange: [-30, 0, 30],
+                  outputRange: [0.98, 1, 0.98],
+                  extrapolate: 'clamp'
+                })}]}
+              ]}>
               {currentStepData?.instruction}
-            </Text>
+            </Animated.Text>
+            
+            {/* Cooking Confidence Indicator */}
+            <View style={styles.confidenceIndicator}>
+              <View style={styles.confidenceIcon}>
+                <Text style={styles.confidenceEmoji}>
+                  {currentStep === 0 ? '👨‍🍳' : 
+                   currentStep === steps.length - 1 ? '🌟' : 
+                   progress > 50 ? '🔥' : '💪'}
+                </Text>
+              </View>
+              <Text style={styles.confidenceText}>
+                {currentStep === 0 ? "Let's start cooking!" : 
+                 currentStep === steps.length - 1 ? "Final step - you've got this!" : 
+                 progress > 50 ? "You're on fire!" : "Keep it up!"}
+              </Text>
+            </View>
             
             {/* Contextual Info Row - Temperature & Time */}
             {(currentStepData?.temperature || currentStepData?.time) && (
@@ -875,13 +899,15 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
     borderRadius: 24,
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 4},
-    shadowOpacity: 0.12,
-    shadowRadius: 12,
+    elevation: 6,
+    shadowColor: '#2D1B69',
+    shadowOffset: {width: 0, height: 6},
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
     overflow: 'hidden',
     position: 'relative',
+    borderWidth: 1,
+    borderColor: 'rgba(45, 27, 105, 0.08)',
   },
   stepBadge: {
     position: 'absolute',
@@ -919,7 +945,32 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     letterSpacing: -0.5,
     textAlign: 'center',
-    marginBottom: 24,
+    marginBottom: 20,
+  },
+  // COOKING CONFIDENCE INDICATOR
+  confidenceIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginBottom: 20,
+  },
+  confidenceIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255, 107, 53, 0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  confidenceEmoji: {
+    fontSize: 18,
+  },
+  confidenceText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FF6B35',
+    letterSpacing: 0.3,
   },
   // CONTEXTUAL INFO - Temperature & Time chips
   contextualInfo: {
