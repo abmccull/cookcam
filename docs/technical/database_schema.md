@@ -4,13 +4,14 @@
 
 ## Overview
 
-This document outlines the complete database schema for the CookCam application, built on PostgreSQL using Supabase. The schema supports core features including ingredient scanning, recipe management, gamification, user progress tracking, and social features.
+This document outlines the complete database schema for the CookCam application, built on PostgreSQL using Supabase. The schema supports core features including ingredient scanning, recipe management, gamification, user progress tracking, social features, and enhanced cooking preferences.
 
 ## Schema Statistics
 
-- **Total Tables**: 24
+- **Total Tables**: 26
 - **Core Entities**: Users, Ingredients, Recipes, Scans
 - **Gamification**: Achievements, Challenges, Leaderboards, Streaks
+- **Preferences**: Kitchen Appliances, Meal Planning
 - **External Integration**: USDA Food Data Central
 
 ---
@@ -18,7 +19,7 @@ This document outlines the complete database schema for the CookCam application,
 ## Core Tables
 
 ### 1. `users`
-Primary user account information and progress tracking.
+Primary user account information and progress tracking with enhanced preferences.
 
 | Column | Type | Nullable | Default | Description |
 |--------|------|----------|---------|-------------|
@@ -33,9 +34,46 @@ Primary user account information and progress tracking.
 | streak_shields | integer | YES | 0 | Available streak shields |
 | is_creator | boolean | YES | false | Creator account flag |
 | creator_tier | integer | YES | 0 | Creator tier level |
+| default_serving_size | integer | YES | 2 | Default number of people cooking for |
+| meal_prep_enabled | boolean | YES | false | User does meal prep |
+| default_meal_prep_count | integer | YES | 4 | Default number of meal prep portions |
+| kitchen_appliances | jsonb | YES | '["oven", "stove"]'::jsonb | Available kitchen appliances |
+| dietary_preferences | jsonb | YES | '[]'::jsonb | Stored dietary preferences |
+| cuisine_preferences | jsonb | YES | '[]'::jsonb | Preferred cuisine types |
+| cooking_skill_level | text | YES | 'beginner' | User's cooking skill level |
 | created_at | timestamp with time zone | YES | now() | Account creation date |
 
-### 2. `ingredients`
+### 2. `user_cooking_sessions`
+Individual cooking session preferences and equipment selection.
+
+| Column | Type | Nullable | Default | Description |
+|--------|------|----------|---------|-------------|
+| id | uuid | NO | gen_random_uuid() | Primary key |
+| user_id | uuid | YES | null | User ID |
+| serving_size | integer | NO | null | People cooking for this session |
+| meal_prep_portions | integer | YES | null | Meal prep portions (if applicable) |
+| selected_appliances | jsonb | NO | null | Appliances available for this session |
+| dietary_restrictions | jsonb | YES | '[]'::jsonb | Session-specific dietary needs |
+| time_available | text | YES | 'medium' | Available cooking time |
+| difficulty_preference | text | YES | 'any' | Preferred difficulty level |
+| cuisine_preference | jsonb | YES | '[]'::jsonb | Session cuisine preferences |
+| created_at | timestamp with time zone | YES | now() | Session timestamp |
+
+### 3. `kitchen_appliances`
+Master list of available kitchen appliances.
+
+| Column | Type | Nullable | Default | Description |
+|--------|------|----------|---------|-------------|
+| id | uuid | NO | gen_random_uuid() | Primary key |
+| name | text | NO | null | Appliance name |
+| category | text | NO | null | Appliance category |
+| icon | text | YES | null | Icon identifier |
+| description | text | YES | null | Appliance description |
+| cooking_methods | jsonb | YES | '[]'::jsonb | Supported cooking methods |
+| popular | boolean | YES | true | Common appliance flag |
+| created_at | timestamp with time zone | YES | now() | Record creation |
+
+### 4. `ingredients`
 Comprehensive ingredient database with nutritional information.
 
 | Column | Type | Nullable | Default | Description |
@@ -62,7 +100,7 @@ Comprehensive ingredient database with nutritional information.
 | created_at | timestamp with time zone | YES | now() | Record creation |
 | updated_at | timestamp with time zone | YES | now() | Last update |
 
-### 3. `recipes`
+### 5. `recipes`
 Recipe storage with AI-generated and user-created content.
 
 | Column | Type | Nullable | Default | Description |
@@ -94,7 +132,7 @@ Recipe storage with AI-generated and user-created content.
 
 ## Scanning & Analysis Tables
 
-### 4. `scans`
+### 6. `scans`
 User image scans and basic metadata.
 
 | Column | Type | Nullable | Default | Description |
@@ -108,7 +146,7 @@ User image scans and basic metadata.
 | scan_metadata | jsonb | YES | null | Additional scan data |
 | created_at | timestamp with time zone | YES | now() | Scan timestamp |
 
-### 5. `ingredient_scans`
+### 7. `ingredient_scans`
 Detailed ingredient detection results.
 
 | Column | Type | Nullable | Default | Description |
@@ -121,7 +159,7 @@ Detailed ingredient detection results.
 | scan_metadata | jsonb | YES | null | Detection metadata |
 | created_at | timestamp with time zone | YES | now() | Detection timestamp |
 
-### 6. `recipe_sessions`
+### 8. `recipe_sessions`
 AI recipe generation sessions.
 
 | Column | Type | Nullable | Default | Description |
@@ -136,7 +174,7 @@ AI recipe generation sessions.
 
 ## Gamification Tables
 
-### 7. `achievements`
+### 9. `achievements`
 Available achievements and badges.
 
 | Column | Type | Nullable | Default | Description |
@@ -152,7 +190,7 @@ Available achievements and badges.
 | requirements | jsonb | NO | null | Unlock requirements |
 | created_at | timestamp with time zone | YES | now() | Creation timestamp |
 
-### 8. `user_achievements`
+### 10. `user_achievements`
 User progress on achievements.
 
 | Column | Type | Nullable | Default | Description |
@@ -164,7 +202,7 @@ User progress on achievements.
 | completed_at | timestamp with time zone | YES | null | Completion timestamp |
 | created_at | timestamp with time zone | YES | now() | Progress start |
 
-### 9. `challenges`
+### 11. `challenges`
 Time-limited challenges and events.
 
 | Column | Type | Nullable | Default | Description |
@@ -179,7 +217,7 @@ Time-limited challenges and events.
 | end_date | date | NO | null | Challenge end |
 | created_at | timestamp with time zone | YES | now() | Creation timestamp |
 
-### 10. `user_challenges`
+### 12. `user_challenges`
 User participation in challenges.
 
 | Column | Type | Nullable | Default | Description |
@@ -191,7 +229,7 @@ User participation in challenges.
 | completed_at | timestamp with time zone | YES | null | Completion timestamp |
 | created_at | timestamp with time zone | YES | now() | Participation start |
 
-### 11. `leaderboards`
+### 13. `leaderboards`
 Competitive rankings and leaderboards.
 
 | Column | Type | Nullable | Default | Description |
@@ -205,7 +243,7 @@ Competitive rankings and leaderboards.
 | movement | integer | YES | 0 | Rank change |
 | updated_at | timestamp with time zone | YES | now() | Last update |
 
-### 12. `streaks`
+### 14. `streaks`
 Daily activity streak tracking.
 
 | Column | Type | Nullable | Default | Description |
@@ -217,7 +255,7 @@ Daily activity streak tracking.
 | shield_used | boolean | YES | false | Shield protection used |
 | created_at | timestamp with time zone | YES | now() | Record creation |
 
-### 13. `mystery_boxes`
+### 15. `mystery_boxes`
 Reward system mystery boxes.
 
 | Column | Type | Nullable | Default | Description |
@@ -233,7 +271,7 @@ Reward system mystery boxes.
 
 ## User Interaction Tables
 
-### 14. `user_progress`
+### 16. `user_progress`
 Detailed XP and level progression tracking.
 
 | Column | Type | Nullable | Default | Description |
@@ -248,7 +286,7 @@ Detailed XP and level progression tracking.
 | metadata | jsonb | YES | '{}'::jsonb | Additional action data |
 | created_at | timestamp with time zone | YES | now() | Action timestamp |
 
-### 15. `daily_checkins`
+### 17. `daily_checkins`
 Daily photo check-ins and suggested recipes.
 
 | Column | Type | Nullable | Default | Description |
@@ -261,7 +299,7 @@ Daily photo check-ins and suggested recipes.
 | xp_earned | integer | YES | 5 | XP earned |
 | created_at | timestamp with time zone | YES | now() | Check-in timestamp |
 
-### 16. `favorites`
+### 18. `favorites`
 User recipe collections and favorites.
 
 | Column | Type | Nullable | Default | Description |
@@ -273,7 +311,7 @@ User recipe collections and favorites.
 | notes | text | YES | null | User notes |
 | created_at | timestamp with time zone | YES | now() | Favorite timestamp |
 
-### 17. `saved_recipes`
+### 19. `saved_recipes`
 Simple recipe bookmarking.
 
 | Column | Type | Nullable | Default | Description |
@@ -283,7 +321,7 @@ Simple recipe bookmarking.
 | recipe_id | uuid | YES | null | Recipe ID |
 | created_at | timestamp with time zone | YES | now() | Save timestamp |
 
-### 18. `recipe_ratings`
+### 20. `recipe_ratings`
 User ratings for recipes.
 
 | Column | Type | Nullable | Default | Description |
@@ -294,7 +332,7 @@ User ratings for recipes.
 | rating | integer | NO | null | Rating (1-5) |
 | created_at | timestamp with time zone | YES | now() | Rating timestamp |
 
-### 19. `user_follows`
+### 21. `user_follows`
 Social following relationships.
 
 | Column | Type | Nullable | Default | Description |
@@ -308,7 +346,7 @@ Social following relationships.
 
 ## Recipe System Tables
 
-### 20. `recipe_ingredients`
+### 22. `recipe_ingredients`
 Structured ingredient relationships for recipes.
 
 | Column | Type | Nullable | Default | Description |
@@ -321,7 +359,7 @@ Structured ingredient relationships for recipes.
 | preparation | text | YES | null | Preparation method |
 | order_index | integer | YES | 0 | Display order |
 
-### 21. `recipe_nutrition`
+### 23. `recipe_nutrition`
 Calculated nutritional information for recipes.
 
 | Column | Type | Nullable | Default | Description |
@@ -340,7 +378,7 @@ Calculated nutritional information for recipes.
 
 ## USDA Integration Tables
 
-### 22. `usda_foods`
+### 24. `usda_foods`
 USDA Food Data Central foods database.
 
 | Column | Type | Nullable | Default | Description |
@@ -354,7 +392,7 @@ USDA Food Data Central foods database.
 | created_at | timestamp with time zone | YES | now() | Import timestamp |
 | updated_at | timestamp with time zone | YES | now() | Last update |
 
-### 23. `usda_nutrients`
+### 25. `usda_nutrients`
 USDA nutrient definitions.
 
 | Column | Type | Nullable | Default | Description |
@@ -364,7 +402,7 @@ USDA nutrient definitions.
 | name | text | NO | null | Nutrient name |
 | unit_name | text | NO | null | Measurement unit |
 
-### 24. `usda_food_nutrients`
+### 26. `usda_food_nutrients`
 USDA nutrient values for foods.
 
 | Column | Type | Nullable | Default | Description |
@@ -374,7 +412,7 @@ USDA nutrient values for foods.
 | nutrient_id | integer | YES | null | Nutrient ID |
 | amount | double precision | YES | null | Nutrient amount |
 
-### 25. `usda_api_requests`
+### 27. `usda_api_requests`
 USDA API request logging and caching.
 
 | Column | Type | Nullable | Default | Description |

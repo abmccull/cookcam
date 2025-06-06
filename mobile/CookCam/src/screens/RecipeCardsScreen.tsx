@@ -286,21 +286,32 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
         userId: user?.id
       });
 
-      console.log('📤 Sending to API with quantities:', {
+      // Get enhanced preferences from route params
+      const enhancedPreferences = route.params?.preferences || {};
+      
+      console.log('📤 Sending enhanced data to AI:', {
         detectedIngredients,
-        dietaryTags: preferences?.dietary || [],
-        cuisinePreferences: preferences?.cuisine || [],
-        timeAvailable: preferences?.cookingTime || 'any',
-        skillLevel: preferences?.difficulty || 'any'
+        servingSize: enhancedPreferences.servingSize || 2,
+        mealPrepEnabled: enhancedPreferences.mealPrepEnabled || false,
+        mealPrepPortions: enhancedPreferences.mealPrepPortions,
+        selectedAppliances: enhancedPreferences.selectedAppliances || ['oven', 'stove'],
+        dietaryTags: enhancedPreferences.dietary || preferences?.dietary || [],
+        cuisinePreferences: enhancedPreferences.cuisine || preferences?.cuisine || [],
+        timeAvailable: enhancedPreferences.cookingTime || preferences?.cookingTime || 'any',
+        skillLevel: enhancedPreferences.difficulty || preferences?.difficulty || 'any'
       });
 
-      // Call the recipe generation API with full ingredient data
+      // Call the recipe generation API with enhanced data
       const response = await recipeService.generateSuggestions({
         detectedIngredients,
-        dietaryTags: preferences?.dietary || [],
-        cuisinePreferences: preferences?.cuisine || [],
-        timeAvailable: preferences?.cookingTime || 'any',
-        skillLevel: preferences?.difficulty || 'any'
+        servingSize: enhancedPreferences.servingSize || 2,
+        mealPrepEnabled: enhancedPreferences.mealPrepEnabled || false,
+        mealPrepPortions: enhancedPreferences.mealPrepPortions,
+        selectedAppliances: enhancedPreferences.selectedAppliances || ['oven', 'stove'],
+        dietaryTags: enhancedPreferences.dietary || preferences?.dietary || [],
+        cuisinePreferences: enhancedPreferences.cuisine || preferences?.cuisine || [],
+        timeAvailable: enhancedPreferences.cookingTime || preferences?.cookingTime || 'any',
+        skillLevel: enhancedPreferences.difficulty || preferences?.difficulty || 'any'
       });
 
       console.log('📥 API Response:', response);
@@ -402,13 +413,17 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
                          const profileResponse = await authService.getProfile();
             if (profileResponse?.success) {
               console.log('✅ Session is valid, retrying recipe generation...');
-              // Retry the API call once with full ingredient data
+              // Retry the API call once with enhanced data
               const retryResponse = await recipeService.generateSuggestions({
                 detectedIngredients,
-                dietaryTags: preferences?.dietary || [],
-                cuisinePreferences: preferences?.cuisine || [],
-                timeAvailable: preferences?.cookingTime || 'any',
-                skillLevel: preferences?.difficulty || 'any'
+                servingSize: enhancedPreferences.servingSize || 2,
+                mealPrepEnabled: enhancedPreferences.mealPrepEnabled || false,
+                mealPrepPortions: enhancedPreferences.mealPrepPortions,
+                selectedAppliances: enhancedPreferences.selectedAppliances || ['oven', 'stove'],
+                dietaryTags: enhancedPreferences.dietary || preferences?.dietary || [],
+                cuisinePreferences: enhancedPreferences.cuisine || preferences?.cuisine || [],
+                timeAvailable: enhancedPreferences.cookingTime || preferences?.cookingTime || 'any',
+                skillLevel: enhancedPreferences.difficulty || preferences?.difficulty || 'any'
               });
               
               const retryRecipeData = retryResponse.data?.data || retryResponse.data;
@@ -738,9 +753,6 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
         <Text style={styles.subtitle}>
           Same ingredients, different dishes
         </Text>
-        <Text style={styles.instructionText}>
-          Swipe to see variety • Tap for details
-        </Text>
       </View>
 
       <View style={styles.swiperContainer}>
@@ -897,11 +909,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
     fontWeight: '500',
   },
-  instructionText: {
-    fontSize: 14,
-    color: '#8E8E93',
-    marginTop: 2,
-  },
+
   card: {
     height: '95%',
     borderRadius: 20,

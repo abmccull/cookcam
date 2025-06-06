@@ -9,8 +9,6 @@ import {
 import {
   RefreshCw,
   RotateCcw,
-  ThumbsUp,
-  Info,
 } from 'lucide-react-native';
 import SwipeableCard from './SwipeableCard';
 import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
@@ -37,6 +35,7 @@ const CardStack: React.FC<CardStackProps> = ({
 }) => {
   const [cardStack, setCardStack] = useState<Recipe[]>(recipes);
   const [lastDismissedCard, setLastDismissedCard] = useState<Recipe | null>(null);
+  const [favoritedCards, setFavoritedCards] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     setCardStack(recipes);
@@ -59,12 +58,26 @@ const CardStack: React.FC<CardStackProps> = ({
   };
 
   const handleFavorite = (recipe: Recipe) => {
+    const newFavorited = new Set(favoritedCards);
+    if (newFavorited.has(recipe.id)) {
+      newFavorited.delete(recipe.id);
+    } else {
+      newFavorited.add(recipe.id);
+    }
+    setFavoritedCards(newFavorited);
+    
     ReactNativeHapticFeedback.trigger('impactLight');
     onFavoriteRecipe(recipe);
   };
 
   const handleCardTap = (recipe: Recipe) => {
     onViewRecipeDetails(recipe);
+  };
+
+  const handleCardSelect = (recipe: Recipe) => {
+    // Bring selected card to front by reordering the stack
+    const newStack = [recipe, ...cardStack.filter(r => r.id !== recipe.id)];
+    setCardStack(newStack);
   };
 
   const handleUndo = () => {
@@ -121,15 +134,15 @@ const CardStack: React.FC<CardStackProps> = ({
 
   return (
     <View style={styles.container}>
-      {/* Header */}
+      {/* Simplified Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>Choose Your Recipe</Text>
+        <Text style={styles.title}>Recipe Suggestions</Text>
         <Text style={styles.subtitle}>
-          {cardStack.length} recipe{cardStack.length !== 1 ? 's' : ''} remaining
+          {cardStack.length} recipe{cardStack.length !== 1 ? 's' : ''} • Tap cards to explore
         </Text>
       </View>
 
-      {/* Card Stack */}
+      {/* Card Stack Container */}
       <View style={styles.cardContainer}>
         {visibleCards.map((recipe, index) => (
           <SwipeableCard
@@ -140,56 +153,22 @@ const CardStack: React.FC<CardStackProps> = ({
             onSwipeRight={handleSwipeRight}
             onFavorite={handleFavorite}
             onCardTap={handleCardTap}
+            onCardSelect={handleCardSelect}
             isTop={index === 0}
+            isFavorited={favoritedCards.has(recipe.id)}
           />
         ))}
       </View>
 
-      {/* Bottom Actions */}
-      <View style={styles.bottomActions}>
-        <TouchableOpacity 
-          style={styles.actionButton}
-          onPress={() => visibleCards[0] && handleSwipeLeft(visibleCards[0])}
-          disabled={visibleCards.length === 0}
-        >
-          <Text style={styles.actionButtonText}>👈</Text>
-          <Text style={styles.actionLabel}>Pass</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity 
-          style={styles.actionButton}
-          onPress={() => visibleCards[0] && handleFavorite(visibleCards[0])}
-          disabled={visibleCards.length === 0}
-        >
-          <ThumbsUp size={20} color="#FF6B6B" />
-          <Text style={styles.actionLabel}>Save</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity 
-          style={styles.actionButton}
-          onPress={() => visibleCards[0] && handleCardTap(visibleCards[0])}
-          disabled={visibleCards.length === 0}
-        >
-          <Info size={20} color="#666" />
-          <Text style={styles.actionLabel}>Details</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity 
-          style={styles.actionButton}
-          onPress={() => visibleCards[0] && handleSwipeRight(visibleCards[0])}
-          disabled={visibleCards.length === 0}
-        >
-          <Text style={styles.actionButtonText}>👉</Text>
-          <Text style={styles.actionLabel}>Cook</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Swipe Instructions */}
-      <View style={styles.instructions}>
-        <Text style={styles.instructionText}>
-          Swipe left to pass • Tap ❤️ to save • Swipe right to cook
-        </Text>
-      </View>
+      {/* Minimal Footer - Only show undo if available */}
+      {lastDismissedCard && (
+        <View style={styles.minimalFooter}>
+          <TouchableOpacity style={styles.undoChip} onPress={handleUndo}>
+            <RotateCcw size={14} color="#666" />
+            <Text style={styles.undoChipText}>Undo</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </View>
   );
 };
@@ -202,28 +181,31 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: 20,
     paddingTop: 20,
-    paddingBottom: 10,
+    paddingBottom: 12,
     alignItems: 'center',
   },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
     color: '#2D1B69',
-    marginBottom: 4,
+    marginBottom: 6,
   },
   subtitle: {
     fontSize: 16,
     color: '#666',
+    textAlign: 'center',
   },
   cardContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 20,
+    paddingBottom: 60,
+    paddingTop: 10,
   },
   loadingCard: {
     width: screenWidth - 40,
-    height: screenHeight * 0.65,
+    height: screenHeight * 0.62,
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
     justifyContent: 'center',
@@ -294,37 +276,30 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: '600',
   },
-  bottomActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingHorizontal: 20,
-    paddingVertical: 20,
-    backgroundColor: '#FFFFFF',
-    borderTopWidth: 1,
-    borderTopColor: '#E0E0E0',
-  },
-  actionButton: {
+  minimalFooter: {
     alignItems: 'center',
-    gap: 4,
-    padding: 8,
+    paddingBottom: 20,
+    paddingTop: 15,
+    backgroundColor: 'transparent',
   },
-  actionButtonText: {
-    fontSize: 24,
+  undoChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    borderRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  actionLabel: {
-    fontSize: 12,
+  undoChipText: {
+    fontSize: 14,
     color: '#666',
     fontWeight: '500',
-  },
-  instructions: {
-    paddingHorizontal: 20,
-    paddingBottom: 10,
-    alignItems: 'center',
-  },
-  instructionText: {
-    fontSize: 14,
-    color: '#999',
-    textAlign: 'center',
   },
 });
 

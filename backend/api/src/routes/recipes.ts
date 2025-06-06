@@ -240,18 +240,33 @@ router.post('/generate', authenticateUser, async (req: Request, res: Response) =
       dietaryTags,
       cuisinePreferences,
       timeAvailable,
-      skillLevel
+      skillLevel,
+      // Enhanced preferences
+      servingSize,
+      mealPrepEnabled,
+      mealPrepPortions,
+      selectedAppliances
     } = req.body;
     
     // Handle both 'ingredients' and 'detectedIngredients' field names for compatibility
     const ingredientsList = ingredients || detectedIngredients;
     
-    // Map frontend preferences format to backend format
+    // Map frontend preferences format to backend format with enhanced data
     const userPreferences = preferences || {
       dietaryRestrictions: dietaryTags,
       cuisinePreferences: cuisinePreferences,
       availableTime: timeAvailable === 'quick' ? 20 : timeAvailable === 'medium' ? 35 : timeAvailable === 'long' ? 60 : undefined,
-      skillLevel: skillLevel === 'easy' ? 'beginner' : skillLevel === 'medium' ? 'intermediate' : skillLevel === 'hard' ? 'advanced' : undefined
+      skillLevel: skillLevel === 'easy' ? 'beginner' : skillLevel === 'medium' ? 'intermediate' : skillLevel === 'hard' ? 'advanced' : undefined,
+      // Enhanced preferences
+      servingSize: servingSize || 2,
+      mealPrepEnabled: mealPrepEnabled || false,
+      mealPrepPortions: mealPrepEnabled ? (mealPrepPortions || 4) : undefined,
+      availableAppliances: selectedAppliances || ['oven', 'stove'],
+      cookingContext: {
+        isMealPrep: mealPrepEnabled,
+        targetPortions: mealPrepEnabled ? mealPrepPortions : servingSize,
+        kitchenSetup: selectedAppliances || ['oven', 'stove']
+      }
     };
     
     logger.info('🍳 Enhanced recipe generation request', {

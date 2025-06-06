@@ -10,6 +10,14 @@ export interface User {
   is_creator: boolean;
   creator_tier?: number;
   onboarding_completed: boolean;
+  // Enhanced preferences fields
+  default_serving_size?: number;
+  meal_prep_enabled?: boolean;
+  default_meal_prep_count?: number;
+  kitchen_appliances?: string[];
+  dietary_preferences?: string[];
+  cuisine_preferences?: string[];
+  cooking_skill_level?: string;
   created_at: string;
 }
 
