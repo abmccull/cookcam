@@ -24,6 +24,10 @@ interface Ingredient {
   name: string;
   confidence: number;
   emoji: string;
+  quantity?: string;
+  unit?: string;
+  variety?: string;
+  category?: string;
 }
 
 interface IngredientReviewScreenProps {
@@ -243,6 +247,10 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
                   name: ingredient.name || detectedIng.name,
                   confidence: detectedIng.confidence || 0.8,
                   emoji: getEmojiForIngredient(ingredient.name || detectedIng.name),
+                  quantity: detectedIng.quantity || '',
+                  unit: detectedIng.unit || '',
+                  variety: detectedIng.variety || '',
+                  category: detectedIng.category || '',
                 });
                 console.log(`✅ Found in USDA: ${ingredient.name}`);
               } else {
@@ -252,6 +260,10 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
                   name: detectedIng.name,
                   confidence: detectedIng.confidence || 0.8,
                   emoji: getEmojiForIngredient(detectedIng.name),
+                  quantity: detectedIng.quantity || '',
+                  unit: detectedIng.unit || '',
+                  variety: detectedIng.variety || '',
+                  category: detectedIng.category || '',
                 });
                 console.log(`➕ Added as custom: ${detectedIng.name}`);
               }
@@ -264,6 +276,10 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
                 name: detectedIng.name,
                 confidence: detectedIng.confidence || 0.8,
                 emoji: getEmojiForIngredient(detectedIng.name),
+                quantity: detectedIng.quantity || '',
+                unit: detectedIng.unit || '',
+                variety: detectedIng.variety || '',
+                category: detectedIng.category || '',
               });
             }
           }
@@ -352,6 +368,36 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
     
     const lowerName = name.toLowerCase();
     return emojiMap[lowerName] || '🥘';
+  };
+
+  const getConfidenceColor = (confidence: number): string => {
+    if (confidence >= 0.85) return '#4CAF50'; // Green for 85%+
+    if (confidence >= 0.70) return '#FFB800'; // Yellow for 70-85%
+    return '#FF3B30'; // Red for <70%
+  };
+
+  const handleQuantityChange = (ingredientId: string, action: 'increase' | 'decrease') => {
+    setIngredients(ingredients.map(ing => {
+      if (ing.id === ingredientId) {
+        const currentQty = parseFloat(ing.quantity || '1');
+        let newQty;
+        
+        if (action === 'increase') {
+          newQty = currentQty + (currentQty < 1 ? 0.25 : currentQty < 5 ? 0.5 : 1);
+        } else {
+          newQty = Math.max(0.25, currentQty - (currentQty <= 1 ? 0.25 : currentQty <= 5 ? 0.5 : 1));
+        }
+        
+        return {
+          ...ing,
+          quantity: newQty.toString()
+        };
+      }
+      return ing;
+    }));
+    
+    // Haptic feedback
+    ReactNativeHapticFeedback.trigger('impactLight');
   };
 
   const handleRemoveIngredient = (id: string) => {
@@ -539,8 +585,8 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
         <View style={styles.statsRow}>
           <View style={styles.statItem}>
             <Sparkles size={moderateScale(20)} color="#4CAF50" />
-            <Text style={styles.statValue}>{Math.round(ingredients.reduce((acc, ing) => acc + ing.confidence, 0) / ingredients.length * 100)}%</Text>
-            <Text style={styles.statLabel}>Confidence</Text>
+            <Text style={styles.statValue}>{ingredients.filter(ing => ing.confidence >= 0.85).length}</Text>
+            <Text style={styles.statLabel}>High Confidence</Text>
           </View>
           
           <View style={styles.statDivider} />
@@ -590,9 +636,44 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
                   {ingredient.emoji}
                 </Animated.Text>
                 <View style={styles.ingredientInfo}>
-                  <Text style={styles.ingredientName}>{ingredient.name}</Text>
-                  <View style={styles.confidenceBar}>
-                    <View style={[styles.confidenceFill, {width: `${ingredient.confidence * 100}%`}]} />
+                  <View style={styles.ingredientNameRow}>
+                    <Text style={styles.ingredientName}>{ingredient.name}</Text>
+                    {ingredient.variety && (
+                      <Text style={styles.ingredientVariety}>({ingredient.variety})</Text>
+                    )}
+                  </View>
+                  
+                  {/* Quantity Row with editing */}
+                  <View style={styles.quantityRow}>
+                    <TouchableOpacity 
+                      style={styles.quantityButton}
+                      onPress={() => handleQuantityChange(ingredient.id, 'decrease')}>
+                      <Text style={styles.quantityButtonText}>−</Text>
+                    </TouchableOpacity>
+                    <Text style={styles.quantityText}>
+                      {ingredient.quantity || '1'} {ingredient.unit || 'unit'}
+                    </Text>
+                    <TouchableOpacity 
+                      style={styles.quantityButton}
+                      onPress={() => handleQuantityChange(ingredient.id, 'increase')}>
+                      <Text style={styles.quantityButtonText}>+</Text>
+                    </TouchableOpacity>
+                  </View>
+                  
+                  {/* Individual Confidence Bar with Color */}
+                  <View style={styles.confidenceContainer}>
+                    <View style={styles.confidenceBar}>
+                      <View style={[
+                        styles.confidenceFill, 
+                        {
+                          width: `${ingredient.confidence * 100}%`,
+                          backgroundColor: getConfidenceColor(ingredient.confidence)
+                        }
+                      ]} />
+                    </View>
+                    <Text style={[styles.confidenceText, {color: getConfidenceColor(ingredient.confidence)}]}>
+                      {Math.round(ingredient.confidence * 100)}%
+                    </Text>
                   </View>
                 </View>
               </View>
@@ -803,24 +884,70 @@ const styles = StyleSheet.create({
   },
   ingredientInfo: {
     flexDirection: 'column',
+    flex: 1,
+  },
+  ingredientNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
   },
   ingredientName: {
     fontSize: responsive.fontSize.medium,
     fontWeight: '600',
     color: '#2D1B69',
-    marginBottom: verticalScale(2),
+  },
+  ingredientVariety: {
+    fontSize: responsive.fontSize.small,
+    color: '#8E8E93',
+    marginLeft: scale(4),
+    fontStyle: 'italic',
+  },
+  quantityRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: verticalScale(4),
+  },
+  quantityButton: {
+    width: moderateScale(24),
+    height: moderateScale(24),
+    borderRadius: moderateScale(12),
+    backgroundColor: '#F0F0F0',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginHorizontal: scale(4),
+  },
+  quantityButtonText: {
+    fontSize: responsive.fontSize.medium,
+    fontWeight: 'bold',
+    color: '#2D1B69',
+  },
+  quantityText: {
+    fontSize: responsive.fontSize.small,
+    color: '#2D1B69',
+    fontWeight: '500',
+    minWidth: scale(60),
+    textAlign: 'center',
+  },
+  confidenceContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: verticalScale(2),
   },
   confidenceBar: {
     height: verticalScale(4),
     backgroundColor: '#E5E5E7',
     borderRadius: responsive.borderRadius.small,
     overflow: 'hidden',
-    marginTop: verticalScale(4),
-    width: scale(120),
+    flex: 1,
+    marginRight: scale(8),
   },
   confidenceFill: {
     height: '100%',
-    backgroundColor: '#FFB800',
+  },
+  confidenceText: {
+    fontSize: responsive.fontSize.tiny,
+    fontWeight: '600',
+    minWidth: scale(30),
   },
   removeButton: {
     width: moderateScale(32),
