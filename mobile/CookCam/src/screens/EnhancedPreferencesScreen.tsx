@@ -34,6 +34,7 @@ import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
 import { useAuth } from '../context/AuthContext';
 import { useGamification, XP_VALUES } from '../context/GamificationContext';
 import KitchenApplianceIcon from '../components/KitchenApplianceIcon';
+import ServingSizeIcon from '../components/ServingSizeIcon';
 
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
 
@@ -517,7 +518,12 @@ const EnhancedPreferencesScreen: React.FC<EnhancedPreferencesScreenProps> = ({
             ]}
             onPress={() => handleServingSelection(option)}
           >
-            <Text style={styles.servingIcon}>{option.icon}</Text>
+            <View style={styles.servingIconContainer}>
+              <ServingSizeIcon 
+                type={option.label} 
+                size={moderateScale(32)} 
+              />
+            </View>
             <Text style={[
               styles.servingLabel,
               selectedServing.id === option.id && styles.servingLabelSelected,
@@ -532,47 +538,49 @@ const EnhancedPreferencesScreen: React.FC<EnhancedPreferencesScreenProps> = ({
       </View>
 
       {/* Meal Prep Section */}
-      <TouchableOpacity
-        style={[styles.mealPrepToggle, mealPrepEnabled && styles.mealPrepToggleActive]}
-        onPress={toggleMealPrep}
-      >
-        <View style={styles.mealPrepContent}>
-          <Text style={[styles.mealPrepText, mealPrepEnabled && styles.mealPrepTextActive]}>
-            I want to meal prep
-          </Text>
-          <Text style={[styles.mealPrepSubtext, mealPrepEnabled && styles.mealPrepSubtextActive]}>
-            Prepare multiple portions for the week
-          </Text>
-        </View>
-        <View style={[styles.checkbox, mealPrepEnabled && styles.checkboxActive]}>
-          {mealPrepEnabled && <Check size={16} color="#FFFFFF" />}
-        </View>
-      </TouchableOpacity>
-
-      {mealPrepEnabled && (
-        <View style={styles.mealPrepPortions}>
-          <Text style={styles.portionsLabel}>How many meal prep portions?</Text>
-          <View style={styles.portionsRow}>
-            {[3, 4, 5, 6, 8, 10, 12, 14].map((portions) => (
-              <TouchableOpacity
-                key={portions}
-                style={[
-                  styles.portionOption,
-                  mealPrepPortions === portions && styles.portionOptionSelected,
-                ]}
-                onPress={() => handleMealPrepPortions(portions)}
-              >
-                <Text style={[
-                  styles.portionText,
-                  mealPrepPortions === portions && styles.portionTextSelected,
-                ]}>
-                  {portions}
-                </Text>
-              </TouchableOpacity>
-            ))}
+      <View style={styles.mealPrepSection}>
+        <TouchableOpacity
+          style={[styles.mealPrepToggle, mealPrepEnabled && styles.mealPrepToggleActive]}
+          onPress={toggleMealPrep}
+        >
+          <View style={styles.mealPrepContent}>
+            <Text style={[styles.mealPrepText, mealPrepEnabled && styles.mealPrepTextActive]}>
+              I want to meal prep
+            </Text>
+            <Text style={[styles.mealPrepSubtext, mealPrepEnabled && styles.mealPrepSubtextActive]}>
+              Prepare multiple portions for the week
+            </Text>
           </View>
-        </View>
-      )}
+          <View style={[styles.checkbox, mealPrepEnabled && styles.checkboxActive]}>
+            {mealPrepEnabled && <Check size={16} color="#FFFFFF" />}
+          </View>
+        </TouchableOpacity>
+
+        {mealPrepEnabled && (
+          <View style={styles.mealPrepPortions}>
+            <Text style={styles.portionsLabel}>How many meal prep portions?</Text>
+            <View style={styles.portionsRow}>
+              {[3, 4, 5, 6, 8, 10, 12, 14].map((portions) => (
+                <TouchableOpacity
+                  key={portions}
+                  style={[
+                    styles.portionOption,
+                    mealPrepPortions === portions && styles.portionOptionSelected,
+                  ]}
+                  onPress={() => handleMealPrepPortions(portions)}
+                >
+                  <Text style={[
+                    styles.portionText,
+                    mealPrepPortions === portions && styles.portionTextSelected,
+                  ]}>
+                    {portions}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        )}
+      </View>
     </View>
   );
 
@@ -1404,9 +1412,12 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(45, 27, 105, 0.1)',
     borderColor: '#2D1B69',
   },
-  servingIcon: {
-    fontSize: moderateScale(24),
+  servingIconContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: verticalScale(8),
+    height: moderateScale(40),
+    width: moderateScale(40),
   },
   servingLabel: {
     fontSize: responsive.fontSize.regular,
@@ -1423,6 +1434,9 @@ const styles = StyleSheet.create({
     color: '#4CAF50',
     fontWeight: '600',
     marginTop: verticalScale(4),
+  },
+  mealPrepSection: {
+    marginTop: responsive.spacing.l,
   },
   mealPrepToggle: {
     flexDirection: 'row',
