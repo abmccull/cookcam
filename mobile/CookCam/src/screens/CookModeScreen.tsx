@@ -33,6 +33,9 @@ interface CookingStep {
   instruction: string;
   duration?: number; // in seconds
   completed: boolean;
+  tips?: string;
+  temperature?: string;
+  time?: number; // in minutes
 }
 
 interface CookModeScreenProps {
@@ -76,6 +79,9 @@ const CookModeScreen: React.FC<CookModeScreenProps> = ({navigation, route}) => {
       instruction: instruction.instruction || instruction,
       duration: instruction.time ? instruction.time * 60 : 300, // Convert minutes to seconds, default 5 min
       completed: false,
+      tips: instruction.tips,
+      temperature: instruction.temperature,
+      time: instruction.time,
     }));
   };
 
@@ -90,6 +96,8 @@ const CookModeScreen: React.FC<CookModeScreenProps> = ({navigation, route}) => {
   const [voiceEnabled, setVoiceEnabled] = useState(false);
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [isRecipeClaimed, setIsRecipeClaimed] = useState(false);
+  const [showIngredientsModal, setShowIngredientsModal] = useState(false);
+  const [showAllStepsModal, setShowAllStepsModal] = useState(false);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -357,74 +365,50 @@ const CookModeScreen: React.FC<CookModeScreenProps> = ({navigation, route}) => {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Compact Header */}
       <View style={styles.header}>
         <TouchableOpacity 
           style={styles.backButton}
           onPress={() => navigation.goBack()}>
           <ChevronLeft size={24} color="#2D1B69" />
-          <Text style={styles.backText}>Back</Text>
         </TouchableOpacity>
         
-        {/* Timer in header */}
-        {currentStepData?.duration ? (
-          <View style={styles.headerTimer}>
-            <Clock size={20} color="#FF6B35" />
-            <Text style={styles.headerTimerText}>{formatTime(timeRemaining)}</Text>
-            <TouchableOpacity 
-              style={[styles.headerPlayButton, isPlaying && styles.headerPauseButton]} 
-              onPress={handlePlayPause}>
-              {isPlaying ? (
-                <Pause size={16} color="#FFFFFF" />
-              ) : (
-                <Play size={16} color="#FFFFFF" />
-              )}
-            </TouchableOpacity>
-          </View>
-        ) : (
-          <Text style={styles.headerTitle}>Cook Mode</Text>
-        )}
-        
-        <TouchableOpacity onPress={toggleVoice} style={styles.voiceButton}>
-          {voiceEnabled ? (
-            <Volume2 size={24} color="#FF6B35" />
-          ) : (
-            <VolumeX size={24} color="#8E8E93" />
+        <View style={styles.headerCenter}>
+          <Text style={styles.recipeTitle} numberOfLines={1}>
+            {recipe?.title || 'Recipe'}
+          </Text>
+          <Text style={styles.stepCounter}>
+            {currentStep + 1} of {steps.length}
+          </Text>
+        </View>
+
+        <View style={styles.headerRight}>
+          {currentStepData?.duration && (
+            <View style={styles.timerContainer}>
+              <Text style={styles.timerText}>{formatTime(timeRemaining)}</Text>
+              <TouchableOpacity 
+                style={styles.playButton} 
+                onPress={handlePlayPause}>
+                {isPlaying ? (
+                  <Pause size={14} color="#FFFFFF" />
+                ) : (
+                  <Play size={14} color="#FFFFFF" />
+                )}
+              </TouchableOpacity>
+            </View>
           )}
-        </TouchableOpacity>
+          <TouchableOpacity onPress={toggleVoice} style={styles.voiceButton}>
+            {voiceEnabled ? (
+              <Volume2 size={20} color="#FF6B35" />
+            ) : (
+              <VolumeX size={20} color="#8E8E93" />
+            )}
+          </TouchableOpacity>
+        </View>
       </View>
 
-      <View style={styles.recipeHeader}>
-        <Text style={styles.recipeName}>{recipe?.title || 'Garlic Herb Roasted Vegetables'}</Text>
-      </View>
-
-      {/* Ingredients Section */}
-      {recipe?.ingredients && recipe.ingredients.length > 0 && (
-        <View style={styles.ingredientsSection}>
-          <Text style={styles.ingredientsTitle}>Ingredients</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.ingredientsList}>
-            {recipe.ingredients.map((ingredient, index) => (
-              <View key={index} style={styles.ingredientCard}>
-                <Text style={styles.ingredientText}>
-                  {typeof ingredient === 'string' 
-                    ? ingredient 
-                    : `${ingredient.amount} ${ingredient.unit} ${ingredient.name}`
-                  }
-                </Text>
-              </View>
-            ))}
-          </ScrollView>
-        </View>
-      )}
-
-      {/* Enhanced Progress Bar */}
-      <View style={styles.progressContainer}>
-        <View style={styles.progressHeader}>
-          <Text style={styles.progressLabel}>Recipe Progress</Text>
-          <View style={styles.xpPreview}>
-            <Sparkles size={14} color="#FFB800" />
-            <Text style={styles.xpPreviewText}>+{potentialXP} XP</Text>
-          </View>
-        </View>
+      {/* Minimal Progress Bar */}
+      <View style={styles.progressSection}>
         <View style={styles.progressBar}>
           <Animated.View 
             style={[
@@ -438,145 +422,129 @@ const CookModeScreen: React.FC<CookModeScreenProps> = ({navigation, route}) => {
             ]} 
           />
         </View>
-        <Text style={styles.progressText}>
-          Step {currentStep + 1} of {steps.length} • {Math.round(progress)}% Complete
-        </Text>
-      </View>
-      
-      {/* Claim Recipe Preview (for generated recipes) */}
-      {recipe?.isGenerated && !isRecipeClaimed && completedSteps >= Math.floor(steps.length / 2) && (
-        <Animated.View style={[styles.claimPreview, {transform: [{scale: claimPreviewScale}]}]}>
-          <Trophy size={20} color="#FFB800" />
-          <View style={styles.claimPreviewContent}>
-            <Text style={styles.claimPreviewTitle}>Claim this recipe after cooking!</Text>
-            <Text style={styles.claimPreviewSubtitle}>+{XP_VALUES.CLAIM_RECIPE} XP • Become the creator</Text>
+        <View style={styles.progressDetails}>
+          <Text style={styles.progressText}>{Math.round(progress)}% Complete</Text>
+          <View style={styles.xpBadge}>
+            <Sparkles size={12} color="#FFB800" />
+            <Text style={styles.xpText}>+75 XP</Text>
           </View>
-        </Animated.View>
-      )}
+        </View>
+      </View>
 
-      {/* Main Step Card */}
-      <View style={styles.mainContent}>
+      {/* MAIN STEP AREA - This gets most of the screen space */}
+      <View style={styles.mainStepArea}>
         <Animated.View 
           style={[
             styles.stepCard,
             {transform: [{translateX: stepTranslateX}]}
           ]}>
-          {/* Step Number Badge */}
-          <View style={styles.stepHeader}>
-            <View style={styles.stepBadge}>
-              <Text style={styles.stepBadgeText}>Step {currentStep + 1}</Text>
-            </View>
-          </View>
-
-          {/* Instruction */}
+          
+          {/* Current Step Instruction - This is now the focus */}
           <ScrollView 
-            style={styles.instructionScroll}
+            style={styles.instructionContainer}
             contentContainerStyle={styles.instructionContent}
             showsVerticalScrollIndicator={false}>
             <Text style={styles.stepInstruction}>
               {currentStepData?.instruction}
             </Text>
-          </ScrollView>
-
-          {/* Step Controls */}
-          <View style={styles.stepControls}>
-            <TouchableOpacity
-              style={[
-                styles.stepNavButton,
-                currentStep === 0 && styles.disabledButton,
-              ]}
-              onPress={handlePreviousStep}
-              disabled={currentStep === 0}>
-              <ChevronLeft size={20} color={currentStep === 0 ? '#C7C7CC' : '#2D1B69'} />
-              <Text style={[
-                styles.stepNavText,
-                currentStep === 0 && styles.disabledText
-              ]}>Previous</Text>
-            </TouchableOpacity>
-
-            {!currentStepData?.duration && (
-              <TouchableOpacity
-                style={styles.completeStepButton}
-                onPress={handleStepComplete}>
-                <CheckCircle size={20} color="#FFFFFF" />
-                <Text style={styles.completeStepText}>Complete Step</Text>
-              </TouchableOpacity>
+            
+            {/* Step tips if available */}
+            {currentStepData?.tips && (
+              <View style={styles.tipContainer}>
+                <Text style={styles.tipLabel}>💡 Tip:</Text>
+                <Text style={styles.tipText}>{currentStepData.tips}</Text>
+              </View>
             )}
-
-            <TouchableOpacity
-              style={[
-                styles.stepNavButton,
-                currentStep === steps.length - 1 && styles.disabledButton,
-              ]}
-              onPress={handleNextStep}
-              disabled={currentStep === steps.length - 1}>
-              <Text style={[
-                styles.stepNavText,
-                currentStep === steps.length - 1 && styles.disabledText
-              ]}>Next</Text>
-              <ChevronRight size={20} color={currentStep === steps.length - 1 ? '#C7C7CC' : '#2D1B69'} />
-            </TouchableOpacity>
-          </View>
+            
+            {/* Temperature and time info if available */}
+            {(currentStepData?.temperature || currentStepData?.time) && (
+              <View style={styles.stepMetadata}>
+                {currentStepData.temperature && (
+                  <View style={styles.metadataItem}>
+                    <Text style={styles.metadataLabel}>🌡️ {currentStepData.temperature}</Text>
+                  </View>
+                )}
+                {currentStepData.time && (
+                  <View style={styles.metadataItem}>
+                    <Text style={styles.metadataLabel}>⏱️ {currentStepData.time} min</Text>
+                  </View>
+                )}
+              </View>
+            )}
+          </ScrollView>
         </Animated.View>
       </View>
-      
-      {/* Mini XP Celebration */}
+
+      {/* Bottom Navigation Controls */}
+      <View style={styles.bottomControls}>
+        <TouchableOpacity
+          style={[
+            styles.navButton,
+            currentStep === 0 && styles.disabledButton,
+          ]}
+          onPress={handlePreviousStep}
+          disabled={currentStep === 0}>
+          <ChevronLeft size={20} color={currentStep === 0 ? '#C7C7CC' : '#2D1B69'} />
+          <Text style={[
+            styles.navButtonText,
+            currentStep === 0 && styles.disabledText
+          ]}>Previous</Text>
+        </TouchableOpacity>
+
+        {/* Complete/Next Button */}
+        {currentStep === steps.length - 1 ? (
+          <TouchableOpacity
+            style={styles.completeButton}
+            onPress={handleStepComplete}>
+            <CheckCircle size={20} color="#FFFFFF" />
+            <Text style={styles.completeButtonText}>Complete Recipe</Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            style={styles.nextButton}
+            onPress={!currentStepData?.duration ? handleStepComplete : handleNextStep}>
+            <Text style={styles.nextButtonText}>
+              {!currentStepData?.duration ? 'Mark Done' : 'Next Step'}
+            </Text>
+            <ChevronRight size={20} color="#FFFFFF" />
+          </TouchableOpacity>
+        )}
+      </View>
+
+      {/* Collapsible Sections Access */}
+      <View style={styles.quickAccess}>
+        <TouchableOpacity
+          style={styles.accessButton}
+          onPress={() => setShowIngredientsModal(true)}>
+          <Text style={styles.accessButtonText}>Ingredients</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity
+          style={styles.accessButton}
+          onPress={() => setShowAllStepsModal(true)}>
+          <Text style={styles.accessButtonText}>All Steps</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* XP Celebration Animation */}
       {showXPCelebration && (
         <Animated.View 
           style={[
             styles.xpCelebration,
             {transform: [{scale: xpCelebrationScale}]}
-          ]}
-        >
-          <Sparkles size={20} color="#FFB800" />
+          ]}>
+          <Sparkles size={30} color="#FFB800" />
           <Text style={styles.xpCelebrationText}>+5 XP</Text>
         </Animated.View>
       )}
 
-      {/* Step Overview */}
-      <View style={styles.stepOverview}>
-        <Text style={styles.overviewTitle}>All Steps</Text>
-        <ScrollView 
-          horizontal 
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.stepsList}>
-          {steps.map((step, index) => (
-            <TouchableOpacity
-              key={step.id}
-              style={[
-                styles.stepItem,
-                index === currentStep && styles.activeStepItem,
-                step.completed && styles.completedStepItem,
-              ]}
-              onPress={() => {
-                if (index !== currentStep) {
-                  setCurrentStep(index);
-                  setTimeRemaining(steps[index]?.duration || 0);
-                  setIsPlaying(false);
-                }
-              }}>
-              <View style={[
-                styles.stepDot,
-                index === currentStep && styles.activeStepDot,
-                step.completed && styles.completedStepDot,
-              ]}>
-                {step.completed ? (
-                  <CheckCircle size={12} color="#FFFFFF" />
-                ) : (
-                  <Text style={styles.stepDotText}>{index + 1}</Text>
-                )}
-              </View>
-              <Text style={[
-                styles.stepItemText,
-                index === currentStep && styles.activeStepItemText,
-                step.completed && styles.completedStepItemText,
-              ]} numberOfLines={2}>
-                {step.instruction}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </View>
+      {/* Claim Recipe Preview (for generated recipes) */}
+      {recipe?.isGenerated && !isRecipeClaimed && completedSteps >= Math.floor(steps.length / 2) && (
+        <Animated.View style={[styles.claimPreview, {transform: [{scale: claimPreviewScale}]}]}>
+          <Trophy size={16} color="#FFB800" />
+          <Text style={styles.claimPreviewText}>Claim recipe after cooking! +{XP_VALUES.CLAIM_RECIPE} XP</Text>
+        </Animated.View>
+      )}
 
       {/* Rating Modal */}
       <RecipeRatingModal
@@ -609,59 +577,52 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
   },
-  backText: {
-    fontSize: 16,
-    color: '#2D1B69',
-    fontWeight: '500',
+  headerCenter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
-  headerTitle: {
+  recipeTitle: {
     fontSize: 18,
     fontWeight: '700',
     color: '#2D1B69',
     letterSpacing: -0.5,
   },
-  voiceButton: {
-    padding: 8,
-  },
-  recipeHeader: {
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 8,
-  },
-  recipeName: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#2D1B69',
-    letterSpacing: -0.5,
-  },
-  progressContainer: {
-    paddingHorizontal: 20,
-    paddingBottom: 16,
-  },
-  progressHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  progressLabel: {
+  stepCounter: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#2D1B69',
+    color: '#8E8E93',
   },
-  xpPreview: {
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  timerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: 'rgba(255, 184, 0, 0.1)',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
   },
-  xpPreviewText: {
-    fontSize: 12,
+  timerText: {
+    fontSize: 18,
     fontWeight: '700',
-    color: '#FFB800',
+    color: '#FF6B35',
+    minWidth: 50,
+    textAlign: 'center',
+  },
+  playButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#FF6B35',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  voiceButton: {
+    padding: 8,
+  },
+  progressSection: {
+    paddingHorizontal: 20,
+    paddingBottom: 16,
   },
   progressBar: {
     height: 8,
@@ -674,35 +635,31 @@ const styles = StyleSheet.create({
     backgroundColor: '#4CAF50',
     borderRadius: 4,
   },
+  progressDetails: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 6,
+  },
   progressText: {
     fontSize: 12,
     color: '#8E8E93',
-    marginTop: 6,
   },
-  claimPreview: {
+  xpBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginHorizontal: 20,
-    marginBottom: 16,
-    padding: 12,
+    gap: 4,
     backgroundColor: 'rgba(255, 184, 0, 0.1)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
     borderRadius: 12,
-    gap: 12,
   },
-  claimPreviewContent: {
-    flex: 1,
-  },
-  claimPreviewTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#FFB800',
-  },
-  claimPreviewSubtitle: {
+  xpText: {
     fontSize: 12,
+    fontWeight: '700',
     color: '#FFB800',
-    marginTop: 2,
   },
-  mainContent: {
+  mainStepArea: {
     flex: 1,
     paddingHorizontal: 20,
   },
@@ -717,23 +674,7 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     overflow: 'hidden',
   },
-  stepHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-  },
-  stepBadge: {
-    backgroundColor: '#FF6B35',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-  },
-  stepBadgeText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  instructionScroll: {
+  instructionContainer: {
     flex: 1,
     paddingHorizontal: 24,
     paddingTop: 8,
@@ -749,7 +690,38 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     letterSpacing: -0.3,
   },
-  stepControls: {
+  tipContainer: {
+    padding: 12,
+    backgroundColor: '#FFF9F7',
+    borderRadius: 12,
+  },
+  tipLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#2D1B69',
+  },
+  tipText: {
+    fontSize: 12,
+    color: '#8E8E93',
+  },
+  stepMetadata: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    padding: 12,
+    backgroundColor: '#FFF9F7',
+    borderRadius: 12,
+  },
+  metadataItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  metadataLabel: {
+    fontSize: 12,
+    color: '#8E8E93',
+  },
+  bottomControls: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -758,14 +730,14 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#E5E5E7',
   },
-  stepNavButton: {
+  navButton: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
-  stepNavText: {
+  navButtonText: {
     fontSize: 14,
     fontWeight: '500',
     color: '#2D1B69',
@@ -776,7 +748,7 @@ const styles = StyleSheet.create({
   disabledText: {
     color: '#C7C7CC',
   },
-  completeStepButton: {
+  completeButton: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
@@ -790,10 +762,44 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 4,
   },
-  completeStepText: {
+  completeButtonText: {
     fontSize: 14,
     fontWeight: '600',
     color: '#FFFFFF',
+  },
+  nextButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  nextButtonText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#FFFFFF',
+  },
+  quickAccess: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+  },
+  accessButton: {
+    padding: 12,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  accessButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#2D1B69',
   },
   xpCelebration: {
     position: 'absolute',
@@ -817,118 +823,20 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#2D1B69',
   },
-  stepOverview: {
-    paddingTop: 16,
-    paddingBottom: 8,
-  },
-  overviewTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#2D1B69',
-    marginBottom: 12,
-    paddingHorizontal: 20,
-  },
-  stepsList: {
-    paddingHorizontal: 20,
+  claimPreview: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 20,
+    marginBottom: 16,
+    padding: 12,
+    backgroundColor: 'rgba(255, 184, 0, 0.1)',
+    borderRadius: 12,
     gap: 12,
   },
-  stepItem: {
-    width: 140,
-    padding: 12,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E5E5E7',
-  },
-  activeStepItem: {
-    borderColor: '#FF6B35',
-    backgroundColor: '#FFF9F7',
-  },
-  completedStepItem: {
-    borderColor: '#4CAF50',
-    backgroundColor: '#F0FFF4',
-  },
-  stepDot: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: '#E5E5E7',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 8,
-  },
-  activeStepDot: {
-    backgroundColor: '#FF6B35',
-  },
-  completedStepDot: {
-    backgroundColor: '#4CAF50',
-  },
-  stepDotText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#8E8E93',
-  },
-  stepItemText: {
-    fontSize: 12,
-    color: '#8E8E93',
-    lineHeight: 16,
-  },
-  activeStepItemText: {
-    color: '#FF6B35',
-    fontWeight: '500',
-  },
-  completedStepItemText: {
-    color: '#4CAF50',
-  },
-  headerTimer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  headerTimerText: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#FF6B35',
-    minWidth: 50,
-    textAlign: 'center',
-  },
-  headerPlayButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#FF6B35',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerPauseButton: {
-    backgroundColor: '#2D1B69',
-  },
-  ingredientsSection: {
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E7',
-  },
-  ingredientsTitle: {
-    fontSize: 16,
+  claimPreviewText: {
+    fontSize: 14,
     fontWeight: '600',
-    color: '#2D1B69',
-    marginBottom: 8,
-  },
-  ingredientsList: {
-    flexDirection: 'row',
-  },
-  ingredientCard: {
-    backgroundColor: '#F0F0F0',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    marginRight: 8,
-  },
-  ingredientText: {
-    fontSize: 12,
-    color: '#2D1B69',
-    fontWeight: '500',
+    color: '#FFB800',
   },
 });
 
