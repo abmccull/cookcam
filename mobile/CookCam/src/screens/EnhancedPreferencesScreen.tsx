@@ -88,8 +88,8 @@ const EnhancedPreferencesScreen: React.FC<EnhancedPreferencesScreenProps> = ({
   const [servingOptions] = useState<ServingOption[]>([
     { id: 'myself', label: 'Just me', value: 1, icon: '👤' },
     { id: 'couple', label: 'Two people', value: 2, icon: '👥' },
-    { id: 'small-family', label: 'Family (4)', value: 4, icon: '👨‍👩‍👧‍👦' },
-    { id: 'large-family', label: 'Large group (6)', value: 6, icon: '👨‍👩‍👧‍👧' },
+    { id: 'small-family', label: 'Family (4)', value: 4, icon: '👪' },
+    { id: 'large-family', label: 'Large group (6)', value: 6, icon: '👨‍👩‍👧‍👧‍👦‍👧' },
     { id: 'custom', label: 'Custom amount', value: 0, icon: '✏️', isCustom: true },
   ]);
   
@@ -110,7 +110,7 @@ const EnhancedPreferencesScreen: React.FC<EnhancedPreferencesScreenProps> = ({
     { id: 'air-fryer', name: 'Air Fryer', category: 'appliance', icon: '💨', description: 'Crispy cooking', selected: false },
     { id: 'slow-cooker', name: 'Slow Cooker', category: 'appliance', icon: '🍲', description: 'Long, slow cooking', selected: false },
     { id: 'grill', name: 'Grill', category: 'outdoor', icon: '🍖', description: 'Outdoor grilling', selected: false },
-    { id: 'smoker', name: 'Smoker', category: 'outdoor', icon: '🚬', description: 'Smoking meats', selected: false },
+    { id: 'smoker', name: 'Smoker', category: 'outdoor', icon: '🔥', description: 'BBQ smoking', selected: false },
     { id: 'microwave', name: 'Microwave', category: 'appliance', icon: '📱', description: 'Quick heating', selected: true },
     { id: 'instant-pot', name: 'Instant Pot', category: 'appliance', icon: '⚡', description: 'Pressure cooking', selected: false },
     { id: 'food-processor', name: 'Food Processor', category: 'tool', icon: '🔪', description: 'Chopping and mixing', selected: false },
@@ -504,83 +504,79 @@ const EnhancedPreferencesScreen: React.FC<EnhancedPreferencesScreenProps> = ({
 
   // Render functions for different step types
   const renderServingStep = () => (
-    <View style={styles.stepContent}>
+    <View>
       {/* Serving Size Section */}
-      <View style={styles.sectionContainer}>
-        <View style={styles.servingGrid}>
-          {servingOptions.map((option) => (
-            <TouchableOpacity
-              key={option.id}
-              style={[
-                styles.servingOption,
-                selectedServing.id === option.id && styles.servingOptionSelected,
-              ]}
-              onPress={() => handleServingSelection(option)}
-            >
-              <Text style={styles.servingIcon}>{option.icon}</Text>
-              <Text style={[
-                styles.servingLabel,
-                selectedServing.id === option.id && styles.servingLabelSelected,
-              ]}>
-                {option.label}
-              </Text>
-              {selectedServing.id === option.id && option.isCustom && (
-                <Text style={styles.customValue}>{selectedServing.value} people</Text>
-              )}
-            </TouchableOpacity>
-          ))}
-        </View>
+      <View style={styles.servingGrid}>
+        {servingOptions.map((option) => (
+          <TouchableOpacity
+            key={option.id}
+            style={[
+              styles.servingOption,
+              selectedServing.id === option.id && styles.servingOptionSelected,
+            ]}
+            onPress={() => handleServingSelection(option)}
+          >
+            <Text style={styles.servingIcon}>{option.icon}</Text>
+            <Text style={[
+              styles.servingLabel,
+              selectedServing.id === option.id && styles.servingLabelSelected,
+            ]}>
+              {option.label}
+            </Text>
+            {selectedServing.id === option.id && option.isCustom && (
+              <Text style={styles.customValue}>{selectedServing.value} people</Text>
+            )}
+          </TouchableOpacity>
+        ))}
       </View>
 
       {/* Meal Prep Section */}
-      <View style={styles.sectionContainer}>
-        <TouchableOpacity
-          style={[styles.mealPrepToggle, mealPrepEnabled && styles.mealPrepToggleActive]}
-          onPress={toggleMealPrep}
-        >
-          <View style={styles.mealPrepContent}>
-            <Text style={[styles.mealPrepText, mealPrepEnabled && styles.mealPrepTextActive]}>
-              I want to meal prep
-            </Text>
-            <Text style={[styles.mealPrepSubtext, mealPrepEnabled && styles.mealPrepSubtextActive]}>
-              Prepare multiple portions for the week
-            </Text>
-          </View>
-          <View style={[styles.checkbox, mealPrepEnabled && styles.checkboxActive]}>
-            {mealPrepEnabled && <Check size={16} color="#FFFFFF" />}
-          </View>
-        </TouchableOpacity>
+      <TouchableOpacity
+        style={[styles.mealPrepToggle, mealPrepEnabled && styles.mealPrepToggleActive]}
+        onPress={toggleMealPrep}
+      >
+        <View style={styles.mealPrepContent}>
+          <Text style={[styles.mealPrepText, mealPrepEnabled && styles.mealPrepTextActive]}>
+            I want to meal prep
+          </Text>
+          <Text style={[styles.mealPrepSubtext, mealPrepEnabled && styles.mealPrepSubtextActive]}>
+            Prepare multiple portions for the week
+          </Text>
+        </View>
+        <View style={[styles.checkbox, mealPrepEnabled && styles.checkboxActive]}>
+          {mealPrepEnabled && <Check size={16} color="#FFFFFF" />}
+        </View>
+      </TouchableOpacity>
 
-        {mealPrepEnabled && (
-          <View style={styles.mealPrepPortions}>
-            <Text style={styles.portionsLabel}>How many meal prep portions?</Text>
-            <View style={styles.portionsRow}>
-              {[3, 4, 5, 6, 8, 10, 12, 14].map((portions) => (
-                <TouchableOpacity
-                  key={portions}
-                  style={[
-                    styles.portionOption,
-                    mealPrepPortions === portions && styles.portionOptionSelected,
-                  ]}
-                  onPress={() => handleMealPrepPortions(portions)}
-                >
-                  <Text style={[
-                    styles.portionText,
-                    mealPrepPortions === portions && styles.portionTextSelected,
-                  ]}>
-                    {portions}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+      {mealPrepEnabled && (
+        <View style={styles.mealPrepPortions}>
+          <Text style={styles.portionsLabel}>How many meal prep portions?</Text>
+          <View style={styles.portionsRow}>
+            {[3, 4, 5, 6, 8, 10, 12, 14].map((portions) => (
+              <TouchableOpacity
+                key={portions}
+                style={[
+                  styles.portionOption,
+                  mealPrepPortions === portions && styles.portionOptionSelected,
+                ]}
+                onPress={() => handleMealPrepPortions(portions)}
+              >
+                <Text style={[
+                  styles.portionText,
+                  mealPrepPortions === portions && styles.portionTextSelected,
+                ]}>
+                  {portions}
+                </Text>
+              </TouchableOpacity>
+            ))}
           </View>
-        )}
-      </View>
+        </View>
+      )}
     </View>
   );
 
   const renderAppliancesStep = () => (
-    <View style={styles.stepContent}>
+    <ScrollView style={{flex: 1}} showsVerticalScrollIndicator={false}>
       <View style={styles.applianceGrid}>
         {appliances.map((appliance) => (
           <TouchableOpacity
@@ -615,46 +611,36 @@ const EnhancedPreferencesScreen: React.FC<EnhancedPreferencesScreenProps> = ({
       <Text style={styles.applianceHint}>
         {selectedApplianceCount} selected • Select all that you have
       </Text>
-    </View>
+    </ScrollView>
   );
 
   const renderMultiChoice = () => {
     const step = steps[currentStep];
     
     return (
-      <View style={styles.stepContent}>
-        <View style={styles.optionsGrid}>
-          {step.options?.map((option, index) => (
-            <TouchableOpacity
-              key={`${step.id}-${index}-${option}`}
+      <View style={styles.optionsGrid}>
+        {step.options?.map((option, index) => (
+          <TouchableOpacity
+            key={`${step.id}-${index}-${option}`}
+            style={[
+              styles.optionChip,
+              isOptionSelected(option) && styles.selectedChip,
+            ]}
+            onPress={() => toggleOption(option)}
+          >
+            <Text
               style={[
-                styles.optionChip,
-                isOptionSelected(option) && styles.selectedChip,
+                styles.chipText,
+                isOptionSelected(option) && styles.selectedChipText,
               ]}
-              onPress={() => toggleOption(option)}
             >
-              <Text
-                style={[
-                  styles.chipText,
-                  isOptionSelected(option) && styles.selectedChipText,
-                ]}
-              >
-                {option}
-              </Text>
-              {isOptionSelected(option) && (
-                <Check size={14} color="#F8F8FF" style={styles.checkIcon} />
-              )}
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {/* Show badge hint for cuisine selection */}
-        {currentStep === 3 && cuisine.length >= 3 && (
-          <Animated.View style={[styles.badgeHint, {opacity: fadeAnim}]}>
-            <Globe size={16} color="#FFB800" />
-            <Text style={styles.badgeHintText}>Explorer badge unlocked for trying exotic cuisines!</Text>
-          </Animated.View>
-        )}
+              {option}
+            </Text>
+            {isOptionSelected(option) && (
+              <Check size={14} color="#F8F8FF" style={styles.checkIcon} />
+            )}
+          </TouchableOpacity>
+        ))}
       </View>
     );
   };
@@ -663,52 +649,58 @@ const EnhancedPreferencesScreen: React.FC<EnhancedPreferencesScreenProps> = ({
     const step = steps[currentStep];
     
     return (
-      <View style={styles.stepContent}>
-        <View style={styles.singleChoiceContainer}>
-          {step.options?.map((option: any, index: number) => (
-            <TouchableOpacity
-              key={`${step.id}-${index}-${option.value}`}
-              style={[
-                styles.singleOption,
-                isOptionSelected(option) && styles.selectedSingleOption,
-              ]}
-              onPress={() => selectSingleOption(option.value)}
-            >
-              <View style={styles.optionContent}>
-                <Text style={[
-                  styles.optionLabel,
-                  isOptionSelected(option) && styles.selectedOptionLabel,
-                ]}>
-                  {option.label}
-                </Text>
-                <Text style={[
-                  styles.optionSubtitle,
-                  isOptionSelected(option) && styles.selectedOptionSubtitle,
-                ]}>
-                  {option.subtitle}
-                </Text>
-              </View>
-              <View style={[
-                styles.radioCircle,
-                isOptionSelected(option) && styles.selectedRadioCircle,
+      <View style={styles.singleChoiceContainer}>
+        {step.options?.map((option: any, index: number) => (
+          <TouchableOpacity
+            key={`${step.id}-${index}-${option.value}`}
+            style={[
+              styles.singleOption,
+              isOptionSelected(option) && styles.selectedSingleOption,
+            ]}
+            onPress={() => selectSingleOption(option.value)}
+          >
+            <View style={styles.optionContent}>
+              <Text style={[
+                styles.optionLabel,
+                isOptionSelected(option) && styles.selectedOptionLabel,
               ]}>
-                {isOptionSelected(option) && (
-                  <View style={styles.radioInner} />
-                )}
-              </View>
-            </TouchableOpacity>
-          ))}
-        </View>
+                {option.label}
+              </Text>
+              <Text style={[
+                styles.optionSubtitle,
+                isOptionSelected(option) && styles.selectedOptionSubtitle,
+              ]}>
+                {option.subtitle}
+              </Text>
+            </View>
+            <View style={[
+              styles.radioCircle,
+              isOptionSelected(option) && styles.selectedRadioCircle,
+            ]}>
+              {isOptionSelected(option) && (
+                <View style={styles.radioInner} />
+              )}
+            </View>
+          </TouchableOpacity>
+        ))}
       </View>
     );
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Enhanced Progress Bar */}
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <ChevronLeft size={24} color="#2D1B69" />
+          <Text style={styles.backText}>Review Ingredients</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Progress Bar */}
       <View style={styles.progressContainer}>
         <View style={styles.progressHeader}>
-          <Text style={styles.progressLabel}>Cooking Preferences</Text>
+          <Text style={styles.progressLabel}>Your Preferences</Text>
           <Text style={styles.progressPercentage}>{completionPercentage}%</Text>
         </View>
         <View style={styles.progressBar}>
@@ -741,12 +733,19 @@ const EnhancedPreferencesScreen: React.FC<EnhancedPreferencesScreenProps> = ({
           ]}
         >
           <Text style={styles.title}>{currentStepData.title}</Text>
-          <Text style={styles.subtitle}>{currentStepData.subtitle}</Text>
           
           {currentStepData.type === 'serving' && renderServingStep()}
           {currentStepData.type === 'appliances' && renderAppliancesStep()}
           {currentStepData.type === 'multi' && renderMultiChoice()}
           {currentStepData.type === 'single' && renderSingleChoice()}
+          
+          {/* Show badge hint for cuisine selection */}
+          {currentStep === 3 && cuisine.length >= 3 && (
+            <Animated.View style={[styles.badgeHint, {opacity: fadeAnim}]}>
+              <Globe size={16} color="#FFB800" />
+              <Text style={styles.badgeHintText}>Explorer badge unlocked for trying exotic cuisines!</Text>
+            </Animated.View>
+          )}
         </Animated.View>
         
         {/* XP Reward Animation */}
@@ -858,86 +857,308 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F8F8FF',
   },
-  // Quiz flow specific styles
-  progressContainer: {
+  header: {
     backgroundColor: '#FFFFFF',
-    paddingHorizontal: responsive.spacing.m,
-    paddingVertical: responsive.spacing.m,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#E5E5E7',
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  backText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#2D1B69',
+  },
+  progressContainer: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 12,
   },
   progressHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: responsive.spacing.s,
+    marginBottom: 10,
   },
   progressLabel: {
-    fontSize: responsive.fontSize.medium,
-    fontWeight: '600',
+    fontSize: 18,
+    fontWeight: '700',
     color: '#2D1B69',
+    letterSpacing: -0.5,
   },
   progressPercentage: {
-    fontSize: responsive.fontSize.small,
-    fontWeight: '600',
-    color: '#4CAF50',
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#FF6B35',
   },
   progressBar: {
-    height: verticalScale(6),
+    height: 6,
     backgroundColor: '#E5E5E7',
-    borderRadius: responsive.borderRadius.small,
+    borderRadius: 3,
     overflow: 'hidden',
-    marginBottom: verticalScale(4),
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#4CAF50',
-    borderRadius: responsive.borderRadius.small,
+    backgroundColor: '#FF6B35',
+    borderRadius: 3,
   },
   progressText: {
-    fontSize: responsive.fontSize.small,
+    fontSize: 13,
     color: '#8E8E93',
-    textAlign: 'center',
+    marginTop: 6,
   },
   content: {
     flex: 1,
-    justifyContent: 'center',
+    paddingHorizontal: 20,
   },
   questionContainer: {
     flex: 1,
-    paddingHorizontal: responsive.spacing.m,
-    paddingVertical: responsive.spacing.l,
+    paddingTop: 5,
+    justifyContent: 'flex-start',
   },
-  stepContent: {
+  title: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#2D1B69',
+    textAlign: 'center',
+    marginBottom: 16,
+    lineHeight: 26,
+    letterSpacing: -0.5,
+  },
+  // Serving step styles
+  servingGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    justifyContent: 'center',
+    paddingTop: 8,
+  },
+  servingOption: {
+    width: '45%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#E5E5E7',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+  },
+  servingOptionSelected: {
+    backgroundColor: 'rgba(45, 27, 105, 0.1)',
+    borderColor: '#2D1B69',
+  },
+  servingIcon: {
+    fontSize: 28,
+    marginBottom: 8,
+  },
+  servingLabel: {
+    fontSize: 14,
+    color: '#666',
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  servingLabelSelected: {
+    color: '#2D1B69',
+    fontWeight: '700',
+  },
+  customValue: {
+    fontSize: 12,
+    color: '#4CAF50',
+    fontWeight: '600',
+    marginTop: 4,
+  },
+  mealPrepToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 2,
+    borderColor: '#E5E5E7',
+    marginTop: 16,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+  },
+  mealPrepToggleActive: {
+    backgroundColor: 'rgba(76, 175, 80, 0.1)',
+    borderColor: '#4CAF50',
+  },
+  mealPrepContent: {
     flex: 1,
-    marginTop: responsive.spacing.l,
   },
-  sectionContainer: {
-    marginBottom: responsive.spacing.l,
+  mealPrepText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#666',
+  },
+  mealPrepTextActive: {
+    color: '#4CAF50',
+  },
+  mealPrepSubtext: {
+    fontSize: 13,
+    color: '#8E8E93',
+    marginTop: 2,
+  },
+  mealPrepSubtextActive: {
+    color: '#4CAF50',
+  },
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#E0E0E0',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkboxActive: {
+    backgroundColor: '#4CAF50',
+  },
+  mealPrepPortions: {
+    marginTop: 16,
+  },
+  portionsLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#2D1B69',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  portionsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    justifyContent: 'center',
+  },
+  portionOption: {
+    backgroundColor: '#F8F9FA',
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  portionOptionSelected: {
+    backgroundColor: 'rgba(76, 175, 80, 0.1)',
+    borderColor: '#4CAF50',
+  },
+  portionText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#666',
+  },
+  portionTextSelected: {
+    color: '#4CAF50',
+  },
+  // Appliance styles
+  applianceGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    justifyContent: 'center',
+    paddingTop: 8,
+  },
+  applianceCard: {
+    width: '45%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+    position: 'relative',
+    borderWidth: 2,
+    borderColor: '#E5E5E7',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+  },
+  applianceCardSelected: {
+    backgroundColor: 'rgba(76, 175, 80, 0.1)',
+    borderColor: '#4CAF50',
+  },
+  applianceIcon: {
+    fontSize: 32,
+    marginBottom: 8,
+  },
+  applianceName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#2D1B69',
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  applianceNameSelected: {
+    color: '#4CAF50',
+  },
+  applianceDescription: {
+    fontSize: 12,
+    color: '#8E8E93',
+    textAlign: 'center',
+  },
+  applianceDescriptionSelected: {
+    color: '#4CAF50',
+  },
+  applianceCheckbox: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#4CAF50',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  applianceHint: {
+    fontSize: 13,
+    color: '#8E8E93',
+    textAlign: 'center',
+    marginTop: 12,
   },
   // Multi-choice styles
   optionsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: scale(12),
+    justifyContent: 'center',
+    gap: 6,
+    paddingTop: 8,
+    paddingHorizontal: 4,
   },
   optionChip: {
-    backgroundColor: '#F8F9FA',
-    borderRadius: responsive.borderRadius.medium,
-    paddingVertical: verticalScale(12),
-    paddingHorizontal: scale(16),
-    borderWidth: 2,
-    borderColor: 'transparent',
     flexDirection: 'row',
     alignItems: 'center',
-    gap: scale(6),
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 2,
+    borderColor: '#E5E5E7',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    marginHorizontal: 2,
+    marginVertical: 2,
   },
   selectedChip: {
     backgroundColor: 'rgba(45, 27, 105, 0.1)',
     borderColor: '#2D1B69',
   },
   chipText: {
-    fontSize: responsive.fontSize.regular,
+    fontSize: 14,
     fontWeight: '500',
     color: '#666',
   },
@@ -946,35 +1167,41 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   checkIcon: {
-    marginLeft: scale(4),
+    marginLeft: 4,
   },
   badgeHint: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(255, 184, 0, 0.1)',
-    borderRadius: responsive.borderRadius.small,
-    padding: responsive.spacing.s,
-    marginTop: responsive.spacing.m,
-    gap: scale(8),
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 16,
+    gap: 8,
   },
   badgeHintText: {
-    fontSize: responsive.fontSize.small,
+    fontSize: 13,
     color: '#FFB800',
     fontWeight: '500',
     flex: 1,
   },
   // Single choice styles
   singleChoiceContainer: {
-    gap: scale(12),
+    gap: 12,
+    paddingTop: 8,
   },
   singleOption: {
-    backgroundColor: '#F8F9FA',
-    borderRadius: responsive.borderRadius.medium,
-    padding: responsive.spacing.m,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: 'transparent',
+    borderColor: '#E5E5E7',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
   },
   selectedSingleOption: {
     backgroundColor: 'rgba(45, 27, 105, 0.1)',
@@ -984,25 +1211,25 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   optionLabel: {
-    fontSize: responsive.fontSize.medium,
+    fontSize: 16,
     fontWeight: '600',
     color: '#2D1B69',
-    marginBottom: verticalScale(2),
+    marginBottom: 2,
   },
   selectedOptionLabel: {
     color: '#2D1B69',
   },
   optionSubtitle: {
-    fontSize: responsive.fontSize.small,
+    fontSize: 13,
     color: '#8E8E93',
   },
   selectedOptionSubtitle: {
     color: '#2D1B69',
   },
   radioCircle: {
-    width: moderateScale(20),
-    height: moderateScale(20),
-    borderRadius: moderateScale(10),
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     borderWidth: 2,
     borderColor: '#E0E0E0',
     justifyContent: 'center',
@@ -1012,17 +1239,10 @@ const styles = StyleSheet.create({
     borderColor: '#2D1B69',
   },
   radioInner: {
-    width: moderateScale(10),
-    height: moderateScale(10),
-    borderRadius: moderateScale(5),
+    width: 10,
+    height: 10,
+    borderRadius: 5,
     backgroundColor: '#2D1B69',
-  },
-  // Appliance hint
-  applianceHint: {
-    fontSize: responsive.fontSize.small,
-    color: '#8E8E93',
-    textAlign: 'center',
-    marginTop: responsive.spacing.s,
   },
   // Navigation styles
   navigation: {
@@ -1030,18 +1250,18 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    paddingHorizontal: responsive.spacing.m,
-    paddingVertical: responsive.spacing.m,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     borderTopWidth: 1,
     borderTopColor: '#E5E5E7',
   },
   navButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: verticalScale(10),
-    paddingHorizontal: scale(16),
-    borderRadius: responsive.borderRadius.medium,
-    gap: scale(4),
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    gap: 4,
   },
   invisibleButton: {
     opacity: 0,
@@ -1053,22 +1273,22 @@ const styles = StyleSheet.create({
     backgroundColor: '#E0E0E0',
   },
   navButtonText: {
-    fontSize: responsive.fontSize.regular,
+    fontSize: 14,
     fontWeight: '500',
     color: '#2D1B69',
   },
   nextButtonText: {
-    fontSize: responsive.fontSize.regular,
+    fontSize: 14,
     fontWeight: '600',
     color: '#F8F8FF',
   },
   skipButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: scale(4),
+    gap: 4,
   },
   skipButtonText: {
-    fontSize: responsive.fontSize.small,
+    fontSize: 13,
     color: '#8E8E93',
   },
   // Reward animations
@@ -1078,16 +1298,16 @@ const styles = StyleSheet.create({
     left: '50%',
     transform: [{translateX: -75}, {translateY: -25}],
     backgroundColor: 'rgba(255, 184, 0, 0.9)',
-    borderRadius: responsive.borderRadius.large,
-    paddingVertical: verticalScale(12),
-    paddingHorizontal: scale(20),
+    borderRadius: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: scale(8),
+    gap: 8,
     zIndex: 1000,
   },
   xpRewardText: {
-    fontSize: responsive.fontSize.medium,
+    fontSize: 16,
     fontWeight: '700',
     color: '#FFFFFF',
   },
@@ -1097,15 +1317,15 @@ const styles = StyleSheet.create({
     left: '50%',
     transform: [{translateX: -100}, {translateY: -50}],
     backgroundColor: 'rgba(255, 184, 0, 0.95)',
-    borderRadius: responsive.borderRadius.large,
-    paddingVertical: verticalScale(16),
-    paddingHorizontal: scale(24),
+    borderRadius: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 24,
     alignItems: 'center',
-    gap: scale(8),
+    gap: 8,
     zIndex: 1000,
   },
   badgeUnlockText: {
-    fontSize: responsive.fontSize.medium,
+    fontSize: 16,
     fontWeight: '700',
     color: '#FFFFFF',
   },
