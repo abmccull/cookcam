@@ -365,43 +365,41 @@ const CookModeScreen: React.FC<CookModeScreenProps> = ({navigation, route}) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Single Clean Header */}
-      <View style={styles.header}>
+      {/* MINIMAL FOCUSED HEADER */}
+      <View style={styles.minimalHeader}>
         <TouchableOpacity 
           style={styles.backButton}
           onPress={() => navigation.goBack()}>
           <ChevronLeft size={24} color="#2D1B69" />
         </TouchableOpacity>
         
-        <View style={styles.headerCenter}>
-          <Text style={styles.recipeTitle} numberOfLines={1}>
-            {recipe?.title || 'Recipe'}
-          </Text>
-          <Text style={styles.stepProgress}>
-            Step {currentStep + 1} of {steps.length} • {Math.round(progress)}% Complete
-          </Text>
-        </View>
+        <Text style={styles.recipeTitle} numberOfLines={1}>
+          {recipe?.title || 'Recipe'}
+        </Text>
 
-        <View style={styles.headerRight}>
+        <View style={styles.headerActions}>
+          {/* Timer - Only show if step has duration */}
           {currentStepData?.duration && (
-            <View style={styles.timerContainer}>
+            <View style={styles.compactTimer}>
               <Text style={styles.timerText}>{formatTime(timeRemaining)}</Text>
               <TouchableOpacity 
                 style={styles.playButton} 
                 onPress={handlePlayPause}>
                 {isPlaying ? (
-                  <Pause size={14} color="#FFFFFF" />
+                  <Pause size={12} color="#FFFFFF" />
                 ) : (
-                  <Play size={14} color="#FFFFFF" />
+                  <Play size={12} color="#FFFFFF" />
                 )}
               </TouchableOpacity>
             </View>
           )}
-          <TouchableOpacity onPress={toggleVoice} style={styles.voiceButton}>
+          
+          {/* Voice toggle - Compact */}
+          <TouchableOpacity onPress={toggleVoice} style={styles.compactVoiceButton}>
             {voiceEnabled ? (
-              <Volume2 size={20} color="#FF6B35" />
+              <Volume2 size={18} color="#FF6B35" />
             ) : (
-              <VolumeX size={20} color="#8E8E93" />
+              <VolumeX size={18} color="#8E8E93" />
             )}
           </TouchableOpacity>
         </View>
@@ -702,62 +700,60 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F8F8FF',
   },
-  header: {
+  // MINIMAL FOCUSED HEADER STYLES
+  minimalHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E7',
+    paddingVertical: 12,
+    backgroundColor: '#FFFFFF',
   },
   backButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  headerCenter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+    padding: 4,
   },
   recipeTitle: {
-    fontSize: 18,
+    flex: 1,
+    fontSize: 16,
     fontWeight: '700',
     color: '#2D1B69',
-    letterSpacing: -0.5,
+    letterSpacing: -0.3,
+    textAlign: 'center',
+    marginHorizontal: 16,
   },
-  stepProgress: {
-    fontSize: 14,
-    color: '#8E8E93',
-  },
-  headerRight: {
+  headerActions: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
   },
-  timerContainer: {
+  compactTimer: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
+    backgroundColor: '#FFF9F7',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
   },
   timerText: {
-    fontSize: 18,
+    fontSize: 14,
     fontWeight: '700',
     color: '#FF6B35',
-    minWidth: 50,
+    minWidth: 40,
     textAlign: 'center',
   },
   playButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     backgroundColor: '#FF6B35',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  voiceButton: {
-    padding: 8,
+  compactVoiceButton: {
+    padding: 6,
+    backgroundColor: '#F8F8FF',
+    borderRadius: 8,
   },
   // CONFIDENCE-BUILDING PROGRESS STYLES
   progressSection: {
