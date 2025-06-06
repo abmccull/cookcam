@@ -3,6 +3,7 @@ import {NavigationContainer} from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
 import {StatusBar, ActivityIndicator, View, StyleSheet, Text, SafeAreaView, AppState} from 'react-native';
+import {GestureHandlerRootView} from 'react-native-gesture-handler';
 import {Home, Heart, Trophy, Search, User, PlusCircle} from 'lucide-react-native';
 import {AuthProvider, useAuth} from './context/AuthContext';
 import {GamificationProvider} from './context/GamificationContext';
@@ -243,24 +244,26 @@ const AppWithAnalytics = () => {
   }, []);
 
   return (
-    <SafeAreaProvider>
-      <StatusBar
-        barStyle="light-content"
-        backgroundColor="#2D1B69"
-        translucent={false}
-      />
-      <AuthProvider>
-        <SubscriptionProvider>
-          <GamificationProvider>
-            <XPNotificationProvider>
-              <NavigationContainer>
-                <RootNavigator />
-              </NavigationContainer>
-            </XPNotificationProvider>
-          </GamificationProvider>
-        </SubscriptionProvider>
-      </AuthProvider>
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={{flex: 1}}>
+      <SafeAreaProvider>
+        <StatusBar
+          barStyle="light-content"
+          backgroundColor="#2D1B69"
+          translucent={false}
+        />
+        <AuthProvider>
+          <SubscriptionProvider>
+            <GamificationProvider>
+              <XPNotificationProvider>
+                <NavigationContainer>
+                  <RootNavigator />
+                </NavigationContainer>
+              </XPNotificationProvider>
+            </GamificationProvider>
+          </SubscriptionProvider>
+        </AuthProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 };
 
