@@ -106,7 +106,7 @@ const HomeStackScreen = () => (
       name="RecipeCards"
       component={RecipeCardsScreen}
       options={{
-        title: 'Recipe Suggestions',
+        title: 'AI Generated Recipes',
       }}
     />
     <HomeStack.Screen

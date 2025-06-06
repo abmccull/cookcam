@@ -750,7 +750,7 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
         {/* Continue Button */}
         <View style={styles.bottomContainer}>
           <TouchableOpacity style={styles.continueButton} onPress={handleContinue}>
-            <Text style={styles.continueButtonText}>Find Recipes</Text>
+            <Text style={styles.continueButtonText}>Generate Recipes</Text>
             <Sparkles size={moderateScale(18)} color="#F8F8FF" />
           </TouchableOpacity>
         </View>
