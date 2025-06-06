@@ -11,9 +11,10 @@ import {
   Alert,
   Animated,
   ActivityIndicator,
+  Dimensions,
 } from 'react-native';
 // import Swiper from 'react-native-deck-swiper'; // Temporarily disabled due to PropTypes issue
-import {Clock, Users, X, Heart, Info, TrendingUp, Star, Sparkles, Trophy} from 'lucide-react-native';
+import {Clock, Users, X, Heart, Info, TrendingUp, Star, Sparkles, Trophy, Home, Check, AlertCircle} from 'lucide-react-native';
 import {useGamification, XP_VALUES} from '../context/GamificationContext';
 import ChefBadge from '../components/ChefBadge';
 import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
@@ -71,6 +72,116 @@ interface RecipeCardsScreenProps {
   navigation: any;
   route: any;
 }
+
+// Component for displaying ingredient with source highlighting
+const IngredientTag: React.FC<{
+  ingredient: any;
+  style?: any;
+}> = ({ingredient, style}) => {
+  const getIngredientStyle = (source: string) => {
+    switch (source) {
+      case 'scanned':
+        return {
+          backgroundColor: '#E8F5E8',
+          borderColor: '#4CAF50',
+          iconColor: '#4CAF50',
+          icon: Check,
+        };
+      case 'pantry':
+        return {
+          backgroundColor: '#FFF3E0',
+          borderColor: '#FF9800',
+          iconColor: '#FF9800',
+          icon: Home,
+        };
+      case 'optional':
+        return {
+          backgroundColor: '#F3E5F5',
+          borderColor: '#9C27B0',
+          iconColor: '#9C27B0',
+          icon: AlertCircle,
+        };
+      default:
+        return {
+          backgroundColor: '#F5F5F5',
+          borderColor: '#E0E0E0',
+          iconColor: '#757575',
+          icon: Check,
+        };
+    }
+  };
+
+  const ingredientName = typeof ingredient === 'string' ? ingredient : ingredient.name;
+  const ingredientSource = typeof ingredient === 'string' ? 'scanned' : (ingredient.source || 'scanned');
+  const ingredientAmount = typeof ingredient === 'string' ? '' : `${ingredient.amount} ${ingredient.unit}`;
+  
+  const styleConfig = getIngredientStyle(ingredientSource);
+  const IconComponent = styleConfig.icon;
+
+  return (
+    <View style={[styles.ingredientTag, {
+      backgroundColor: styleConfig.backgroundColor,
+      borderColor: styleConfig.borderColor,
+    }, style]}>
+      <IconComponent size={14} color={styleConfig.iconColor} />
+      <Text style={[styles.ingredientTagText, {color: styleConfig.iconColor}]}>
+        {ingredientAmount} {ingredientName}
+      </Text>
+    </View>
+  );
+};
+
+// Component for showing recipe analysis
+const RecipeAnalysis: React.FC<{
+  recipe: any;
+  ingredientAnalysis?: any;
+}> = ({recipe, ingredientAnalysis}) => {
+  if (!recipe.ingredientsUsed && !recipe.ingredientsSkipped) return null;
+
+  return (
+    <View style={styles.analysisContainer}>
+      <Text style={styles.analysisTitle}>Recipe Analysis</Text>
+      
+      {recipe.ingredientsUsed && recipe.ingredientsUsed.length > 0 && (
+        <View style={styles.analysisSection}>
+          <Text style={styles.analysisSectionTitle}>✅ Ingredients Used</Text>
+          <View style={styles.analysisTagsContainer}>
+            {recipe.ingredientsUsed.map((ingredient: string, index: number) => (
+              <View key={index} style={[styles.analysisTag, styles.usedTag]}>
+                <Text style={styles.usedTagText}>{ingredient}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+      )}
+
+      {recipe.ingredientsSkipped && recipe.ingredientsSkipped.length > 0 && (
+        <View style={styles.analysisSection}>
+          <Text style={styles.analysisSectionTitle}>⏭️ Ingredients Skipped</Text>
+          <View style={styles.analysisTagsContainer}>
+            {recipe.ingredientsSkipped.map((ingredient: string, index: number) => (
+              <View key={index} style={[styles.analysisTag, styles.skippedTag]}>
+                <Text style={styles.skippedTagText}>{ingredient}</Text>
+              </View>
+            ))}
+          </View>
+          {recipe.skipReason && (
+            <Text style={styles.skipReason}>💡 {recipe.skipReason}</Text>
+          )}
+        </View>
+      )}
+
+      {recipe.cookingMethod && (
+        <View style={styles.analysisSection}>
+          <Text style={styles.analysisSectionTitle}>🍳 Cooking Method</Text>
+          <View style={[styles.analysisTag, styles.methodTag]}>
+            <Text style={styles.methodTagText}>{recipe.cookingMethod}</Text>
+          </View>
+        </View>
+      )}
+    </View>
+  );
+};
 
 const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
   navigation,
@@ -226,51 +337,83 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
           setSessionId(response.data.sessionId);
         }
 
-        // Handle enhanced recipe generation response (single recipe)
-        const recipeData = response.data.data || response.data;
+        // Handle multiple recipes response (3 diverse recipes)
+        const recipesData = response.data.recipes || response.data.data?.recipes;
+        const ingredientAnalysis = response.data.ingredientAnalysis || response.data.data?.ingredientAnalysis;
         
-        if (recipeData && recipeData.title) {
-          // Debug: Log the nutrition data we're receiving
-          console.log('📊 Backend nutrition data:', JSON.stringify(recipeData.nutrition, null, 2));
+        if (recipesData && Array.isArray(recipesData) && recipesData.length > 0) {
+          console.log('✅ Received multiple recipes:', recipesData.length);
+          console.log('📊 Ingredient Analysis:', ingredientAnalysis);
           
-          // Convert the single enhanced recipe to our Recipe format
-          const aiRecipe: Recipe = {
-            id: 'ai-enhanced-0',
-            title: recipeData.title || 'AI Generated Recipe',
-            image: `https://via.placeholder.com/400x300/4CAF50/FFFFFF?text=${encodeURIComponent(recipeData.title || 'Recipe')}`,
-            cookingTime: `${recipeData.metadata?.totalTime || 30} min`,
-            servings: recipeData.metadata?.servings || 4,
-            difficulty: recipeData.metadata?.difficulty || 'Medium',
-            macros: {
-              calories: Math.round(recipeData.nutrition?.calories || 350),
-              protein: Math.round(recipeData.nutrition?.protein || 15),
-              carbs: Math.round(recipeData.nutrition?.carbohydrates || 45),
-              fat: Math.round(recipeData.nutrition?.fat || 12),
-            },
-            tags: [
-              ...(preferences?.dietary || []),
-              ...(preferences?.cuisine || []),
-              'AI Generated',
-              recipeData.metadata?.cuisineType || 'International'
-            ],
-            description: recipeData.description || 'A delicious AI-generated recipe using your detected ingredients.',
-            ingredients: recipeData.ingredients || detectedIngredients,
-            instructions: recipeData.instructions || [],
-            tips: recipeData.tips || [],
-            creatorName: 'AI Chef',
-            creatorTier: 5,
-            // No rating/reviews for fresh AI recipes
-            rating: undefined,
-            ratingCount: undefined,
-            viewCount: undefined,
-            isTrending: false, // Fresh recipes aren't trending yet
-            isCreatorRecipe: false,
-          };
+          // Convert each recipe to our Recipe format
+          const aiRecipes: Recipe[] = recipesData.map((recipeData: any, index: number) => {
+            // Debug: Log the nutrition data we're receiving
+            console.log(`📊 Recipe ${index + 1} nutrition data:`, JSON.stringify(recipeData.nutrition, null, 2));
+            
+            // Map ingredient sources for highlighting
+            const processedIngredients = recipeData.ingredients?.map((ing: any) => {
+              if (typeof ing === 'string') {
+                return {
+                  name: ing,
+                  amount: '1',
+                  unit: 'serving',
+                  source: 'scanned'
+                };
+              }
+              return {
+                name: ing.name,
+                amount: ing.amount,
+                unit: ing.unit,
+                notes: ing.notes,
+                source: ing.source || 'scanned' // 'scanned', 'pantry', or 'optional'
+              };
+            }) || [];
 
-          console.log('✅ Successfully converted enhanced AI recipe:', aiRecipe.title);
-          setRecipes([aiRecipe]);
+            return {
+              id: `ai-diverse-${index}`,
+              title: recipeData.title || `AI Generated Recipe ${index + 1}`,
+              image: `https://via.placeholder.com/400x300/4CAF50/FFFFFF?text=${encodeURIComponent(recipeData.title || 'Recipe')}`,
+              cookingTime: `${recipeData.metadata?.totalTime || 30} min`,
+              servings: recipeData.metadata?.servings || 4,
+              difficulty: recipeData.metadata?.difficulty || 'Medium',
+              macros: {
+                calories: Math.round(recipeData.nutrition?.calories || 350),
+                protein: Math.round(recipeData.nutrition?.protein || 15),
+                carbs: Math.round(recipeData.nutrition?.carbohydrates || 45),
+                fat: Math.round(recipeData.nutrition?.fat || 12),
+              },
+              tags: [
+                ...(preferences?.dietary || []),
+                ...(preferences?.cuisine || []),
+                'AI Generated',
+                recipeData.metadata?.cuisineType || 'International',
+                recipeData.metadata?.cookingMethod || 'Mixed'
+              ].filter(Boolean),
+              description: recipeData.description || `A delicious ${recipeData.metadata?.cuisineType || ''} dish using your detected ingredients.`,
+              ingredients: processedIngredients,
+              instructions: recipeData.instructions || [],
+              tips: recipeData.tips || [],
+              creatorName: 'AI Chef',
+              creatorTier: 5,
+              // Add diversity metadata for UI hints
+              // @ts-ignore - Adding custom properties for recipe diversity info
+              ingredientsUsed: recipeData.ingredientsUsed || [],
+              ingredientsSkipped: recipeData.ingredientsSkipped || [],
+              skipReason: recipeData.skipReason,
+              cookingMethod: recipeData.metadata?.cookingMethod,
+              // No rating/reviews for fresh AI recipes
+              rating: undefined,
+              ratingCount: undefined,
+              viewCount: undefined,
+              isTrending: false,
+              isCreatorRecipe: false,
+            };
+          });
+
+          console.log('✅ Successfully converted multiple AI recipes:', aiRecipes.map(r => r.title));
+          setRecipes(aiRecipes);
         } else {
-          console.log('⚠️ Invalid enhanced API response format, using fallback');
+          console.log('⚠️ Invalid multiple recipes API response format, using fallback');
           console.log('Response data structure:', JSON.stringify(response.data, null, 2));
           setRecipes(fallbackRecipes);
         }
@@ -587,12 +730,12 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Recipe Matches</Text>
+        <Text style={styles.title}>3 Diverse Recipes</Text>
         <Text style={styles.subtitle}>
-          Swipe left to skip, right to cook
+          Same ingredients, different dishes
         </Text>
         <Text style={styles.instructionText}>
-          Tap card for details
+          Swipe to see variety • Tap for details
         </Text>
       </View>
 
@@ -638,11 +781,11 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
                 <Sparkles size={40} color="#FFB800" />
               </Animated.View>
               <Text style={styles.aiModalTitle}>🤖 AI Chef Analyzing...</Text>
-              <Text style={styles.aiModalSubtitle}>Computer vision & recipe generation</Text>
+              <Text style={styles.aiModalSubtitle}>Generating 3 diverse recipes</Text>
               <View style={styles.processingSteps}>
-                <Text style={styles.stepText}>• Processing your ingredients</Text>
+                <Text style={styles.stepText}>• Analyzing ingredient compatibility</Text>
                 <Text style={styles.stepText}>• Applying your preferences</Text>
-                <Text style={styles.stepText}>• Generating custom recipes</Text>
+                <Text style={styles.stepText}>• Creating 3 unique dishes</Text>
               </View>
             </View>
           </Animated.View>
@@ -671,16 +814,32 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
                   <Text style={styles.modalDescription}>{selectedRecipe.description}</Text>
                   
                   <View style={styles.modalSection}>
-                    <Text style={styles.sectionTitle}>Ingredients Used</Text>
-                    {selectedRecipe.ingredients?.map((ing, index) => (
-                      <Text key={index} style={styles.ingredientItem}>
-                        • {typeof ing === 'string' 
-                            ? ing 
-                            : `${ing.amount} ${ing.unit} ${ing.name}`
-                          }
-                      </Text>
-                    ))}
+                    <Text style={styles.sectionTitle}>Ingredients</Text>
+                    <View style={styles.ingredientsGrid}>
+                      {selectedRecipe.ingredients?.map((ing, index) => (
+                        <IngredientTag key={index} ingredient={ing} />
+                      ))}
+                    </View>
+                    
+                    {/* Legend for ingredient sources */}
+                    <View style={styles.ingredientLegend}>
+                      <View style={styles.legendItem}>
+                        <Check size={12} color="#4CAF50" />
+                        <Text style={styles.legendText}>Scanned</Text>
+                      </View>
+                      <View style={styles.legendItem}>
+                        <Home size={12} color="#FF9800" />
+                        <Text style={styles.legendText}>Pantry</Text>
+                      </View>
+                      <View style={styles.legendItem}>
+                        <AlertCircle size={12} color="#9C27B0" />
+                        <Text style={styles.legendText}>Optional</Text>
+                      </View>
+                    </View>
                   </View>
+
+                  {/* Recipe Analysis */}
+                  <RecipeAnalysis recipe={selectedRecipe} />
 
                   <View style={styles.modalInfo}>
                     <View style={styles.infoItem}>
@@ -1120,6 +1279,108 @@ const styles = StyleSheet.create({
     color: '#2D1B69',
     marginBottom: 5,
     fontWeight: '500',
+  },
+  analysisContainer: {
+    marginTop: 20,
+    padding: 20,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 10,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  analysisTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#2D1B69',
+    marginBottom: 12,
+  },
+  analysisSection: {
+    marginBottom: 20,
+  },
+  analysisSectionTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#2D1B69',
+    marginBottom: 8,
+  },
+  analysisTagsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  analysisTag: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+    marginRight: 6,
+  },
+  usedTag: {
+    backgroundColor: '#E8F5E8',
+    borderColor: '#4CAF50',
+  },
+  usedTagText: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#4CAF50',
+  },
+  skippedTag: {
+    backgroundColor: '#FFF3E0',
+    borderColor: '#FF9800',
+  },
+  skippedTagText: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#FF9800',
+  },
+  skipReason: {
+    fontSize: 12,
+    color: '#8E8E93',
+    marginTop: 4,
+  },
+  methodTag: {
+    backgroundColor: '#F3E5F5',
+    borderColor: '#9C27B0',
+  },
+  methodTagText: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#9C27B0',
+  },
+  ingredientTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginRight: 6,
+    marginBottom: 4,
+    gap: 4,
+  },
+  ingredientTagText: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  ingredientsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  ingredientLegend: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  legendText: {
+    fontSize: 12,
+    color: '#8E8E93',
+    marginLeft: 4,
   },
 });
 

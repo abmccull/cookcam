@@ -1,5 +1,6 @@
 import React, {createContext, useContext, useState, useEffect, ReactNode} from 'react';
 import {useAuth} from './AuthContext';
+import {gamificationService} from '../services/api';
 
 interface Badge {
   id: string;
@@ -21,6 +22,7 @@ interface GamificationContextType {
   checkStreak: () => Promise<void>;
   useFreeze: () => Promise<boolean>;
   unlockBadge: (badgeId: string) => Promise<void>;
+  loadGamificationProgress: () => Promise<void>;
   xpNotification: {
     visible: boolean;
     xpGained: number;
@@ -197,6 +199,7 @@ export const GamificationProvider: React.FC<GamificationProviderProps> = ({child
   const [badges, setBadges] = useState<Badge[]>([]);
   const [recipesCompleted, setRecipesCompleted] = useState(0);
   const [recipesShared, setRecipesShared] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
   
   // XP Notification state
   const [xpNotification, setXPNotification] = useState({
@@ -207,14 +210,60 @@ export const GamificationProvider: React.FC<GamificationProviderProps> = ({child
   });
 
   useEffect(() => {
-    // Sync with user data when it changes
+    // Load gamification data when user logs in
     if (user) {
-      setXP(user.xp);
-      setLevel(user.level);
-      setStreak(user.streak);
-      loadBadges();
+      loadGamificationProgress();
+    } else {
+      // Reset state when user logs out
+      setXP(0);
+      setLevel(1);
+      setStreak(0);
+      setBadges([]);
     }
   }, [user]);
+
+  const loadGamificationProgress = async () => {
+    if (!user || isLoading) return;
+    
+    try {
+      setIsLoading(true);
+      console.log('🎮 Loading gamification progress for user:', user.id);
+      
+      const response = await gamificationService.getProgress();
+      
+      if (response.success && response.data) {
+        const { user_stats } = response.data;
+        
+        if (user_stats) {
+          console.log('✅ Loaded gamification data:', user_stats);
+          
+          // Update local state with backend data
+          setXP(user_stats.total_xp || user_stats.xp || 0);
+          setLevel(user_stats.level || 1);
+          setStreak(user_stats.streak_current || 0);
+          setFreezeTokens(user_stats.streak_shields || 3);
+          
+          // Update user in auth context to sync the data
+          updateUser({
+            xp: user_stats.total_xp || user_stats.xp || 0,
+            level: user_stats.level || 1,
+            streak: user_stats.streak_current || 0,
+          });
+          
+          // Load badges
+          loadBadges();
+        } else {
+          console.log('⚠️ No user stats in response, using defaults');
+        }
+      } else {
+        console.error('❌ Failed to load gamification progress:', response.error);
+      }
+    } catch (error) {
+      console.error('❌ Error loading gamification progress:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const loadBadges = async () => {
     // In real app, load from database
@@ -285,6 +334,14 @@ export const GamificationProvider: React.FC<GamificationProviderProps> = ({child
     
     // Update user in auth context
     updateUser({xp: newXP, level: newLevel});
+    
+    // Add XP to backend
+    try {
+      await gamificationService.addXP(amount, reason);
+      console.log(`✅ Added ${amount} XP for ${reason}`);
+    } catch (error) {
+      console.error('❌ Failed to add XP to backend:', error);
+    }
     
     // Check for other badge conditions
     if (reason === 'SCAN_INGREDIENTS' && !badges.find(b => b.id === 'first_scan')) {
@@ -371,6 +428,7 @@ export const GamificationProvider: React.FC<GamificationProviderProps> = ({child
     checkStreak,
     useFreeze,
     unlockBadge,
+    loadGamificationProgress,
     xpNotification,
     hideXPNotification,
   };

@@ -275,9 +275,9 @@ const PreferencesScreen: React.FC<PreferencesScreenProps> = ({
     
     return (
       <View style={styles.optionsGrid}>
-        {step.options.map((option) => (
+        {step.options.map((option, index) => (
           <TouchableOpacity
-            key={option as string}
+            key={`${step.id}-${index}-${option as string}`}
             style={[
               styles.optionChip,
               isOptionSelected(option) && styles.selectedChip,
@@ -304,9 +304,9 @@ const PreferencesScreen: React.FC<PreferencesScreenProps> = ({
     
     return (
       <View style={styles.singleChoiceContainer}>
-        {step.options.map((option: any) => (
+        {step.options.map((option: any, index: number) => (
           <TouchableOpacity
-            key={option.value}
+            key={`${step.id}-${index}-${option.value}`}
             style={[
               styles.singleOption,
               isOptionSelected(option) && styles.selectedSingleOption,

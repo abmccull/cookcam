@@ -270,8 +270,8 @@ router.post('/generate', authenticateUser, async (req: Request, res: Response) =
       });
     }
 
-    // Use enhanced recipe generation service
-    const recipe = await enhancedRecipeService.generateRecipe({
+    // Use enhanced recipe generation service to generate 3 diverse recipes
+    const multipleRecipesResult = await enhancedRecipeService.generateMultipleRecipes({
       ingredients: ingredientsList,
       userPreferences: userPreferences,
       recipeType,
@@ -279,43 +279,95 @@ router.post('/generate', authenticateUser, async (req: Request, res: Response) =
       context
     });
 
-    // Award XP for recipe generation
-    if (userId) {
+    // Store the recipes and analytics data
+    const recipePromises = multipleRecipesResult.recipes.map(async (recipe, index) => {
       try {
-        await supabase
-          .from('gamification_events')
-          .insert({
-            user_id: userId,
-            action_type: 'recipe_generated',
-            xp_earned: 25,
-            metadata: { 
-              recipe_title: recipe.title,
-              ingredients_count: ingredientsList?.length || 0,
-              difficulty: recipe.metadata.difficulty
+        const { data: recipeRecord, error: recipeError } = await supabase
+          .from('recipes')
+          .insert([{
+            title: recipe.title,
+            description: recipe.description,
+            prep_time: recipe.metadata.prepTime,
+            cook_time: recipe.metadata.cookTime,
+            difficulty: recipe.metadata.difficulty,
+            servings: recipe.metadata.servings,
+            ingredients: recipe.ingredients,
+            instructions: recipe.instructions.map(inst => inst.instruction),
+            nutrition: recipe.nutrition,
+            tags: [
+              ...recipe.metadata.dietaryTags,
+              recipe.metadata.cuisineType,
+              recipe.metadata.cookingMethod,
+              'AI Generated'
+            ],
+            created_by: userId,
+            is_generated: true,
+            cuisine: recipe.metadata.cuisineType,
+            ai_metadata: {
+              enhanced_generation_version: '2.0',
+              cooking_method: recipe.metadata.cookingMethod,
+              ingredients_used: recipe.ingredientsUsed,
+              ingredients_skipped: recipe.ingredientsSkipped,
+              skip_reason: recipe.skipReason,
+              recipe_variation: index + 1,
+              total_variations: multipleRecipesResult.recipes.length,
+              ingredient_analysis: multipleRecipesResult.ingredientAnalysis
             }
-          });
-      } catch (xpError) {
-        logger.error('❌ Failed to award XP for recipe generation', { xpError });
-        // Don't fail the request if XP tracking fails
-      }
-    }
+          }])
+          .select()
+          .single();
 
-    res.json({
+        if (recipeError) {
+          logger.error('Recipe storage error', { error: recipeError.message, recipeTitle: recipe.title });
+          return null;
+        }
+
+        return recipeRecord;
+      } catch (error) {
+        logger.error('Error storing recipe', { error, recipeTitle: recipe.title });
+        return null;
+      }
+    });
+
+    const storedRecipes = await Promise.all(recipePromises);
+    const successfulRecipes = storedRecipes.filter(r => r !== null);
+
+    // Award XP for generating diverse recipes
+    await supabase.rpc('add_user_xp', {
+      p_user_id: userId,
+      p_xp_amount: 30, // Higher XP for multiple recipes
+      p_action: 'diverse_recipes_generated',
+      p_metadata: { 
+        recipes_count: multipleRecipesResult.recipes.length,
+        ingredients_count: ingredientsList.length,
+        ingredient_analysis: multipleRecipesResult.ingredientAnalysis
+      }
+    });
+
+    logger.info('✅ Successfully generated and stored diverse recipes', {
+      userId,
+      recipesGenerated: multipleRecipesResult.recipes.length,
+      recipesStored: successfulRecipes.length,
+      titles: multipleRecipesResult.recipes.map(r => r.title)
+    });
+
+    // Return the multiple recipes result
+    res.status(201).json({
       success: true,
-      data: recipe,
-      message: 'Enhanced recipe generated successfully'
+      message: 'Multiple diverse recipes generated successfully',
+      data: {
+        recipes: multipleRecipesResult.recipes,
+        ingredientAnalysis: multipleRecipesResult.ingredientAnalysis,
+        storedRecipes: successfulRecipes
+      }
     });
 
   } catch (error) {
-    logger.error('❌ Enhanced recipe generation failed', { 
-      error,
-      userId: (req as any).user?.id,
-      ingredients: req.body.ingredients || req.body.detectedIngredients
-    });
-    
+    logger.error('❌ Enhanced multiple recipe generation failed', { error });
     res.status(500).json({
       success: false,
-      error: 'Failed to generate enhanced recipe'
+      error: 'Failed to generate diverse recipes',
+      details: error instanceof Error ? error.message : 'Unknown error'
     });
   }
 });

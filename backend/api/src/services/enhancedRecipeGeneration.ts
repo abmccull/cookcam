@@ -35,6 +35,7 @@ interface GeneratedRecipe {
     amount: string;
     unit: string;
     notes?: string;
+    source: 'scanned' | 'pantry' | 'optional'; // Track ingredient sources
   }[];
   instructions: {
     step: number;
@@ -52,6 +53,7 @@ interface GeneratedRecipe {
     cuisineType: string;
     dietaryTags: string[];
     skillLevel: string;
+    cookingMethod: string; // e.g., "stir-fry", "roasted", "raw"
   };
   nutrition: {
     calories: number;
@@ -66,6 +68,26 @@ interface GeneratedRecipe {
   variations?: string[];
   storage?: string;
   pairing?: string[];
+  ingredientsUsed: string[]; // Which scanned ingredients were used
+  ingredientsSkipped: string[]; // Which scanned ingredients were skipped
+  skipReason?: string; // Why certain ingredients were skipped
+}
+
+// Common pantry staples that we assume users have
+const PANTRY_STAPLES = [
+  'salt', 'black pepper', 'olive oil', 'garlic', 'onion', 'water',
+  'butter', 'flour', 'sugar', 'vinegar', 'lemon juice', 'soy sauce',
+  'paprika', 'cumin', 'oregano', 'thyme', 'bay leaves', 'vegetable oil',
+  'white rice', 'brown rice', 'pasta', 'bread', 'eggs', 'milk'
+];
+
+interface MultipleRecipesResponse {
+  recipes: GeneratedRecipe[];
+  ingredientAnalysis: {
+    totalScanned: number;
+    compatibilityGroups: string[][];
+    pantryStaplesUsed: string[];
+  };
 }
 
 export class EnhancedRecipeGenerationService {
@@ -81,27 +103,18 @@ export class EnhancedRecipeGenerationService {
     });
   }
 
-  async generateRecipe(options: RecipeGenerationOptions): Promise<GeneratedRecipe> {
+  // NEW: Generate 3 diverse recipes
+  async generateMultipleRecipes(options: RecipeGenerationOptions): Promise<MultipleRecipesResponse> {
     try {
-      logger.info('🍳 Enhanced recipe generation started', {
+      logger.info('🍳 Generating 3 diverse recipes', {
         ingredients: options.ingredients,
         preferences: options.userPreferences,
         type: options.recipeType
       });
 
-      // Validate OpenAI API key exists
-      if (!process.env.OPENAI_API_KEY) {
-        throw new Error('OPENAI_API_KEY environment variable is not set');
-      }
-
-      logger.info('🔑 OpenAI API key check', { 
-        hasKey: !!process.env.OPENAI_API_KEY,
-        keyPrefix: process.env.OPENAI_API_KEY?.substring(0, 15) + '...'
-      });
-
-      const prompt = this.buildEnhancedPrompt(options);
+      const prompt = this.buildDiverseRecipesPrompt(options);
       
-      logger.info('📤 Sending request to OpenAI...', {
+      logger.info('📤 Sending multiple recipes request to OpenAI...', {
         model: 'gpt-4o-mini',
         promptLength: prompt.length
       });
@@ -111,22 +124,16 @@ export class EnhancedRecipeGenerationService {
         messages: [
           {
             role: 'system',
-            content: this.getSystemPrompt()
+            content: this.getMultiRecipeSystemPrompt()
           },
           {
             role: 'user',
             content: prompt
           }
         ],
-        temperature: 0.7,
-        max_tokens: 2500,
+        temperature: 0.8, // Higher temperature for more diversity
+        max_tokens: 4000, // Increased for 3 recipes
         response_format: { type: 'json_object' }
-      });
-
-      logger.info('📥 OpenAI response received', {
-        hasResponse: !!response,
-        hasChoices: !!(response?.choices?.length),
-        firstChoiceContent: !!response?.choices?.[0]?.message?.content
       });
 
       const content = response.choices[0]?.message?.content;
@@ -134,42 +141,139 @@ export class EnhancedRecipeGenerationService {
         throw new Error('No recipe content generated from OpenAI');
       }
 
-      logger.info('🔄 Parsing OpenAI response...', {
-        contentLength: content.length,
-        contentPreview: content.substring(0, 100) + '...'
+      logger.info('🔄 Parsing multiple recipes response...', {
+        contentLength: content.length
       });
 
-      // Log the full response for debugging
-      console.log('🤖 FULL OPENAI RESPONSE:', content);
+      const result = JSON.parse(content) as MultipleRecipesResponse;
+      
+      // Validate we got 3 recipes
+      if (!result.recipes || result.recipes.length !== 3) {
+        logger.warn('⚠️ Expected 3 recipes, got:', { recipeCount: result.recipes?.length });
+      }
 
-      const recipe = JSON.parse(content) as GeneratedRecipe;
-      
-      // Validate and enhance the generated recipe
-      const enhancedRecipe = await this.validateAndEnhanceRecipe(recipe, options);
-      
-      logger.info('✅ Enhanced recipe generated successfully', {
-        title: enhancedRecipe.title,
-        difficulty: enhancedRecipe.metadata.difficulty,
-        totalTime: enhancedRecipe.metadata.totalTime
+      logger.info('✅ Successfully generated multiple recipes', {
+        recipeCount: result.recipes?.length,
+        titles: result.recipes?.map(r => r.title)
       });
 
-      return enhancedRecipe;
-
+      return result;
     } catch (error) {
-      // Improved error logging
-      logger.error('❌ Enhanced recipe generation failed', { 
-        error: error instanceof Error ? {
-          message: error.message,
-          stack: error.stack,
-          name: error.name
-        } : error,
-        errorType: typeof error,
-        errorConstructor: error?.constructor?.name,
-        hasOpenAIKey: !!process.env.OPENAI_API_KEY
-      });
-      
-      throw new Error('Failed to generate enhanced recipe: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      logger.error('❌ Error generating multiple recipes:', error);
+      throw new Error('Failed to generate diverse recipes');
     }
+  }
+
+  // Keep original method for backward compatibility
+  async generateRecipe(options: RecipeGenerationOptions): Promise<GeneratedRecipe> {
+    const multipleResult = await this.generateMultipleRecipes(options);
+    if (!multipleResult.recipes || multipleResult.recipes.length === 0) {
+      throw new Error('No recipes generated');
+    }
+    return multipleResult.recipes[0]!; // Return first recipe for backward compatibility
+  }
+
+  private getMultiRecipeSystemPrompt(): string {
+    return `You are a world-class chef with expertise in creating diverse, personalized recipes. Your goal is to generate 3 COMPLETELY DIFFERENT recipes from the same ingredients that showcase:
+
+1. **Natural Culinary Diversity**: Each recipe should feel like a totally different dish - different cooking methods, textures, meal formats, and eating experiences
+2. **Smart Ingredient Usage**: Don't force all ingredients together - use 60-80% of scanned ingredients per recipe, selecting the best combinations
+3. **Pantry Intelligence**: Assume common pantry staples are available and mark them clearly as "pantry" source
+4. **Authentic Cuisine**: If cuisine preference is specified, STRICTLY follow that style with authentic spices, techniques, and flavor profiles
+
+Think like a chef: "What are 3 completely different things I could make with these ingredients?" - not artificial difficulty/time constraints, but genuine culinary variety.
+
+Always respond with valid JSON following the exact structure requested.`;
+  }
+
+  private buildDiverseRecipesPrompt(options: RecipeGenerationOptions): string {
+    const { ingredients, userPreferences = {}, recipeType, nutritionGoals, context } = options;
+
+    let prompt = `Create 3 COMPLETELY DIFFERENT ${recipeType || 'dishes'} using these scanned ingredients: ${ingredients.join(', ')}\n\n`;
+
+    // Add user preferences
+    if (userPreferences.skillLevel) {
+      prompt += `👨‍🍳 Skill Level: ${userPreferences.skillLevel}\n`;
+    }
+
+    if (userPreferences.availableTime) {
+      prompt += `⏱️ Time Available: ${userPreferences.availableTime} minutes\n`;
+    }
+
+    if (userPreferences.dietaryRestrictions && userPreferences.dietaryRestrictions.length > 0) {
+      prompt += `🥗 Dietary Restrictions: ${userPreferences.dietaryRestrictions.join(', ')}\n`;
+    }
+
+    if (userPreferences.cuisinePreferences && userPreferences.cuisinePreferences.length > 0) {
+      prompt += `🌍 REQUIRED CUISINE STYLE: ${userPreferences.cuisinePreferences.join(', ')} - ALL 3 recipes MUST be authentic to this cuisine style with appropriate spices, cooking techniques, and flavor profiles.\n`;
+    }
+
+    if (userPreferences.servingSize) {
+      prompt += `👥 Serving Size: ${userPreferences.servingSize} people\n`;
+    }
+
+    prompt += `\n🥘 Recipe Diversity Requirements:
+1. Each recipe should use DIFFERENT cooking methods (e.g., stir-fry vs. roasted vs. raw/salad)
+2. Each recipe should have DIFFERENT textures and eating experiences
+3. Each recipe should feel like a completely different dish - not 3 variations of the same thing
+4. Use 60-80% of scanned ingredients per recipe - don't force incompatible ingredients together
+5. Smart ingredient selection based on what works well together
+
+📦 Pantry Staples Available (mark as "pantry" source):
+${PANTRY_STAPLES.join(', ')}
+
+🧠 Ingredient Intelligence Rules:
+- If an ingredient doesn't complement the dish, skip it and note why
+- Prioritize flavor harmony over using every ingredient
+- Think about ingredient compatibility and cooking methods
+- Consider seasonal/fresh ingredients vs. pantry staples
+
+Return exactly this JSON structure:
+{
+  "recipes": [
+    {
+      "title": "Recipe Name",
+      "description": "Brief description focusing on what makes this dish unique",
+      "ingredients": [
+        {"name": "scanned ingredient", "amount": "1", "unit": "cup", "source": "scanned"},
+        {"name": "pantry staple", "amount": "2", "unit": "tbsp", "source": "pantry"},
+        {"name": "optional ingredient", "amount": "1", "unit": "cup", "source": "optional", "notes": "enhances flavor but not required"}
+      ],
+      "instructions": [{"step": 1, "instruction": "detailed step", "time": 5, "temperature": "350°F", "tips": "helpful tip"}],
+      "metadata": {
+        "prepTime": 15,
+        "cookTime": 20,
+        "totalTime": 35,
+        "servings": 4,
+        "difficulty": "medium",
+        "cuisineType": "must match specified cuisine preference",
+        "dietaryTags": ["vegetarian"],
+        "skillLevel": "intermediate",
+        "cookingMethod": "stir-fry/roasted/raw/etc"
+      },
+      "nutrition": {"calories": 350, "protein": 25, "carbohydrates": 30, "fat": 15, "fiber": 8, "sodium": 600, "sugar": 5},
+      "tips": ["cooking tip 1", "cooking tip 2"],
+      "variations": ["variation 1", "variation 2"],
+      "storage": "storage instructions",
+      "pairing": ["wine pairing", "side dish"],
+      "ingredientsUsed": ["list of scanned ingredients used in this recipe"],
+      "ingredientsSkipped": ["list of scanned ingredients not used"],
+      "skipReason": "Brief explanation of why certain ingredients were skipped"
+    }
+  ],
+  "ingredientAnalysis": {
+    "totalScanned": ${ingredients.length},
+    "compatibilityGroups": [
+      ["compatible ingredient group 1"],
+      ["compatible ingredient group 2"]
+    ],
+    "pantryStaplesUsed": ["list of pantry items used across all recipes"]
+  }
+}
+
+CRITICAL: Generate exactly 3 completely different recipes. Think like a chef - same ingredients, totally different dishes!`;
+
+    return prompt;
   }
 
   private getSystemPrompt(): string {
