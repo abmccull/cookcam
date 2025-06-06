@@ -113,7 +113,7 @@ const HomeStackScreen = () => (
       name="CookMode"
       component={CookModeScreen}
       options={{
-        title: 'Cook Mode',
+        headerShown: false,
         gestureEnabled: false,
       }}
     />

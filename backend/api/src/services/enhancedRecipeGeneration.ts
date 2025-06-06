@@ -43,6 +43,9 @@ interface GeneratedRecipe {
     time?: number;
     temperature?: string;
     tips?: string;
+    technique?: string;
+    equipment?: string;
+    safety?: string;
   }[];
   metadata: {
     prepTime: number;
@@ -174,14 +177,24 @@ export class EnhancedRecipeGenerationService {
   }
 
   private getMultiRecipeSystemPrompt(): string {
-    return `You are a world-class chef with expertise in creating diverse, personalized recipes. Your goal is to generate 3 COMPLETELY DIFFERENT recipes from the same ingredients that showcase:
+    return `You are a world-class chef and culinary instructor with expertise in creating diverse, personalized recipes AND teaching cooking techniques to beginners. Your goal is to generate 3 COMPLETELY DIFFERENT recipes that showcase:
 
 1. **Natural Culinary Diversity**: Each recipe should feel like a totally different dish - different cooking methods, textures, meal formats, and eating experiences
 2. **Smart Ingredient Usage**: Don't force all ingredients together - use 60-80% of scanned ingredients per recipe, selecting the best combinations
 3. **Pantry Intelligence**: Assume common pantry staples are available and mark them clearly as "pantry" source
 4. **Authentic Cuisine**: If cuisine preference is specified, STRICTLY follow that style with authentic spices, techniques, and flavor profiles
+5. **DETAILED BEGINNER GUIDANCE**: Every instruction must be clear enough for someone who has never cooked before
 
-Think like a chef: "What are 3 completely different things I could make with these ingredients?" - not artificial difficulty/time constraints, but genuine culinary variety.
+**CRITICAL INSTRUCTION REQUIREMENTS:**
+- Include specific visual, audio, and tactile cues for doneness (e.g., "golden brown edges", "sizzling sound stops", "tender when pierced with fork")
+- Explain WHY each step matters for the final dish
+- Include safety warnings where needed (hot oil, sharp knives, raw meat handling)
+- Provide technique details (how to dice, proper stirring motion, heat level indicators)
+- Give equipment alternatives and troubleshooting tips
+- Include time ranges with visual cues rather than exact times
+- Mention what can go wrong and how to fix it
+
+Think like a chef: "What are 3 completely different things I could make with these ingredients?" AND "How would I teach my grandmother who's never cooked to make this perfectly?"
 
 Always respond with valid JSON following the exact structure requested.`;
   }
@@ -228,6 +241,25 @@ ${PANTRY_STAPLES.join(', ')}
 - Think about ingredient compatibility and cooking methods
 - Consider seasonal/fresh ingredients vs. pantry staples
 
+🎓 DETAILED INSTRUCTION REQUIREMENTS - Every step must include:
+1. **Prep Details**: Exact cutting sizes, preparation techniques with safety tips
+2. **Visual Cues**: What to look for (color changes, texture, steam, bubbling)
+3. **Audio Cues**: Sounds that indicate progress (sizzling, popping, crackling)
+4. **Tactile Cues**: How ingredients should feel at each stage
+5. **Safety Warnings**: Hot surfaces, sharp tools, food safety
+6. **Equipment Notes**: What tools to use and alternatives if not available
+7. **Troubleshooting**: What can go wrong and how to fix it
+8. **Timing Guidance**: Time ranges with visual/audio checkpoints
+9. **Technique Explanation**: HOW to perform cooking techniques properly
+10. **Why It Matters**: Brief explanation of why this step is important
+
+**INSTRUCTION FORMAT EXAMPLES:**
+❌ Bad: "Sauté the onions until soft"
+✅ Good: "Heat the oil in your pan until it shimmers and moves easily when you tilt the pan (about 2-3 minutes). Add the diced onions in a single layer - they should sizzle immediately when they hit the oil. Stir gently every 2-3 minutes until they turn from white to translucent and then golden around the edges (5-7 minutes total). They're ready when they feel tender when pressed with your spoon and smell sweet and fragrant."
+
+❌ Bad: "Cook the meat until done"
+✅ Good: "Add the beef pieces to the hot pan, making sure not to overcrowd (cook in batches if needed). Let them sit undisturbed for 2-3 minutes to develop a golden-brown crust - you'll hear steady sizzling. The meat is ready to flip when it releases easily from the pan and has a deep brown color. Turn each piece and cook another 2-3 minutes. The beef is properly cooked when it feels firm but not hard when pressed gently with tongs."
+
 Return exactly this JSON structure:
 {
   "recipes": [
@@ -239,7 +271,18 @@ Return exactly this JSON structure:
         {"name": "pantry staple", "amount": "2", "unit": "tbsp", "source": "pantry"},
         {"name": "optional ingredient", "amount": "1", "unit": "cup", "source": "optional", "notes": "enhances flavor but not required"}
       ],
-      "instructions": [{"step": 1, "instruction": "detailed step", "time": 5, "temperature": "350°F", "tips": "helpful tip"}],
+      "instructions": [
+        {
+          "step": 1, 
+          "instruction": "DETAILED step with visual cues, safety tips, technique explanation, timing guidance, and troubleshooting", 
+          "time": 5, 
+          "temperature": "350°F", 
+          "tips": "Why this step matters + what can go wrong + how to fix it",
+          "technique": "Name of cooking technique being used",
+          "equipment": "Required tools and alternatives",
+          "safety": "Safety warnings for this step if applicable"
+        }
+      ],
       "metadata": {
         "prepTime": 15,
         "cookTime": 20,
@@ -252,7 +295,7 @@ Return exactly this JSON structure:
         "cookingMethod": "stir-fry/roasted/raw/etc"
       },
       "nutrition": {"calories": 350, "protein": 25, "carbohydrates": 30, "fat": 15, "fiber": 8, "sodium": 600, "sugar": 5},
-      "tips": ["cooking tip 1", "cooking tip 2"],
+      "tips": ["Advanced cooking tip 1", "Advanced cooking tip 2", "Storage tip", "Preparation tip"],
       "variations": ["variation 1", "variation 2"],
       "storage": "storage instructions",
       "pairing": ["wine pairing", "side dish"],
@@ -271,21 +314,30 @@ Return exactly this JSON structure:
   }
 }
 
-CRITICAL: Generate exactly 3 completely different recipes. Think like a chef - same ingredients, totally different dishes!`;
+CRITICAL: Generate exactly 3 completely different recipes with ULTRA-DETAILED beginner-friendly instructions that include visual cues, safety tips, technique explanations, and troubleshooting guidance in every step!`;
 
     return prompt;
   }
 
   private getSystemPrompt(): string {
-    return `You are a world-class chef and nutritionist with expertise in creating personalized, delicious, and nutritionally balanced recipes. Your goal is to create recipes that are:
+    return `You are a world-class chef, nutritionist, and culinary instructor with expertise in creating personalized, delicious, and nutritionally balanced recipes. Your goal is to create recipes that are:
 
 1. **Personalized**: Tailored to the user's skill level, dietary needs, and preferences
 2. **Practical**: Using realistic cooking times, readily available ingredients, and clear instructions  
 3. **Nutritious**: Balanced and healthy while still being delicious
 4. **Creative**: Innovative combinations that surprise and delight
-5. **Detailed**: Complete with tips, variations, and storage advice
+5. **Educational**: Every instruction teaches proper technique with visual cues, safety tips, and troubleshooting
 
-Always respond with a valid JSON object that follows the exact structure requested. Include precise measurements, cooking times, and detailed step-by-step instructions. Consider seasonal ingredients, cultural authenticity when relevant, and provide helpful tips for success.
+**CRITICAL INSTRUCTION REQUIREMENTS:**
+- Include specific visual, audio, and tactile cues for doneness
+- Explain WHY each step matters for the final dish
+- Include safety warnings where needed (hot oil, sharp knives, raw meat handling)
+- Provide technique details (how to dice, proper stirring motion, heat level indicators)
+- Give equipment alternatives and troubleshooting tips
+- Include time ranges with visual cues rather than exact times
+- Mention what can go wrong and how to fix it
+
+Always respond with a valid JSON object that follows the exact structure requested. Include precise measurements, cooking times, and ULTRA-DETAILED step-by-step instructions that could guide a complete beginner to success. Consider seasonal ingredients, cultural authenticity when relevant, and provide comprehensive guidance for cooking success.
 
 Be creative with flavor combinations while respecting dietary restrictions and preferences. If ingredients are limited, focus on techniques and seasonings that maximize flavor.`;
   }
@@ -347,7 +399,7 @@ Be creative with flavor combinations while respecting dietary restrictions and p
 1. Create a complete recipe with the exact JSON structure
 2. STRICTLY follow the specified cuisine style - use authentic ingredients, spices, and cooking methods
 3. Use realistic cooking times and temperatures
-4. Provide detailed, easy-to-follow instructions
+4. Provide ULTRA-DETAILED, beginner-friendly instructions with visual cues, safety tips, and troubleshooting
 5. Include accurate nutritional estimates
 6. Add 3-5 helpful cooking tips
 7. Suggest 2-3 recipe variations
@@ -356,12 +408,34 @@ Be creative with flavor combinations while respecting dietary restrictions and p
 10. Ensure the recipe matches the specified skill level
 11. Make it delicious and satisfying!
 
+🎓 DETAILED INSTRUCTION REQUIREMENTS - Every step must include:
+- **Visual Cues**: Color changes, texture, steam, bubbling patterns
+- **Audio Cues**: Sizzling sounds, popping, crackling that indicate progress
+- **Tactile Cues**: How ingredients should feel at each stage
+- **Safety Warnings**: Hot surfaces, sharp tools, food safety
+- **Equipment Notes**: Required tools and alternatives if not available
+- **Technique Details**: HOW to perform cooking techniques properly
+- **Troubleshooting**: What can go wrong and how to fix it
+- **Timing Guidance**: Time ranges with visual checkpoints rather than exact times
+- **Why It Matters**: Brief explanation of why this step is important
+
 Return the recipe as a JSON object with this exact structure:
 {
   "title": "Recipe Name",
   "description": "Brief description",
   "ingredients": [{"name": "ingredient", "amount": "1", "unit": "cup", "notes": "optional"}],
-  "instructions": [{"step": 1, "instruction": "detailed step", "time": 5, "temperature": "350°F", "tips": "helpful tip"}],
+  "instructions": [
+    {
+      "step": 1, 
+      "instruction": "ULTRA-DETAILED step with visual cues, safety tips, technique explanation, timing guidance, and troubleshooting", 
+      "time": 5, 
+      "temperature": "350°F", 
+      "tips": "Why this step matters + what can go wrong + how to fix it",
+      "technique": "Name of cooking technique being used",
+      "equipment": "Required tools and alternatives",
+      "safety": "Safety warnings for this step if applicable"
+    }
+  ],
   "metadata": {
     "prepTime": 15,
     "cookTime": 30,

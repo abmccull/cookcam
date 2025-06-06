@@ -9,6 +9,7 @@ import {
   Alert,
   Animated,
   Dimensions,
+  Modal,
 } from 'react-native';
 import {
   Play,
@@ -23,6 +24,7 @@ import {
   Trophy,
   ChevronLeft,
   ChevronRight,
+  X,
 } from 'lucide-react-native';
 import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
 import {useGamification, XP_VALUES} from '../context/GamificationContext';
@@ -331,7 +333,7 @@ const CookModeScreen: React.FC<CookModeScreenProps> = ({navigation, route}) => {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const progress = (completedSteps / steps.length) * 100;
+  const progress = ((completedSteps + (steps[currentStep]?.completed ? 1 : 0)) / steps.length) * 100;
   const currentStepData = steps[currentStep];
   const potentialXP = recipe?.isGenerated ? XP_VALUES.COMPLETE_RECIPE + XP_VALUES.CLAIM_RECIPE : XP_VALUES.COMPLETE_RECIPE;
 
@@ -365,17 +367,20 @@ const CookModeScreen: React.FC<CookModeScreenProps> = ({navigation, route}) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* MINIMAL FOCUSED HEADER */}
-      <View style={styles.minimalHeader}>
+      {/* CONSOLIDATED HEADER WITH BLUE BACKGROUND */}
+      <View style={styles.consolidatedHeader}>
         <TouchableOpacity 
-          style={styles.backButton}
+          style={styles.headerBackButton}
           onPress={() => navigation.goBack()}>
-          <ChevronLeft size={24} color="#2D1B69" />
+          <ChevronLeft size={24} color="#FFFFFF" />
         </TouchableOpacity>
         
-        <Text style={styles.recipeTitle} numberOfLines={1}>
-          {recipe?.title || 'Recipe'}
-        </Text>
+        <View style={styles.headerCenter}>
+          <Text style={styles.headerTitle}>Cook Mode</Text>
+          <Text style={styles.headerSubtitle} numberOfLines={1}>
+            {recipe?.title || 'Recipe'}
+          </Text>
+        </View>
 
         <View style={styles.headerActions}>
           {/* Timer - Only show if step has duration */}
@@ -399,7 +404,7 @@ const CookModeScreen: React.FC<CookModeScreenProps> = ({navigation, route}) => {
             {voiceEnabled ? (
               <Volume2 size={18} color="#FF6B35" />
             ) : (
-              <VolumeX size={18} color="#8E8E93" />
+              <VolumeX size={18} color="rgba(255, 255, 255, 0.6)" />
             )}
           </TouchableOpacity>
         </View>
@@ -546,8 +551,8 @@ const CookModeScreen: React.FC<CookModeScreenProps> = ({navigation, route}) => {
         </Animated.View>
       </View>
 
-      {/* ENHANCED NAVIGATION - More prominent and delightful */}
-      <View style={styles.navigationContainer}>
+      {/* COMPACT NAVIGATION - Reduced size */}
+      <View style={styles.compactNavigationContainer}>
         {/* Quick Access Strip */}
         <View style={styles.quickAccessStrip}>
           <TouchableOpacity
@@ -567,125 +572,135 @@ const CookModeScreen: React.FC<CookModeScreenProps> = ({navigation, route}) => {
 
         {/* Main Navigation Row */}
         <View style={styles.mainNavigation}>
-          {/* Previous Button - Prominent when available */}
+          {/* Previous Button - Compact when available */}
           <TouchableOpacity
             style={[
-              styles.primaryNavButton,
-              styles.previousNavButton,
+              styles.compactNavButton,
               currentStep === 0 && styles.navButtonDisabled,
             ]}
             onPress={handlePreviousStep}
             disabled={currentStep === 0}>
-            <ChevronLeft size={24} color={currentStep === 0 ? '#C7C7CC' : '#2D1B69'} />
+            <ChevronLeft size={20} color={currentStep === 0 ? '#C7C7CC' : '#2D1B69'} />
             <Text style={[
-              styles.primaryNavText,
+              styles.compactNavText,
               currentStep === 0 && styles.navTextDisabled
             ]}>Previous</Text>
           </TouchableOpacity>
 
-          {/* HERO ACTION BUTTON */}
+          {/* HERO ACTION BUTTON - Compact with proper text fitting */}
           {currentStep === steps.length - 1 ? (
             <TouchableOpacity
-              style={styles.heroCompleteButton}
+              style={styles.compactCompleteButton}
               onPress={handleStepComplete}>
-              <CheckCircle size={24} color="#FFFFFF" />
-              <Text style={styles.heroButtonText}>Complete Recipe</Text>
-              <View style={styles.xpReward}>
-                <Sparkles size={14} color="#FFFFFF" />
-                <Text style={styles.xpRewardText}>+{potentialXP} XP</Text>
-              </View>
+              <CheckCircle size={20} color="#FFFFFF" />
+              <Text style={styles.compactButtonText}>Complete</Text>
+              <Text style={styles.compactXpText}>+{potentialXP}</Text>
             </TouchableOpacity>
           ) : (
             <TouchableOpacity
-              style={styles.heroNextButton}
+              style={styles.compactNextButton}
               onPress={!currentStepData?.duration ? handleStepComplete : handleNextStep}>
-              <Text style={styles.heroButtonText}>
+              <Text style={styles.compactButtonText}>
                 {!currentStepData?.duration ? '✓ Done' : 'Next Step'}
               </Text>
-              <ChevronRight size={24} color="#FFFFFF" />
+              <ChevronRight size={20} color="#FFFFFF" />
             </TouchableOpacity>
           )}
         </View>
       </View>
 
-      {/* Ingredients Modal */}
-      {showIngredientsModal && (
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Ingredients</Text>
-              <TouchableOpacity
-                style={styles.closeButton}
-                onPress={() => setShowIngredientsModal(false)}>
-                <Text style={styles.closeButtonText}>✕</Text>
-              </TouchableOpacity>
-            </View>
-            <ScrollView style={styles.modalBody}>
-              {recipe?.ingredients?.map((ingredient, index) => (
-                <View key={index} style={styles.ingredientItem}>
-                  <Text style={styles.ingredientText}>
-                    {typeof ingredient === 'string' 
-                      ? ingredient 
-                      : `${ingredient.amount || ''} ${ingredient.unit || ''} ${ingredient.name || ingredient}`.trim()
-                    }
-                  </Text>
-                </View>
-              ))}
-            </ScrollView>
+      {/* Full-Screen Ingredients Modal */}
+      <Modal visible={showIngredientsModal} animationType="slide" presentationStyle="pageSheet">
+        <SafeAreaView style={styles.fullScreenModal}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Ingredients</Text>
+            <TouchableOpacity
+              style={styles.modalCloseButton}
+              onPress={() => setShowIngredientsModal(false)}>
+              <X size={24} color="#2D1B69" />
+            </TouchableOpacity>
           </View>
-        </View>
-      )}
+          <ScrollView style={styles.fullModalBody} contentContainerStyle={styles.modalContent}>
+            {recipe?.ingredients?.map((ingredient, index) => (
+              <View key={index} style={styles.ingredientItem}>
+                <View style={styles.ingredientBullet} />
+                <Text style={styles.ingredientText}>
+                  {typeof ingredient === 'string' 
+                    ? ingredient 
+                    : `${ingredient.amount || ''} ${ingredient.unit || ''} ${ingredient.name || ingredient}`.trim()
+                  }
+                </Text>
+              </View>
+            ))}
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
 
-      {/* All Steps Modal */}
-      {showAllStepsModal && (
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>All Steps</Text>
+      {/* Full-Screen All Steps Modal */}
+      <Modal visible={showAllStepsModal} animationType="slide" presentationStyle="pageSheet">
+        <SafeAreaView style={styles.fullScreenModal}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>All Steps</Text>
+            <TouchableOpacity
+              style={styles.modalCloseButton}
+              onPress={() => setShowAllStepsModal(false)}>
+              <X size={24} color="#2D1B69" />
+            </TouchableOpacity>
+          </View>
+          <ScrollView style={styles.fullModalBody} contentContainerStyle={styles.modalContent}>
+            {steps.map((step, index) => (
               <TouchableOpacity
-                style={styles.closeButton}
-                onPress={() => setShowAllStepsModal(false)}>
-                <Text style={styles.closeButtonText}>✕</Text>
-              </TouchableOpacity>
-            </View>
-            <ScrollView style={styles.modalBody}>
-              {steps.map((step, index) => (
-                <TouchableOpacity
-                  key={step.id}
-                  style={[
-                    styles.stepOverviewItem,
-                    index === currentStep && styles.activeStepOverview,
-                    step.completed && styles.completedStepOverview,
-                  ]}
-                  onPress={() => {
-                    setCurrentStep(index);
-                    setTimeRemaining(steps[index]?.duration || 0);
-                    setIsPlaying(false);
-                    setShowAllStepsModal(false);
-                  }}>
-                  <View style={styles.stepOverviewNumber}>
-                    {step.completed ? (
-                      <CheckCircle size={16} color="#4CAF50" />
-                    ) : (
+                key={step.id}
+                style={[
+                  styles.stepOverviewItem,
+                  index === currentStep && styles.activeStepOverview,
+                  step.completed && styles.completedStepOverview,
+                ]}
+                onPress={() => {
+                  setCurrentStep(index);
+                  setTimeRemaining(steps[index]?.duration || 0);
+                  setIsPlaying(false);
+                  setShowAllStepsModal(false);
+                }}>
+                <View style={styles.stepOverviewNumber}>
+                  {step.completed ? (
+                    <CheckCircle size={20} color="#4CAF50" />
+                  ) : (
+                    <View style={[
+                      styles.stepNumberCircle,
+                      index === currentStep && styles.activeStepNumberCircle
+                    ]}>
                       <Text style={[
                         styles.stepNumberText,
                         index === currentStep && styles.activeStepNumber
                       ]}>{index + 1}</Text>
-                    )}
-                  </View>
+                    </View>
+                  )}
+                </View>
+                <View style={styles.stepOverviewContent}>
                   <Text style={[
                     styles.stepOverviewText,
                     index === currentStep && styles.activeStepText,
                     step.completed && styles.completedStepText,
-                  ]} numberOfLines={2}>
+                  ]}>
                     {step.instruction}
                   </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-        </View>
-      )}
+                  {(step.temperature || step.time) && (
+                    <View style={styles.stepOverviewMeta}>
+                      {step.temperature && (
+                        <Text style={styles.stepMetaText}>🌡️ {step.temperature}</Text>
+                      )}
+                      {step.time && (
+                        <Text style={styles.stepMetaText}>⏱️ {step.time} min</Text>
+                      )}
+                    </View>
+                  )}
+                </View>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
 
       {/* XP Celebration */}
       {showXPCelebration && (
@@ -724,26 +739,34 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F8F8FF',
   },
-  // MINIMAL FOCUSED HEADER STYLES
-  minimalHeader: {
+  // CONSOLIDATED HEADER STYLES
+  consolidatedHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#2D1B69',
   },
-  backButton: {
+  headerBackButton: {
     padding: 4,
   },
-  recipeTitle: {
+  headerCenter: {
     flex: 1,
+    alignItems: 'center',
+    marginHorizontal: 16,
+  },
+  headerTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#2D1B69',
+    color: '#FFFFFF',
     letterSpacing: -0.3,
-    textAlign: 'center',
-    marginHorizontal: 16,
+  },
+  headerSubtitle: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: 'rgba(255, 255, 255, 0.8)',
+    marginTop: 2,
   },
   headerActions: {
     flexDirection: 'row',
@@ -754,7 +777,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#FFF9F7',
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
@@ -762,7 +785,7 @@ const styles = StyleSheet.create({
   timerText: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#FF6B35',
+    color: '#FFFFFF',
     minWidth: 40,
     textAlign: 'center',
   },
@@ -776,13 +799,13 @@ const styles = StyleSheet.create({
   },
   compactVoiceButton: {
     padding: 6,
-    backgroundColor: '#F8F8FF',
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
     borderRadius: 8,
   },
   // CONFIDENCE-BUILDING PROGRESS STYLES
   progressSection: {
     paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingVertical: 12,
     backgroundColor: '#FAFAFA',
     borderBottomWidth: 1,
     borderBottomColor: '#E5E5E7',
@@ -791,7 +814,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   progressLabel: {
     fontSize: 14,
@@ -804,17 +827,17 @@ const styles = StyleSheet.create({
     color: '#4CAF50',
   },
   enhancedProgressBar: {
-    height: 12,
+    height: 8,
     backgroundColor: '#E5E5E7',
-    borderRadius: 6,
+    borderRadius: 4,
     overflow: 'hidden',
     position: 'relative',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   progressFill: {
     height: '100%',
     backgroundColor: '#4CAF50',
-    borderRadius: 6,
+    borderRadius: 4,
   },
   progressMilestones: {
     position: 'absolute',
@@ -828,11 +851,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   milestone: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
     backgroundColor: '#FFFFFF',
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: '#E5E5E7',
   },
   milestoneCompleted: {
@@ -845,11 +868,10 @@ const styles = StyleSheet.create({
     transform: [{scale: 1.2}],
   },
   encouragementText: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600',
     color: '#FF6B35',
     textAlign: 'center',
-    marginTop: 4,
   },
   // CONFIDENCE BUILDING ELEMENTS
   nextStepPreview: {
@@ -1027,12 +1049,12 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     color: '#5A5A5A',
   },
-  // ENHANCED NAVIGATION STYLES
-  navigationContainer: {
+  // COMPACT NAVIGATION STYLES
+  compactNavigationContainer: {
     backgroundColor: '#FFFFFF',
     paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 24,
+    paddingTop: 8,
+    paddingBottom: 16,
     borderTopWidth: 1,
     borderTopColor: '#E5E5E7',
   },
@@ -1041,7 +1063,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     gap: 16,
-    marginBottom: 16,
+    marginBottom: 10,
   },
   quickAccessChip: {
     flexDirection: 'row',
@@ -1049,8 +1071,8 @@ const styles = StyleSheet.create({
     gap: 6,
     backgroundColor: '#F8F8FF',
     paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
+    paddingVertical: 6,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: '#E5E5E7',
   },
@@ -1066,30 +1088,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 16,
+    gap: 12,
   },
-  // PROMINENT NAVIGATION BUTTONS
-  primaryNavButton: {
+  // COMPACT NAVIGATION BUTTONS
+  compactNavButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
     backgroundColor: '#F8F8FF',
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: '#E5E5E7',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
+    flex: 0.35,
   },
-  previousNavButton: {
-    flex: 0.4,
-  },
-  primaryNavText: {
-    fontSize: 16,
+  compactNavText: {
+    fontSize: 14,
     fontWeight: '600',
     color: '#2D1B69',
   },
@@ -1100,135 +1115,175 @@ const styles = StyleSheet.create({
   navTextDisabled: {
     color: '#C7C7CC',
   },
-  // HERO ACTION BUTTONS - The stars of navigation
-  heroCompleteButton: {
-    flex: 0.6,
+  // COMPACT ACTION BUTTONS
+  compactCompleteButton: {
+    flex: 0.65,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+    gap: 6,
     backgroundColor: '#4CAF50',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderRadius: 20,
-    elevation: 4,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 16,
+    elevation: 3,
     shadowColor: '#4CAF50',
-    shadowOffset: {width: 0, height: 4},
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
   },
-  heroNextButton: {
-    flex: 0.6,
+  compactNextButton: {
+    flex: 0.65,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+    gap: 6,
     backgroundColor: '#FF6B35',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderRadius: 20,
-    elevation: 4,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 16,
+    elevation: 3,
     shadowColor: '#FF6B35',
-    shadowOffset: {width: 0, height: 4},
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
   },
-  heroButtonText: {
-    fontSize: 16,
+  compactButtonText: {
+    fontSize: 14,
     fontWeight: '700',
     color: '#FFFFFF',
-    letterSpacing: 0.3,
+    letterSpacing: 0.2,
   },
-  xpReward: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: 'rgba(255, 255, 255, 0.25)',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 12,
-    marginLeft: 8,
-  },
-  xpRewardText: {
-    fontSize: 12,
+  compactXpText: {
+    fontSize: 11,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: 'rgba(255, 255, 255, 0.9)',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+    marginLeft: 4,
   },
-  modalOverlay: {
+  // FULL-SCREEN MODAL STYLES
+  fullScreenModal: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    backgroundColor: '#FFFFFF',
-    padding: 20,
-    borderRadius: 20,
-    width: '80%',
-    maxHeight: '80%',
+    backgroundColor: '#F8F8FF',
   },
   modalHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E5E7',
   },
   modalTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '700',
     color: '#2D1B69',
   },
-  closeButton: {
+  modalCloseButton: {
     padding: 8,
+    backgroundColor: '#F8F8FF',
+    borderRadius: 20,
   },
-  closeButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#8E8E93',
+  fullModalBody: {
+    flex: 1,
   },
-  modalBody: {
-    flexGrow: 1,
+  modalContent: {
+    padding: 20,
   },
   ingredientItem: {
-    padding: 12,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#E5E5E7',
   },
+  ingredientBullet: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#FF6B35',
+    marginTop: 8,
+    marginRight: 12,
+  },
   ingredientText: {
-    fontSize: 14,
+    flex: 1,
+    fontSize: 16,
+    lineHeight: 24,
     color: '#2D1B69',
   },
   stepOverviewItem: {
-    padding: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E7',
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    padding: 16,
+    marginBottom: 8,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E5E7',
   },
   activeStepOverview: {
     backgroundColor: '#FFF9F7',
+    borderColor: '#FF6B35',
   },
   completedStepOverview: {
-    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+    backgroundColor: 'rgba(76, 175, 80, 0.05)',
+    borderColor: '#4CAF50',
   },
   stepOverviewNumber: {
     marginRight: 12,
+    marginTop: 2,
+  },
+  stepNumberCircle: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#F8F8FF',
+    borderWidth: 2,
+    borderColor: '#E5E5E7',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  activeStepNumberCircle: {
+    backgroundColor: '#FF6B35',
+    borderColor: '#FF6B35',
   },
   stepNumberText: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600',
     color: '#2D1B69',
   },
   activeStepNumber: {
+    color: '#FFFFFF',
     fontWeight: '700',
+  },
+  stepOverviewContent: {
+    flex: 1,
   },
   stepOverviewText: {
-    fontSize: 14,
+    fontSize: 16,
+    lineHeight: 24,
     color: '#2D1B69',
+    marginBottom: 4,
   },
   activeStepText: {
-    fontWeight: '700',
+    fontWeight: '600',
   },
   completedStepText: {
     color: '#8E8E93',
+  },
+  stepOverviewMeta: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  stepMetaText: {
+    fontSize: 12,
+    color: '#8E8E93',
+    fontWeight: '500',
   },
   xpCelebration: {
     position: 'absolute',
