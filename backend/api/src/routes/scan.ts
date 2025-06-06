@@ -71,33 +71,65 @@ async function detectIngredients(imageBuffer: Buffer): Promise<DetectedIngredien
       model: 'gpt-4o-mini', // Using the cost-effective model
       messages: [
         {
+          role: 'system',
+          content: `You are an expert culinary AI with advanced computer vision capabilities. Analyze food images with professional precision and provide REALISTIC confidence scores based on actual visibility and clarity.
+
+CONFIDENCE CALIBRATION SYSTEM:
+- 95-99%: Crystal clear, professional lighting, unambiguous identification with clear labels/packaging
+- 85-94%: Clear and easily recognizable, good visibility, obvious characteristics
+- 70-84%: Recognizable but some uncertainty (partial occlusion, angle, lighting issues)
+- 60-69%: Partially visible or unclear, educated guess based on context clues
+- 50-59%: Low confidence, difficult to identify, best guess only
+
+QUANTITY PRECISION GUIDELINES:
+- Estimate realistic cooking quantities (not just "1" of everything)
+- Consider object size relative to other items in frame  
+- Use context clues (cutting board size, hand for scale, packaging labels)
+- Provide practical cooking measurements that make sense for recipes
+
+VARIETY SPECIFICITY FOR MEATS:
+- Beef: ribeye steak vs ground beef vs chuck roast vs sirloin vs brisket
+- Chicken: breast vs thighs vs wings vs drumsticks vs whole chicken
+- Pork: tenderloin vs chops vs bacon vs ham vs ground pork
+- Fish: salmon fillet vs tuna steak vs whole fish vs fish fillets
+
+CHEESE & DAIRY IDENTIFICATION:
+- Hard: aged cheddar vs parmesan vs swiss vs gouda
+- Soft: fresh mozzarella vs ricotta vs cream cheese vs goat cheese
+- Consider packaging, color, texture, and shape for identification`
+        },
+        {
           role: 'user',
           content: [
             {
               type: 'text',
-              text: `Analyze this image and identify all visible food ingredients with maximum specificity and estimated quantities. Return a JSON array with the format:
-[{"name": "specific_ingredient_name", "variety": "type/brand/cut", "quantity": "estimated_amount", "unit": "cups|tbsp|tsp|oz|lbs|pieces|slices|whole", "confidence": 0.95, "category": "vegetable|fruit|protein|dairy|grain|herb|spice|oil|condiment|other"}]
+              text: `Analyze this food image with professional accuracy. Return a JSON array with HONEST confidence scores and practical quantities:
 
-SPECIFICITY REQUIREMENTS:
-- Cheese: Identify type (cheddar, mozzarella, parmesan, goat cheese, etc.)
-- Meat: Specify cut and type (chicken breast, ground beef, salmon fillet, etc.)
-- Vegetables: Be specific (red onion, roma tomato, baby spinach, etc.)
-- Fruits: Include variety when visible (granny smith apple, naval orange, etc.)
-- Herbs/Spices: Identify specific types (fresh basil, dried oregano, etc.)
+[{"name": "specific_ingredient_name", "variety": "specific_type_or_cut", "quantity": "realistic_amount", "unit": "cups|tbsp|tsp|oz|lbs|pieces|slices|whole|cloves", "confidence": 0.XX, "category": "vegetable|fruit|protein|dairy|grain|herb|spice|oil|condiment|other"}]
 
-QUANTITY ESTIMATION:
-- Use cooking measurements (cups, tablespoons, ounces, pieces)
-- Estimate based on visual size relative to common objects
-- For whole items, count pieces (2 tomatoes, 1 avocado, etc.)
-- For chopped/prepared items, estimate volume (1/2 cup diced onion)
+🔍 **DETECTION REQUIREMENTS**:
+- **Accuracy**: Be honest about confidence - if something is unclear, reflect that in the score (don't default to 95%)
+- **Quantities**: Estimate realistic cooking amounts (e.g., "3" cloves garlic, "1.5" cups diced onion, "12" oz chicken breast, "4" medium potatoes)
+- **Meat Cuts**: Identify precisely (ribeye steak, ground chuck, chicken thighs, salmon fillet, pork tenderloin)
+- **Cheese Types**: Specify variety (sharp cheddar, fresh mozzarella, aged parmesan, goat cheese, swiss)
+- **Produce Varieties**: Be specific (roma tomatoes, baby spinach, red bell pepper, yellow onion, russet potatoes)
+- **Herb States**: Fresh vs dried, chopped vs whole leaves, specific types (fresh basil vs dried oregano)
+- **Scale Reference**: Use visible objects for size estimation (compare to hands, utensils, other ingredients)
 
-RULES:
-- Only identify actual food ingredients (not utensils, plates, or surfaces)  
-- Be as specific as possible with ingredient names and varieties
-- Provide realistic quantity estimates for cooking
-- Confidence should reflect both identification AND quantity accuracy (0.5-0.99)
-- Include maximum 10 ingredients to focus on main components
-- Prioritize ingredients that would be used in recipes`
+🎯 **CONFIDENCE SCORING EXAMPLES**:
+- Clear package label + good lighting = 90-95%
+- Obvious shape/color + recognizable texture = 80-89%  
+- Partially hidden + context clues = 70-79%
+- Small/distant + educated guess = 60-69%
+- Unclear/ambiguous + best attempt = 50-59%
+
+⚖️ **QUANTITY GUIDELINES**:
+- Count actual visible pieces (not estimates): "4 potatoes", "2 onions", "6 eggs"
+- Estimate volumes for prepared items: "2 cups diced tomatoes", "1/2 cup chopped herbs"
+- Use cooking-relevant amounts: "1 lb ground beef", "8 oz pasta", "2 tbsp olive oil"
+- Consider typical recipe proportions
+
+Return ONLY the JSON array, no explanatory text.`
             },
             {
               type: 'image_url',
@@ -108,8 +140,8 @@ RULES:
           ]
         }
       ],
-      max_tokens: 500, // Increased for more detailed responses
-      temperature: 0.2, // Lower temperature for more consistent, specific results
+      max_tokens: 2000, // Increased for more detailed responses
+      temperature: 0.3, // Slightly higher for variety in confidence scores
     });
 
     console.log('📥 OpenAI response received');
