@@ -365,7 +365,7 @@ const CookModeScreen: React.FC<CookModeScreenProps> = ({navigation, route}) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Compact Header */}
+      {/* Single Clean Header */}
       <View style={styles.header}>
         <TouchableOpacity 
           style={styles.backButton}
@@ -377,8 +377,8 @@ const CookModeScreen: React.FC<CookModeScreenProps> = ({navigation, route}) => {
           <Text style={styles.recipeTitle} numberOfLines={1}>
             {recipe?.title || 'Recipe'}
           </Text>
-          <Text style={styles.stepCounter}>
-            {currentStep + 1} of {steps.length}
+          <Text style={styles.stepProgress}>
+            Step {currentStep + 1} of {steps.length} • {Math.round(progress)}% Complete
           </Text>
         </View>
 
@@ -407,31 +407,22 @@ const CookModeScreen: React.FC<CookModeScreenProps> = ({navigation, route}) => {
         </View>
       </View>
 
-      {/* Minimal Progress Bar */}
-      <View style={styles.progressSection}>
-        <View style={styles.progressBar}>
-          <Animated.View 
-            style={[
-              styles.progressFill, 
-              {
-                width: progressAnim.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: ['0%', '100%'],
-                })
-              }
-            ]} 
-          />
-        </View>
-        <View style={styles.progressDetails}>
-          <Text style={styles.progressText}>{Math.round(progress)}% Complete</Text>
-          <View style={styles.xpBadge}>
-            <Sparkles size={12} color="#FFB800" />
-            <Text style={styles.xpText}>+75 XP</Text>
-          </View>
-        </View>
+      {/* Simple Progress Bar */}
+      <View style={styles.progressBar}>
+        <Animated.View 
+          style={[
+            styles.progressFill, 
+            {
+              width: progressAnim.interpolate({
+                inputRange: [0, 1],
+                outputRange: ['0%', '100%'],
+              })
+            }
+          ]} 
+        />
       </View>
 
-      {/* MAIN STEP AREA - This gets most of the screen space */}
+      {/* MAIN STEP CONTENT */}
       <View style={styles.mainStepArea}>
         <Animated.View 
           style={[
@@ -439,34 +430,39 @@ const CookModeScreen: React.FC<CookModeScreenProps> = ({navigation, route}) => {
             {transform: [{translateX: stepTranslateX}]}
           ]}>
           
-          {/* Current Step Instruction - This is now the focus */}
           <ScrollView 
             style={styles.instructionContainer}
             contentContainerStyle={styles.instructionContent}
             showsVerticalScrollIndicator={false}>
+            
             <Text style={styles.stepInstruction}>
               {currentStepData?.instruction}
             </Text>
             
-            {/* Step tips if available */}
+            {/* Enhanced Tips Section */}
             {currentStepData?.tips && (
               <View style={styles.tipContainer}>
-                <Text style={styles.tipLabel}>💡 Tip:</Text>
+                <View style={styles.tipHeader}>
+                  <Text style={styles.tipIcon}>💡</Text>
+                  <Text style={styles.tipLabel}>Chef's Tip</Text>
+                </View>
                 <Text style={styles.tipText}>{currentStepData.tips}</Text>
               </View>
             )}
             
-            {/* Temperature and time info if available */}
+            {/* Temperature and Time Info */}
             {(currentStepData?.temperature || currentStepData?.time) && (
               <View style={styles.stepMetadata}>
                 {currentStepData.temperature && (
-                  <View style={styles.metadataItem}>
-                    <Text style={styles.metadataLabel}>🌡️ {currentStepData.temperature}</Text>
+                  <View style={styles.metadataChip}>
+                    <Text style={styles.metadataIcon}>🌡️</Text>
+                    <Text style={styles.metadataText}>{currentStepData.temperature}</Text>
                   </View>
                 )}
                 {currentStepData.time && (
-                  <View style={styles.metadataItem}>
-                    <Text style={styles.metadataLabel}>⏱️ {currentStepData.time} min</Text>
+                  <View style={styles.metadataChip}>
+                    <Text style={styles.metadataIcon}>⏱️</Text>
+                    <Text style={styles.metadataText}>{currentStepData.time} min</Text>
                   </View>
                 )}
               </View>
@@ -475,58 +471,147 @@ const CookModeScreen: React.FC<CookModeScreenProps> = ({navigation, route}) => {
         </Animated.View>
       </View>
 
-      {/* Bottom Navigation Controls */}
-      <View style={styles.bottomControls}>
-        <TouchableOpacity
-          style={[
-            styles.navButton,
-            currentStep === 0 && styles.disabledButton,
-          ]}
-          onPress={handlePreviousStep}
-          disabled={currentStep === 0}>
-          <ChevronLeft size={20} color={currentStep === 0 ? '#C7C7CC' : '#2D1B69'} />
-          <Text style={[
-            styles.navButtonText,
-            currentStep === 0 && styles.disabledText
-          ]}>Previous</Text>
-        </TouchableOpacity>
+      {/* Enhanced Navigation Controls */}
+      <View style={styles.navigationSection}>
+        {/* Step Navigation */}
+        <View style={styles.stepNavigation}>
+          <TouchableOpacity
+            style={[
+              styles.navButton,
+              styles.prevButton,
+              currentStep === 0 && styles.disabledButton,
+            ]}
+            onPress={handlePreviousStep}
+            disabled={currentStep === 0}>
+            <ChevronLeft size={20} color={currentStep === 0 ? '#C7C7CC' : '#2D1B69'} />
+            <Text style={[
+              styles.navButtonText,
+              currentStep === 0 && styles.disabledText
+            ]}>Previous</Text>
+          </TouchableOpacity>
 
-        {/* Complete/Next Button */}
-        {currentStep === steps.length - 1 ? (
+          {/* Main Action Button */}
+          {currentStep === steps.length - 1 ? (
+            <TouchableOpacity
+              style={styles.completeButton}
+              onPress={handleStepComplete}>
+              <CheckCircle size={20} color="#FFFFFF" />
+              <Text style={styles.completeButtonText}>Complete Recipe</Text>
+              <View style={styles.xpBadge}>
+                <Sparkles size={12} color="#FFFFFF" />
+                <Text style={styles.xpBadgeText}>+75 XP</Text>
+              </View>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              style={styles.nextButton}
+              onPress={!currentStepData?.duration ? handleStepComplete : handleNextStep}>
+              <Text style={styles.nextButtonText}>
+                {!currentStepData?.duration ? 'Mark Complete' : 'Next Step'}
+              </Text>
+              <ChevronRight size={20} color="#FFFFFF" />
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {/* Quick Access Buttons */}
+        <View style={styles.quickAccessRow}>
           <TouchableOpacity
-            style={styles.completeButton}
-            onPress={handleStepComplete}>
-            <CheckCircle size={20} color="#FFFFFF" />
-            <Text style={styles.completeButtonText}>Complete Recipe</Text>
+            style={styles.accessButton}
+            onPress={() => setShowIngredientsModal(true)}>
+            <Text style={styles.accessButtonIcon}>🥘</Text>
+            <Text style={styles.accessButtonText}>Ingredients</Text>
           </TouchableOpacity>
-        ) : (
+          
           <TouchableOpacity
-            style={styles.nextButton}
-            onPress={!currentStepData?.duration ? handleStepComplete : handleNextStep}>
-            <Text style={styles.nextButtonText}>
-              {!currentStepData?.duration ? 'Mark Done' : 'Next Step'}
-            </Text>
-            <ChevronRight size={20} color="#FFFFFF" />
+            style={styles.accessButton}
+            onPress={() => setShowAllStepsModal(true)}>
+            <Text style={styles.accessButtonIcon}>📋</Text>
+            <Text style={styles.accessButtonText}>All Steps</Text>
           </TouchableOpacity>
-        )}
+        </View>
       </View>
 
-      {/* Collapsible Sections Access */}
-      <View style={styles.quickAccess}>
-        <TouchableOpacity
-          style={styles.accessButton}
-          onPress={() => setShowIngredientsModal(true)}>
-          <Text style={styles.accessButtonText}>Ingredients</Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity
-          style={styles.accessButton}
-          onPress={() => setShowAllStepsModal(true)}>
-          <Text style={styles.accessButtonText}>All Steps</Text>
-        </TouchableOpacity>
-      </View>
+      {/* Ingredients Modal */}
+      {showIngredientsModal && (
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Ingredients</Text>
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={() => setShowIngredientsModal(false)}>
+                <Text style={styles.closeButtonText}>✕</Text>
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={styles.modalBody}>
+              {recipe?.ingredients?.map((ingredient, index) => (
+                <View key={index} style={styles.ingredientItem}>
+                  <Text style={styles.ingredientText}>
+                    {typeof ingredient === 'string' 
+                      ? ingredient 
+                      : `${ingredient.amount || ''} ${ingredient.unit || ''} ${ingredient.name || ingredient}`.trim()
+                    }
+                  </Text>
+                </View>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      )}
 
-      {/* XP Celebration Animation */}
+      {/* All Steps Modal */}
+      {showAllStepsModal && (
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>All Steps</Text>
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={() => setShowAllStepsModal(false)}>
+                <Text style={styles.closeButtonText}>✕</Text>
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={styles.modalBody}>
+              {steps.map((step, index) => (
+                <TouchableOpacity
+                  key={step.id}
+                  style={[
+                    styles.stepOverviewItem,
+                    index === currentStep && styles.activeStepOverview,
+                    step.completed && styles.completedStepOverview,
+                  ]}
+                  onPress={() => {
+                    setCurrentStep(index);
+                    setTimeRemaining(steps[index]?.duration || 0);
+                    setIsPlaying(false);
+                    setShowAllStepsModal(false);
+                  }}>
+                  <View style={styles.stepOverviewNumber}>
+                    {step.completed ? (
+                      <CheckCircle size={16} color="#4CAF50" />
+                    ) : (
+                      <Text style={[
+                        styles.stepNumberText,
+                        index === currentStep && styles.activeStepNumber
+                      ]}>{index + 1}</Text>
+                    )}
+                  </View>
+                  <Text style={[
+                    styles.stepOverviewText,
+                    index === currentStep && styles.activeStepText,
+                    step.completed && styles.completedStepText,
+                  ]} numberOfLines={2}>
+                    {step.instruction}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      )}
+
+      {/* XP Celebration */}
       {showXPCelebration && (
         <Animated.View 
           style={[
@@ -538,7 +623,7 @@ const CookModeScreen: React.FC<CookModeScreenProps> = ({navigation, route}) => {
         </Animated.View>
       )}
 
-      {/* Claim Recipe Preview (for generated recipes) */}
+      {/* Claim Recipe Preview */}
       {recipe?.isGenerated && !isRecipeClaimed && completedSteps >= Math.floor(steps.length / 2) && (
         <Animated.View style={[styles.claimPreview, {transform: [{scale: claimPreviewScale}]}]}>
           <Trophy size={16} color="#FFB800" />
@@ -588,7 +673,7 @@ const styles = StyleSheet.create({
     color: '#2D1B69',
     letterSpacing: -0.5,
   },
-  stepCounter: {
+  stepProgress: {
     fontSize: 14,
     color: '#8E8E93',
   },
@@ -620,10 +705,6 @@ const styles = StyleSheet.create({
   voiceButton: {
     padding: 8,
   },
-  progressSection: {
-    paddingHorizontal: 20,
-    paddingBottom: 16,
-  },
   progressBar: {
     height: 8,
     backgroundColor: '#E5E5E7',
@@ -634,30 +715,6 @@ const styles = StyleSheet.create({
     height: '100%',
     backgroundColor: '#4CAF50',
     borderRadius: 4,
-  },
-  progressDetails: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 6,
-  },
-  progressText: {
-    fontSize: 12,
-    color: '#8E8E93',
-  },
-  xpBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: 'rgba(255, 184, 0, 0.1)',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  xpText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#FFB800',
   },
   mainStepArea: {
     flex: 1,
@@ -695,6 +752,16 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFF9F7',
     borderRadius: 12,
   },
+  tipHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  tipIcon: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#2D1B69',
+  },
   tipLabel: {
     fontSize: 14,
     fontWeight: '600',
@@ -712,16 +779,20 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFF9F7',
     borderRadius: 12,
   },
-  metadataItem: {
+  metadataChip: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
   },
-  metadataLabel: {
+  metadataIcon: {
     fontSize: 12,
     color: '#8E8E93',
   },
-  bottomControls: {
+  metadataText: {
+    fontSize: 12,
+    color: '#8E8E93',
+  },
+  navigationSection: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -730,12 +801,21 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#E5E5E7',
   },
+  stepNavigation: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
   navButton: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
     paddingHorizontal: 12,
     paddingVertical: 8,
+  },
+  prevButton: {
+    backgroundColor: '#F8F8FF',
+    borderRadius: 12,
   },
   navButtonText: {
     fontSize: 14,
@@ -767,6 +847,21 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#FFFFFF',
   },
+  xpBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+    marginLeft: 8,
+  },
+  xpBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
   nextButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -779,12 +874,10 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#FFFFFF',
   },
-  quickAccess: {
+  quickAccessRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
   },
   accessButton: {
     padding: 12,
@@ -796,10 +889,91 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
   },
+  accessButtonIcon: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#2D1B69',
+  },
   accessButtonText: {
     fontSize: 14,
     fontWeight: '600',
     color: '#2D1B69',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: '#FFFFFF',
+    padding: 20,
+    borderRadius: 20,
+    width: '80%',
+    maxHeight: '80%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#2D1B69',
+  },
+  closeButton: {
+    padding: 8,
+  },
+  closeButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#8E8E93',
+  },
+  modalBody: {
+    flexGrow: 1,
+  },
+  ingredientItem: {
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E5E7',
+  },
+  ingredientText: {
+    fontSize: 14,
+    color: '#2D1B69',
+  },
+  stepOverviewItem: {
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E5E7',
+  },
+  activeStepOverview: {
+    backgroundColor: '#FFF9F7',
+  },
+  completedStepOverview: {
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+  },
+  stepOverviewNumber: {
+    marginRight: 12,
+  },
+  stepNumberText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#2D1B69',
+  },
+  activeStepNumber: {
+    fontWeight: '700',
+  },
+  stepOverviewText: {
+    fontSize: 14,
+    color: '#2D1B69',
+  },
+  activeStepText: {
+    fontWeight: '700',
+  },
+  completedStepText: {
+    color: '#8E8E93',
   },
   xpCelebration: {
     position: 'absolute',
