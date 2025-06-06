@@ -255,27 +255,74 @@ const KitchenApplianceIcon: React.FC<KitchenApplianceIconProps> = ({
                 <Stop offset="0%" stopColor="#424242" />
                 <Stop offset="100%" stopColor="#212121" />
               </LinearGradient>
+              <LinearGradient id="fireboxGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                <Stop offset="0%" stopColor="#8D6E63" />
+                <Stop offset="100%" stopColor="#5D4037" />
+              </LinearGradient>
             </Defs>
-            <G fill="none" stroke="#212121" strokeWidth="1.5">
-              {/* Main smoking chamber */}
-              <Rect x="4" y="12" width="12" height="6" rx="1" fill="url(#smokerGrad)"/>
-              {/* Firebox */}
-              <Rect x="16" y="14" width="4" height="4" rx="1" fill="#5D4037"/>
-              {/* Chimney */}
-              <Rect x="2" y="8" width="2" height="4" rx="1" fill="#424242"/>
+            <G fill="none" stroke="#212121" strokeWidth="1.2">
+              {/* Main smoking chamber - larger and more proportional */}
+              <Ellipse cx="10" cy="15" rx="7" ry="4" fill="url(#smokerGrad)"/>
+              {/* Firebox - better proportioned */}
+              <Rect x="17" y="13" width="5" height="4" rx="1" fill="url(#fireboxGrad)"/>
+              {/* Chimney - taller and more realistic */}
+              <Rect x="2" y="6" width="2" height="7" rx="0.5" fill="#424242"/>
               {/* Temperature gauge */}
-              <Circle cx="10" cy="13" r="1" fill="#FFC107"/>
-              {/* Handle */}
-              <Circle cx="14" cy="15" r="0.5" fill="#9E9E9E"/>
-              {/* Legs */}
-              <Path d="M6 18 L6 20" stroke="#424242" strokeWidth="2"/>
-              <Path d="M14 18 L14 20" stroke="#424242" strokeWidth="2"/>
-              <Path d="M18 18 L18 20" stroke="#424242" strokeWidth="2"/>
-              {/* Smoke clouds */}
-              <Circle cx="3" cy="6" r="1" fill="#E0E0E0" opacity="0.7"/>
-              <Circle cx="2" cy="4" r="1.5" fill="#E0E0E0" opacity="0.5"/>
-              <Circle cx="4" cy="3" r="1" fill="#E0E0E0" opacity="0.6"/>
-              <Circle cx="5" cy="5" r="1.2" fill="#E0E0E0" opacity="0.4"/>
+              <Circle cx="8" cy="14" r="1" fill="#FFC107"/>
+              <Circle cx="8" cy="14" r="0.5" fill="#FF5722"/>
+              {/* Door handle */}
+              <Circle cx="15" cy="15" r="0.8" fill="#9E9E9E"/>
+              {/* Legs - more realistic spacing */}
+              <Path d="M5 19 L5 22" stroke="#424242" strokeWidth="2"/>
+              <Path d="M10 19 L10 22" stroke="#424242" strokeWidth="2"/>
+              <Path d="M15 19 L15 22" stroke="#424242" strokeWidth="2"/>
+              <Path d="M20 17 L20 22" stroke="#424242" strokeWidth="2"/>
+              {/* Improved smoke clouds */}
+              <Circle cx="3" cy="4" r="1.2" fill="#E0E0E0" opacity="0.8"/>
+              <Circle cx="1.5" cy="2" r="1" fill="#E0E0E0" opacity="0.6"/>
+              <Circle cx="4.5" cy="1.5" r="1.5" fill="#E0E0E0" opacity="0.5"/>
+              <Circle cx="2" cy="5.5" r="0.8" fill="#E0E0E0" opacity="0.7"/>
+              <Circle cx="5" cy="3" r="1" fill="#E0E0E0" opacity="0.6"/>
+            </G>
+          </Svg>
+        );
+
+      case 'stand mixer':
+        return (
+          <Svg height={size} viewBox="0 0 24 24" width={size}>
+            <Defs>
+              <LinearGradient id="mixerBodyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                <Stop offset="0%" stopColor="#F5F5F5" />
+                <Stop offset="100%" stopColor="#E0E0E0" />
+              </LinearGradient>
+              <LinearGradient id="mixerBowlGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                <Stop offset="0%" stopColor="#E8EAF6" />
+                <Stop offset="100%" stopColor="#C5CAE9" />
+              </LinearGradient>
+              <LinearGradient id="mixerArmGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                <Stop offset="0%" stopColor="#ECEFF1" />
+                <Stop offset="100%" stopColor="#CFD8DC" />
+              </LinearGradient>
+            </Defs>
+            <G fill="none" stroke="#424242" strokeWidth="1.5">
+              {/* Main body/motor */}
+              <Path d="M8 4 L16 4 Q18 4 18 6 L18 10 Q18 12 16 12 L8 12 Q6 12 6 10 L6 6 Q6 4 8 4 Z" fill="url(#mixerBodyGrad)"/>
+              {/* Mixing arm */}
+              <Path d="M12 12 Q14 14 14 16 Q14 18 12 18" fill="none" stroke="url(#mixerArmGrad)" strokeWidth="3"/>
+              {/* Mixing bowl */}
+              <Path d="M8 16 Q8 22 12 22 Q16 22 16 16 L16 18 Q16 20 12 20 Q8 20 8 18 Z" fill="url(#mixerBowlGrad)"/>
+              {/* Control knobs */}
+              <Circle cx="10" cy="8" r="1" fill="#4CAF50"/>
+              <Circle cx="14" cy="8" r="1" fill="#FF5722"/>
+              {/* Speed dial */}
+              <Circle cx="12" cy="6" r="1.5" fill="#FFC107"/>
+              <Circle cx="12" cy="6" r="0.5" fill="#FF8F00"/>
+              {/* Beater attachment */}
+              <Path d="M12 18 L11 19 L13 19 Z" fill="#9E9E9E"/>
+              <Path d="M11.5 19 L11.5 20.5" stroke="#9E9E9E" strokeWidth="1"/>
+              <Path d="M12.5 19 L12.5 20.5" stroke="#9E9E9E" strokeWidth="1"/>
+              {/* Base */}
+              <Ellipse cx="12" cy="22" rx="6" ry="1" fill="#BDBDBD"/>
             </G>
           </Svg>
         );
