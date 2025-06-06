@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,8 @@ import {
   Alert,
   TextInput,
   Modal,
+  Animated,
+  Dimensions,
 } from 'react-native';
 import {
   Users,
@@ -20,10 +22,19 @@ import {
   X,
   Check,
   ArrowRight,
+  ChevronRight,
+  ChevronLeft,
+  SkipForward,
+  Sparkles,
+  Trophy,
+  Globe,
 } from 'lucide-react-native';
 import { scale, verticalScale, moderateScale, responsive } from '../utils/responsive';
 import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
 import { useAuth } from '../context/AuthContext';
+import { useGamification, XP_VALUES } from '../context/GamificationContext';
+
+const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
 
 interface EnhancedPreferencesScreenProps {
   navigation: any;
@@ -58,6 +69,20 @@ const EnhancedPreferencesScreen: React.FC<EnhancedPreferencesScreenProps> = ({
 }) => {
   const { ingredients, imageUri } = route.params;
   const { user } = useAuth();
+  const { addXP, unlockBadge } = useGamification();
+  
+  // Quiz flow state
+  const [currentStep, setCurrentStep] = useState(0);
+  const [hasCompletedPreferences, setHasCompletedPreferences] = useState(false);
+  const [showXPReward, setShowXPReward] = useState(false);
+  const [showBadgeUnlock, setShowBadgeUnlock] = useState(false);
+  
+  // Animation references
+  const slideAnim = useRef(new Animated.Value(0)).current;
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+  const progressAnim = useRef(new Animated.Value(0)).current;
+  const xpRewardScale = useRef(new Animated.Value(0)).current;
+  const badgeScale = useRef(new Animated.Value(0)).current;
   
   // Serving size options
   const [servingOptions] = useState<ServingOption[]>([
@@ -100,10 +125,105 @@ const EnhancedPreferencesScreen: React.FC<EnhancedPreferencesScreenProps> = ({
   const [dietary, setDietary] = useState<string[]>([]);
   const [cuisine, setCuisine] = useState<string[]>([]);
 
+  // Quiz steps definition
+  const steps = [
+    {
+      id: 'serving',
+      title: 'How many people are you cooking for?',
+      subtitle: 'Select your serving size and meal prep preference',
+      type: 'serving',
+    },
+    {
+      id: 'appliances',
+      title: 'What kitchen equipment do you have?',
+      subtitle: 'Select all the appliances you can use',
+      type: 'appliances',
+    },
+    {
+      id: 'dietary',
+      title: 'Any dietary restrictions?',
+      subtitle: 'Select all that apply',
+      type: 'multi',
+      options: [
+        'Vegetarian',
+        'Vegan', 
+        'Gluten-Free',
+        'Dairy-Free',
+        'Keto',
+        'Paleo',
+        'Low-Carb',
+        'Low-Fat',
+        'Nut-Free',
+      ],
+    },
+    {
+      id: 'cuisine',
+      title: 'What cuisine are you craving?',
+      subtitle: 'Pick your favorites or let us surprise you',
+      type: 'multi',
+      options: [
+        'Italian',
+        'Asian',
+        'Mexican',
+        'Mediterranean',
+        'American',
+        'Indian',
+        'French',
+        'Thai',
+        'Japanese',
+        'Chinese',
+        'Korean',
+        'Greek',
+        'Spanish',
+        'Vietnamese',
+        'Middle Eastern',
+        'Caribbean',
+        'Southern',
+        'Fusion',
+        '🎲 Surprise Me!',
+      ],
+    },
+    {
+      id: 'time',
+      title: 'How much time do you have?',
+      subtitle: 'We\'ll generate recipes that fit your schedule',
+      type: 'single',
+      options: [
+        {label: '⚡ Quick & Easy', subtitle: 'Under 20 minutes', value: 'quick'},
+        {label: '⏱️ Medium', subtitle: '20-45 minutes', value: 'medium'},
+        {label: '🍖 Worth the Wait', subtitle: 'Over 45 minutes', value: 'long'},
+        {label: '🤷 Flexible', subtitle: 'Any cooking time', value: 'any'},
+      ],
+    },
+    {
+      id: 'difficulty',
+      title: 'What\'s your skill level?',
+      subtitle: 'Be honest, we won\'t judge!',
+      type: 'single',
+      options: [
+        {label: '👶 Beginner', subtitle: 'Simple recipes only', value: 'easy'},
+        {label: '👨‍🍳 Home Cook', subtitle: 'Some experience needed', value: 'medium'},
+        {label: '👨‍🍳 Chef Mode', subtitle: 'Bring on the challenge!', value: 'hard'},
+        {label: '🎲 Surprise Me', subtitle: 'Any difficulty', value: 'any'},
+      ],
+    },
+  ];
+
   // Load user defaults
   useEffect(() => {
     loadUserDefaults();
   }, [user]);
+
+  // Animation and progress tracking
+  useEffect(() => {
+    // Animate progress bar
+    Animated.spring(progressAnim, {
+      toValue: (currentStep + 1) / steps.length,
+      tension: 50,
+      friction: 7,
+      useNativeDriver: false,
+    }).start();
+  }, [currentStep]);
 
   const loadUserDefaults = () => {
     if (user) {
@@ -174,13 +294,186 @@ const EnhancedPreferencesScreen: React.FC<EnhancedPreferencesScreenProps> = ({
     ));
   };
 
-  const handleContinue = () => {
+  // Quiz navigation functions
+  const animateTransition = (direction: 'next' | 'prev') => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 150,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: direction === 'next' ? -50 : 50,
+        duration: 150,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      slideAnim.setValue(direction === 'next' ? 50 : -50);
+      
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 150,
+          useNativeDriver: true,
+        }),
+        Animated.timing(slideAnim, {
+          toValue: 0,
+          duration: 150,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    });
+  };
+
+  const handleNext = () => {
+    if (currentStep < steps.length - 1) {
+      animateTransition('next');
+      setTimeout(() => setCurrentStep(currentStep + 1), 150);
+    } else {
+      handleContinue();
+    }
+  };
+
+  const handlePrev = () => {
+    if (currentStep > 0) {
+      animateTransition('prev');
+      setTimeout(() => setCurrentStep(currentStep - 1), 150);
+    }
+  };
+
+  const handleSkip = () => {
+    handleNext();
+  };
+
+  // Option selection handlers
+  const toggleOption = (option: string) => {
+    const step = steps[currentStep];
+    
+    ReactNativeHapticFeedback.trigger('impactLight');
+    
+    if (step.id === 'dietary') {
+      setDietary(prev =>
+        prev.includes(option)
+          ? prev.filter(item => item !== option)
+          : [...prev, option],
+      );
+    } else if (step.id === 'cuisine') {
+      if (option === '🎲 Surprise Me!') {
+        setCuisine(prev => 
+          prev.includes(option) ? [] : [option]
+        );
+      } else {
+        setCuisine(prev => {
+          const filtered = prev.filter(item => item !== '🎲 Surprise Me!');
+          return prev.includes(option)
+            ? filtered.filter(item => item !== option)
+            : [...filtered, option];
+        });
+      }
+    }
+  };
+
+  const selectSingleOption = (value: string) => {
+    const step = steps[currentStep];
+    
+    ReactNativeHapticFeedback.trigger('impactMedium');
+    
+    if (step.id === 'time') {
+      setCookingTime(value);
+    } else if (step.id === 'difficulty') {
+      setDifficulty(value);
+    }
+    
+    // Auto-advance after selecting single option
+    setTimeout(() => handleNext(), 300);
+  };
+
+  const isOptionSelected = (option: any): boolean => {
+    const step = steps[currentStep];
+    
+    if (step.id === 'dietary') {
+      return dietary.includes(option);
+    } else if (step.id === 'cuisine') {
+      return cuisine.includes(option);
+    } else if (step.id === 'time') {
+      return cookingTime === option.value;
+    } else if (step.id === 'difficulty') {
+      return difficulty === option.value;
+    }
+    
+    return false;
+  };
+
+  const canProceed = (): boolean => {
+    const step = steps[currentStep];
+    
+    if (step.id === 'serving') {
+      return true; // Always can proceed from serving selection
+    } else if (step.id === 'appliances') {
+      return appliances.filter(a => a.selected).length > 0;
+    } else if (step.type === 'multi') {
+      if (step.id === 'dietary') return true; // Optional
+      if (step.id === 'cuisine') return cuisine.length > 0;
+    }
+    
+    return true; // Single choice steps can always proceed
+  };
+
+  const showCompletionReward = async () => {
+    setShowXPReward(true);
+    
+    ReactNativeHapticFeedback.trigger('notificationSuccess');
+    
+    Animated.sequence([
+      Animated.spring(xpRewardScale, {
+        toValue: 1.2,
+        tension: 50,
+        friction: 3,
+        useNativeDriver: true,
+      }),
+      Animated.timing(xpRewardScale, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start();
+    
+    await addXP(XP_VALUES.COMPLETE_PREFERENCES, 'COMPLETE_PREFERENCES');
+  };
+  
+  const checkForBadges = async () => {
+    // Check if user is trying exotic cuisines
+    const exoticCuisines = ['Vietnamese', 'Middle Eastern', 'Korean', 'Thai'];
+    const hasExotic = cuisine.some(c => exoticCuisines.includes(c));
+    
+    if (hasExotic) {
+      await unlockBadge('cuisine_explorer');
+      setShowBadgeUnlock(true);
+      
+      Animated.spring(badgeScale, {
+        toValue: 1,
+        tension: 50,
+        friction: 3,
+        useNativeDriver: true,
+      }).start();
+    }
+    
+    if (cuisine.length >= 5) {
+      await unlockBadge('world_traveler');
+    }
+  };
+
+  const handleContinue = async () => {
     const selectedAppliances = appliances.filter(a => a.selected).map(a => a.id);
     
-    if (selectedAppliances.length === 0) {
-      Alert.alert('No Appliances Selected', 'Please select at least one cooking appliance to continue.');
-      return;
+    // Complete preferences - show reward
+    if (!hasCompletedPreferences) {
+      setHasCompletedPreferences(true);
+      await showCompletionReward();
     }
+    
+    // Check for badge unlocks
+    await checkForBadges();
 
     const preferences = {
       servingSize: selectedServing.value,
@@ -195,155 +488,326 @@ const EnhancedPreferencesScreen: React.FC<EnhancedPreferencesScreenProps> = ({
 
     ReactNativeHapticFeedback.trigger('notificationSuccess');
     
-    navigation.navigate('RecipeCards', {
-      ingredients,
-      imageUri,
-      preferences,
-    });
+    // Navigate after animation
+    setTimeout(() => {
+      navigation.navigate('RecipeCards', {
+        ingredients,
+        imageUri,
+        preferences,
+      });
+    }, 1500);
   };
 
   const selectedApplianceCount = appliances.filter(a => a.selected).length;
+  const currentStepData = steps[currentStep];
+  const completionPercentage = Math.round(((currentStep + 1) / steps.length) * 100);
 
-  return (
-    <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.title}>Cooking Preferences</Text>
-        <Text style={styles.subtitle}>Tell us about your cooking setup</Text>
+  // Render functions for different step types
+  const renderServingStep = () => (
+    <View style={styles.stepContent}>
+      {/* Serving Size Section */}
+      <View style={styles.sectionContainer}>
+        <View style={styles.servingGrid}>
+          {servingOptions.map((option) => (
+            <TouchableOpacity
+              key={option.id}
+              style={[
+                styles.servingOption,
+                selectedServing.id === option.id && styles.servingOptionSelected,
+              ]}
+              onPress={() => handleServingSelection(option)}
+            >
+              <Text style={styles.servingIcon}>{option.icon}</Text>
+              <Text style={[
+                styles.servingLabel,
+                selectedServing.id === option.id && styles.servingLabelSelected,
+              ]}>
+                {option.label}
+              </Text>
+              {selectedServing.id === option.id && option.isCustom && (
+                <Text style={styles.customValue}>{selectedServing.value} people</Text>
+              )}
+            </TouchableOpacity>
+          ))}
+        </View>
       </View>
 
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* Serving Size Section */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Users size={20} color="#2D1B69" />
-            <Text style={styles.sectionTitle}>How many people are you cooking for?</Text>
+      {/* Meal Prep Section */}
+      <View style={styles.sectionContainer}>
+        <TouchableOpacity
+          style={[styles.mealPrepToggle, mealPrepEnabled && styles.mealPrepToggleActive]}
+          onPress={toggleMealPrep}
+        >
+          <View style={styles.mealPrepContent}>
+            <Text style={[styles.mealPrepText, mealPrepEnabled && styles.mealPrepTextActive]}>
+              I want to meal prep
+            </Text>
+            <Text style={[styles.mealPrepSubtext, mealPrepEnabled && styles.mealPrepSubtextActive]}>
+              Prepare multiple portions for the week
+            </Text>
           </View>
-          
-          <View style={styles.servingGrid}>
-            {servingOptions.map((option) => (
-              <TouchableOpacity
-                key={option.id}
+          <View style={[styles.checkbox, mealPrepEnabled && styles.checkboxActive]}>
+            {mealPrepEnabled && <Check size={16} color="#FFFFFF" />}
+          </View>
+        </TouchableOpacity>
+
+        {mealPrepEnabled && (
+          <View style={styles.mealPrepPortions}>
+            <Text style={styles.portionsLabel}>How many meal prep portions?</Text>
+            <View style={styles.portionsRow}>
+              {[3, 4, 5, 6, 8, 10, 12, 14].map((portions) => (
+                <TouchableOpacity
+                  key={portions}
+                  style={[
+                    styles.portionOption,
+                    mealPrepPortions === portions && styles.portionOptionSelected,
+                  ]}
+                  onPress={() => handleMealPrepPortions(portions)}
+                >
+                  <Text style={[
+                    styles.portionText,
+                    mealPrepPortions === portions && styles.portionTextSelected,
+                  ]}>
+                    {portions}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        )}
+      </View>
+    </View>
+  );
+
+  const renderAppliancesStep = () => (
+    <View style={styles.stepContent}>
+      <View style={styles.applianceGrid}>
+        {appliances.map((appliance) => (
+          <TouchableOpacity
+            key={appliance.id}
+            style={[
+              styles.applianceCard,
+              appliance.selected && styles.applianceCardSelected,
+            ]}
+            onPress={() => toggleAppliance(appliance.id)}
+          >
+            <Text style={styles.applianceIcon}>{appliance.icon}</Text>
+            <Text style={[
+              styles.applianceName,
+              appliance.selected && styles.applianceNameSelected,
+            ]}>
+              {appliance.name}
+            </Text>
+            <Text style={[
+              styles.applianceDescription,
+              appliance.selected && styles.applianceDescriptionSelected,
+            ]}>
+              {appliance.description}
+            </Text>
+            {appliance.selected && (
+              <View style={styles.applianceCheckbox}>
+                <Check size={14} color="#FFFFFF" />
+              </View>
+            )}
+          </TouchableOpacity>
+        ))}
+      </View>
+      <Text style={styles.applianceHint}>
+        {selectedApplianceCount} selected • Select all that you have
+      </Text>
+    </View>
+  );
+
+  const renderMultiChoice = () => {
+    const step = steps[currentStep];
+    
+    return (
+      <View style={styles.stepContent}>
+        <View style={styles.optionsGrid}>
+          {step.options?.map((option, index) => (
+            <TouchableOpacity
+              key={`${step.id}-${index}-${option}`}
+              style={[
+                styles.optionChip,
+                isOptionSelected(option) && styles.selectedChip,
+              ]}
+              onPress={() => toggleOption(option)}
+            >
+              <Text
                 style={[
-                  styles.servingOption,
-                  selectedServing.id === option.id && styles.servingOptionSelected,
+                  styles.chipText,
+                  isOptionSelected(option) && styles.selectedChipText,
                 ]}
-                onPress={() => handleServingSelection(option)}
               >
-                <Text style={styles.servingIcon}>{option.icon}</Text>
+                {option}
+              </Text>
+              {isOptionSelected(option) && (
+                <Check size={14} color="#F8F8FF" style={styles.checkIcon} />
+              )}
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* Show badge hint for cuisine selection */}
+        {currentStep === 3 && cuisine.length >= 3 && (
+          <Animated.View style={[styles.badgeHint, {opacity: fadeAnim}]}>
+            <Globe size={16} color="#FFB800" />
+            <Text style={styles.badgeHintText}>Explorer badge unlocked for trying exotic cuisines!</Text>
+          </Animated.View>
+        )}
+      </View>
+    );
+  };
+
+  const renderSingleChoice = () => {
+    const step = steps[currentStep];
+    
+    return (
+      <View style={styles.stepContent}>
+        <View style={styles.singleChoiceContainer}>
+          {step.options?.map((option: any, index: number) => (
+            <TouchableOpacity
+              key={`${step.id}-${index}-${option.value}`}
+              style={[
+                styles.singleOption,
+                isOptionSelected(option) && styles.selectedSingleOption,
+              ]}
+              onPress={() => selectSingleOption(option.value)}
+            >
+              <View style={styles.optionContent}>
                 <Text style={[
-                  styles.servingLabel,
-                  selectedServing.id === option.id && styles.servingLabelSelected,
+                  styles.optionLabel,
+                  isOptionSelected(option) && styles.selectedOptionLabel,
                 ]}>
                   {option.label}
                 </Text>
-                {selectedServing.id === option.id && option.isCustom && (
-                  <Text style={styles.customValue}>{selectedServing.value} people</Text>
-                )}
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-
-        {/* Meal Prep Section */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <ChefHat size={20} color="#2D1B69" />
-            <Text style={styles.sectionTitle}>Meal Prep</Text>
-          </View>
-          
-          <TouchableOpacity
-            style={[styles.mealPrepToggle, mealPrepEnabled && styles.mealPrepToggleActive]}
-            onPress={toggleMealPrep}
-          >
-            <View style={styles.mealPrepContent}>
-              <Text style={[styles.mealPrepText, mealPrepEnabled && styles.mealPrepTextActive]}>
-                I want to meal prep
-              </Text>
-              <Text style={[styles.mealPrepSubtext, mealPrepEnabled && styles.mealPrepSubtextActive]}>
-                Prepare multiple portions for the week
-              </Text>
-            </View>
-            <View style={[styles.checkbox, mealPrepEnabled && styles.checkboxActive]}>
-              {mealPrepEnabled && <Check size={16} color="#FFFFFF" />}
-            </View>
-          </TouchableOpacity>
-
-          {mealPrepEnabled && (
-            <View style={styles.mealPrepPortions}>
-              <Text style={styles.portionsLabel}>How many meal prep portions?</Text>
-              <View style={styles.portionsRow}>
-                {[3, 4, 5, 6, 8, 10, 12, 14].map((portions) => (
-                  <TouchableOpacity
-                    key={portions}
-                    style={[
-                      styles.portionOption,
-                      mealPrepPortions === portions && styles.portionOptionSelected,
-                    ]}
-                    onPress={() => handleMealPrepPortions(portions)}
-                  >
-                    <Text style={[
-                      styles.portionText,
-                      mealPrepPortions === portions && styles.portionTextSelected,
-                    ]}>
-                      {portions}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
+                <Text style={[
+                  styles.optionSubtitle,
+                  isOptionSelected(option) && styles.selectedOptionSubtitle,
+                ]}>
+                  {option.subtitle}
+                </Text>
               </View>
-            </View>
-          )}
-        </View>
-
-        {/* Kitchen Appliances Section */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Utensils size={20} color="#2D1B69" />
-            <Text style={styles.sectionTitle}>Available Kitchen Appliances</Text>
-            <Text style={styles.applianceCount}>
-              {selectedApplianceCount} selected
-            </Text>
-          </View>
-          
-          <View style={styles.applianceGrid}>
-            {appliances.map((appliance) => (
-              <TouchableOpacity
-                key={appliance.id}
-                style={[
-                  styles.applianceCard,
-                  appliance.selected && styles.applianceCardSelected,
-                ]}
-                onPress={() => toggleAppliance(appliance.id)}
-              >
-                <Text style={styles.applianceIcon}>{appliance.icon}</Text>
-                <Text style={[
-                  styles.applianceName,
-                  appliance.selected && styles.applianceNameSelected,
-                ]}>
-                  {appliance.name}
-                </Text>
-                <Text style={[
-                  styles.applianceDescription,
-                  appliance.selected && styles.applianceDescriptionSelected,
-                ]}>
-                  {appliance.description}
-                </Text>
-                {appliance.selected && (
-                  <View style={styles.applianceCheckbox}>
-                    <Check size={14} color="#FFFFFF" />
-                  </View>
+              <View style={[
+                styles.radioCircle,
+                isOptionSelected(option) && styles.selectedRadioCircle,
+              ]}>
+                {isOptionSelected(option) && (
+                  <View style={styles.radioInner} />
                 )}
-              </TouchableOpacity>
-            ))}
-          </View>
+              </View>
+            </TouchableOpacity>
+          ))}
         </View>
-      </ScrollView>
+      </View>
+    );
+  };
 
-      {/* Continue Button */}
-      <View style={styles.footer}>
-        <TouchableOpacity style={styles.continueButton} onPress={handleContinue}>
-          <Text style={styles.continueButtonText}>Generate Recipes</Text>
-          <ArrowRight size={18} color="#FFFFFF" />
+  return (
+    <SafeAreaView style={styles.container}>
+      {/* Enhanced Progress Bar */}
+      <View style={styles.progressContainer}>
+        <View style={styles.progressHeader}>
+          <Text style={styles.progressLabel}>Cooking Preferences</Text>
+          <Text style={styles.progressPercentage}>{completionPercentage}%</Text>
+        </View>
+        <View style={styles.progressBar}>
+          <Animated.View 
+            style={[
+              styles.progressFill,
+              {
+                width: progressAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: ['0%', '100%'],
+                }),
+              }
+            ]} 
+          />
+        </View>
+        <Text style={styles.progressText}>
+          Step {currentStep + 1} of {steps.length}
+        </Text>
+      </View>
+
+      {/* Main Content */}
+      <View style={styles.content}>
+        <Animated.View 
+          style={[
+            styles.questionContainer,
+            {
+              opacity: fadeAnim,
+              transform: [{translateX: slideAnim}],
+            }
+          ]}
+        >
+          <Text style={styles.title}>{currentStepData.title}</Text>
+          <Text style={styles.subtitle}>{currentStepData.subtitle}</Text>
+          
+          {currentStepData.type === 'serving' && renderServingStep()}
+          {currentStepData.type === 'appliances' && renderAppliancesStep()}
+          {currentStepData.type === 'multi' && renderMultiChoice()}
+          {currentStepData.type === 'single' && renderSingleChoice()}
+        </Animated.View>
+        
+        {/* XP Reward Animation */}
+        {showXPReward && (
+          <Animated.View 
+            style={[
+              styles.xpReward,
+              {transform: [{scale: xpRewardScale}]}
+            ]}
+          >
+            <Sparkles size={24} color="#FFB800" />
+            <Text style={styles.xpRewardText}>+{XP_VALUES.COMPLETE_PREFERENCES} XP</Text>
+          </Animated.View>
+        )}
+        
+        {/* Badge Unlock Animation */}
+        {showBadgeUnlock && (
+          <Animated.View 
+            style={[
+              styles.badgeUnlock,
+              {transform: [{scale: badgeScale}]}
+            ]}
+          >
+            <Trophy size={32} color="#FFB800" />
+            <Text style={styles.badgeUnlockText}>Cuisine Explorer!</Text>
+          </Animated.View>
+        )}
+      </View>
+
+      {/* Navigation */}
+      <View style={styles.navigation}>
+        <TouchableOpacity
+          style={[styles.navButton, currentStep === 0 && styles.invisibleButton]}
+          onPress={handlePrev}
+          disabled={currentStep === 0}
+        >
+          <ChevronLeft size={24} color="#2D1B69" />
+          <Text style={styles.navButtonText}>Back</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.skipButton}
+          onPress={handleSkip}
+        >
+          <Text style={styles.skipButtonText}>Skip</Text>
+          <SkipForward size={18} color="#8E8E93" />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            styles.navButton,
+            styles.nextButton,
+            !canProceed() && styles.disabledButton,
+          ]}
+          onPress={handleNext}
+          disabled={!canProceed()}
+        >
+          <Text style={styles.nextButtonText}>
+            {currentStep === steps.length - 1 ? 'Generate Recipes' : 'Next'}
+          </Text>
+          <ChevronRight size={24} color="#F8F8FF" />
         </TouchableOpacity>
       </View>
 
@@ -393,6 +857,257 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F8F8FF',
+  },
+  // Quiz flow specific styles
+  progressContainer: {
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: responsive.spacing.m,
+    paddingVertical: responsive.spacing.m,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E5E7',
+  },
+  progressHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: responsive.spacing.s,
+  },
+  progressLabel: {
+    fontSize: responsive.fontSize.medium,
+    fontWeight: '600',
+    color: '#2D1B69',
+  },
+  progressPercentage: {
+    fontSize: responsive.fontSize.small,
+    fontWeight: '600',
+    color: '#4CAF50',
+  },
+  progressBar: {
+    height: verticalScale(6),
+    backgroundColor: '#E5E5E7',
+    borderRadius: responsive.borderRadius.small,
+    overflow: 'hidden',
+    marginBottom: verticalScale(4),
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: '#4CAF50',
+    borderRadius: responsive.borderRadius.small,
+  },
+  progressText: {
+    fontSize: responsive.fontSize.small,
+    color: '#8E8E93',
+    textAlign: 'center',
+  },
+  content: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  questionContainer: {
+    flex: 1,
+    paddingHorizontal: responsive.spacing.m,
+    paddingVertical: responsive.spacing.l,
+  },
+  stepContent: {
+    flex: 1,
+    marginTop: responsive.spacing.l,
+  },
+  sectionContainer: {
+    marginBottom: responsive.spacing.l,
+  },
+  // Multi-choice styles
+  optionsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: scale(12),
+  },
+  optionChip: {
+    backgroundColor: '#F8F9FA',
+    borderRadius: responsive.borderRadius.medium,
+    paddingVertical: verticalScale(12),
+    paddingHorizontal: scale(16),
+    borderWidth: 2,
+    borderColor: 'transparent',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: scale(6),
+  },
+  selectedChip: {
+    backgroundColor: 'rgba(45, 27, 105, 0.1)',
+    borderColor: '#2D1B69',
+  },
+  chipText: {
+    fontSize: responsive.fontSize.regular,
+    fontWeight: '500',
+    color: '#666',
+  },
+  selectedChipText: {
+    color: '#2D1B69',
+    fontWeight: '600',
+  },
+  checkIcon: {
+    marginLeft: scale(4),
+  },
+  badgeHint: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 184, 0, 0.1)',
+    borderRadius: responsive.borderRadius.small,
+    padding: responsive.spacing.s,
+    marginTop: responsive.spacing.m,
+    gap: scale(8),
+  },
+  badgeHintText: {
+    fontSize: responsive.fontSize.small,
+    color: '#FFB800',
+    fontWeight: '500',
+    flex: 1,
+  },
+  // Single choice styles
+  singleChoiceContainer: {
+    gap: scale(12),
+  },
+  singleOption: {
+    backgroundColor: '#F8F9FA',
+    borderRadius: responsive.borderRadius.medium,
+    padding: responsive.spacing.m,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  selectedSingleOption: {
+    backgroundColor: 'rgba(45, 27, 105, 0.1)',
+    borderColor: '#2D1B69',
+  },
+  optionContent: {
+    flex: 1,
+  },
+  optionLabel: {
+    fontSize: responsive.fontSize.medium,
+    fontWeight: '600',
+    color: '#2D1B69',
+    marginBottom: verticalScale(2),
+  },
+  selectedOptionLabel: {
+    color: '#2D1B69',
+  },
+  optionSubtitle: {
+    fontSize: responsive.fontSize.small,
+    color: '#8E8E93',
+  },
+  selectedOptionSubtitle: {
+    color: '#2D1B69',
+  },
+  radioCircle: {
+    width: moderateScale(20),
+    height: moderateScale(20),
+    borderRadius: moderateScale(10),
+    borderWidth: 2,
+    borderColor: '#E0E0E0',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  selectedRadioCircle: {
+    borderColor: '#2D1B69',
+  },
+  radioInner: {
+    width: moderateScale(10),
+    height: moderateScale(10),
+    borderRadius: moderateScale(5),
+    backgroundColor: '#2D1B69',
+  },
+  // Appliance hint
+  applianceHint: {
+    fontSize: responsive.fontSize.small,
+    color: '#8E8E93',
+    textAlign: 'center',
+    marginTop: responsive.spacing.s,
+  },
+  // Navigation styles
+  navigation: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: responsive.spacing.m,
+    paddingVertical: responsive.spacing.m,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E5E7',
+  },
+  navButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: verticalScale(10),
+    paddingHorizontal: scale(16),
+    borderRadius: responsive.borderRadius.medium,
+    gap: scale(4),
+  },
+  invisibleButton: {
+    opacity: 0,
+  },
+  nextButton: {
+    backgroundColor: '#2D1B69',
+  },
+  disabledButton: {
+    backgroundColor: '#E0E0E0',
+  },
+  navButtonText: {
+    fontSize: responsive.fontSize.regular,
+    fontWeight: '500',
+    color: '#2D1B69',
+  },
+  nextButtonText: {
+    fontSize: responsive.fontSize.regular,
+    fontWeight: '600',
+    color: '#F8F8FF',
+  },
+  skipButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: scale(4),
+  },
+  skipButtonText: {
+    fontSize: responsive.fontSize.small,
+    color: '#8E8E93',
+  },
+  // Reward animations
+  xpReward: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: [{translateX: -75}, {translateY: -25}],
+    backgroundColor: 'rgba(255, 184, 0, 0.9)',
+    borderRadius: responsive.borderRadius.large,
+    paddingVertical: verticalScale(12),
+    paddingHorizontal: scale(20),
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: scale(8),
+    zIndex: 1000,
+  },
+  xpRewardText: {
+    fontSize: responsive.fontSize.medium,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  badgeUnlock: {
+    position: 'absolute',
+    top: '60%',
+    left: '50%',
+    transform: [{translateX: -100}, {translateY: -50}],
+    backgroundColor: 'rgba(255, 184, 0, 0.95)',
+    borderRadius: responsive.borderRadius.large,
+    paddingVertical: verticalScale(16),
+    paddingHorizontal: scale(24),
+    alignItems: 'center',
+    gap: scale(8),
+    zIndex: 1000,
+  },
+  badgeUnlockText: {
+    fontSize: responsive.fontSize.medium,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
   header: {
     paddingHorizontal: responsive.spacing.m,
