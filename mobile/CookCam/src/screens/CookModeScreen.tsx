@@ -407,19 +407,48 @@ const CookModeScreen: React.FC<CookModeScreenProps> = ({navigation, route}) => {
         </View>
       </View>
 
-      {/* Simple Progress Bar */}
-      <View style={styles.progressBar}>
-        <Animated.View 
-          style={[
-            styles.progressFill, 
-            {
-              width: progressAnim.interpolate({
-                inputRange: [0, 1],
-                outputRange: ['0%', '100%'],
-              })
-            }
-          ]} 
-        />
+      {/* CONFIDENCE-BUILDING PROGRESS */}
+      <View style={styles.progressSection}>
+        <View style={styles.progressRow}>
+          <Text style={styles.progressLabel}>Cooking Progress</Text>
+          <Text style={styles.progressPercentage}>{Math.round(progress)}%</Text>
+        </View>
+        
+        <View style={styles.enhancedProgressBar}>
+          <Animated.View 
+            style={[
+              styles.progressFill, 
+              {
+                width: progressAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: ['0%', '100%'],
+                })
+              }
+            ]} 
+          />
+          
+          {/* Progress Milestones */}
+          <View style={styles.progressMilestones}>
+            {Array.from({length: steps.length}, (_, i) => (
+              <View 
+                key={i}
+                style={[
+                  styles.milestone,
+                  i < completedSteps && styles.milestoneCompleted,
+                  i === currentStep && styles.milestoneCurrent,
+                ]}
+              />
+            ))}
+          </View>
+        </View>
+        
+        {progress > 25 && (
+          <Text style={styles.encouragementText}>
+            {progress < 50 ? "Great start! 🔥" : 
+             progress < 75 ? "You're doing amazing! 👨‍🍳" : 
+             "Almost finished! 🌟"}
+          </Text>
+        )}
       </View>
 
       {/* HERO STEP CONTENT */}
@@ -471,6 +500,24 @@ const CookModeScreen: React.FC<CookModeScreenProps> = ({navigation, route}) => {
                   <Text style={styles.tipLabel}>Chef's Tip</Text>
                 </View>
                 <Text style={styles.tipText}>{currentStepData.tips}</Text>
+              </View>
+            )}
+            
+            {/* Confidence Building - Show what's coming next */}
+            {currentStep < steps.length - 1 && (
+              <View style={styles.nextStepPreview}>
+                <Text style={styles.nextStepLabel}>Coming up next:</Text>
+                <Text style={styles.nextStepText} numberOfLines={2}>
+                  {steps[currentStep + 1]?.instruction}
+                </Text>
+              </View>
+            )}
+            
+            {/* Step Completion Celebration */}
+            {currentStepData?.completed && (
+              <View style={styles.stepCompletedBanner}>
+                <CheckCircle size={20} color="#4CAF50" />
+                <Text style={styles.stepCompletedText}>Step Complete! Well done! 🎉</Text>
               </View>
             )}
           </ScrollView>
@@ -712,16 +759,115 @@ const styles = StyleSheet.create({
   voiceButton: {
     padding: 8,
   },
-  progressBar: {
-    height: 8,
+  // CONFIDENCE-BUILDING PROGRESS STYLES
+  progressSection: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    backgroundColor: '#FAFAFA',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E5E7',
+  },
+  progressRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  progressLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#2D1B69',
+  },
+  progressPercentage: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#4CAF50',
+  },
+  enhancedProgressBar: {
+    height: 12,
     backgroundColor: '#E5E5E7',
-    borderRadius: 4,
+    borderRadius: 6,
     overflow: 'hidden',
+    position: 'relative',
+    marginBottom: 8,
   },
   progressFill: {
     height: '100%',
     backgroundColor: '#4CAF50',
+    borderRadius: 6,
+  },
+  progressMilestones: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-evenly',
+    paddingHorizontal: 4,
+  },
+  milestone: {
+    width: 8,
+    height: 8,
     borderRadius: 4,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 2,
+    borderColor: '#E5E5E7',
+  },
+  milestoneCompleted: {
+    borderColor: '#4CAF50',
+    backgroundColor: '#4CAF50',
+  },
+  milestoneCurrent: {
+    borderColor: '#FF6B35',
+    backgroundColor: '#FF6B35',
+    transform: [{scale: 1.2}],
+  },
+  encouragementText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FF6B35',
+    textAlign: 'center',
+    marginTop: 4,
+  },
+  // CONFIDENCE BUILDING ELEMENTS
+  nextStepPreview: {
+    backgroundColor: 'rgba(45, 27, 105, 0.04)',
+    padding: 12,
+    borderRadius: 12,
+    marginTop: 16,
+    borderLeftWidth: 3,
+    borderLeftColor: '#2D1B69',
+  },
+  nextStepLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#2D1B69',
+    marginBottom: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  nextStepText: {
+    fontSize: 14,
+    color: '#5A5A5A',
+    lineHeight: 20,
+  },
+  stepCompletedBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: 'rgba(76, 175, 80, 0.1)',
+    padding: 12,
+    borderRadius: 12,
+    marginTop: 16,
+    borderWidth: 1,
+    borderColor: '#4CAF50',
+  },
+  stepCompletedText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#4CAF50',
   },
   // HERO STEP AREA - The star of the show
   heroStepArea: {
