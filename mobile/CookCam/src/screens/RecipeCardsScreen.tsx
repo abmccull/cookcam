@@ -20,6 +20,7 @@ import ChefBadge from '../components/ChefBadge';
 import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
 import {recipeService, authService} from '../services/api';
 import {useAuth} from '../context/AuthContext';
+import CardStack from '../components/CardStack';
 
 // Temporary simple swiper replacement
 const SimpleSwiper = ({ children, onSwipedRight, onSwipedLeft }: any) => {
@@ -607,6 +608,36 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
     setShowDetails(true);
   };
 
+  const handleCookRecipe = async (recipe: Recipe) => {
+    try {
+      console.log('🧑‍🍳 Starting to cook recipe:', recipe.title);
+      navigation.navigate('CookMode', {
+        recipe: recipe,
+        sessionId: sessionId,
+      });
+    } catch (error) {
+      console.error('Error starting cook mode:', error);
+    }
+  };
+
+  const handleFavoriteRecipe = async (recipe: Recipe) => {
+    try {
+      console.log('❤️ Favoriting recipe:', recipe.title);
+      // TODO: Implement favorite functionality  
+    } catch (error) {
+      console.error('Error favoriting recipe:', error);
+    }
+  };
+
+  const handleViewRecipeDetails = (recipe: Recipe) => {
+    setSelectedRecipe(recipe);
+    setShowDetails(true);
+  };
+
+  const handleRefreshRecipes = () => {
+    generateRecipes();
+  };
+
   const handleSelectRecipe = () => {
     if (selectedRecipe) {
       ReactNativeHapticFeedback.trigger('impactMedium');
@@ -746,15 +777,14 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
             <ActivityIndicator size="large" color="#FF6B35" />
           </View>
         ) : recipes.length > 0 ? (
-          <SimpleSwiper
-            onSwipedLeft={handleSwipeLeft}
-            onSwipedRight={handleSwipeRight}>
-            {recipes.map(recipe => (
-              <View key={recipe.id}>
-                {renderCard(recipe)}
-              </View>
-            ))}
-          </SimpleSwiper>
+          <CardStack
+            recipes={recipes}
+            onCookRecipe={handleCookRecipe}
+            onFavoriteRecipe={handleFavoriteRecipe}
+            onViewRecipeDetails={handleViewRecipeDetails}
+            onRefreshRecipes={handleRefreshRecipes}
+            isLoading={isLoading}
+          />
         ) : (
           <Text style={styles.noRecipes}>No recipes available</Text>
         )}
