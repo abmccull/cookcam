@@ -60,18 +60,22 @@ export const responsive = {
     xlarge: moderateScale(32),
   },
   
-  // Button heights
-  buttonHeight: {
-    small: verticalScale(32),
-    medium: verticalScale(44),
-    large: verticalScale(56),
+  // Button styles (matching the expected structure)
+  button: {
+    height: {
+      small: verticalScale(32),
+      medium: verticalScale(44),
+      large: verticalScale(56),
+    },
   },
   
-  // Input heights
-  inputHeight: {
-    small: verticalScale(36),
-    medium: verticalScale(44),
-    large: verticalScale(52),
+  // Input styles
+  input: {
+    height: {
+      small: verticalScale(36),
+      medium: verticalScale(44),
+      large: verticalScale(52),
+    },
   },
   
   // Shadow depths

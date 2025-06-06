@@ -12,7 +12,7 @@ import {
   Modal,
 } from 'react-native';
 import {Check, X, Plus, Sparkles, Camera, ChefHat, TrendingUp, Trophy, Star} from 'lucide-react-native';
-import {scale, verticalScale, moderateScale, responsive, isSmallDevice} from '../utils/responsive';
+import {scale, verticalScale, moderateScale, responsive} from '../utils/responsive';
 import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
 import {useGamification, XP_VALUES} from '../context/GamificationContext';
 import {useAuth} from '../context/AuthContext';
@@ -926,7 +926,7 @@ const styles = StyleSheet.create({
     gap: scale(12),
   },
   ingredientEmoji: {
-    fontSize: responsive.fontSize.huge,
+    fontSize: responsive.fontSize.xxxlarge,
   },
   ingredientInfo: {
     flexDirection: 'column',
@@ -1034,7 +1034,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#FF6B35',
-    paddingVertical: responsive.button.height / 3,
+    paddingVertical: responsive.button.height.medium / 3,
     borderRadius: responsive.borderRadius.medium,
     gap: scale(8),
     shadowColor: '#FF6B35',

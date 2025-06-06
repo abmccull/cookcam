@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS user_cooking_sessions (
 -- Create kitchen_appliances master table
 CREATE TABLE IF NOT EXISTS kitchen_appliances (
     id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-    name text NOT NULL,
+    name text NOT NULL UNIQUE,
     category text NOT NULL,
     icon text,
     description text,

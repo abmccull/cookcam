@@ -21,7 +21,7 @@ import OnboardingScreen from './screens/OnboardingScreen';
 import CreatorOnboardingScreen from './screens/CreatorOnboardingScreen';
 import CameraScreen from './screens/CameraScreen';
 import IngredientReviewScreen from './screens/IngredientReviewScreen';
-import PreferencesScreen from './screens/PreferencesScreen';
+import EnhancedPreferencesScreen from './screens/EnhancedPreferencesScreen';
 import RecipeCardsScreen from './screens/RecipeCardsScreen';
 import CookModeScreen from './screens/CookModeScreen';
 import LeaderboardScreen from './screens/LeaderboardScreen';
@@ -97,7 +97,7 @@ const HomeStackScreen = () => (
     />
     <HomeStack.Screen
       name="Preferences"
-      component={PreferencesScreen}
+      component={EnhancedPreferencesScreen}
       options={{
         title: 'Your Preferences',
       }}
