@@ -422,49 +422,55 @@ const CookModeScreen: React.FC<CookModeScreenProps> = ({navigation, route}) => {
         />
       </View>
 
-      {/* MAIN STEP CONTENT */}
-      <View style={styles.mainStepArea}>
+      {/* HERO STEP CONTENT */}
+      <View style={styles.heroStepArea}>
         <Animated.View 
           style={[
-            styles.stepCard,
+            styles.heroStepCard,
             {transform: [{translateX: stepTranslateX}]}
           ]}>
           
+          {/* Step Number Badge */}
+          <View style={styles.stepBadge}>
+            <Text style={styles.stepBadgeText}>Step {currentStep + 1}</Text>
+          </View>
+          
           <ScrollView 
-            style={styles.instructionContainer}
-            contentContainerStyle={styles.instructionContent}
+            style={styles.heroInstructionContainer}
+            contentContainerStyle={styles.heroInstructionContent}
             showsVerticalScrollIndicator={false}>
             
-            <Text style={styles.stepInstruction}>
+            {/* HERO INSTRUCTION - Large, prominent text */}
+            <Text style={styles.heroInstruction}>
               {currentStepData?.instruction}
             </Text>
             
-            {/* Enhanced Tips Section */}
+            {/* Contextual Info Row - Temperature & Time */}
+            {(currentStepData?.temperature || currentStepData?.time) && (
+              <View style={styles.contextualInfo}>
+                {currentStepData.temperature && (
+                  <View style={styles.infoChip}>
+                    <Text style={styles.infoIcon}>🌡️</Text>
+                    <Text style={styles.infoText}>{currentStepData.temperature}</Text>
+                  </View>
+                )}
+                {currentStepData.time && (
+                  <View style={styles.infoChip}>
+                    <Text style={styles.infoIcon}>⏱️</Text>
+                    <Text style={styles.infoText}>{currentStepData.time} min</Text>
+                  </View>
+                )}
+              </View>
+            )}
+            
+            {/* Chef's Tip - More subtle but accessible */}
             {currentStepData?.tips && (
-              <View style={styles.tipContainer}>
+              <View style={styles.chefsTip}>
                 <View style={styles.tipHeader}>
                   <Text style={styles.tipIcon}>💡</Text>
                   <Text style={styles.tipLabel}>Chef's Tip</Text>
                 </View>
                 <Text style={styles.tipText}>{currentStepData.tips}</Text>
-              </View>
-            )}
-            
-            {/* Temperature and Time Info */}
-            {(currentStepData?.temperature || currentStepData?.time) && (
-              <View style={styles.stepMetadata}>
-                {currentStepData.temperature && (
-                  <View style={styles.metadataChip}>
-                    <Text style={styles.metadataIcon}>🌡️</Text>
-                    <Text style={styles.metadataText}>{currentStepData.temperature}</Text>
-                  </View>
-                )}
-                {currentStepData.time && (
-                  <View style={styles.metadataChip}>
-                    <Text style={styles.metadataIcon}>⏱️</Text>
-                    <Text style={styles.metadataText}>{currentStepData.time} min</Text>
-                  </View>
-                )}
               </View>
             )}
           </ScrollView>
@@ -716,51 +722,106 @@ const styles = StyleSheet.create({
     backgroundColor: '#4CAF50',
     borderRadius: 4,
   },
-  mainStepArea: {
+  // HERO STEP AREA - The star of the show
+  heroStepArea: {
     flex: 1,
     paddingHorizontal: 20,
+    paddingTop: 16,
   },
-  stepCard: {
+  heroStepCard: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    elevation: 3,
+    borderRadius: 24,
+    elevation: 4,
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
+    shadowOffset: {width: 0, height: 4},
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
     overflow: 'hidden',
+    position: 'relative',
   },
-  instructionContainer: {
-    flex: 1,
-    paddingHorizontal: 24,
-    paddingTop: 8,
-  },
-  instructionContent: {
-    flexGrow: 1,
-    paddingBottom: 24,
-  },
-  stepInstruction: {
-    fontSize: 22,
-    lineHeight: 32,
-    color: '#2D1B69',
-    fontWeight: '400',
-    letterSpacing: -0.3,
-  },
-  tipContainer: {
-    padding: 12,
-    backgroundColor: '#FFF9F7',
+  stepBadge: {
+    position: 'absolute',
+    top: 20,
+    right: 20,
+    backgroundColor: '#2D1B69',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderRadius: 12,
+    zIndex: 1,
+  },
+  stepBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    letterSpacing: 0.5,
+  },
+  heroInstructionContainer: {
+    flex: 1,
+    paddingHorizontal: 32,
+    paddingTop: 24,
+    paddingBottom: 20,
+  },
+  heroInstructionContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingBottom: 40,
+  },
+  // HERO INSTRUCTION - Large, readable, central
+  heroInstruction: {
+    fontSize: 28,
+    lineHeight: 40,
+    color: '#2D1B69',
+    fontWeight: '500',
+    letterSpacing: -0.5,
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  // CONTEXTUAL INFO - Temperature & Time chips
+  contextualInfo: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 16,
+    marginBottom: 20,
+  },
+  infoChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#F8F8FF',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E5E5E7',
+  },
+  infoIcon: {
+    fontSize: 16,
+  },
+  infoText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#2D1B69',
+  },
+  // CHEF'S TIP - Subtle but accessible
+  chefsTip: {
+    backgroundColor: 'rgba(255, 107, 53, 0.06)',
+    padding: 16,
+    borderRadius: 16,
+    marginTop: 12,
+    borderLeftWidth: 3,
+    borderLeftColor: '#FF6B35',
   },
   tipHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 6,
+    marginBottom: 6,
   },
   tipIcon: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#2D1B69',
+    fontSize: 16,
   },
   tipLabel: {
     fontSize: 14,
@@ -768,29 +829,9 @@ const styles = StyleSheet.create({
     color: '#2D1B69',
   },
   tipText: {
-    fontSize: 12,
-    color: '#8E8E93',
-  },
-  stepMetadata: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    padding: 12,
-    backgroundColor: '#FFF9F7',
-    borderRadius: 12,
-  },
-  metadataChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  metadataIcon: {
-    fontSize: 12,
-    color: '#8E8E93',
-  },
-  metadataText: {
-    fontSize: 12,
-    color: '#8E8E93',
+    fontSize: 14,
+    lineHeight: 20,
+    color: '#5A5A5A',
   },
   navigationSection: {
     flexDirection: 'row',
