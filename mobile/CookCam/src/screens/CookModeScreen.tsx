@@ -477,64 +477,65 @@ const CookModeScreen: React.FC<CookModeScreenProps> = ({navigation, route}) => {
         </Animated.View>
       </View>
 
-      {/* Enhanced Navigation Controls */}
-      <View style={styles.navigationSection}>
-        {/* Step Navigation */}
-        <View style={styles.stepNavigation}>
+      {/* ENHANCED NAVIGATION - More prominent and delightful */}
+      <View style={styles.navigationContainer}>
+        {/* Quick Access Strip */}
+        <View style={styles.quickAccessStrip}>
+          <TouchableOpacity
+            style={styles.quickAccessChip}
+            onPress={() => setShowIngredientsModal(true)}>
+            <Text style={styles.quickAccessIcon}>🥘</Text>
+            <Text style={styles.quickAccessText}>Ingredients</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={styles.quickAccessChip}
+            onPress={() => setShowAllStepsModal(true)}>
+            <Text style={styles.quickAccessIcon}>📋</Text>
+            <Text style={styles.quickAccessText}>All Steps</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Main Navigation Row */}
+        <View style={styles.mainNavigation}>
+          {/* Previous Button - Prominent when available */}
           <TouchableOpacity
             style={[
-              styles.navButton,
-              styles.prevButton,
-              currentStep === 0 && styles.disabledButton,
+              styles.primaryNavButton,
+              styles.previousNavButton,
+              currentStep === 0 && styles.navButtonDisabled,
             ]}
             onPress={handlePreviousStep}
             disabled={currentStep === 0}>
-            <ChevronLeft size={20} color={currentStep === 0 ? '#C7C7CC' : '#2D1B69'} />
+            <ChevronLeft size={24} color={currentStep === 0 ? '#C7C7CC' : '#2D1B69'} />
             <Text style={[
-              styles.navButtonText,
-              currentStep === 0 && styles.disabledText
+              styles.primaryNavText,
+              currentStep === 0 && styles.navTextDisabled
             ]}>Previous</Text>
           </TouchableOpacity>
 
-          {/* Main Action Button */}
+          {/* HERO ACTION BUTTON */}
           {currentStep === steps.length - 1 ? (
             <TouchableOpacity
-              style={styles.completeButton}
+              style={styles.heroCompleteButton}
               onPress={handleStepComplete}>
-              <CheckCircle size={20} color="#FFFFFF" />
-              <Text style={styles.completeButtonText}>Complete Recipe</Text>
-              <View style={styles.xpBadge}>
-                <Sparkles size={12} color="#FFFFFF" />
-                <Text style={styles.xpBadgeText}>+75 XP</Text>
+              <CheckCircle size={24} color="#FFFFFF" />
+              <Text style={styles.heroButtonText}>Complete Recipe</Text>
+              <View style={styles.xpReward}>
+                <Sparkles size={14} color="#FFFFFF" />
+                <Text style={styles.xpRewardText}>+{potentialXP} XP</Text>
               </View>
             </TouchableOpacity>
           ) : (
             <TouchableOpacity
-              style={styles.nextButton}
+              style={styles.heroNextButton}
               onPress={!currentStepData?.duration ? handleStepComplete : handleNextStep}>
-              <Text style={styles.nextButtonText}>
-                {!currentStepData?.duration ? 'Mark Complete' : 'Next Step'}
+              <Text style={styles.heroButtonText}>
+                {!currentStepData?.duration ? '✓ Done' : 'Next Step'}
               </Text>
-              <ChevronRight size={20} color="#FFFFFF" />
+              <ChevronRight size={24} color="#FFFFFF" />
             </TouchableOpacity>
           )}
-        </View>
-
-        {/* Quick Access Buttons */}
-        <View style={styles.quickAccessRow}>
-          <TouchableOpacity
-            style={styles.accessButton}
-            onPress={() => setShowIngredientsModal(true)}>
-            <Text style={styles.accessButtonIcon}>🥘</Text>
-            <Text style={styles.accessButtonText}>Ingredients</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity
-            style={styles.accessButton}
-            onPress={() => setShowAllStepsModal(true)}>
-            <Text style={styles.accessButtonIcon}>📋</Text>
-            <Text style={styles.accessButtonText}>All Steps</Text>
-          </TouchableOpacity>
         </View>
       </View>
 
@@ -833,112 +834,132 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     color: '#5A5A5A',
   },
-  navigationSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+  // ENHANCED NAVIGATION STYLES
+  navigationContainer: {
+    backgroundColor: '#FFFFFF',
     paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingTop: 12,
+    paddingBottom: 24,
     borderTopWidth: 1,
     borderTopColor: '#E5E5E7',
   },
-  stepNavigation: {
+  quickAccessStrip: {
     flexDirection: 'row',
+    justifyContent: 'center',
     alignItems: 'center',
-    gap: 4,
+    gap: 16,
+    marginBottom: 16,
   },
-  navButton: {
+  quickAccessChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 6,
+    backgroundColor: '#F8F8FF',
     paddingHorizontal: 12,
     paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#E5E5E7',
   },
-  prevButton: {
-    backgroundColor: '#F8F8FF',
-    borderRadius: 12,
-  },
-  navButtonText: {
+  quickAccessIcon: {
     fontSize: 14,
-    fontWeight: '500',
+  },
+  quickAccessText: {
+    fontSize: 12,
+    fontWeight: '600',
     color: '#2D1B69',
   },
-  disabledButton: {
-    opacity: 0.3,
+  mainNavigation: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 16,
   },
-  disabledText: {
-    color: '#C7C7CC',
-  },
-  completeButton: {
+  // PROMINENT NAVIGATION BUTTONS
+  primaryNavButton: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#F8F8FF',
     paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 20,
-    elevation: 2,
-    shadowColor: '#4CAF50',
-    shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-  },
-  completeButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
-  xpBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 10,
-    marginLeft: 8,
-  },
-  xpBadgeText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
-  nextButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  nextButtonText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#FFFFFF',
-  },
-  quickAccessRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  accessButton: {
-    padding: 12,
-    backgroundColor: '#FFFFFF',
+    paddingVertical: 14,
     borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E5E5E7',
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.08,
     shadowRadius: 4,
   },
-  accessButtonIcon: {
-    fontSize: 14,
+  previousNavButton: {
+    flex: 0.4,
+  },
+  primaryNavText: {
+    fontSize: 16,
     fontWeight: '600',
     color: '#2D1B69',
   },
-  accessButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#2D1B69',
+  navButtonDisabled: {
+    backgroundColor: '#F5F5F5',
+    borderColor: '#E0E0E0',
+  },
+  navTextDisabled: {
+    color: '#C7C7CC',
+  },
+  // HERO ACTION BUTTONS - The stars of navigation
+  heroCompleteButton: {
+    flex: 0.6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#4CAF50',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderRadius: 20,
+    elevation: 4,
+    shadowColor: '#4CAF50',
+    shadowOffset: {width: 0, height: 4},
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+  },
+  heroNextButton: {
+    flex: 0.6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#FF6B35',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderRadius: 20,
+    elevation: 4,
+    shadowColor: '#FF6B35',
+    shadowOffset: {width: 0, height: 4},
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+  },
+  heroButtonText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    letterSpacing: 0.3,
+  },
+  xpReward: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 12,
+    marginLeft: 8,
+  },
+  xpRewardText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
   modalOverlay: {
     flex: 1,
