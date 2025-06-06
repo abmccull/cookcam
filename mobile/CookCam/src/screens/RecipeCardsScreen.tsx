@@ -21,6 +21,7 @@ import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
 import {recipeService, authService} from '../services/api';
 import {useAuth} from '../context/AuthContext';
 import CardStack from '../components/CardStack';
+import { Recipe } from '../utils/recipeTypes';
 
 // Temporary simple swiper replacement
 const SimpleSwiper = ({ children, onSwipedRight, onSwipedLeft }: any) => {
@@ -30,44 +31,6 @@ const SimpleSwiper = ({ children, onSwipedRight, onSwipedLeft }: any) => {
     </View>
   );
 };
-
-interface Recipe {
-  id: string;
-  title: string;
-  image: string;
-  cookingTime: string;
-  servings: number;
-  difficulty: string;
-  macros: {
-    calories: number;
-    protein: number;
-    carbs: number;
-    fat: number;
-  };
-  tags: string[];
-  description?: string;
-  ingredients?: string[] | Array<{
-    name: string;
-    amount: string;
-    unit: string;
-    notes?: string;
-  }>;
-  instructions?: Array<{
-    step: number;
-    instruction: string;
-    time?: number;
-    temperature?: string;
-    tips?: string;
-  }>;
-  tips?: string[];
-  creatorName?: string;
-  creatorTier?: 1 | 2 | 3 | 4 | 5;
-  rating?: number;
-  ratingCount?: number;
-  viewCount?: number;
-  isTrending?: boolean;
-  isCreatorRecipe?: boolean;
-}
 
 interface RecipeCardsScreenProps {
   navigation: any;
@@ -297,10 +260,20 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
         return;
       }
 
-      // Convert ingredients to strings for API
-      const detectedIngredients = ingredients.map((ing: any) => 
-        typeof ing === 'string' ? ing : ing.name || ing.toString()
-      );
+      // Send full ingredient data including quantities, units, and varieties
+      const detectedIngredients = ingredients.map((ing: any) => {
+        if (typeof ing === 'string') {
+          return { name: ing, quantity: '1', unit: 'unit' };
+        }
+        return {
+          name: ing.name,
+          quantity: ing.quantity || '1',
+          unit: ing.unit || 'unit',
+          variety: ing.variety,
+          category: ing.category,
+          confidence: ing.confidence
+        };
+      });
 
       // Debug: Check if user is authenticated and what token we have
       const AsyncStorage = require('@react-native-async-storage/async-storage').default;
@@ -313,7 +286,7 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
         userId: user?.id
       });
 
-      console.log('📤 Sending to API:', {
+      console.log('📤 Sending to API with quantities:', {
         detectedIngredients,
         dietaryTags: preferences?.dietary || [],
         cuisinePreferences: preferences?.cuisine || [],
@@ -321,7 +294,7 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
         skillLevel: preferences?.difficulty || 'any'
       });
 
-      // Call the recipe generation API
+      // Call the recipe generation API with full ingredient data
       const response = await recipeService.generateSuggestions({
         detectedIngredients,
         dietaryTags: preferences?.dietary || [],
@@ -429,7 +402,7 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
                          const profileResponse = await authService.getProfile();
             if (profileResponse?.success) {
               console.log('✅ Session is valid, retrying recipe generation...');
-              // Retry the API call once
+              // Retry the API call once with full ingredient data
               const retryResponse = await recipeService.generateSuggestions({
                 detectedIngredients,
                 dietaryTags: preferences?.dietary || [],

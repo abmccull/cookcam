@@ -28,28 +28,10 @@ import {
   ChefHat,
 } from 'lucide-react-native';
 import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
+import { Recipe } from '../utils/recipeTypes';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 const SWIPE_THRESHOLD = screenWidth * 0.3;
-
-interface Recipe {
-  id: string;
-  title: string;
-  description: string;
-  image?: string;
-  prepTime: number;
-  cookTime: number;
-  servings: number;
-  difficulty: string;
-  cuisineType: string;
-  cookingMethod: string;
-  calories: number;
-  ingredients: any[];
-  metadata?: {
-    totalTime: number;
-    skillLevel: string;
-  };
-}
 
 interface SwipeableCardProps {
   recipe: Recipe;

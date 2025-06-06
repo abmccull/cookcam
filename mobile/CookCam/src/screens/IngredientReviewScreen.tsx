@@ -376,17 +376,63 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
     return '#FF3B30'; // Red for <70%
   };
 
+  const getSmartIncrement = (ingredient: Ingredient): { increment: number; minValue: number } => {
+    const name = ingredient.name.toLowerCase();
+    const unit = (ingredient.unit || '').toLowerCase();
+    
+    // Whole items that can't be fractioned
+    if (name.includes('egg') || name.includes('avocado') || name.includes('onion') || 
+        name.includes('potato') || name.includes('apple') || name.includes('banana') ||
+        unit.includes('piece') || unit.includes('whole') || unit.includes('head')) {
+      return { increment: 1, minValue: 1 };
+    }
+    
+    // Meat and protein (smaller increments for precision)
+    if (name.includes('beef') || name.includes('chicken') || name.includes('pork') || 
+        name.includes('fish') || name.includes('turkey') || name.includes('lamb') ||
+        unit.includes('lb') || unit.includes('oz') || unit.includes('pound')) {
+      return { increment: 0.25, minValue: 0.25 };
+    }
+    
+    // Spices and small quantities (teaspoons, tablespoons)
+    if (unit.includes('tsp') || unit.includes('tbsp') || unit.includes('teaspoon') || 
+        unit.includes('tablespoon') || name.includes('salt') || name.includes('pepper') ||
+        name.includes('garlic powder') || name.includes('oregano') || name.includes('basil')) {
+      return { increment: 0.25, minValue: 0.25 };
+    }
+    
+    // Liquids (cups, ml, liters)
+    if (unit.includes('cup') || unit.includes('ml') || unit.includes('liter') || 
+        unit.includes('fluid') || name.includes('milk') || name.includes('water') ||
+        name.includes('oil') || name.includes('juice')) {
+      return { increment: 0.25, minValue: 0.25 };
+    }
+    
+    // Cheese and dairy (smaller portions)
+    if (name.includes('cheese') || name.includes('butter') || name.includes('cream') ||
+        name.includes('yogurt') || unit.includes('slice')) {
+      return { increment: 0.5, minValue: 0.5 };
+    }
+    
+    // Default for unknown items
+    return { increment: 0.5, minValue: 0.5 };
+  };
+
   const handleQuantityChange = (ingredientId: string, action: 'increase' | 'decrease') => {
     setIngredients(ingredients.map(ing => {
       if (ing.id === ingredientId) {
         const currentQty = parseFloat(ing.quantity || '1');
+        const { increment, minValue } = getSmartIncrement(ing);
         let newQty;
         
         if (action === 'increase') {
-          newQty = currentQty + (currentQty < 1 ? 0.25 : currentQty < 5 ? 0.5 : 1);
+          newQty = currentQty + increment;
         } else {
-          newQty = Math.max(0.25, currentQty - (currentQty <= 1 ? 0.25 : currentQty <= 5 ? 0.5 : 1));
+          newQty = Math.max(minValue, currentQty - increment);
         }
+        
+        // Round to avoid floating point precision issues
+        newQty = Math.round(newQty * 100) / 100;
         
         return {
           ...ing,
