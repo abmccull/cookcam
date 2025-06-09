@@ -33,6 +33,7 @@ import Animated, {
   Extrapolate,
   withDelay,
   withSequence,
+  useAnimatedReaction,
 } from 'react-native-reanimated';
 import { PanGestureHandler } from 'react-native-gesture-handler';
 import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
@@ -106,7 +107,23 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
   const card1TranslateY = useSharedValue(0);
   const card2TranslateY = useSharedValue(0);
   const opacity = useSharedValue(1);
-  const isAnimating = useSharedValue(false); // Animation lock
+  const isAnimating = useSharedValue(false);
+  const animationSignal = useSharedValue(0); // Signal to sync UI and JS threads
+
+  // This hook safely listens for a signal from the UI thread to update JS state
+  useAnimatedReaction(
+    () => animationSignal.value,
+    (signalValue, previousValue) => {
+      if (signalValue !== 0 && signalValue !== previousValue) {
+        // This runs on the JS thread after the animation is complete
+        runOnJS(setFrontCardIndex)((prev) => (prev + signalValue) % recipes.length);
+        runOnJS(resetCardsToStablePosition)();
+        isAnimating.value = false;
+        animationSignal.value = 0; // Reset the signal
+      }
+    },
+    [recipes.length]
+  );
 
   // Generate recipe previews from backend API (Step 1 of two-step process)
   const generateRecipesFromAPI = async () => {
@@ -409,26 +426,16 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
   };
 
   const handleTapBackCard = (tappedIndex: number) => {
-    if (isAnimating.value) return; // Prevent spamming animations
+    if (isAnimating.value) return;
 
     const diff = tappedIndex - frontCardIndex;
     if (diff <= 0) return;
 
     isAnimating.value = true;
-
-    // Define the callback that will run on the JS thread after animation
-    const onAnimationComplete = () => {
-      'worklet';
-      runOnJS(setFrontCardIndex)((prev) => (prev + diff) % recipes.length);
-      runOnJS(resetCardsToStablePosition)();
-      isAnimating.value = false;
-    };
-    
-    // Start the animation
-    animateCardCascade(diff, onAnimationComplete);
+    animateCardCascade(diff);
   };
 
-  const animateCardCascade = (tappedVisualIndex: number, callback: () => void) => {
+  const animateCardCascade = (tappedVisualIndex: number) => {
     'worklet';
     const SPRING_CONFIG = { damping: 18, stiffness: 120 };
 
@@ -446,9 +453,9 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
       card1TranslateY.value = withSpring(POS_FRONT.y, SPRING_CONFIG);
       // Back -> Middle
       card2Scale.value = withSpring(POS_MIDDLE.scale, SPRING_CONFIG);
-      // The last animation gets the callback
+      // The last animation signals completion
       card2TranslateY.value = withSpring(POS_MIDDLE.y, SPRING_CONFIG, (finished) => {
-        if (finished) { runOnJS(callback)(); }
+        if (finished) { animationSignal.value = 1; }
       });
 
     } else if (tappedVisualIndex === 2) { // Back card tapped
@@ -460,9 +467,9 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
       card1TranslateY.value = withSpring(POS_BACK.y, SPRING_CONFIG);
       // Back -> Front
       card2Scale.value = withSpring(POS_FRONT.scale, SPRING_CONFIG);
-      // The last animation gets the callback
+      // The last animation signals completion
       card2TranslateY.value = withSpring(POS_FRONT.y, SPRING_CONFIG, (finished) => {
-        if (finished) { runOnJS(callback)(); }
+        if (finished) { animationSignal.value = 2; }
       });
     }
   };
