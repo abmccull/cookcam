@@ -533,26 +533,17 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
   const renderFrontCard = (recipe: Recipe) => {
     return (
       <View style={styles.frontCardContent}>
-        {/* Hero Image - 40% height */}
-        <View style={styles.heroImageContainer}>
-          <Image source={{ uri: recipe.image }} style={styles.heroImage} />
-          
-          {/* Heart/Save button - top right */}
+        {/* Card Header with Heart and Title */}
+        <View style={styles.cardHeader}>
           <TouchableOpacity
             style={styles.heartButton}
             onPress={() => handleSaveRecipe(recipe.id)}>
             <Heart
-              size={24}
+              size={20}
               color={savedRecipes.has(recipe.id) ? '#FF6B35' : '#8E8E93'}
               fill={savedRecipes.has(recipe.id) ? '#FF6B35' : 'transparent'}
             />
           </TouchableOpacity>
-
-          {/* XP Chip - top left */}
-          <View style={styles.xpChip}>
-            <Trophy size={12} color="#2D1B69" />
-            <Text style={styles.xpChipText}>+{calculateRecipeXP(recipe)} XP</Text>
-          </View>
         </View>
 
         {/* Scrollable Content */}
@@ -636,13 +627,12 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
       <TouchableOpacity 
         style={styles.backCardHeader}
         onPress={() => handleTapBackCard(index)}>
-        <Image source={{ uri: recipe.image }} style={styles.backCardImage} />
         <View style={styles.backCardTextContainer}>
           <Text style={styles.backCardTitle} numberOfLines={1}>
             {recipe.title}
           </Text>
           <Text style={styles.backCardTeaser}>
-            {recipe.cookingTime} • {recipe.servings} servings
+            {recipe.cookingTime} • {recipe.servings} servings • {recipe.difficulty}
           </Text>
         </View>
       </TouchableOpacity>
@@ -652,47 +642,51 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
   const renderCard = (recipe: Recipe, index: number, cardType: 'front' | 'middle' | 'back') => {
     const isFront = cardType === 'front';
     
-    // Calculate heights, positions and styles according to blueprint (76%, 88%, 100%)
-    let cardHeight, zIndex, animatedStyle, topOffset;
+    // Calculate heights, positions and styles according to blueprint with better visual hierarchy
+    let cardHeight, zIndex, animatedStyle, topOffset, scaleOffset;
     
     switch (cardType) {
       case 'front':
         cardHeight = '100%';
         zIndex = 1000;
         topOffset = 0;
+        scaleOffset = 1;
         animatedStyle = frontCardAnimatedStyle;
         break;
       case 'middle':
-        cardHeight = '88%';
+        cardHeight = '85%';
         zIndex = 900;
-        topOffset = 12; // 12px offset from top to create peekable effect
+        topOffset = 40; // More visible offset
+        scaleOffset = 0.96;
         animatedStyle = middleCardAnimatedStyle;
         break;
       case 'back':
-        cardHeight = '76%';
+        cardHeight = '70%';
         zIndex = 800;
-        topOffset = 24; // 24px offset from top to create peekable effect
+        topOffset = 80; // Even more visible offset
+        scaleOffset = 0.92;
         animatedStyle = backCardAnimatedStyle;
         break;
     }
 
 
 
-    return (
-      <Animated.View
-        key={`${recipe.id}-${cardType}`}
-        style={[
-          styles.card,
-          { 
-            height: cardHeight, 
-            zIndex,
-            top: topOffset, // Add explicit top positioning for visual stack
-          },
-          animatedStyle,
-        ]}>
-        {isFront ? renderFrontCard(recipe) : renderBackCard(recipe, index)}
-      </Animated.View>
-    );
+          return (
+        <Animated.View
+          key={`${recipe.id}-${cardType}`}
+          style={[
+            styles.card,
+            { 
+              height: cardHeight, 
+              zIndex,
+              top: topOffset,
+              transform: [{ scale: scaleOffset }], // Add scale for visual hierarchy
+            },
+            animatedStyle,
+          ]}>
+          {isFront ? renderFrontCard(recipe) : renderBackCard(recipe, index)}
+        </Animated.View>
+      );
   };
 
   const getVisibleRecipes = () => {
@@ -703,13 +697,6 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
   if (isLoading) {
     return (
       <SafeAreaView style={styles.container}>
-        <View style={styles.statusBar}>
-          <View style={styles.xpCapsule}>
-            <Trophy size={16} color="#2D1B69" />
-            <Text style={styles.xpText}>+75 XP</Text>
-          </View>
-        </View>
-        
         <View style={styles.header}>
           <Text style={styles.title}>Generating Recipes</Text>
           <Text style={styles.subtitle}>AI Chef is cooking up something special...</Text>
@@ -728,13 +715,6 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
   if (error) {
     return (
       <SafeAreaView style={styles.container}>
-        <View style={styles.statusBar}>
-          <View style={styles.xpCapsule}>
-            <Trophy size={16} color="#2D1B69" />
-            <Text style={styles.xpText}>+0 XP</Text>
-          </View>
-        </View>
-        
         <View style={styles.header}>
           <Text style={styles.title}>Oops!</Text>
           <Text style={styles.subtitle}>Something went wrong</Text>
@@ -759,13 +739,7 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Zone A: Status Bar (48px high) */}
-      <View style={styles.statusBar}>
-        <View style={styles.xpCapsule}>
-          <Trophy size={16} color="#2D1B69" />
-          <Text style={styles.xpText}>+75 XP</Text>
-        </View>
-      </View>
+
 
       {/* Header */}
       <View style={styles.header}>
@@ -891,33 +865,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F8F8FF', // Light background
   },
-  
-  // Zone A: Status Bar
-  statusBar: {
-    height: 48,
-    paddingHorizontal: 20,
-    justifyContent: 'center',
-    alignItems: 'flex-start',
-  },
-  xpCapsule: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFB800', // Spice Orange variant
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    gap: 6,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  xpText: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#2D1B69', // Eggplant Midnight
-  },
+
 
   // Header
   header: {
@@ -971,20 +919,17 @@ const styles = StyleSheet.create({
   frontCardContent: {
     flex: 1,
   },
-  heroImageContainer: {
-    height: '40%',
-    position: 'relative',
-  },
-  heroImage: {
-    width: '100%',
-    height: '100%',
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 8,
   },
   heartButton: {
-    position: 'absolute',
-    top: 12,
-    right: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.95)', // More opaque for better shadow performance
-    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 18,
     padding: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -992,33 +937,10 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
-  xpChip: {
-    position: 'absolute',
-    top: 12,
-    left: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFB800',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    gap: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  xpChipText: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: '#2D1B69',
-  },
-
   cardContentContainer: {
     flex: 1,
     paddingHorizontal: 16,
-    paddingTop: 16,
+    paddingTop: 4,
   },
   frontCardTitle: {
     fontSize: 20,
@@ -1180,29 +1102,23 @@ const styles = StyleSheet.create({
   // Back Card Header (Peeking Cards) - shows only title + 1-line teaser
   backCardHeader: {
     height: '100%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-start',
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    justifyContent: 'center',
     paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingVertical: 20,
     backgroundColor: '#FFFFFF',
   },
-  backCardImage: {
-    width: 54,
-    height: 54,
-    borderRadius: 10,
-    marginRight: 14,
-  },
   backCardTextContainer: {
-    flex: 1,
+    width: '100%',
     justifyContent: 'center',
   },
   backCardTitle: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '600',
     color: '#2D1B69',
-    marginBottom: 3,
-    lineHeight: 18,
+    marginBottom: 6,
+    lineHeight: 20,
   },
   backCardTeaser: {
     fontSize: 13,
