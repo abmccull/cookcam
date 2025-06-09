@@ -27,6 +27,7 @@ interface User {
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
+  isCreatingProfile: boolean;
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string, name: string, isCreator: boolean) => Promise<void>;
   logout: () => Promise<void>;
@@ -45,6 +46,7 @@ interface AuthProviderProps {
 export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isCreatingProfile, setIsCreatingProfile] = useState(false);
 
   useEffect(() => {
     // Check for existing session on mount
@@ -108,6 +110,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
         .single();
 
       if (error) {
+        // If user profile doesn't exist (PGRST116), create it
+        if (error.code === 'PGRST116') {
+          console.log('🔄 User profile not found, creating...');
+          try {
+            await createUserProfile(userId);
+          } catch (createError) {
+            console.error('Failed to create user profile:', createError);
+            // Set loading to false since we're done trying
+            setIsLoading(false);
+          }
+          return;
+        }
         console.error('Error loading user profile:', error);
         return;
       }
@@ -122,16 +136,80 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
           level: userData.level || 1,
           xp: userData.total_xp || userData.xp || 0,
           streak: userData.streak_current || 0,
-          badges: userData.badges || [],
-          avatarUrl: userData.avatar_url,
-          creatorCode: userData.creator_code,
-          favoriteCount: userData.favorite_count,
-          subscriberCount: userData.subscriber_count,
+          badges: [], // Default to empty array since badges column doesn't exist yet
+          avatarUrl: userData.avatar_url || undefined,
+          creatorCode: undefined, // Field not confirmed in schema
+          favoriteCount: undefined, // Field not confirmed in schema
+          subscriberCount: undefined, // Field not confirmed in schema
         };
         setUser(formattedUser);
       }
     } catch (error) {
       console.error('Failed to load user profile:', error);
+    }
+  };
+
+  const createUserProfile = async (userId: string) => {
+    try {
+      setIsCreatingProfile(true);
+      console.log('🔄 Creating user profile for:', userId);
+      
+      // Get the user's auth data first
+      const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError || !authUser) {
+        console.error('Error getting auth user:', authError);
+        throw new Error('Could not get user authentication data');
+      }
+
+      console.log('📝 Creating profile for user:', authUser.email);
+
+      // Create user profile in our users table
+      const { data: newUser, error: profileError } = await supabase
+        .from('users')
+        .insert([{
+          id: userId,
+          email: authUser.email,
+          name: authUser.user_metadata?.name || authUser.email,
+          is_creator: false,
+          level: 1,
+          xp: 0,
+          total_xp: 0,
+          streak_current: 0,
+        }])
+        .select()
+        .single();
+
+      if (profileError) {
+        console.error('Profile creation error:', profileError);
+        throw new Error(`Failed to create profile: ${profileError.message}`);
+      }
+
+      if (newUser) {
+        console.log('✅ User profile created successfully');
+        const formattedUser: User = {
+          id: newUser.id,
+          email: newUser.email,
+          name: newUser.name || newUser.email,
+          isCreator: newUser.is_creator || false,
+          creatorTier: newUser.creator_tier || undefined,
+          level: newUser.level || 1,
+          xp: newUser.total_xp || newUser.xp || 0,
+          streak: newUser.streak_current || 0,
+          badges: [], // Default to empty array since badges column doesn't exist yet
+          avatarUrl: newUser.avatar_url || undefined,
+          creatorCode: undefined, // Field not confirmed in schema
+          favoriteCount: undefined, // Field not confirmed in schema
+          subscriberCount: undefined, // Field not confirmed in schema
+        };
+        setUser(formattedUser);
+      }
+    } catch (error) {
+      console.error('Failed to create user profile:', error);
+      // You might want to show an error alert here
+      throw error;
+    } finally {
+      setIsCreatingProfile(false);
     }
   };
 
@@ -232,6 +310,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
       value={{
         user,
         isLoading,
+        isCreatingProfile,
         login,
         signup,
         logout,
