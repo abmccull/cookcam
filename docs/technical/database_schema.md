@@ -1,6 +1,6 @@
 # CookCam Database Schema Documentation
 
-*Last Updated: January 3, 2025*
+*Last Updated: January 9, 2025*
 
 ## Overview
 
@@ -8,13 +8,15 @@ This document outlines the complete database schema for the CookCam application,
 
 ## Schema Statistics
 
-- **Total Tables**: 45+
+- **Total Tables**: 47+
 - **Core Entities**: Users, Ingredients, Recipes, Scans
+- **Recipe Generation**: Two-Step AI Generation (Previews → Detailed), Cooking Sessions
 - **Gamification**: Achievements, Challenges, Leaderboards, Streaks, Mystery Boxes
 - **Creator Economy**: Revenue Tracking, Payouts, Affiliate Links, Premium Collections
 - **Analytics**: Events, Metrics, Error Logs, Performance Monitoring
 - **Preferences**: Kitchen Appliances, Meal Planning, Notifications
 - **External Integration**: USDA Food Data Central
+- **Security**: Row-Level Security (RLS) policies on all user data tables
 
 ---
 
@@ -172,11 +174,47 @@ AI recipe generation sessions.
 | suggestions | jsonb | NO | null | AI-generated recipes |
 | created_at | timestamp with time zone | YES | now() | Session timestamp |
 
+### 9. `cooking_sessions`
+Two-step recipe generation session tracking (Step 1: Previews → Step 2: Detailed).
+
+| Column | Type | Nullable | Default | Description |
+|--------|------|----------|---------|-------------|
+| id | uuid | NO | gen_random_uuid() | Primary key |
+| session_id | text | NO | null | Unique session identifier |
+| user_id | uuid | YES | null | Session owner |
+| original_ingredients | jsonb | NO | null | Scanned ingredients list |
+| user_preferences | jsonb | NO | null | Cooking preferences for session |
+| previews_generated | integer | YES | 0 | Number of previews created |
+| completed | boolean | YES | false | Session completion status |
+| selected_preview_id | text | YES | null | Preview selected for detailed generation |
+| detailed_recipe_id | uuid | YES | null | Final detailed recipe ID |
+| created_at | timestamp with time zone | YES | now() | Session start timestamp |
+| completed_at | timestamp with time zone | YES | null | Session completion timestamp |
+
+### 10. `recipe_previews`
+Recipe preview data from Step 1 of two-step generation.
+
+| Column | Type | Nullable | Default | Description |
+|--------|------|----------|---------|-------------|
+| id | uuid | NO | gen_random_uuid() | Primary key |
+| preview_id | text | NO | null | Preview identifier (unique per session) |
+| session_id | text | NO | null | Associated cooking session |
+| user_id | uuid | YES | null | Preview owner |
+| title | text | NO | null | Recipe title |
+| description | text | YES | null | Brief recipe description |
+| estimated_time | integer | YES | 30 | Estimated cooking time (minutes) |
+| difficulty | text | YES | 'easy' | Difficulty level |
+| cuisine_type | text | YES | 'International' | Cuisine category |
+| main_ingredients | jsonb | YES | '[]'::jsonb | Key ingredients used |
+| appeal_factors | jsonb | YES | '[]'::jsonb | Why this recipe appeals |
+| selected_for_details | boolean | YES | false | Preview selected for Step 2 |
+| created_at | timestamp with time zone | YES | now() | Preview creation timestamp |
+
 ---
 
 ## Gamification Tables
 
-### 9. `achievements`
+### 11. `achievements`
 Available achievements and badges.
 
 | Column | Type | Nullable | Default | Description |
@@ -192,7 +230,7 @@ Available achievements and badges.
 | requirements | jsonb | NO | null | Unlock requirements |
 | created_at | timestamp with time zone | YES | now() | Creation timestamp |
 
-### 10. `user_achievements`
+### 12. `user_achievements`
 User progress on achievements.
 
 | Column | Type | Nullable | Default | Description |
@@ -204,7 +242,7 @@ User progress on achievements.
 | completed_at | timestamp with time zone | YES | null | Completion timestamp |
 | created_at | timestamp with time zone | YES | now() | Progress start |
 
-### 11. `challenges`
+### 13. `challenges`
 Time-limited challenges and events.
 
 | Column | Type | Nullable | Default | Description |
@@ -219,7 +257,7 @@ Time-limited challenges and events.
 | end_date | date | NO | null | Challenge end |
 | created_at | timestamp with time zone | YES | now() | Creation timestamp |
 
-### 12. `user_challenges`
+### 14. `user_challenges`
 User participation in challenges.
 
 | Column | Type | Nullable | Default | Description |
@@ -231,7 +269,7 @@ User participation in challenges.
 | completed_at | timestamp with time zone | YES | null | Completion timestamp |
 | created_at | timestamp with time zone | YES | now() | Participation start |
 
-### 13. `leaderboards`
+### 15. `leaderboards`
 Competitive rankings and leaderboards.
 
 | Column | Type | Nullable | Default | Description |
@@ -245,7 +283,7 @@ Competitive rankings and leaderboards.
 | movement | integer | YES | 0 | Rank change |
 | updated_at | timestamp with time zone | YES | now() | Last update |
 
-### 14. `streaks`
+### 16. `streaks`
 Daily activity streak tracking.
 
 | Column | Type | Nullable | Default | Description |
@@ -257,7 +295,7 @@ Daily activity streak tracking.
 | shield_used | boolean | YES | false | Shield protection used |
 | created_at | timestamp with time zone | YES | now() | Record creation |
 
-### 15. `mystery_boxes`
+### 17. `mystery_boxes`
 Reward system mystery boxes.
 
 | Column | Type | Nullable | Default | Description |
@@ -273,7 +311,7 @@ Reward system mystery boxes.
 
 ## User Interaction Tables
 
-### 16. `user_progress`
+### 18. `user_progress`
 Detailed XP and level progression tracking.
 
 | Column | Type | Nullable | Default | Description |
@@ -288,7 +326,7 @@ Detailed XP and level progression tracking.
 | metadata | jsonb | YES | '{}'::jsonb | Additional action data |
 | created_at | timestamp with time zone | YES | now() | Action timestamp |
 
-### 17. `daily_checkins`
+### 19. `daily_checkins`
 Daily photo check-ins and suggested recipes.
 
 | Column | Type | Nullable | Default | Description |
@@ -301,7 +339,7 @@ Daily photo check-ins and suggested recipes.
 | xp_earned | integer | YES | 5 | XP earned |
 | created_at | timestamp with time zone | YES | now() | Check-in timestamp |
 
-### 18. `favorites`
+### 20. `favorites`
 User recipe collections and favorites.
 
 | Column | Type | Nullable | Default | Description |
@@ -313,7 +351,7 @@ User recipe collections and favorites.
 | notes | text | YES | null | User notes |
 | created_at | timestamp with time zone | YES | now() | Favorite timestamp |
 
-### 19. `saved_recipes`
+### 21. `saved_recipes`
 Simple recipe bookmarking.
 
 | Column | Type | Nullable | Default | Description |
@@ -323,7 +361,7 @@ Simple recipe bookmarking.
 | recipe_id | uuid | YES | null | Recipe ID |
 | created_at | timestamp with time zone | YES | now() | Save timestamp |
 
-### 20. `recipe_ratings`
+### 22. `recipe_ratings`
 User ratings for recipes.
 
 | Column | Type | Nullable | Default | Description |
@@ -334,7 +372,7 @@ User ratings for recipes.
 | rating | integer | NO | null | Rating (1-5) |
 | created_at | timestamp with time zone | YES | now() | Rating timestamp |
 
-### 21. `user_follows`
+### 23. `user_follows`
 Social following relationships.
 
 | Column | Type | Nullable | Default | Description |
@@ -348,7 +386,7 @@ Social following relationships.
 
 ## Recipe System Tables
 
-### 22. `recipe_ingredients`
+### 24. `recipe_ingredients`
 Structured ingredient relationships for recipes.
 
 | Column | Type | Nullable | Default | Description |
@@ -361,7 +399,7 @@ Structured ingredient relationships for recipes.
 | preparation | text | YES | null | Preparation method |
 | order_index | integer | YES | 0 | Display order |
 
-### 23. `recipe_nutrition`
+### 25. `recipe_nutrition`
 Calculated nutritional information for recipes.
 
 | Column | Type | Nullable | Default | Description |
@@ -380,7 +418,7 @@ Calculated nutritional information for recipes.
 
 ## USDA Integration Tables
 
-### 24. `usda_foods`
+### 26. `usda_foods`
 USDA Food Data Central foods database.
 
 | Column | Type | Nullable | Default | Description |
@@ -394,7 +432,7 @@ USDA Food Data Central foods database.
 | created_at | timestamp with time zone | YES | now() | Import timestamp |
 | updated_at | timestamp with time zone | YES | now() | Last update |
 
-### 25. `usda_nutrients`
+### 27. `usda_nutrients`
 USDA nutrient definitions.
 
 | Column | Type | Nullable | Default | Description |
@@ -404,7 +442,7 @@ USDA nutrient definitions.
 | name | text | NO | null | Nutrient name |
 | unit_name | text | NO | null | Measurement unit |
 
-### 26. `usda_food_nutrients`
+### 28. `usda_food_nutrients`
 USDA nutrient values for foods.
 
 | Column | Type | Nullable | Default | Description |
@@ -414,7 +452,7 @@ USDA nutrient values for foods.
 | nutrient_id | integer | YES | null | Nutrient ID |
 | amount | double precision | YES | null | Nutrient amount |
 
-### 27. `usda_api_requests`
+### 29. `usda_api_requests`
 USDA API request logging and caching.
 
 | Column | Type | Nullable | Default | Description |
@@ -438,6 +476,13 @@ USDA API request logging and caching.
 - `ingredients.id` → `recipe_ingredients.ingredient_id`
 - `ingredients.fdc_id` → `usda_foods.fdc_id`
 
+### Recipe Generation Relationships
+- `users.id` → `cooking_sessions.user_id`
+- `users.id` → `recipe_previews.user_id`
+- `cooking_sessions.session_id` → `recipe_previews.session_id`
+- `cooking_sessions.detailed_recipe_id` → `recipes.id`
+- `recipe_previews.preview_id` → `cooking_sessions.selected_preview_id`
+
 ### Gamification Relationships
 - `achievements.id` → `user_achievements.achievement_id`
 - `challenges.id` → `user_challenges.challenge_id`
@@ -459,17 +504,35 @@ USDA API request logging and caching.
 - **Arrays**: Used for tags, instructions, and dietary flags
 - **Timestamps**: All include timezone information
 
+### Security & Access Control
+- **Row-Level Security (RLS)**: Enabled on all user data tables
+- **User Data Isolation**: Users can only access their own data (scans, recipes, sessions, etc.)
+- **Public Recipe Access**: Published recipes are viewable by all authenticated users
+- **Kitchen Appliances**: Readable by all authenticated users, admin-only modifications
+- **Creator Permissions**: Recipe creation allowed for AI-generated recipes (`created_by IS NULL`)
+
 ### Performance Considerations
-- Indexes should be added on frequently queried foreign keys
+- Indexes added on frequently queried foreign keys and user_id columns
 - Full-text search capabilities on `ingredients.searchable_text`
 - Leaderboard queries may need optimization for large user bases
+- Composite unique constraints on session-based data (`session_id`, `preview_id`)
+- Optimized queries for two-step recipe generation workflow
+
+### Recent Implementations (January 2025)
+- ✅ Two-step recipe generation system (`cooking_sessions`, `recipe_previews`)
+- ✅ Enhanced user preferences and appliance selection  
+- ✅ Comprehensive RLS policies for data security
+- ✅ Performance indexes for recipe generation workflow
+- ✅ Session-based cooking experience tracking
 
 ### Future Enhancements
 - Consider partitioning large tables like `user_progress` by date
-- Add more detailed nutritional tracking
-- Expand social features with comments and recipe sharing
+- Add more detailed nutritional tracking with USDA integration
+- Expand social features with comments and recipe sharing  
 - Implement recipe versioning system
+- Add advanced analytics tables for recipe performance tracking
+- Consider caching layer for frequently accessed recipe data
 
 ---
 
-*This schema supports the core CookCam functionality including ingredient scanning, AI recipe generation, gamification systems, and social features. Regular updates to this documentation are recommended as the schema evolves.* 
+*This schema supports the core CookCam functionality including ingredient scanning, two-step AI recipe generation, gamification systems, social features, and comprehensive security. The recent addition of the two-step recipe generation system provides fast preview generation followed by detailed recipe creation, significantly improving user experience and system performance.* 
