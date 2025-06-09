@@ -516,19 +516,35 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
   });
 
   // Animated styles for back cards
-  const middleCardAnimatedStyle = useAnimatedStyle(() => ({
-    top: 40 + card1TranslateY.value, // Combine static offset with animated value
-    transform: [
-      { scale: 0.96 * card1Scale.value } as any, // Combine static scale with animated scale
-    ],
-  }));
+  const middleCardAnimatedStyle = useAnimatedStyle(() => {
+    const topValue = 40 + card1TranslateY.value;
+    const scaleValue = 0.96 * card1Scale.value;
+    console.log('🔄 MIDDLE card animated values:', { 
+      card1TranslateY: card1TranslateY.value, 
+      card1Scale: card1Scale.value,
+      finalTop: topValue,
+      finalScale: scaleValue
+    });
+    return {
+      top: topValue,
+      transform: [{ scale: scaleValue } as any],
+    };
+  });
 
-  const backCardAnimatedStyle = useAnimatedStyle(() => ({
-    top: 80 + card2TranslateY.value, // Combine static offset with animated value
-    transform: [
-      { scale: 0.92 * card2Scale.value } as any, // Combine static scale with animated scale
-    ],
-  }));
+  const backCardAnimatedStyle = useAnimatedStyle(() => {
+    const topValue = 80 + card2TranslateY.value;
+    const scaleValue = 0.92 * card2Scale.value;
+    console.log('🔄 BACK card animated values:', { 
+      card2TranslateY: card2TranslateY.value, 
+      card2Scale: card2Scale.value,
+      finalTop: topValue,
+      finalScale: scaleValue
+    });
+    return {
+      top: topValue,
+      transform: [{ scale: scaleValue } as any],
+    };
+  });
 
   const renderFrontCard = (recipe: Recipe) => {
     return (
@@ -663,6 +679,14 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
         break;
     }
 
+    console.log(`🃏 DEBUG: Rendering ${cardType} card`, {
+      title: recipe.title,
+      cardType,
+      height: cardHeight,
+      zIndex,
+      index,
+    });
+
     return (
       <Animated.View
         key={`${recipe.id}-${cardType}`}
@@ -671,6 +695,9 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
           { 
             height: cardHeight, 
             zIndex,
+            // DEBUG: Add colored borders to see each card type
+            borderWidth: 3,
+            borderColor: cardType === 'front' ? 'green' : cardType === 'middle' ? 'blue' : 'red',
           },
           animatedStyle,
         ]}>
@@ -680,7 +707,14 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
   };
 
   const getVisibleRecipes = () => {
-    return recipes.slice(frontCardIndex, frontCardIndex + 3);
+    const visible = recipes.slice(frontCardIndex, frontCardIndex + 3);
+    console.log('📚 DEBUG: getVisibleRecipes()', {
+      totalRecipes: recipes.length,
+      frontCardIndex,
+      visibleCount: visible.length,
+      visibleTitles: visible.map(r => r.title),
+    });
+    return visible;
   };
 
   // Loading state
@@ -758,6 +792,21 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
             </PanGestureHandler>
           </>
         )}
+
+        {/* DEBUG: Show card count */}
+        <View style={{
+          position: 'absolute',
+          top: 10,
+          right: 10,
+          backgroundColor: 'red',
+          padding: 8,
+          borderRadius: 4,
+          zIndex: 9999,
+        }}>
+          <Text style={{ color: 'white', fontSize: 12, fontWeight: 'bold' }}>
+            Cards: {getVisibleRecipes().length}
+          </Text>
+        </View>
 
         {/* Swipe hint - only show for first few recipes */}
         {frontCardIndex < 2 && (
