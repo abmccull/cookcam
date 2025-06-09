@@ -135,7 +135,7 @@ export class EnhancedRecipeGenerationService {
           }
         ],
         temperature: 0.8, // Higher temperature for more diversity
-        max_tokens: 4000, // Increased for 3 recipes
+        max_tokens: 8000, // Increased for 3 complete recipes with detailed instructions
         response_format: { type: 'json_object' }
       });
 
