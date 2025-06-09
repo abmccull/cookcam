@@ -66,7 +66,7 @@ class ApiClient {
 
       // Set longer timeout for recipe generation endpoints
       const isRecipeGeneration = endpoint.includes('/recipes/generate');
-      const timeoutMs = isRecipeGeneration ? 120000 : 30000; // 2 minutes for recipe generation, 30s for others
+      const timeoutMs = isRecipeGeneration ? 150000 : 30000; // 2.5 minutes for recipe generation, 30s for others
 
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
