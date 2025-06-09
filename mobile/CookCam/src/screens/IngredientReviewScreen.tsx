@@ -632,7 +632,7 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
       <View style={styles.mainContainer}>
         {/* Header with AI detection info */}
         <View style={styles.headerContainer}>
-          <AIChefIcon size={moderateScale(24)} />
+          <AIChefIcon size={48} />
           <Text style={styles.headerTitle}>
             {loading ? 'Analyzing Ingredients...' : 'AI Detected Ingredients'}
           </Text>

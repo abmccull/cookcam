@@ -1,6 +1,8 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Text } from 'react-native';
 import Svg, { Circle, Rect, Path, Ellipse, Line, Polygon, Defs, LinearGradient, Stop } from 'react-native-svg';
+
+// Hot reload trigger - Professional robot chef mascot icon
 
 interface AIChefIconProps {
   size?: number;
@@ -189,7 +191,8 @@ const AIChefIcon: React.FC<AIChefIconProps> = ({
   };
 
   return (
-    <View style={[styles.container, { width: size, height: size }]}>
+    <View style={[styles.container, { width: size, height: size, backgroundColor: 'rgba(255, 0, 0, 0.2)', borderWidth: 2, borderColor: 'blue' }]}>
+      <Text style={{ fontSize: 16, color: 'green', fontWeight: 'bold' }}>🤖</Text>
       {renderAIChefIcon()}
     </View>
   );
