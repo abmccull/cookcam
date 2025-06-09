@@ -18,6 +18,7 @@ import {useGamification, XP_VALUES} from '../context/GamificationContext';
 import {useAuth} from '../context/AuthContext';
 import {ingredientService, scanService} from '../services/api';
 import MysteryBox from '../components/MysteryBox';
+import AIChefIcon from '../components/AIChefIcon';
 
 interface Ingredient {
   id: string;
@@ -631,7 +632,7 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
       <View style={styles.mainContainer}>
         {/* Header with AI detection info */}
         <View style={styles.headerContainer}>
-                          <Star size={moderateScale(24)} color="#FFB800" />
+          <AIChefIcon size={moderateScale(24)} />
           <Text style={styles.headerTitle}>
             {loading ? 'Analyzing Ingredients...' : 'AI Detected Ingredients'}
           </Text>
@@ -643,7 +644,7 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
         {/* Stats row */}
         <View style={styles.statsRow}>
           <View style={styles.statItem}>
-                            <Star size={moderateScale(20)} color="#4CAF50" />
+            <Star size={moderateScale(20)} color="#4CAF50" />
             <Text style={styles.statValue}>{ingredients.filter(ing => ing.confidence >= 0.85).length}</Text>
             <Text style={styles.statLabel}>High Confidence</Text>
           </View>
@@ -764,7 +765,7 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
         <View style={styles.bottomContainer}>
           <TouchableOpacity style={styles.continueButton} onPress={handleContinue}>
             <Text style={styles.continueButtonText}>Generate Recipes</Text>
-                            <Star size={moderateScale(18)} color="#F8F8FF" />
+            <Star size={moderateScale(18)} color="#F8F8FF" />
           </TouchableOpacity>
         </View>
       </View>
@@ -790,7 +791,7 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
             }
           ]}>
             <View style={styles.aiAnalysisIcon}>
-                              <Star size={moderateScale(32)} color="#FFFFFF" />
+              <AIChefIcon size={moderateScale(48)} variant="analyzing" />
             </View>
             <Text style={styles.aiAnalysisTitle}>
               🤖 AI Chef Analyzing...
@@ -1174,12 +1175,8 @@ const styles = StyleSheet.create({
     borderColor: '#FFB800',
   },
   aiAnalysisIcon: {
-    width: moderateScale(64),
-    height: moderateScale(64),
-    borderRadius: moderateScale(32),
-    backgroundColor: '#FFB800',
-    justifyContent: 'center',
     alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: verticalScale(16),
   },
   aiAnalysisTitle: {

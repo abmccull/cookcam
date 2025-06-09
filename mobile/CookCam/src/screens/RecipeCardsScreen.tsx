@@ -22,6 +22,8 @@ import {recipeService, authService} from '../services/api';
 import {useAuth} from '../context/AuthContext';
 import CardStack from '../components/CardStack';
 import { Recipe } from '../utils/recipeTypes';
+import AIChefIcon from '../components/AIChefIcon';
+import { moderateScale } from '../utils/responsive';
 
 // Temporary simple swiper replacement
 const SimpleSwiper = ({ children, onSwipedRight, onSwipedLeft }: any) => {
@@ -790,10 +792,10 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
           ]}>
             <View style={styles.aiModalContent}>
               <Animated.View style={[
-                styles.sparklesIcon,
+                styles.aiChefIconContainer,
                 { transform: [{ scale: aiPulseAnim }] }
               ]}>
-                <Star size={40} color="#FFB800" />
+                <AIChefIcon size={moderateScale(64)} variant="analyzing" />
               </Animated.View>
               <Text style={styles.aiModalTitle}>🤖 AI Chef Analyzing...</Text>
               <Text style={styles.aiModalSubtitle}>Generating 3 diverse recipes</Text>
@@ -1263,10 +1265,9 @@ const styles = StyleSheet.create({
   aiModalContent: {
     alignItems: 'center',
   },
-  sparklesIcon: {
-    backgroundColor: '#FFB800',
-    borderRadius: 30,
-    padding: 15,
+  aiChefIconContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 20,
   },
   aiModalTitle: {
