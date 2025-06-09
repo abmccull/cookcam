@@ -106,6 +106,7 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
   const card1TranslateY = useSharedValue(0);
   const card2TranslateY = useSharedValue(0);
   const opacity = useSharedValue(1);
+  const isAnimating = useSharedValue(false); // Animation lock
 
   // Generate recipe previews from backend API (Step 1 of two-step process)
   const generateRecipesFromAPI = async () => {
@@ -408,51 +409,62 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
   };
 
   const handleTapBackCard = (tappedIndex: number) => {
-    ReactNativeHapticFeedback.trigger('selection');
-    
-    // Determine which card was tapped relative to the front card
+    if (isAnimating.value) return; // Prevent spamming animations
+
     const diff = tappedIndex - frontCardIndex;
+    if (diff <= 0) return;
 
-    if (diff <= 0) return; // Should not happen if logic is correct
+    isAnimating.value = true;
 
-    // A simple forward cascade for now
-    animateCardCascade('forward');
+    // Define the callback that will run on the JS thread after animation
+    const onAnimationComplete = () => {
+      'worklet';
+      runOnJS(setFrontCardIndex)((prev) => (prev + diff) % recipes.length);
+      runOnJS(resetCardsToStablePosition)();
+      isAnimating.value = false;
+    };
     
-    // Update the state to reflect the new card order after the animation
-    setTimeout(() => {
-      // This is a simplified rotation, a full implementation
-      // would need to handle the array indices more dynamically.
-      setFrontCardIndex(prev => (prev + 1) % recipes.length);
-    }, 150); // Delay should be similar to animation duration
+    // Start the animation
+    animateCardCascade(diff, onAnimationComplete);
   };
 
-  const animateCardCascade = (direction: 'forward' | 'backward') => {
+  const animateCardCascade = (tappedVisualIndex: number, callback: () => void) => {
     'worklet';
-    // This function will handle the animated transition when a card is tapped.
-    // We will animate the scales and positions to their new destinations.
     const SPRING_CONFIG = { damping: 18, stiffness: 120 };
 
-    if (direction === 'forward') {
-      // Example: Tapped middle card (index 1) to bring it to front.
-      // Front (0) -> Back (2)
-      // Middle (1) -> Front (0)
-      // Back (2) -> Middle (1)
+    // Define target positions
+    const POS_FRONT = { scale: 0.9, y: 0 };
+    const POS_MIDDLE = { scale: 0.95, y: -35 };
+    const POS_BACK = { scale: 1.0, y: -70 };
 
-      // Animate current front card to the back
-      scale.value = withSpring(1.0, SPRING_CONFIG); // Becomes largest
-      translateY.value = withSpring(-80, SPRING_CONFIG);
+    if (tappedVisualIndex === 1) { // Middle card tapped
+      // Front -> Back
+      scale.value = withSpring(POS_BACK.scale, SPRING_CONFIG);
+      translateY.value = withSpring(POS_BACK.y, SPRING_CONFIG);
+      // Middle -> Front
+      card1Scale.value = withSpring(POS_FRONT.scale, SPRING_CONFIG);
+      card1TranslateY.value = withSpring(POS_FRONT.y, SPRING_CONFIG);
+      // Back -> Middle
+      card2Scale.value = withSpring(POS_MIDDLE.scale, SPRING_CONFIG);
+      // The last animation gets the callback
+      card2TranslateY.value = withSpring(POS_MIDDLE.y, SPRING_CONFIG, (finished) => {
+        if (finished) { runOnJS(callback)(); }
+      });
 
-      // Animate middle card to the front
-      card1Scale.value = withSpring(0.9, SPRING_CONFIG); // Becomes smallest
-      card1TranslateY.value = withSpring(0, SPRING_CONFIG);
-
-      // Animate back card to the middle
-      card2Scale.value = withSpring(0.95, SPRING_CONFIG);
-      card2TranslateY.value = withSpring(-40, SPRING_CONFIG);
-    } 
-    // Note: A complete implementation would handle all cases,
-    // like tapping the 3rd card, which involves a different shuffle.
-    // For now, this handles the most common case of bringing the next card forward.
+    } else if (tappedVisualIndex === 2) { // Back card tapped
+      // Front -> Middle
+      scale.value = withSpring(POS_MIDDLE.scale, SPRING_CONFIG);
+      translateY.value = withSpring(POS_MIDDLE.y, SPRING_CONFIG);
+      // Middle -> Back
+      card1Scale.value = withSpring(POS_BACK.scale, SPRING_CONFIG);
+      card1TranslateY.value = withSpring(POS_BACK.y, SPRING_CONFIG);
+      // Back -> Front
+      card2Scale.value = withSpring(POS_FRONT.scale, SPRING_CONFIG);
+      // The last animation gets the callback
+      card2TranslateY.value = withSpring(POS_FRONT.y, SPRING_CONFIG, (finished) => {
+        if (finished) { runOnJS(callback)(); }
+      });
+    }
   };
 
   const handlePreviewRecipe = () => {
@@ -863,7 +875,7 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
             <ScrollView showsVerticalScrollIndicator={false}>
               {previewRecipe && (
                 <>
-                  <Image source={{ uri: previewRecipe.image }} style={styles.previewImage} />
+                  {/* <Image source={{ uri: previewRecipe.image }} style={styles.previewImage} /> */}
                   
                   <View style={styles.previewContent}>
                     <Text style={styles.previewTitle}>{previewRecipe.title}</Text>
@@ -1276,10 +1288,12 @@ const styles = StyleSheet.create({
   modalCloseButton: {
     padding: 4,
   },
+  /*
   previewImage: {
     width: '100%',
     height: 200,
   },
+  */
   previewContent: {
     padding: 20,
   },
