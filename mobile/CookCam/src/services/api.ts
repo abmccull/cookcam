@@ -152,7 +152,7 @@ class ApiClient {
     mealPrepPortions?: number;
     selectedAppliances?: string[];
   }): Promise<ApiResponse<any>> {
-    return this.makeRequest('/recipes/suggestions', {
+    return this.makeRequest('/recipes/generate', {
       method: 'POST',
       body: JSON.stringify(data),
     });
