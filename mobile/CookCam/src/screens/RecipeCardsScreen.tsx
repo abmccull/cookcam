@@ -517,16 +517,16 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
 
   // Animated styles for back cards
   const middleCardAnimatedStyle = useAnimatedStyle(() => ({
+    top: 40 + card1TranslateY.value, // Combine static offset with animated value
     transform: [
-      { translateY: card1TranslateY.value } as any,
-      { scale: card1Scale.value } as any,
+      { scale: 0.96 * card1Scale.value } as any, // Combine static scale with animated scale
     ],
   }));
 
   const backCardAnimatedStyle = useAnimatedStyle(() => ({
+    top: 80 + card2TranslateY.value, // Combine static offset with animated value
     transform: [
-      { translateY: card2TranslateY.value } as any,
-      { scale: card2Scale.value } as any,
+      { scale: 0.92 * card2Scale.value } as any, // Combine static scale with animated scale
     ],
   }));
 
@@ -642,51 +642,41 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
   const renderCard = (recipe: Recipe, index: number, cardType: 'front' | 'middle' | 'back') => {
     const isFront = cardType === 'front';
     
-    // Calculate heights, positions and styles according to blueprint with better visual hierarchy
-    let cardHeight, zIndex, animatedStyle, topOffset, scaleOffset;
+    // Calculate heights and styles according to blueprint
+    let cardHeight, zIndex, animatedStyle;
     
     switch (cardType) {
       case 'front':
         cardHeight = '100%';
         zIndex = 1000;
-        topOffset = 0;
-        scaleOffset = 1;
         animatedStyle = frontCardAnimatedStyle;
         break;
       case 'middle':
         cardHeight = '85%';
         zIndex = 900;
-        topOffset = 40; // More visible offset
-        scaleOffset = 0.96;
         animatedStyle = middleCardAnimatedStyle;
         break;
       case 'back':
         cardHeight = '70%';
         zIndex = 800;
-        topOffset = 80; // Even more visible offset
-        scaleOffset = 0.92;
         animatedStyle = backCardAnimatedStyle;
         break;
     }
 
-
-
-          return (
-        <Animated.View
-          key={`${recipe.id}-${cardType}`}
-          style={[
-            styles.card,
-            { 
-              height: cardHeight, 
-              zIndex,
-              top: topOffset,
-              transform: [{ scale: scaleOffset }], // Add scale for visual hierarchy
-            },
-            animatedStyle,
-          ]}>
-          {isFront ? renderFrontCard(recipe) : renderBackCard(recipe, index)}
-        </Animated.View>
-      );
+    return (
+      <Animated.View
+        key={`${recipe.id}-${cardType}`}
+        style={[
+          styles.card,
+          { 
+            height: cardHeight, 
+            zIndex,
+          },
+          animatedStyle,
+        ]}>
+        {isFront ? renderFrontCard(recipe) : renderBackCard(recipe, index)}
+      </Animated.View>
+    );
   };
 
   const getVisibleRecipes = () => {
