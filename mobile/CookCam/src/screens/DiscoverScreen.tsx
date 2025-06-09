@@ -10,7 +10,7 @@ import {
   Animated,
   Alert,
 } from 'react-native';
-import {Search, TrendingUp, Clock, ChefHat, Flame, Globe, Sparkles, Gift, Brain} from 'lucide-react-native';
+import {Search, TrendingUp, Clock, ChefHat, Flame, Globe, Star, Gift, Brain} from 'lucide-react-native';
 import {useGamification, XP_VALUES} from '../context/GamificationContext';
 import {recipeService, ingredientService} from '../services/api';
 import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
@@ -248,7 +248,7 @@ const DiscoverScreen = ({navigation}: {navigation: any}) => {
                 <Text style={styles.dailyBonusTitle}>Daily Discovery Bonus!</Text>
                 <Text style={styles.dailyBonusSubtitle}>Try a new recipe today for +25 XP</Text>
               </View>
-              <Sparkles size={20} color="#FFB800" />
+                              <Star size={20} color="#FFB800" />
             </TouchableOpacity>
           </Animated.View>
         )}

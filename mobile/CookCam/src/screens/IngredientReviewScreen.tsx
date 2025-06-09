@@ -11,7 +11,7 @@ import {
   Animated,
   Modal,
 } from 'react-native';
-import {Check, X, Plus, Sparkles, Camera, ChefHat, TrendingUp, Trophy, Star} from 'lucide-react-native';
+import {Check, X, Plus, Star, Camera, ChefHat, TrendingUp, Trophy} from 'lucide-react-native';
 import {scale, verticalScale, moderateScale, responsive} from '../utils/responsive';
 import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
 import {useGamification, XP_VALUES} from '../context/GamificationContext';
@@ -46,7 +46,7 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
 }) => {
   const {imageUri, isSimulator} = route.params;
   const {addXP, unlockBadge} = useGamification();
-  const {user, isAuthenticated} = useAuth();
+  const {user} = useAuth();
   const [showMysteryBox, setShowMysteryBox] = useState(() => {
     // 25% chance (1/4) of mystery box appearing
     return Math.random() < 0.25;
@@ -122,20 +122,33 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
     }
   }, [loading]);
 
+  // Track if image analysis has been completed for this imageUri
+  const [hasAnalyzedImage, setHasAnalyzedImage] = useState(false);
+  const [lastAnalyzedImageUri, setLastAnalyzedImageUri] = useState<string | null>(null);
+
+  // Reset analysis flag when imageUri changes
+  useEffect(() => {
+    if (imageUri !== lastAnalyzedImageUri) {
+      setHasAnalyzedImage(false);
+      setLastAnalyzedImageUri(imageUri);
+    }
+  }, [imageUri, lastAnalyzedImageUri]);
+
   // Load real ingredients from image analysis (for both simulator and real device)
   useEffect(() => {
-    if (imageUri) {
+    if (imageUri && !hasAnalyzedImage) {
       // Ensure authentication before analysis
-      if (!isAuthenticated) {
+      if (!user) {
         console.log('🔐 Not authenticated, redirecting to login...');
         // Redirect to login screen instead of using demo
         navigation.navigate('Auth', { screen: 'SignIn' });
         return;
       } else {
+        setHasAnalyzedImage(true); // Prevent re-analysis of same image
         analyzeImageIngredients();
       }
     }
-  }, [imageUri, isAuthenticated, navigation]);
+  }, [imageUri, user, hasAnalyzedImage]); // Removed navigation from dependencies
 
   const analyzeImageIngredients = async () => {
     try {
@@ -618,7 +631,7 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
       <View style={styles.mainContainer}>
         {/* Header with AI detection info */}
         <View style={styles.headerContainer}>
-          <Sparkles size={moderateScale(24)} color="#FFB800" />
+                          <Star size={moderateScale(24)} color="#FFB800" />
           <Text style={styles.headerTitle}>
             {loading ? 'Analyzing Ingredients...' : 'AI Detected Ingredients'}
           </Text>
@@ -630,7 +643,7 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
         {/* Stats row */}
         <View style={styles.statsRow}>
           <View style={styles.statItem}>
-            <Sparkles size={moderateScale(20)} color="#4CAF50" />
+                            <Star size={moderateScale(20)} color="#4CAF50" />
             <Text style={styles.statValue}>{ingredients.filter(ing => ing.confidence >= 0.85).length}</Text>
             <Text style={styles.statLabel}>High Confidence</Text>
           </View>
@@ -751,7 +764,7 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
         <View style={styles.bottomContainer}>
           <TouchableOpacity style={styles.continueButton} onPress={handleContinue}>
             <Text style={styles.continueButtonText}>Generate Recipes</Text>
-            <Sparkles size={moderateScale(18)} color="#F8F8FF" />
+                            <Star size={moderateScale(18)} color="#F8F8FF" />
           </TouchableOpacity>
         </View>
       </View>
@@ -777,7 +790,7 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
             }
           ]}>
             <View style={styles.aiAnalysisIcon}>
-              <Sparkles size={moderateScale(32)} color="#FFFFFF" />
+                              <Star size={moderateScale(32)} color="#FFFFFF" />
             </View>
             <Text style={styles.aiAnalysisTitle}>
               🤖 AI Chef Analyzing...

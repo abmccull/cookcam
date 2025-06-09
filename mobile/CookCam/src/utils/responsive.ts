@@ -86,6 +86,7 @@ export const responsive = {
       shadowOpacity: 0.1,
       shadowRadius: 2,
       elevation: 2,
+      backgroundColor: '#FFFFFF', // Required for efficient shadow calculation
     },
     medium: {
       shadowColor: '#000',
@@ -93,13 +94,15 @@ export const responsive = {
       shadowOpacity: 0.15,
       shadowRadius: 4,
       elevation: 4,
+      backgroundColor: '#FFFFFF', // Required for efficient shadow calculation
     },
     large: {
       shadowColor: '#000',
-      shadowOffset: {width: 0, height: 4},
+      shadowOffset: {width: 0, height: 2},
       shadowOpacity: 0.2,
       shadowRadius: 8,
       elevation: 8,
+      backgroundColor: '#FFFFFF', // Required for efficient shadow calculation
     },
   },
 };

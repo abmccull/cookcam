@@ -14,7 +14,7 @@ import {
   Share,
   Linking,
 } from 'react-native';
-import { Camera, X, Sparkles, Trophy, Instagram, Facebook, Twitter, Share2, Copy, MessageCircle } from 'lucide-react-native';
+import { Camera, X, Star, Trophy, Instagram, Facebook, Twitter, Share2, Copy, MessageCircle } from 'lucide-react-native';
 import {
   Camera as VisionCamera,
   useCameraPermission,
@@ -421,7 +421,7 @@ const RecipeCompletionPhoto: React.FC<RecipeCompletionPhotoProps> = ({
                 </TouchableOpacity>
 
                 <View style={styles.xpRewardBanner}>
-                  <Sparkles size={20} color="#FFB800" />
+                  <Star size={20} color="#FFB800" />
                   <Text style={styles.xpRewardText}>Earn {config.xp} XP + social bonuses!</Text>
                 </View>
               </View>

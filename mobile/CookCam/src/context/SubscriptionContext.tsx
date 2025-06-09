@@ -139,7 +139,7 @@ const SubscriptionContext = createContext<SubscriptionContextType | null>(null);
 // Provider component
 export function SubscriptionProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(subscriptionReducer, initialState);
-  const { isAuthenticated } = useAuth();
+  const { user } = useAuth();
 
   // Load subscription data from API
   const loadSubscriptionData = async () => {
@@ -158,7 +158,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       dispatch({ type: 'SET_PRODUCTS', products: productsResponse });
 
       // Only load user-specific subscription data if authenticated
-      if (isAuthenticated) {
+      if (user) {
         // Load current subscription (auth required)
         const subscriptionResponse = await cookCamApi.getSubscriptionStatus();
         if (subscriptionResponse.success) {
@@ -378,7 +378,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     }, 60000); // Check every minute
 
     return () => clearInterval(interval);
-  }, [isAuthenticated]); // Depend on authentication status
+  }, [user]); // Depend on authentication status
 
   // Load creator data when subscription changes
   useEffect(() => {

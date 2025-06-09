@@ -191,6 +191,29 @@ class ApiClient {
     });
   }
 
+  async getSavedRecipes(params?: {
+    limit?: number;
+    offset?: number;
+  }): Promise<ApiResponse<any>> {
+    const queryParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) {
+          queryParams.append(key, value.toString());
+        }
+      });
+    }
+    
+    const endpoint = `/recipes/saved/my${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    return this.makeRequest(endpoint);
+  }
+
+  async unsaveRecipe(recipeId: string): Promise<ApiResponse<any>> {
+    return this.makeRequest(`/recipes/${recipeId}/save`, {
+      method: 'DELETE',
+    });
+  }
+
   async rateRecipe(recipeId: string, rating: number, review?: string): Promise<ApiResponse<any>> {
     return this.makeRequest(`/recipes/${recipeId}/rate`, {
       method: 'POST',

@@ -25,7 +25,6 @@ import {
   Heart,
   TrendingUp,
   Clock,
-  Sparkles,
 } from 'lucide-react-native';
 import {useAuth} from '../context/AuthContext';
 import {useGamification, XP_VALUES} from '../context/GamificationContext';

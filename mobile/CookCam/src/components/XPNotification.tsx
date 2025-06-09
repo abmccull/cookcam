@@ -7,7 +7,7 @@ import {
   Dimensions,
   Easing,
 } from 'react-native';
-import {Sparkles, TrendingUp} from 'lucide-react-native';
+import {TrendingUp} from 'lucide-react-native';
 import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
 
 interface XPNotificationProps {
@@ -199,7 +199,7 @@ const XPNotification: React.FC<XPNotificationProps> = ({
         {/* XP Icon and Amount */}
         <View style={styles.xpSection}>
           <View style={styles.xpIcon}>
-            <Sparkles size={24} color="#FFB800" />
+                            <TrendingUp size={24} color="#FFB800" />
           </View>
           <Text style={styles.xpAmount}>+{xpGained} XP</Text>
         </View>

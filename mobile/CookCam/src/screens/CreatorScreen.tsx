@@ -23,16 +23,15 @@ import {
   Lock,
   CheckCircle,
   Info,
-  Sparkles,
+  Star,
   Play,
   Target,
   BookOpen,
   Zap,
-  Star,
   Clock,
 } from 'lucide-react-native';
 import {useAuth} from '../context/AuthContext';
-import {scale, verticalScale, moderateScale, responsive, isSmallDevice} from '../utils/responsive';
+import {scale, verticalScale, moderateScale, responsive, isSmallScreen} from '../utils/responsive';
 import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
 import ChefBadge from '../components/ChefBadge';
 import {useGamification, XP_VALUES} from '../context/GamificationContext';
@@ -769,7 +768,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   tierEmoji: {
-    fontSize: responsive.fontSize.huge + scale(8),
+    fontSize: responsive.fontSize.xxxlarge + scale(8),
   },
   tierTitle: {
     fontSize: responsive.fontSize.xlarge,

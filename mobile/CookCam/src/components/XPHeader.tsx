@@ -9,7 +9,7 @@ import {
   Platform,
 } from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
-import {User, Sparkles} from 'lucide-react-native';
+import {User, Star} from 'lucide-react-native';
 import {useAuth} from '../context/AuthContext';
 import {useGamification} from '../context/GamificationContext';
 import {useNavigation} from '@react-navigation/native';
@@ -89,7 +89,7 @@ const XPHeader: React.FC = () => {
             </View>
             
             <View style={styles.levelContainer}>
-              <Sparkles size={14} color="#FFB800" />
+              <Star size={14} color="#FFB800" />
               <Text style={styles.levelText}>Level {level}</Text>
             </View>
           </View>

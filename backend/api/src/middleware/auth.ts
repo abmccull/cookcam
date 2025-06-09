@@ -67,12 +67,7 @@ export const authenticateUser = async (req: AuthenticatedRequest, res: Response,
 
     const token = authHeader.substring(7);
 
-    // Demo mode support
-    if (process.env.DEMO_MODE === 'true' && token.startsWith('demo_token_')) {
-      const demoUserId = token.replace('demo_token_', '');
-      req.user = { id: demoUserId };
-      return next();
-    }
+      // Demo mode removed - using Supabase auth only
 
     // Production mode - use Supabase auth validation
     try {
@@ -137,13 +132,7 @@ export const optionalAuth = async (req: AuthenticatedRequest, res: Response, nex
 
     const token = authHeader.substring(7);
 
-    // Demo mode support
-    if (process.env.DEMO_MODE === 'true' && token.startsWith('demo_token_')) {
-      const demoUserId = token.replace('demo_token_', '');
-      req.user = { id: demoUserId };
-      req.isFreeTier = false;
-      return next();
-    }
+    // Demo mode removed - using Supabase auth only
 
     // Production mode - use Supabase auth validation for optional auth
     try {

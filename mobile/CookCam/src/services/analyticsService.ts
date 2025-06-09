@@ -104,14 +104,41 @@ class AnalyticsService {
   // Track an event
   async track(eventName: string, properties?: Record<string, any>) {
     try {
+      // Limit memory usage - if queue is too large, skip tracking
+      if (this.eventQueue.length > 100) {
+        console.warn('⚠️ Analytics queue too large, skipping event to prevent memory issues');
+        return;
+      }
+
       if (!this.currentSession) {
         await this.initializeSession();
       }
 
       // Double-check session exists after initialization
       if (!this.currentSession) {
-        console.error('Failed to initialize analytics session');
+        console.error('❌ Failed to initialize analytics session');
         return;
+      }
+
+      if (!this.currentSession.events) {
+        this.currentSession.events = [];
+      }
+
+      // Limit session events to prevent memory bloat
+      if (this.currentSession.events.length > 200) {
+        this.currentSession.events = this.currentSession.events.slice(-100); // Keep last 100
+      }
+
+      // Get userId safely to prevent freezing
+      let userId: string | undefined;
+      try {
+        userId = await Promise.race([
+          this.getUserId(),
+          new Promise<undefined>((resolve) => setTimeout(() => resolve(undefined), 1000)) // 1 second timeout
+        ]);
+      } catch (error) {
+        console.warn('⚠️ Failed to get user ID for analytics, continuing without it');
+        userId = undefined;
       }
 
       const event: AnalyticsEvent = {
@@ -123,7 +150,7 @@ class AnalyticsService {
         },
         timestamp: new Date(),
         sessionId: this.currentSession.sessionId,
-        userId: await this.getUserId(),
+        userId: userId,
       };
 
       // Add to queue and session

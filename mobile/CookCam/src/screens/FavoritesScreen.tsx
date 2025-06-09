@@ -8,20 +8,38 @@ import {
   Image,
   SafeAreaView,
   Animated,
+  ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
-import {Heart, Clock, ChefHat, Star, Trophy, TrendingUp, Award, Sparkles} from 'lucide-react-native';
+import {Heart, Clock, ChefHat, Star, Trophy, TrendingUp, Award} from 'lucide-react-native';
 import {useGamification} from '../context/GamificationContext';
+import {useAuth} from '../context/AuthContext';
+import {apiClient} from '../services/api';
 import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
 
 interface SavedRecipe {
-  id: string;
-  title: string;
-  imageUrl: string;
-  prepTime: number;
-  difficulty: 'Easy' | 'Medium' | 'Hard';
-  rating: number;
-  cuisine: string;
-  dateAdded: Date;
+  created_at: string;
+  recipe: {
+    id: string;
+    title: string;
+    description?: string;
+    prep_time_minutes?: number;
+    cook_time_minutes?: number;
+    total_time_minutes?: number;
+    difficulty?: string;
+    cuisine_type?: string;
+    servings?: number;
+    ingredients?: any[];
+    instructions?: any[];
+    image_url?: string;
+    nutrition_info?: any;
+    creator?: {
+      id: string;
+      name: string;
+      avatar_url?: string;
+      level?: number;
+    };
+  };
 }
 
 interface CollectionBadge {
@@ -35,56 +53,42 @@ interface CollectionBadge {
 
 const FavoritesScreen = ({navigation}: {navigation: any}) => {
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'recent' | 'top-rated' | 'collections'>('all');
+  const [savedRecipes, setSavedRecipes] = useState<SavedRecipe[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const {addXP} = useGamification();
+  const {user} = useAuth();
   
   // Animation values
   const milestoneScale = useRef(new Animated.Value(0)).current;
   const recommendScale = useRef(new Animated.Value(0.95)).current;
-
-  // Mock data - in real app would come from storage/API
-  const savedRecipes: SavedRecipe[] = [
-    {
-      id: '1',
-      title: 'Spaghetti Carbonara',
-      imageUrl: 'https://example.com/carbonara.jpg',
-      prepTime: 30,
-      difficulty: 'Medium',
-      rating: 4.8,
-      cuisine: 'Italian',
-      dateAdded: new Date('2024-01-15'),
-    },
-    {
-      id: '2',
-      title: 'Chicken Tikka Masala',
-      imageUrl: 'https://example.com/tikka.jpg',
-      prepTime: 45,
-      difficulty: 'Medium',
-      rating: 4.9,
-      cuisine: 'Indian',
-      dateAdded: new Date('2024-01-14'),
-    },
-    {
-      id: '3',
-      title: 'Classic Margherita Pizza',
-      imageUrl: 'https://example.com/pizza.jpg',
-      prepTime: 25,
-      difficulty: 'Easy',
-      rating: 4.7,
-      cuisine: 'Italian',
-      dateAdded: new Date('2024-01-13'),
-    },
-    {
-      id: '4',
-      title: 'Beef Teriyaki Bowl',
-      imageUrl: 'https://example.com/teriyaki.jpg',
-      prepTime: 35,
-      difficulty: 'Easy',
-      rating: 4.6,
-      cuisine: 'Japanese',
-      dateAdded: new Date('2024-01-12'),
-    },
-  ];
   
+  // Fetch saved recipes from API
+  const fetchSavedRecipes = async () => {
+    if (!user) return;
+    
+    try {
+      setIsLoading(true);
+      const response = await apiClient.getSavedRecipes({ limit: 50, offset: 0 });
+      
+      if (response.success && response.data) {
+        setSavedRecipes(response.data.saved_recipes || []);
+      } else {
+        console.error('Failed to fetch saved recipes:', response.error);
+      }
+    } catch (error) {
+      console.error('Error fetching saved recipes:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await fetchSavedRecipes();
+    setIsRefreshing(false);
+  };
+
   // Collection badges
   const collectionBadges: CollectionBadge[] = [
     {id: '1', name: 'Italian Master', icon: '🇮🇹', requirement: 10, cuisineType: 'Italian', earned: false},
@@ -121,6 +125,10 @@ const FavoritesScreen = ({navigation}: {navigation: any}) => {
   ];
   
   useEffect(() => {
+    fetchSavedRecipes();
+  }, [user]);
+
+  useEffect(() => {
     // Animate milestone progress
     if (progress > 0) {
       Animated.spring(milestoneScale, {
@@ -151,94 +159,101 @@ const FavoritesScreen = ({navigation}: {navigation: any}) => {
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
       case 'Easy':
+      case 'easy':
         return '#4CAF50';
       case 'Medium':
+      case 'medium':
         return '#FF9800';
       case 'Hard':
+      case 'hard':
         return '#F44336';
       default:
         return '#8E8E93';
     }
   };
 
-  const handleRecipePress = (recipe: SavedRecipe) => {
+  const handleRecipePress = (savedRecipe: SavedRecipe) => {
     ReactNativeHapticFeedback.trigger('impactMedium');
     // Navigate to recipe detail or cook mode
-    // Convert Date object to ISO string to make it serializable
-    const serializedRecipe = {
-      ...recipe,
-      dateAdded: recipe.dateAdded.toISOString(),
-    };
-    
     navigation.navigate('Home', {
       screen: 'CookMode',
-      params: {recipe: serializedRecipe},
+      params: {recipe: savedRecipe.recipe},
     });
   };
+
+  const handleUnsaveRecipe = async (recipeId: string) => {
+    ReactNativeHapticFeedback.trigger('impactMedium');
+    try {
+      const response = await apiClient.unsaveRecipe(recipeId);
+      if (response.success) {
+        // Remove from local state
+        setSavedRecipes(prev => prev.filter(item => item.recipe.id !== recipeId));
+      }
+    } catch (error) {
+      console.error('Error unsaving recipe:', error);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <View style={[styles.container, styles.loadingContainer]}>
+        <ActivityIndicator size="large" color="#2D1B69" />
+        <Text style={styles.loadingText}>Loading your saved recipes...</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Your Favorites</Text>
-        <Text style={styles.headerSubtitle}>
-          {savedRecipes.length} saved recipe{savedRecipes.length !== 1 ? 's' : ''}
-        </Text>
+        <View style={styles.favoritesCounter}>
+          <Text style={styles.heartEmoji}>❤️</Text>
+          <Text style={styles.counterText}>{savedRecipes.length}</Text>
+        </View>
       </View>
-      
-      {/* Milestone Progress */}
-      <Animated.View style={[styles.milestoneCard, {transform: [{scale: milestoneScale}]}]}>
-        <View style={styles.milestoneHeader}>
-          <Text style={styles.milestoneTitle}>Next Milestone: {currentMilestone.reward}</Text>
-          <View style={styles.milestoneReward}>
-            <Sparkles size={14} color="#FFB800" />
-            <Text style={styles.milestoneXP}>+{currentMilestone.xp} XP</Text>
-          </View>
-        </View>
-        <View style={styles.progressBar}>
-          <View style={[styles.progressFill, {width: `${progress}%`}]} />
-        </View>
-        <Text style={styles.progressText}>
-          {savedRecipes.length} / {currentMilestone.count} recipes saved
-        </Text>
-      </Animated.View>
 
       {/* Filter Tabs */}
-      <ScrollView 
-        horizontal 
-        showsHorizontalScrollIndicator={false}
-        style={styles.filterContainer}
-        contentContainerStyle={styles.filterContent}>
-        {filters.map(filter => (
-          <TouchableOpacity
-            key={filter.key}
-            style={[
-              styles.filterButton,
-              selectedFilter === filter.key && styles.filterButtonActive,
-            ]}
-            onPress={() => {
-              ReactNativeHapticFeedback.trigger('selection');
-              setSelectedFilter(filter.key as any);
-            }}>
-            <Text
+      <View style={styles.filterContainer}>
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.filterContent}>
+          {filters.map(filter => (
+            <TouchableOpacity
+              key={filter.key}
               style={[
-                styles.filterText,
-                selectedFilter === filter.key && styles.filterTextActive,
-              ]}>
-              {filter.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+                styles.filterButton,
+                selectedFilter === filter.key && styles.filterButtonActive,
+              ]}
+              onPress={() => {
+                ReactNativeHapticFeedback.trigger('selection');
+                setSelectedFilter(filter.key as any);
+              }}>
+              <Text
+                style={[
+                  styles.filterText,
+                  selectedFilter === filter.key && styles.filterTextActive,
+                ]}>
+                {filter.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
       
       {/* Collections View */}
       {selectedFilter === 'collections' ? (
         <ScrollView
           style={styles.recipeList}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.recipeListContent}>
+          contentContainerStyle={styles.recipeListContent}
+          refreshControl={
+            <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />
+          }>
           {collectionBadges.map(badge => {
-            const cuisineCount = savedRecipes.filter(r => r.cuisine === badge.cuisineType).length;
+            const cuisineCount = savedRecipes.filter(r => r.recipe.cuisine_type === badge.cuisineType).length;
             const progress = (cuisineCount / badge.requirement) * 100;
             
             return (
@@ -286,48 +301,96 @@ const FavoritesScreen = ({navigation}: {navigation: any}) => {
           <ScrollView
             style={styles.recipeList}
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.recipeListContent}>
-            {savedRecipes.map((recipe, index) => (
-              <TouchableOpacity
-                key={recipe.id}
-                style={styles.recipeCard}
-                onPress={() => handleRecipePress(recipe)}
-                activeOpacity={0.8}>
-                {/* Recipe Image */}
-                <View style={styles.imageContainer}>
-                  <View style={styles.imagePlaceholder}>
-                    <ChefHat size={40} color="#E5E5E7" />
+            contentContainerStyle={styles.recipeListContent}
+            refreshControl={
+              <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />
+            }>
+            {savedRecipes.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Heart size={48} color="#E5E5E7" />
+                <Text style={styles.emptyStateTitle}>No saved recipes yet</Text>
+                <Text style={styles.emptyStateText}>
+                  Start saving recipes by tapping the heart icon when browsing recipes!
+                </Text>
+              </View>
+            ) : (
+              savedRecipes.map((savedRecipe, index) => (
+                <TouchableOpacity
+                  key={savedRecipe.recipe.id}
+                  style={styles.recipeCard}
+                  onPress={() => handleRecipePress(savedRecipe)}
+                  activeOpacity={0.8}>
+                  {/* Recipe Image */}
+                  <View style={styles.imageContainer}>
+                    {savedRecipe.recipe.image_url ? (
+                      <Image 
+                        source={{ uri: savedRecipe.recipe.image_url }} 
+                        style={styles.recipeImage}
+                        resizeMode="cover"
+                      />
+                    ) : (
+                      <View style={styles.imagePlaceholder}>
+                        <ChefHat size={40} color="#E5E5E7" />
+                      </View>
+                    )}
+                    <TouchableOpacity 
+                      style={styles.favoriteButton}
+                      onPress={() => handleUnsaveRecipe(savedRecipe.recipe.id)}>
+                      <Heart size={20} color="#FF6B35" fill="#FF6B35" />
+                    </TouchableOpacity>
                   </View>
-                  <TouchableOpacity style={styles.favoriteButton}>
-                    <Heart size={20} color="#FF6B35" fill="#FF6B35" />
-                  </TouchableOpacity>
-                </View>
 
-                {/* Recipe Info */}
-                <View style={styles.recipeInfo}>
-                  <Text style={styles.recipeTitle} numberOfLines={2}>
-                    {recipe.title}
-                  </Text>
-                  <Text style={styles.recipeCuisine}>{recipe.cuisine}</Text>
-                  
-                  <View style={styles.recipeStats}>
-                    <View style={styles.stat}>
-                      <Clock size={14} color="#8E8E93" />
-                      <Text style={styles.statText}>{recipe.prepTime}min</Text>
-                    </View>
-                    <View style={styles.stat}>
-                      <Star size={14} color="#FFB800" fill="#FFB800" />
-                      <Text style={styles.statText}>{recipe.rating}</Text>
-                    </View>
-                    <View style={[styles.difficultyBadge, {backgroundColor: getDifficultyColor(recipe.difficulty) + '20'}]}>
-                      <Text style={[styles.difficultyText, {color: getDifficultyColor(recipe.difficulty)}]}>
-                        {recipe.difficulty}
-                      </Text>
+                  {/* Recipe Info */}
+                  <View style={styles.recipeInfo}>
+                    <Text style={styles.recipeTitle} numberOfLines={2}>
+                      {savedRecipe.recipe.title}
+                    </Text>
+                    <Text style={styles.recipeCuisine}>
+                      {savedRecipe.recipe.cuisine_type || 'Unknown'}
+                    </Text>
+                    
+                    <View style={styles.recipeStats}>
+                      <View style={styles.stat}>
+                        <Clock size={14} color="#8E8E93" />
+                        <Text style={styles.statText}>
+                          {savedRecipe.recipe.total_time_minutes || savedRecipe.recipe.prep_time_minutes || 30}min
+                        </Text>
+                      </View>
+                      {savedRecipe.recipe.servings && (
+                        <View style={styles.stat}>
+                          <Star size={14} color="#FFB800" fill="#FFB800" />
+                          <Text style={styles.statText}>{savedRecipe.recipe.servings}</Text>
+                        </View>
+                      )}
+                      {savedRecipe.recipe.difficulty && (
+                        <View style={[styles.difficultyBadge, {backgroundColor: getDifficultyColor(savedRecipe.recipe.difficulty) + '20'}]}>
+                          <Text style={[styles.difficultyText, {color: getDifficultyColor(savedRecipe.recipe.difficulty)}]}>
+                            {savedRecipe.recipe.difficulty}
+                          </Text>
+                        </View>
+                      )}
                     </View>
                   </View>
+                </TouchableOpacity>
+              ))
+            )}
+            
+            {/* Milestone Progress - moved to bottom */}
+            <Animated.View style={[styles.milestoneCard, {transform: [{scale: milestoneScale}]}]}>
+              <View style={styles.milestoneHeader}>
+                <Text style={styles.milestoneTitle}>Next Milestone: {currentMilestone.reward}</Text>
+                <View style={styles.milestoneReward}>
+                  <Star size={14} color="#FFB800" />
+                  <Text style={styles.milestoneXP}>+{currentMilestone.xp} XP</Text>
                 </View>
-              </TouchableOpacity>
-            ))}
+              </View>
+              <View style={styles.progressBar}>
+                <View style={[styles.progressFill, {width: `${progress}%`}]} />
+              </View>
+              <Text style={styles.progressText}>
+                {savedRecipes.length} / {currentMilestone.count} recipes saved
+              </Text>
+            </Animated.View>
           </ScrollView>
         </>
       )}
@@ -340,28 +403,71 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F8F8FF',
   },
+  loadingContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#8E8E93',
+  },
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: 48,
+    paddingHorizontal: 20,
+  },
+  emptyStateTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#2D1B69',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  emptyStateText: {
+    fontSize: 16,
+    color: '#8E8E93',
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  recipeImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 12,
+  },
   header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingHorizontal: 20,
     paddingTop: 20,
-    paddingBottom: 16,
+    paddingBottom: 4,
     backgroundColor: '#F8F8FF',
   },
   headerTitle: {
     fontSize: 28,
     fontWeight: 'bold',
     color: '#2D1B69',
-    marginBottom: 4,
   },
-  headerSubtitle: {
-    fontSize: 16,
-    color: '#8E8E93',
+  favoritesCounter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  heartEmoji: {
+    fontSize: 18,
+  },
+  counterText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#2D1B69',
   },
   milestoneCard: {
     marginHorizontal: 20,
-    marginBottom: 16,
+    marginBottom: 2,
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 16,
+    borderRadius: 12,
+    padding: 12,
     shadowColor: '#000',
     shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.08,
@@ -398,73 +504,72 @@ const styles = StyleSheet.create({
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#FF6B35',
+    backgroundColor: '#4CAF50',
     borderRadius: 4,
   },
   progressText: {
-    fontSize: 13,
+    fontSize: 12,
     color: '#8E8E93',
     textAlign: 'center',
   },
   filterContainer: {
-    maxHeight: 50,
-    marginBottom: 16,
+    paddingHorizontal: 20,
+    marginBottom: 4,
   },
   filterContent: {
-    paddingHorizontal: 20,
-    gap: 12,
+    alignItems: 'center',
   },
   filterButton: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 20,
     backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    marginRight: 8,
     borderWidth: 1,
     borderColor: '#E5E5E7',
   },
   filterButtonActive: {
-    backgroundColor: '#FF6B35',
-    borderColor: '#FF6B35',
+    backgroundColor: '#2D1B69',
+    borderColor: '#2D1B69',
   },
   filterText: {
-    fontSize: 14,
-    color: '#8E8E93',
+    fontSize: 13,
     fontWeight: '500',
+    color: '#2D1B69',
   },
   filterTextActive: {
-    color: '#F8F8FF',
-    fontWeight: '600',
+    color: '#FFFFFF',
   },
   collectionCard: {
-    flexDirection: 'row',
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    borderRadius: 12,
     padding: 16,
     marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 3,
+    flexDirection: 'row',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 1},
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
   },
   collectionIcon: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#F5F5F5',
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#F8F8FF',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 16,
+    marginRight: 12,
     position: 'relative',
   },
   collectionEmoji: {
-    fontSize: 28,
+    fontSize: 24,
   },
   earnedBadge: {
     position: 'absolute',
-    bottom: 0,
-    right: 0,
+    top: -2,
+    right: -2,
   },
   collectionInfo: {
     flex: 1,
@@ -473,33 +578,34 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#2D1B69',
-    marginBottom: 8,
+    marginBottom: 4,
   },
   collectionProgress: {
-    height: 6,
+    height: 4,
     backgroundColor: '#E5E5E7',
-    borderRadius: 3,
+    borderRadius: 2,
     overflow: 'hidden',
     marginBottom: 4,
   },
   collectionProgressFill: {
     height: '100%',
-    backgroundColor: '#FF6B35',
-    borderRadius: 3,
+    backgroundColor: '#4CAF50',
+    borderRadius: 2,
   },
   collectionProgressText: {
     fontSize: 12,
     color: '#8E8E93',
   },
   recommendationsSection: {
-    marginBottom: 16,
-    paddingHorizontal: 20,
+    paddingLeft: 20,
+    marginTop: 8,
+    marginBottom: 4,
   },
   recommendationsTitle: {
     fontSize: 18,
     fontWeight: '600',
     color: '#2D1B69',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   recommendCard: {
     backgroundColor: '#FFFFFF',
@@ -508,10 +614,10 @@ const styles = StyleSheet.create({
     marginRight: 12,
     width: 140,
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: {width: 0, height: 1},
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
   },
   recommendMatch: {
     flexDirection: 'row',
@@ -520,9 +626,9 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   recommendMatchText: {
-    fontSize: 11,
-    color: '#4CAF50',
+    fontSize: 12,
     fontWeight: '600',
+    color: '#4CAF50',
   },
   recommendTitle: {
     fontSize: 14,
@@ -536,34 +642,29 @@ const styles = StyleSheet.create({
   },
   recipeList: {
     flex: 1,
+    paddingHorizontal: 20,
   },
   recipeListContent: {
-    paddingHorizontal: 20,
-    paddingBottom: 100,
+    paddingBottom: 20,
   },
   recipeCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
-    marginBottom: 16,
+    marginBottom: 4,
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.08,
     shadowRadius: 4,
     elevation: 3,
+    overflow: 'hidden',
   },
   imageContainer: {
+    height: 160,
     position: 'relative',
-    height: 180,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    overflow: 'hidden',
   },
   imagePlaceholder: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#F8F8FF',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -571,26 +672,16 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 12,
     right: 12,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
     backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+    borderRadius: 20,
+    padding: 8,
   },
   recipeInfo: {
     padding: 16,
   },
   recipeTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: 'bold',
     color: '#2D1B69',
     marginBottom: 4,
   },
@@ -610,17 +701,16 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   statText: {
-    fontSize: 13,
-    color: '#666',
+    fontSize: 12,
+    color: '#8E8E93',
   },
   difficultyBadge: {
-    paddingHorizontal: 10,
+    paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 12,
-    marginLeft: 'auto',
+    borderRadius: 8,
   },
   difficultyText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
   },
 });

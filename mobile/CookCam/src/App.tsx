@@ -195,7 +195,7 @@ const MainTabs = () => {
 
 // Root Navigator with Auth Check
 const RootNavigator = () => {
-  const {isAuthenticated, isLoading} = useAuth();
+  const {user, isLoading} = useAuth();
 
   if (isLoading) {
     return (
@@ -207,7 +207,7 @@ const RootNavigator = () => {
 
   return (
     <RootStack.Navigator screenOptions={{headerShown: false}}>
-      {isAuthenticated ? (
+      {user ? (
         <>
           <RootStack.Screen name="Main" component={MainTabs} />
           <RootStack.Screen name="CreatorOnboarding" component={CreatorOnboardingScreen as any} />

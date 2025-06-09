@@ -1,6 +1,6 @@
 import React from 'react';
 import {View, Text, StyleSheet} from 'react-native';
-import {ChefHat, Sparkles, Star, Crown, Flame} from 'lucide-react-native';
+import {ChefHat, Star, Crown, Flame} from 'lucide-react-native';
 import {scale, moderateScale, responsive} from '../utils/responsive';
 
 interface ChefBadgeProps {
@@ -98,12 +98,12 @@ const ChefBadge: React.FC<ChefBadgeProps> = ({tier, size = 'medium', showLabel =
         {/* Special effects for higher tiers */}
         {tier >= 4 && (
           <View style={styles.glowEffect}>
-            <Sparkles
+            <Star
               size={currentSize.star}
               color={currentTier.color}
               style={[styles.sparkle, styles.sparkleTopLeft]}
             />
-            <Sparkles
+            <Star
               size={currentSize.star}
               color={currentTier.color}
               style={[styles.sparkle, styles.sparkleTopRight]}

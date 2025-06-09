@@ -20,7 +20,7 @@ import {
   Clock,
   Volume2,
   VolumeX,
-  Sparkles,
+  Star,
   Trophy,
   ChevronLeft,
   ChevronRight,
@@ -709,7 +709,7 @@ const CookModeScreen: React.FC<CookModeScreenProps> = ({navigation, route}) => {
             styles.xpCelebration,
             {transform: [{scale: xpCelebrationScale}]}
           ]}>
-          <Sparkles size={30} color="#FFB800" />
+                        <Star size={30} color="#FFB800" />
           <Text style={styles.xpCelebrationText}>+5 XP</Text>
         </Animated.View>
       )}

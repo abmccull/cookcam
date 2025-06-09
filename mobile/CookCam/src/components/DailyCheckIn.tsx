@@ -9,7 +9,7 @@ import {
   Alert,
   Image,
 } from 'react-native';
-import {Camera, Check, Calendar, Sparkles, ChefHat, Upload} from 'lucide-react-native';
+import {Camera, Check, Calendar, Star, ChefHat, Upload} from 'lucide-react-native';
 import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useGamification} from '../context/GamificationContext';
@@ -295,7 +295,7 @@ const DailyCheckIn: React.FC = () => {
           <Text style={styles.recipeName}>{suggestedRecipe}</Text>
           <TouchableOpacity style={styles.viewRecipeButton}>
             <Text style={styles.viewRecipeText}>View Recipe</Text>
-            <Sparkles size={16} color="#FF6B35" />
+                            <Star size={16} color="#FF6B35" />
           </TouchableOpacity>
         </Animated.View>
       )}

@@ -1,17 +1,19 @@
 # CookCam Database Schema Documentation
 
-*Last Updated: May 31, 2025*
+*Last Updated: January 3, 2025*
 
 ## Overview
 
-This document outlines the complete database schema for the CookCam application, built on PostgreSQL using Supabase. The schema supports core features including ingredient scanning, recipe management, gamification, user progress tracking, social features, and enhanced cooking preferences.
+This document outlines the complete database schema for the CookCam application, built on PostgreSQL using Supabase. The schema supports core features including ingredient scanning, recipe management, gamification, user progress tracking, social features, creator monetization, and analytics.
 
 ## Schema Statistics
 
-- **Total Tables**: 26
+- **Total Tables**: 45+
 - **Core Entities**: Users, Ingredients, Recipes, Scans
-- **Gamification**: Achievements, Challenges, Leaderboards, Streaks
-- **Preferences**: Kitchen Appliances, Meal Planning
+- **Gamification**: Achievements, Challenges, Leaderboards, Streaks, Mystery Boxes
+- **Creator Economy**: Revenue Tracking, Payouts, Affiliate Links, Premium Collections
+- **Analytics**: Events, Metrics, Error Logs, Performance Monitoring
+- **Preferences**: Kitchen Appliances, Meal Planning, Notifications
 - **External Integration**: USDA Food Data Central
 
 ---

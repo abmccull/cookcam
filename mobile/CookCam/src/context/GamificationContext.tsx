@@ -1,6 +1,6 @@
 import React, {createContext, useContext, useState, useEffect, ReactNode} from 'react';
 import {useAuth} from './AuthContext';
-import {gamificationService} from '../services/api';
+import {gamificationService} from '../services/gamificationService';
 
 interface Badge {
   id: string;
@@ -337,10 +337,27 @@ export const GamificationProvider: React.FC<GamificationProviderProps> = ({child
     
     // Add XP to backend
     try {
-      await gamificationService.addXP(amount, reason);
-      console.log(`✅ Added ${amount} XP for ${reason}`);
+      console.log(`🎯 Attempting to add ${amount} XP for ${reason}...`);
+      const response = await gamificationService.addXP(amount, reason);
+      if (response.success) {
+        console.log(`✅ Added ${amount} XP for ${reason} - Response:`, response);
+      } else {
+        console.error(`❌ Failed to add XP to backend - Error: ${response.error}`);
+        
+        // If authentication error, log additional details
+        if (response.error?.includes('Authentication') || response.error?.includes('401')) {
+          const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+          const token = await AsyncStorage.getItem('@cookcam_token');
+          console.error('🔍 Debug info:', {
+            hasToken: !!token,
+            tokenLength: token?.length,
+            tokenPrefix: token?.substring(0, 20),
+            userAuthState: user,
+          });
+        }
+      }
     } catch (error) {
-      console.error('❌ Failed to add XP to backend:', error);
+      console.error('❌ Exception when adding XP to backend:', error);
     }
     
     // Check for other badge conditions

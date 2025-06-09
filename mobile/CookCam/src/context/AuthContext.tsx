@@ -6,7 +6,7 @@ import React, {
   ReactNode,
 } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { authService } from '../services/api';
+import { supabase } from '../services/supabaseClient';
 
 interface User {
   id: string;
@@ -27,7 +27,6 @@ interface User {
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
-  isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string, name: string, isCreator: boolean) => Promise<void>;
   logout: () => Promise<void>;
@@ -50,55 +49,70 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
   useEffect(() => {
     // Check for existing session on mount
     checkSession();
+
+    // Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log('🔐 Auth state changed:', event, session?.user?.id);
+        
+        try {
+          if (session?.user) {
+            await loadUserProfile(session.user.id, session.access_token);
+          } else {
+            setUser(null);
+            await AsyncStorage.removeItem(TOKEN_KEY).catch(console.error);
+          }
+        } catch (error) {
+          console.error('Error handling auth state change:', error);
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    );
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   const checkSession = async () => {
     try {
-      // Check if we have a stored token
-      const token = await AsyncStorage.getItem(TOKEN_KEY);
-      if (token) {
-        // Try to get user profile
-        const response = await authService.getProfile();
-        if (response.success && response.data?.user) {
-          const userData = response.data.user;
-          const formattedUser: User = {
-            id: userData.id,
-            email: userData.email,
-            name: userData.name || userData.email,
-            isCreator: userData.is_creator || false,
-            creatorTier: userData.creator_tier || undefined,
-            level: userData.level || 1,
-            xp: userData.xp || 0,
-            streak: userData.streak_current || 0,
-            badges: userData.badges || [],
-            avatarUrl: userData.avatar_url,
-            creatorCode: userData.creator_code,
-          };
-          setUser(formattedUser);
-        } else {
-          // Invalid token, clear it
-          await AsyncStorage.removeItem(TOKEN_KEY);
-        }
+      const { data: { session }, error } = await supabase.auth.getSession();
+      
+      if (error) {
+        console.error('Session check error:', error);
+        setIsLoading(false);
+        return;
+      }
+
+      if (session?.user) {
+        await loadUserProfile(session.user.id, session.access_token);
       }
     } catch (error) {
       console.error('Session check failed:', error);
-      // Clear invalid token
-      await AsyncStorage.removeItem(TOKEN_KEY);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const login = async (email: string, password: string) => {
+  const loadUserProfile = async (userId: string, accessToken: string) => {
     try {
-      const response = await authService.signIn(email, password);
-      
-      if (!response.success) {
-        throw new Error(response.error || 'Login failed');
+      // Store the Supabase session token
+      await AsyncStorage.setItem(TOKEN_KEY, accessToken);
+
+      // Get user profile from our users table
+      const { data: userData, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (error) {
+        console.error('Error loading user profile:', error);
+        return;
       }
 
-      if (response.data?.user) {
-        const userData = response.data.user;
+      if (userData) {
         const formattedUser: User = {
           id: userData.id,
           email: userData.email,
@@ -106,100 +120,126 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
           isCreator: userData.is_creator || false,
           creatorTier: userData.creator_tier || undefined,
           level: userData.level || 1,
-          xp: userData.xp || 0,
+          xp: userData.total_xp || userData.xp || 0,
           streak: userData.streak_current || 0,
           badges: userData.badges || [],
           avatarUrl: userData.avatar_url,
           creatorCode: userData.creator_code,
+          favoriteCount: userData.favorite_count,
+          subscriberCount: userData.subscriber_count,
         };
         setUser(formattedUser);
-        
-        // Store tokens if available
-        if (response.data.session?.access_token) {
-          await AsyncStorage.setItem(TOKEN_KEY, response.data.session.access_token);
-        }
-        if (response.data.session?.refresh_token) {
-          await AsyncStorage.setItem('@cookcam_refresh_token', response.data.session.refresh_token);
-        }
+      }
+    } catch (error) {
+      console.error('Failed to load user profile:', error);
+    }
+  };
+
+  const login = async (email: string, password: string) => {
+    try {
+      setIsLoading(true);
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      if (data.session?.user) {
+        await loadUserProfile(data.session.user.id, data.session.access_token);
       }
     } catch (error) {
       console.error('Login error:', error);
       throw error;
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const signup = async (email: string, password: string, name: string, isCreator: boolean) => {
     try {
-      const response = await authService.signUp(email, password, name);
+      setIsLoading(true);
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            name: name
+          }
+        }
+      });
       
-      if (!response.success) {
-        throw new Error(response.error || 'Signup failed');
+      if (error) {
+        throw new Error(error.message);
       }
 
-      // If signup is successful and returns user data, sign them in immediately
-      if (response.data?.user && response.data?.session) {
-        const userData = response.data.user;
-        const formattedUser: User = {
-          id: userData.id,
-          email: userData.email,
-          name: userData.name || name || userData.email,
-          isCreator: userData.is_creator || isCreator,
-          creatorTier: userData.creator_tier || undefined,
-          level: userData.level || 1,
-          xp: userData.xp || 0,
-          streak: userData.streak_current || 0,
-          badges: userData.badges || [],
-          avatarUrl: userData.avatar_url,
-          creatorCode: userData.creator_code,
-        };
-        setUser(formattedUser);
-        
-        // Store the session token if available
-        if (response.data.session?.access_token) {
-          await AsyncStorage.setItem(TOKEN_KEY, response.data.session.access_token);
+      // If signup is successful and user is confirmed
+      if (data.user && data.session) {
+        // Create user profile in our users table
+        const { error: profileError } = await supabase
+          .from('users')
+          .insert([{
+            id: data.user.id,
+            email: data.user.email,
+            name: name,
+            is_creator: isCreator,
+            level: 1,
+            xp: 0,
+            total_xp: 0,
+            streak_current: 0,
+          }]);
+
+        if (profileError) {
+          console.error('Profile creation error:', profileError);
         }
+
+        await loadUserProfile(data.user.id, data.session.access_token);
       } else {
-        // User created successfully but may need email confirmation
-        console.log('User created successfully:', response.data?.message);
+        console.log('User created, but email confirmation may be required');
       }
       
     } catch (error) {
       console.error('Signup error:', error);
       throw error;
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const logout = async () => {
     try {
-      await authService.signOut();
+      await supabase.auth.signOut();
       setUser(null);
-      // Clear all stored tokens
-      await AsyncStorage.multiRemove([TOKEN_KEY, '@cookcam_refresh_token']);
+      await AsyncStorage.removeItem(TOKEN_KEY);
     } catch (error) {
       console.error('Logout error:', error);
       // Even if server logout fails, clear local state
       setUser(null);
-      await AsyncStorage.multiRemove([TOKEN_KEY, '@cookcam_refresh_token']);
+      await AsyncStorage.removeItem(TOKEN_KEY);
     }
   };
 
   const updateUser = (updates: Partial<User>) => {
     if (user) {
-      setUser({...user, ...updates});
+      setUser({ ...user, ...updates });
     }
   };
 
-  const value: AuthContextType = {
-    user,
-    isLoading,
-    isAuthenticated: !!user,
-    login,
-    signup,
-    logout,
-    updateUser,
-  };
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        isLoading,
+        login,
+        signup,
+        logout,
+        updateUser,
+      }}>
+      {children}
+    </AuthContext.Provider>
+  );
 };
 
 export const useAuth = (): AuthContextType => {

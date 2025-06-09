@@ -9,7 +9,7 @@ import {
   Dimensions,
   ScrollView,
 } from 'react-native';
-import {Check, ChevronRight, ChevronLeft, SkipForward, Sparkles, Trophy, Globe} from 'lucide-react-native';
+import {Check, ChevronRight, ChevronLeft, SkipForward, Star, Trophy, Globe} from 'lucide-react-native';
 import {useGamification, XP_VALUES} from '../context/GamificationContext';
 import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
 
@@ -452,7 +452,7 @@ const PreferencesScreen: React.FC<PreferencesScreenProps> = ({
               {transform: [{scale: xpRewardScale}]}
             ]}
           >
-            <Sparkles size={24} color="#FFB800" />
+                            <Star size={24} color="#FFB800" />
             <Text style={styles.xpRewardText}>+{XP_VALUES.COMPLETE_PREFERENCES} XP</Text>
           </Animated.View>
         )}

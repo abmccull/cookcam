@@ -40,11 +40,13 @@ import {
 } from 'lucide-react-native';
 import {useAuth} from '../context/AuthContext';
 import {useGamification} from '../context/GamificationContext';
-import {scale, verticalScale, moderateScale, responsive, isSmallDevice} from '../utils/responsive';
+import {scale, verticalScale, moderateScale, responsive, isSmallScreen} from '../utils/responsive';
 import ChefBadge from '../components/ChefBadge';
 import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
 import StreakCalendar from '../components/StreakCalendar';
 import {cookCamApi} from '../services/cookCamApi';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import {gamificationService} from '../services/api';
 
 const ProfileScreen = ({navigation}: {navigation: any}) => {
   const {user, logout} = useAuth();
@@ -56,6 +58,8 @@ const ProfileScreen = ({navigation}: {navigation: any}) => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deletePassword, setDeletePassword] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showBadgeModal, setShowBadgeModal] = useState(false);
+  const [selectedBadge, setSelectedBadge] = useState<any | null>(null);
   
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -73,6 +77,34 @@ const ProfileScreen = ({navigation}: {navigation: any}) => {
   const progressXP = xp - currentLevelXP;
   const requiredXP = nextLevelXP - currentLevelXP;
   const progressPercentage = (progressXP / requiredXP) * 100;
+
+  // Debug function to test gamification API
+  const testGamificationAPI = async () => {
+    console.log('🧪 Testing gamification API...');
+    try {
+      const token = await AsyncStorage.getItem('@cookcam_token');
+      console.log('🔍 Debug - Token check:', {
+        hasToken: !!token,
+        tokenLength: token?.length,
+        tokenPrefix: token?.substring(0, 30),
+        userState: user,
+        isAuthenticated: user
+      });
+
+      // Test the Supabase function directly
+      const response = await gamificationService.addXP(1, 'TEST_DEBUG');
+      console.log('🧪 Test Supabase function response:', response);
+      
+      if (!response.success) {
+        Alert.alert('API Test Failed', `Error: ${response.error}`);
+      } else {
+        Alert.alert('API Test Success', 'Gamification API is working!');
+      }
+    } catch (error) {
+      console.error('🧪 Test failed:', error);
+      Alert.alert('API Test Error', `Exception: ${error}`);
+    }
+  };
 
   useEffect(() => {
     // Start animations
@@ -263,6 +295,14 @@ const ProfileScreen = ({navigation}: {navigation: any}) => {
             <Text style={styles.statLabel}>Day Streak</Text>
           </View>
         </Animated.View>
+
+        {/* Debug Test Button */}
+        <TouchableOpacity 
+          style={styles.debugButton} 
+          onPress={testGamificationAPI}
+        >
+          <Text style={styles.debugButtonText}>🧪 Test Gamification API</Text>
+        </TouchableOpacity>
 
         {/* Streak Calendar */}
         <View style={styles.streakCalendarContainer}>
@@ -570,7 +610,7 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   avatarText: {
-    fontSize: responsive.fontSize.huge + scale(8),
+    fontSize: responsive.fontSize.xxxlarge + scale(8),
     fontWeight: 'bold',
     color: '#F8F8FF',
   },
@@ -790,7 +830,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   badgeCard: {
-    width: isSmallDevice ? '31%' : '30%',
+    width: isSmallScreen() ? '31%' : '30%',
     aspectRatio: 1,
     backgroundColor: '#FFFFFF',
     borderRadius: responsive.borderRadius.large,
@@ -808,7 +848,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   badgeIcon: {
-    fontSize: responsive.fontSize.huge,
+    fontSize: responsive.fontSize.xxxlarge,
     marginBottom: verticalScale(8),
   },
   badgeName: {
@@ -982,6 +1022,19 @@ const styles = StyleSheet.create({
   },
   disabledButton: {
     backgroundColor: '#E5E5E7',
+  },
+  debugButton: {
+    backgroundColor: '#007AFF',
+    marginHorizontal: responsive.spacing.m,
+    marginBottom: responsive.spacing.m,
+    padding: responsive.spacing.m,
+    borderRadius: responsive.borderRadius.medium,
+    alignItems: 'center',
+  },
+  debugButtonText: {
+    fontSize: responsive.fontSize.medium,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
 });
 

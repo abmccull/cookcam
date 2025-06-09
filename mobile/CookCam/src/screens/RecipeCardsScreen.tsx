@@ -14,7 +14,7 @@ import {
   Dimensions,
 } from 'react-native';
 // import Swiper from 'react-native-deck-swiper'; // Temporarily disabled due to PropTypes issue
-import {Clock, Users, X, Heart, Info, TrendingUp, Star, Sparkles, Trophy, Home, Check, AlertCircle} from 'lucide-react-native';
+import {Clock, Users, X, Heart, Info, TrendingUp, Star, Trophy, Home, Check, AlertCircle} from 'lucide-react-native';
 import {useGamification, XP_VALUES} from '../context/GamificationContext';
 import ChefBadge from '../components/ChefBadge';
 import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
@@ -655,7 +655,7 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
             
             {/* XP Badge */}
             <Animated.View style={[styles.xpBadge, {transform: [{scale: xpAnimScale}]}]}>
-              <Sparkles size={16} color="#2D1B69" />
+              <Star size={16} color="#2D1B69" />
               <Text style={styles.xpBadgeText}>+{calculateRecipeXP(recipe)} XP</Text>
             </Animated.View>
           </View>
@@ -793,7 +793,7 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
                 styles.sparklesIcon,
                 { transform: [{ scale: aiPulseAnim }] }
               ]}>
-                <Sparkles size={40} color="#FFB800" />
+                <Star size={40} color="#FFB800" />
               </Animated.View>
               <Text style={styles.aiModalTitle}>🤖 AI Chef Analyzing...</Text>
               <Text style={styles.aiModalSubtitle}>Generating 3 diverse recipes</Text>

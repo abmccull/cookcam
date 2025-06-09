@@ -209,39 +209,6 @@ class ApiService {
           data: responseData,
           status: response.status
         };
-      } else if (response.status === API_ERROR_CODES.UNAUTHORIZED && endpoint !== '/api/v1/auth/refresh') {
-        // Try to refresh token if unauthorized (but not for refresh endpoint itself)
-        console.log('🔄 Token expired, attempting refresh...');
-        const refreshed = await this.refreshToken();
-        
-        if (refreshed) {
-          console.log('✅ Token refreshed successfully, retrying request...');
-          // Retry the original request with new token
-          const newHeaders = await this.buildHeaders(customHeaders);
-          const retryResponse = await fetch(url, {
-            method,
-            headers: newHeaders,
-            body: data ? JSON.stringify(data) : undefined,
-          });
-          
-          const retryData = await retryResponse.json();
-          
-          if (SUCCESS_CODES.includes(retryResponse.status)) {
-            return {
-              success: true,
-              data: retryData,
-              status: retryResponse.status
-            };
-          }
-        }
-        
-        // If refresh failed or retry still failed, clear tokens and return error
-        await this.removeAuthToken();
-        return {
-          success: false,
-          error: 'Session expired. Please login again.',
-          status: response.status
-        };
       } else {
         return {
           success: false,
@@ -360,44 +327,7 @@ class ApiService {
     }
   }
 
-  // Add refresh token method
-  private async refreshToken(): Promise<boolean> {
-    try {
-      const refreshToken = await AsyncStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
-      
-      if (!refreshToken) {
-        console.log('❌ No refresh token available');
-        return false;
-      }
 
-      const response = await fetch(`${this.baseURL}/api/v1/auth/refresh`, {
-        method: 'POST',
-        headers: this.defaultHeaders,
-        body: JSON.stringify({ refresh_token: refreshToken }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        
-        if (data.access_token) {
-          await this.setAuthToken(data.access_token);
-          
-          if (data.refresh_token) {
-            await AsyncStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, data.refresh_token);
-          }
-          
-          console.log('✅ Token refreshed successfully');
-          return true;
-        }
-      }
-      
-      console.log('❌ Token refresh failed');
-      return false;
-    } catch (error) {
-      console.error('❌ Token refresh error:', error);
-      return false;
-    }
-  }
 }
 
 // Export singleton instance

@@ -13,7 +13,7 @@ import {
   Alert,
 } from 'react-native';
 // import { RNCamera } from 'react-native-camera';
-import {Camera, Image as ImageIcon, X, Sparkles, ChefHat, Zap, Flame} from 'lucide-react-native';
+import {Camera, Image as ImageIcon, X, Star, ChefHat, Zap, Flame} from 'lucide-react-native';
 import {
   Camera as VisionCamera,
   useCameraPermission,
@@ -266,7 +266,9 @@ const CameraScreen: React.FC<CameraScreenProps> = ({navigation}) => {
       
       // Auto-proceed without popup for seamless experience
       
+      console.log('🎯 About to add XP for ingredient scan (simulator mode)...');
       await addXP(XP_VALUES.SCAN_INGREDIENTS, 'SCAN_INGREDIENTS');
+      console.log('✅ XP addition completed for ingredient scan (simulator mode)');
       
       navigation.navigate('IngredientReview', {
         imageUri: mockImageUri,
@@ -303,7 +305,9 @@ const CameraScreen: React.FC<CameraScreenProps> = ({navigation}) => {
         });
         
         // Award XP for scanning ingredients
+        console.log('🎯 About to add XP for ingredient scan (real camera)...');
         await addXP(XP_VALUES.SCAN_INGREDIENTS, 'SCAN_INGREDIENTS');
+        console.log('✅ XP addition completed for ingredient scan (real camera)');
         
         // Navigate to ingredient review with actual image
         navigation.navigate('IngredientReview', {

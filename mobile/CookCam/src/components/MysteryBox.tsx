@@ -8,7 +8,7 @@ import {
   Modal,
   Alert,
 } from 'react-native';
-import {Gift, Sparkles, Star, Lock, ChefHat} from 'lucide-react-native';
+import {Gift, Star, Lock, ChefHat} from 'lucide-react-native';
 import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
 import {useGamification} from '../context/GamificationContext';
 
@@ -281,7 +281,7 @@ const MysteryBox: React.FC<MysteryBoxProps> = ({onOpen}) => {
           <Gift size={40} color="#FFB800" />
           <Text style={styles.boxText}>Mystery Box</Text>
           <View style={styles.sparkles}>
-            <Sparkles size={16} color="#FFB800" />
+                          <Star size={16} color="#FFB800" />
           </View>
         </Animated.View>
         

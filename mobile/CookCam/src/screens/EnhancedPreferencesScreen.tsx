@@ -25,7 +25,7 @@ import {
   ChevronRight,
   ChevronLeft,
   SkipForward,
-  Sparkles,
+  Star,
   Trophy,
   Globe,
 } from 'lucide-react-native';
@@ -116,7 +116,7 @@ const EnhancedPreferencesScreen: React.FC<EnhancedPreferencesScreenProps> = ({
     { id: 'microwave', name: 'Microwave', category: 'appliance', icon: 'microwave', description: 'Quick heating', selected: true },
     { id: 'instant-pot', name: 'Pressure Cooker', category: 'appliance', icon: 'pressure cooker', description: 'Pressure cooking', selected: false },
     { id: 'food-processor', name: 'Food Processor', category: 'tool', icon: 'food processor', description: 'Chopping and mixing', selected: false },
-    { id: 'stand-mixer', name: 'Stand Mixer', category: 'tool', icon: 'rice cooker', description: 'Baking and mixing', selected: false },
+    { id: 'stand-mixer', name: 'Stand Mixer', category: 'tool', icon: 'stand mixer', description: 'Baking and mixing', selected: false },
     { id: 'blender', name: 'Blender', category: 'tool', icon: 'blender', description: 'Smoothies and sauces', selected: false },
     { id: 'toaster-oven', name: 'Toaster Oven', category: 'appliance', icon: 'toaster oven', description: 'Small countertop oven', selected: false },
   ]);
@@ -203,8 +203,8 @@ const EnhancedPreferencesScreen: React.FC<EnhancedPreferencesScreenProps> = ({
       subtitle: 'Be honest, we won\'t judge!',
       type: 'single',
       options: [
-        {label: '👶 Beginner', subtitle: 'Simple recipes only', value: 'easy'},
-        {label: '👨‍🍳 Home Cook', subtitle: 'Some experience needed', value: 'medium'},
+        {label: '🥄 Beginner', subtitle: 'Simple recipes only', value: 'easy'},
+        {label: '🍳 Home Cook', subtitle: 'Some experience needed', value: 'medium'},
         {label: '👨‍🍳 Chef Mode', subtitle: 'Bring on the challenge!', value: 'hard'},
         {label: '🎲 Surprise Me', subtitle: 'Any difficulty', value: 'any'},
       ],
@@ -770,7 +770,7 @@ const EnhancedPreferencesScreen: React.FC<EnhancedPreferencesScreenProps> = ({
               {transform: [{scale: xpRewardScale}]}
             ]}
           >
-            <Sparkles size={24} color="#FFB800" />
+            <Star size={24} color="#FFB800" />
             <Text style={styles.xpRewardText}>+{XP_VALUES.COMPLETE_PREFERENCES} XP</Text>
           </Animated.View>
         )}
