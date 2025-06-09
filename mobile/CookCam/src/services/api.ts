@@ -64,9 +64,19 @@ class ApiClient {
         headers.Authorization = `Bearer ${token}`;
       }
 
-      // Set longer timeout for recipe generation endpoints
-      const isRecipeGeneration = endpoint.includes('/recipes/generate');
-      const timeoutMs = isRecipeGeneration ? 150000 : 30000; // 2.5 minutes for recipe generation, 30s for others
+      // Set timeouts based on endpoint type
+      const isPreviewGeneration = endpoint.includes('/recipes/generate-previews');
+      const isDetailedGeneration = endpoint.includes('/recipes/generate-detailed');
+      const isLegacyGeneration = endpoint.includes('/recipes/generate') && !isPreviewGeneration && !isDetailedGeneration;
+      
+      let timeoutMs = 30000; // Default 30s
+      if (isPreviewGeneration) {
+        timeoutMs = 60000; // 1 minute for previews
+      } else if (isDetailedGeneration) {
+        timeoutMs = 90000; // 1.5 minutes for detailed recipes
+      } else if (isLegacyGeneration) {
+        timeoutMs = 150000; // 2.5 minutes for legacy generation
+      }
 
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
@@ -159,7 +169,7 @@ class ApiClient {
     });
   }
 
-  // Recipe endpoints - Updated paths
+  // Recipe endpoints - Legacy single-step generation (kept for compatibility)
   async generateRecipeSuggestions(data: {
     detectedIngredients: string[];
     dietaryTags?: string[];
@@ -171,6 +181,7 @@ class ApiClient {
     mealPrepPortions?: number;
     selectedAppliances?: string[];
   }): Promise<ApiResponse<any>> {
+    console.warn('⚠️ generateRecipeSuggestions is deprecated. Use generatePreviews + generateDetailedRecipe instead.');
     return this.makeRequest('/recipes/generate', {
       method: 'POST',
       body: JSON.stringify(data),
@@ -479,10 +490,15 @@ export const authService = {
 };
 
 export const recipeService = {
-  generateSuggestions: apiClient.generateRecipeSuggestions.bind(apiClient),
+  // 🚀 NEW: Two-step recipe generation (recommended)
   generatePreviews: apiClient.generateRecipePreviews.bind(apiClient),
   generateDetailedRecipe: apiClient.generateDetailedRecipe.bind(apiClient),
+  
+  // 📜 Legacy: Single-step generation (deprecated, kept for compatibility)
+  generateSuggestions: apiClient.generateRecipeSuggestions.bind(apiClient),
   generateFullRecipe: apiClient.generateFullRecipe.bind(apiClient),
+  
+  // 📚 Recipe management
   getRecipes: apiClient.getRecipes.bind(apiClient),
   getRecipe: apiClient.getRecipe.bind(apiClient),
   saveRecipe: apiClient.saveRecipe.bind(apiClient),
