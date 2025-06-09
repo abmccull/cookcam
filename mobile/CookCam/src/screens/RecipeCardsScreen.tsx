@@ -88,6 +88,7 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
   const [showSavedToast, setShowSavedToast] = useState(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [previewRecipe, setPreviewRecipe] = useState<Recipe | null>(null);
+  const [hasAnimatedEntrance, setHasAnimatedEntrance] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -239,8 +240,14 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
 
   useEffect(() => {
     if (recipes.length > 0 && !isLoading) {
-      // Enhanced entrance animation with staggered timing
-      animateCardsEntrance();
+      if (!hasAnimatedEntrance) {
+        // Only animate entrance once when recipes first load
+        animateCardsEntrance();
+        setHasAnimatedEntrance(true);
+      } else {
+        // Reset to stable position when recipes change but entrance already happened
+        resetCardsToStablePosition();
+      }
     }
   }, [recipes, isLoading]);
 
@@ -275,6 +282,19 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
         card2Scale.value = withSpring(0.9, { damping: 15, stiffness: 100 });
       }, 300);
     }, 200);
+  };
+
+  const resetCardsToStablePosition = () => {
+    console.log('🔄 Resetting cards to stable position');
+    // Set all cards to their final stable positions without animation
+    translateX.value = 0;
+    translateY.value = 0;
+    card1TranslateY.value = 0;
+    card2TranslateY.value = 0;
+    opacity.value = 1;
+    scale.value = 1;
+    card1Scale.value = 0.95;
+    card2Scale.value = 0.9;
   };
 
   const calculateRecipeXP = (recipe: Recipe) => {
@@ -391,6 +411,8 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
     
     setTimeout(() => {
       setFrontCardIndex(targetIndex);
+      // Reset to stable position after card change
+      resetCardsToStablePosition();
     }, 150);
   };
 
@@ -438,17 +460,15 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
     setTimeout(() => {
       if (frontCardIndex < recipes.length - 1) {
         setFrontCardIndex(prev => prev + 1);
-        // Reset animations for next card with bounce effect
-        translateX.value = 0;
-        translateY.value = withSequence(
-          withTiming(20, { duration: 100 }),
-          withSpring(0, { damping: 15, stiffness: 100 })
-        );
-        opacity.value = withTiming(1, { duration: 200 });
-        scale.value = withSequence(
-          withTiming(1.05, { duration: 100 }),
-          withSpring(1, { damping: 15, stiffness: 100 })
-        );
+        // Reset all cards to stable position
+        resetCardsToStablePosition();
+        // Small bounce effect for front card only
+        setTimeout(() => {
+          scale.value = withSequence(
+            withTiming(1.05, { duration: 100 }),
+            withSpring(1, { damping: 15, stiffness: 100 })
+          );
+        }, 50);
       }
     }, 300);
   };
@@ -707,12 +727,22 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
   };
 
   const getVisibleRecipes = () => {
-    const visible = recipes.slice(frontCardIndex, frontCardIndex + 3);
+    // Always try to show 3 cards by wrapping around if needed
+    const totalRecipes = recipes.length;
+    if (totalRecipes === 0) return [];
+    
+    const visible = [];
+    for (let i = 0; i < Math.min(3, totalRecipes); i++) {
+      const recipeIndex = (frontCardIndex + i) % totalRecipes;
+      visible.push(recipes[recipeIndex]);
+    }
+    
     console.log('📚 DEBUG: getVisibleRecipes()', {
-      totalRecipes: recipes.length,
+      totalRecipes,
       frontCardIndex,
       visibleCount: visible.length,
       visibleTitles: visible.map(r => r.title),
+      wrappedIndices: visible.map((_, i) => (frontCardIndex + i) % totalRecipes),
     });
     return visible;
   };
