@@ -797,7 +797,7 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
               ]}>
                 <AIChefIcon size={moderateScale(64)} variant="analyzing" />
               </Animated.View>
-              <Text style={styles.aiModalTitle}>🤖 AI Chef Analyzing...</Text>
+              <Text style={styles.aiModalTitle}>AI Chef Analyzing...</Text>
               <Text style={styles.aiModalSubtitle}>Generating 3 diverse recipes</Text>
               <View style={styles.processingSteps}>
                 <Text style={styles.stepText}>• Analyzing ingredient compatibility</Text>

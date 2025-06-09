@@ -794,7 +794,7 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
               <AIChefIcon size={moderateScale(48)} variant="analyzing" />
             </View>
             <Text style={styles.aiAnalysisTitle}>
-              🤖 AI Chef Analyzing...
+              AI Chef Analyzing...
             </Text>
             <Text style={styles.aiAnalysisSubtitle}>
               Identifying ingredients with computer vision
