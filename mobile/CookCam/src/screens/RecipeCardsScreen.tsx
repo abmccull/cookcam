@@ -115,9 +115,42 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
     () => animationSignal.value,
     (signalValue, previousValue) => {
       if (signalValue !== 0 && signalValue !== previousValue) {
-        // This runs on the JS thread after the animation is complete
+        // This block runs entirely on the UI thread, which is safe.
+
+        // 1. Rotate the shared values to match the new card identities
+        const oldFrontY = translateY.value;
+        const oldFrontScale = scale.value;
+        const oldMiddleY = card1TranslateY.value;
+        const oldMiddleScale = card1Scale.value;
+        const oldBackY = card2TranslateY.value;
+        const oldBackScale = card2Scale.value;
+
+        if (signalValue === 1) { // Middle card came to front
+          // Old Middle -> New Front
+          translateY.value = oldMiddleY;
+          scale.value = oldMiddleScale;
+          // Old Back -> New Middle
+          card1TranslateY.value = oldBackY;
+          card1Scale.value = oldBackScale;
+          // Old Front -> New Back
+          card2TranslateY.value = oldFrontY;
+          card2Scale.value = oldFrontScale;
+        } else if (signalValue === 2) { // Back card came to front
+          // Old Back -> New Front
+          translateY.value = oldBackY;
+          scale.value = oldBackScale;
+          // Old Front -> New Middle
+          card1TranslateY.value = oldFrontY;
+          card1Scale.value = oldFrontScale;
+          // Old Middle -> New Back
+          card2TranslateY.value = oldMiddleY;
+          card2Scale.value = oldMiddleScale;
+        }
+
+        // 2. Now, safely update the JS state
         runOnJS(setFrontCardIndex)((prev) => (prev + signalValue) % recipes.length);
-        runOnJS(resetCardsToStablePosition)();
+        
+        // 3. Reset animation state
         isAnimating.value = false;
         animationSignal.value = 0; // Reset the signal
       }
@@ -441,8 +474,8 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
 
     // Define target positions
     const POS_FRONT = { scale: 0.9, y: 0 };
-    const POS_MIDDLE = { scale: 0.95, y: -35 };
-    const POS_BACK = { scale: 1.0, y: -70 };
+    const POS_MIDDLE = { scale: 0.95, y: -40 }; // Use refined offset
+    const POS_BACK = { scale: 1.0, y: -80 }; // Use refined offset
 
     if (tappedVisualIndex === 1) { // Middle card tapped
       // Front -> Back
@@ -571,14 +604,14 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
   // Rebuilt animated styles for robust staggering
   const middleCardAnimatedStyle = useAnimatedStyle(() => ({
     transform: [
-      { translateY: card1TranslateY.value - 35 }, // Tighter vertical offset
+      { translateY: card1TranslateY.value - 40 }, // Tighter, more polished offset
       { scale: card1Scale.value },
     ],
   } as any));
 
   const backCardAnimatedStyle = useAnimatedStyle(() => ({
     transform: [
-      { translateY: card2TranslateY.value - 70 }, // Tighter vertical offset
+      { translateY: card2TranslateY.value - 80 }, // Tighter, more polished offset
       { scale: card2Scale.value },
     ],
   } as any));
@@ -755,14 +788,6 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
       const recipeIndex = (frontCardIndex + i) % totalRecipes;
       visible.push(recipes[recipeIndex]);
     }
-    
-    console.log('📚 DEBUG: getVisibleRecipes()', {
-      totalRecipes,
-      frontCardIndex,
-      visibleCount: visible.length,
-      visibleTitles: visible.map(r => r.title),
-      wrappedIndices: visible.map((_, i) => (frontCardIndex + i) % totalRecipes),
-    });
     return visible;
   };
 
@@ -828,15 +853,14 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
           <>
             {/* Render cards in reverse order for proper stacking. */}
             {getVisibleRecipes().slice(0).reverse().map((recipe, i) => {
+              if (!recipe) return null; // Add guard against undefined recipe
               const visibleIndex = getVisibleRecipes().length - 1 - i;
               const cardType = visibleIndex === 0 ? 'front' : visibleIndex === 1 ? 'middle' : 'back';
               const overallIndex = (frontCardIndex + visibleIndex);
 
-              if (overallIndex >= recipes.length) return null;
-
               // Use a React.Fragment with a key to solve the list warning
               return (
-                <React.Fragment key={recipe.id}>
+                <React.Fragment key={`${recipe.id}-${overallIndex}`}>
                   {renderCard(recipes[overallIndex], overallIndex, cardType)}
                 </React.Fragment>
               );
