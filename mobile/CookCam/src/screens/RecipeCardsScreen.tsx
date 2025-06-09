@@ -98,9 +98,9 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
   const scale = useSharedValue(1);
   const opacity = useSharedValue(1);
 
-  // Animation values for card cascade effect
-  const card1TranslateY = useSharedValue(12);
-  const card2TranslateY = useSharedValue(24);
+  // Animation values for card cascade effect (cards use fixed positioning, transforms are for animation only)
+  const card1TranslateY = useSharedValue(0);
+  const card2TranslateY = useSharedValue(0);
   const card1Scale = useSharedValue(0.95);
   const card2Scale = useSharedValue(0.9);
 
@@ -227,96 +227,7 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
     } catch (error: any) {
       console.error('❌ Recipe preview generation failed:', error);
       setError(error.message || 'Failed to generate recipe previews');
-      
-      // Fallback to test previews using actual detected ingredients - CREATE 3 RECIPES FOR STACKING
-      const fallbackPreviews: Recipe[] = [
-        {
-          id: 'fallback-preview-1',
-          title: `Quick ${detectedIngredients.slice(0, 2).join(' & ')} Stir-Fry`,
-          image: 'https://via.placeholder.com/400x300/4CAF50/FFFFFF?text=Quick+Stir-Fry',
-          cookingTime: '20 min',
-          servings: 2,
-          difficulty: 'Easy',
-          macros: {
-            calories: 280,
-            protein: 12,
-            carbs: 30,
-            fat: 8,
-          },
-          tags: ['Quick', 'Healthy', 'Asian Fusion'],
-          description: `A fast and healthy stir-fry using your ingredients: ${detectedIngredients.slice(0, 3).join(', ')}.`,
-          ingredients: detectedIngredients.slice(0, 4).map(ing => ({ name: ing, amount: '1', unit: 'portion', source: 'preview' })),
-          instructions: [], // Will be filled when cooking
-          tips: [],
-          previewData: {
-            id: 'fallback-preview-1',
-            title: `Quick ${detectedIngredients.slice(0, 2).join(' & ')} Stir-Fry`,
-            description: `A fast and healthy stir-fry using your ingredients.`,
-            estimatedTime: 20,
-            difficulty: 'easy',
-            cuisineType: 'Asian',
-            mainIngredients: detectedIngredients.slice(0, 4)
-          }
-        },
-        {
-          id: 'fallback-preview-2',
-          title: `${detectedIngredients[0] || 'Fresh'} Salad Bowl`,
-          image: 'https://via.placeholder.com/400x300/2D1B69/FFFFFF?text=Fresh+Salad',
-          cookingTime: '15 min',
-          servings: 2,
-          difficulty: 'Easy',
-          macros: {
-            calories: 220,
-            protein: 8,
-            carbs: 25,
-            fat: 6,
-          },
-          tags: ['Fresh', 'Mediterranean', 'No Cook'],
-          description: `A refreshing salad featuring your fresh ingredients in Mediterranean style.`,
-          ingredients: detectedIngredients.slice(0, 5).map(ing => ({ name: ing, amount: '1', unit: 'cup', source: 'preview' })),
-          instructions: [],
-          tips: [],
-          previewData: {
-            id: 'fallback-preview-2',
-            title: `${detectedIngredients[0] || 'Fresh'} Salad Bowl`,
-            description: `A refreshing salad featuring your fresh ingredients.`,
-            estimatedTime: 15,
-            difficulty: 'easy',
-            cuisineType: 'Mediterranean',
-            mainIngredients: detectedIngredients.slice(0, 5)
-          }
-        },
-        {
-          id: 'fallback-preview-3',
-          title: `Hearty ${detectedIngredients.slice(-2).join(' & ')} Soup`,
-          image: 'https://via.placeholder.com/400x300/FF6B35/FFFFFF?text=Hearty+Soup',
-          cookingTime: '35 min',
-          servings: 4,
-          difficulty: 'Medium',
-          macros: {
-            calories: 320,
-            protein: 18,
-            carbs: 35,
-            fat: 10,
-          },
-          tags: ['Comfort Food', 'American', 'One Pot'],
-          description: `A warming, nutritious soup that makes great use of your ingredients.`,
-          ingredients: detectedIngredients.slice(0, 6).map(ing => ({ name: ing, amount: '1', unit: 'serving', source: 'preview' })),
-          instructions: [],
-          tips: [],
-          previewData: {
-            id: 'fallback-preview-3',
-            title: `Hearty ${detectedIngredients.slice(-2).join(' & ')} Soup`,
-            description: `A warming, nutritious soup.`,
-            estimatedTime: 35,
-            difficulty: 'medium',
-            cuisineType: 'American',
-            mainIngredients: detectedIngredients.slice(0, 6)
-          }
-        }
-      ];
-      
-      setRecipes(fallbackPreviews);
+      setRecipes([]); // No fallback - show error state
     } finally {
       setIsLoading(false);
     }
@@ -336,25 +247,31 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
   const animateCardsEntrance = () => {
     // Start all cards below screen
     translateY.value = SCREEN_HEIGHT;
-    card1TranslateY.value = SCREEN_HEIGHT + 50;
-    card2TranslateY.value = SCREEN_HEIGHT + 100;
+    card1TranslateY.value = SCREEN_HEIGHT;
+    card2TranslateY.value = SCREEN_HEIGHT;
     opacity.value = 0;
+    
+    // Reset scales for entrance
+    scale.value = 0.8;
+    card1Scale.value = 0.75;
+    card2Scale.value = 0.7;
     
     // Staggered entrance animation
     setTimeout(() => {
       // Front card enters first
       translateY.value = withSpring(0, { damping: 15, stiffness: 100 });
+      scale.value = withSpring(1, { damping: 15, stiffness: 100 });
       opacity.value = withTiming(1, { duration: 500 });
       
-      // Middle card follows with delay
+      // Middle card follows with delay (positioned via fixed top: 12px)
       setTimeout(() => {
-        card1TranslateY.value = withSpring(12, { damping: 15, stiffness: 100 });
+        card1TranslateY.value = withSpring(0, { damping: 15, stiffness: 100 });
         card1Scale.value = withSpring(0.95, { damping: 15, stiffness: 100 });
       }, 150);
       
-      // Back card follows last
+      // Back card follows last (positioned via fixed top: 24px)
       setTimeout(() => {
-        card2TranslateY.value = withSpring(24, { damping: 15, stiffness: 100 });
+        card2TranslateY.value = withSpring(0, { damping: 15, stiffness: 100 });
         card2Scale.value = withSpring(0.9, { damping: 15, stiffness: 100 });
       }, 300);
     }, 200);
@@ -479,17 +396,25 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
 
   const animateCardCascade = (direction: 'forward' | 'backward') => {
     if (direction === 'forward') {
-      // Animate current front card sliding down/back
-      translateY.value = withSpring(12, { damping: 15, stiffness: 100 });
+      // Animate current front card to middle position (fixed positioning handles offset)
+      translateY.value = withSpring(0, { damping: 15, stiffness: 100 });
       scale.value = withSpring(0.95, { damping: 15, stiffness: 100 });
       
       // Animate middle card to front
       card1TranslateY.value = withSpring(0, { damping: 15, stiffness: 100 });
       card1Scale.value = withSpring(1, { damping: 15, stiffness: 100 });
+      
+      // Animate back card to middle position  
+      card2TranslateY.value = withSpring(0, { damping: 15, stiffness: 100 });
+      card2Scale.value = withSpring(0.95, { damping: 15, stiffness: 100 });
     } else {
-      // Similar animation for backward direction
+      // Backward direction - bring selected card to front
       card1TranslateY.value = withSpring(0, { damping: 15, stiffness: 100 });
       card1Scale.value = withSpring(1, { damping: 15, stiffness: 100 });
+      
+      // Move current front to back
+      translateY.value = withSpring(0, { damping: 15, stiffness: 100 });
+      scale.value = withSpring(0.95, { damping: 15, stiffness: 100 });
     }
   };
 
@@ -726,33 +651,47 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
   const renderCard = (recipe: Recipe, index: number, cardType: 'front' | 'middle' | 'back') => {
     const isFront = cardType === 'front';
     
-    // Calculate heights and positions according to blueprint (76%, 88%, 100%)
-    let cardHeight, zIndex, animatedStyle;
+    // Calculate heights, positions and styles according to blueprint (76%, 88%, 100%)
+    let cardHeight, zIndex, animatedStyle, topOffset;
     
     switch (cardType) {
       case 'front':
         cardHeight = '100%';
         zIndex = 1000;
+        topOffset = 0;
         animatedStyle = frontCardAnimatedStyle;
         break;
       case 'middle':
         cardHeight = '88%';
         zIndex = 900;
+        topOffset = 12; // 12px offset from top to create peekable effect
         animatedStyle = middleCardAnimatedStyle;
         break;
       case 'back':
         cardHeight = '76%';
         zIndex = 800;
+        topOffset = 24; // 24px offset from top to create peekable effect
         animatedStyle = backCardAnimatedStyle;
         break;
     }
+
+    console.log(`🃏 Rendering ${cardType} card:`, {
+      recipe: recipe.title,
+      height: cardHeight,
+      topOffset,
+      zIndex
+    });
 
     return (
       <Animated.View
         key={`${recipe.id}-${cardType}`}
         style={[
           styles.card,
-          { height: cardHeight, zIndex },
+          { 
+            height: cardHeight, 
+            zIndex,
+            top: topOffset, // Add explicit top positioning for visual stack
+          },
           animatedStyle,
         ]}>
         {isFront ? renderFrontCard(recipe) : renderBackCard(recipe, index)}
@@ -783,7 +722,7 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#4CAF50" />
           <Text style={styles.loadingText}>Creating personalized recipes</Text>
-          <Text style={styles.loadingSubtext}>Using your {ingredients.length} ingredients</Text>
+          <Text style={styles.loadingSubtext}>AI Chef is analyzing your ingredients...</Text>
         </View>
       </SafeAreaView>
     );
