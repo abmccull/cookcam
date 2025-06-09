@@ -59,6 +59,15 @@ interface Recipe {
   ingredients: any[];
   instructions?: string[];
   tips?: string[];
+  previewData?: {
+    id: string;
+    title: string;
+    description: string;
+    estimatedTime: number;
+    difficulty: string;
+    cuisineType: string;
+    mainIngredients: string[];
+  };
 }
 
 interface RecipeCardsScreenProps {
@@ -95,9 +104,9 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
   const card1Scale = useSharedValue(0.95);
   const card2Scale = useSharedValue(0.9);
 
-  // Generate recipes from backend API
+  // Generate recipe previews from backend API (Step 1 of two-step process)
   const generateRecipesFromAPI = async () => {
-    // Map ingredients to the format expected by the backend (move outside try block)
+    // Map ingredients to the format expected by the backend
     const detectedIngredients = ingredients.map((ingredient: any) => 
       typeof ingredient === 'string' ? ingredient : ingredient.name || ingredient.title
     ).filter(Boolean);
@@ -106,7 +115,7 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
       setIsLoading(true);
       setError(null);
 
-      console.log('🍳 Generating recipes with data:', {
+      console.log('🚀 Generating recipe previews with data:', {
         ingredients: ingredients.length,
         preferences: Object.keys(preferences).length,
         ingredientsList: ingredients,
@@ -117,157 +126,131 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
         throw new Error('No ingredients detected. Please go back and scan some ingredients first.');
       }
 
-      // Build enhanced preferences (this was the missing piece!)
-      const enhancedPreferences = {
+      // Build user preferences for the new two-step API
+      const userPreferences = {
         servingSize: preferences?.servingSize || 2,
         mealPrepEnabled: preferences?.mealPrepEnabled || false,
         mealPrepPortions: preferences?.mealPrepPortions,
-        selectedAppliances: preferences?.selectedAppliances || ['oven', 'stove'],
-        dietary: preferences?.dietary || [],
-        cuisine: preferences?.cuisine || [],
-        cookingTime: preferences?.cookingTime || 'any',
-        difficulty: preferences?.difficulty || 'any'
+        selectedAppliances: preferences?.selectedAppliances || ['oven', 'stove', 'microwave'],
+        dietaryTags: preferences?.dietary || [],
+        cuisinePreferences: preferences?.cuisine || ['🎲 Surprise Me!'],
+        timeAvailable: preferences?.cookingTime || 'any',
+        skillLevel: preferences?.difficulty || 'any'
       };
 
-      console.log('📤 Sending enhanced data to AI:', {
+      console.log('📤 Sending preview request to AI:', {
         detectedIngredients,
-        servingSize: enhancedPreferences.servingSize || 2,
-        mealPrepEnabled: enhancedPreferences.mealPrepEnabled || false,
-        mealPrepPortions: enhancedPreferences.mealPrepPortions,
-        selectedAppliances: enhancedPreferences.selectedAppliances || ['oven', 'stove'],
-        dietaryTags: enhancedPreferences.dietary || preferences?.dietary || [],
-        cuisinePreferences: enhancedPreferences.cuisine || preferences?.cuisine || [],
-        timeAvailable: enhancedPreferences.cookingTime || preferences?.cookingTime || 'any',
-        skillLevel: enhancedPreferences.difficulty || preferences?.difficulty || 'any'
+        userPreferences
       });
 
-      // Call the recipe generation API with enhanced data (original working format)
-      const response = await recipeService.generateSuggestions({
+      // Call the new recipe previews API (Step 1)
+      const response = await recipeService.generatePreviews({
         detectedIngredients,
-        servingSize: enhancedPreferences.servingSize || 2,
-        mealPrepEnabled: enhancedPreferences.mealPrepEnabled || false,
-        mealPrepPortions: enhancedPreferences.mealPrepPortions,
-        selectedAppliances: enhancedPreferences.selectedAppliances || ['oven', 'stove'],
-        dietaryTags: enhancedPreferences.dietary || preferences?.dietary || [],
-        cuisinePreferences: enhancedPreferences.cuisine || preferences?.cuisine || [],
-        timeAvailable: enhancedPreferences.cookingTime || preferences?.cookingTime || 'any',
-        skillLevel: enhancedPreferences.difficulty || preferences?.difficulty || 'any'
+        userPreferences
       });
 
-      console.log('📥 API Response:', response);
+      console.log('📥 Preview API Response:', response);
 
       if (!response.success) {
-        throw new Error(response.error || 'Failed to generate recipes');
+        throw new Error(response.error || 'Failed to generate recipe previews');
       }
 
       if (response.success && response.data) {
-        // Store session ID for full recipe generation later
+        // Store session ID for detailed recipe generation later
         if (response.data.sessionId) {
           setSessionId(response.data.sessionId);
+          console.log('💾 Stored session ID:', response.data.sessionId);
         }
 
-        // Handle multiple recipes response (3 diverse recipes) - original working format
-        const recipesData = response.data.recipes || response.data.data?.recipes;
-        const ingredientAnalysis = response.data.ingredientAnalysis || response.data.data?.ingredientAnalysis;
+        // Handle preview response format
+        const previewsData = response.data.previews;
         
-        if (recipesData && Array.isArray(recipesData) && recipesData.length > 0) {
-          console.log('✅ Received multiple recipes:', recipesData.length);
-          console.log('📊 Ingredient Analysis:', ingredientAnalysis);
+        if (previewsData && Array.isArray(previewsData) && previewsData.length > 0) {
+          console.log('✅ Received recipe previews:', previewsData.length);
           
-          // Convert each recipe to our Recipe format (original working transformation)
-          const aiRecipes: Recipe[] = recipesData.map((recipeData: any, index: number) => {
-            // Map ingredient sources for highlighting
-            const processedIngredients = recipeData.ingredients?.map((ing: any) => {
-              if (typeof ing === 'string') {
-                return {
-                  name: ing,
-                  amount: '1',
-                  unit: 'serving',
-                  source: 'scanned'
-                };
-              }
-              return {
-                name: ing.name,
-                amount: ing.amount,
-                unit: ing.unit,
-                notes: ing.notes,
-                source: ing.source || 'scanned' // 'scanned', 'pantry', or 'optional'
-              };
-            }) || [];
-
+          // Convert each preview to our Recipe format
+          const previewRecipes: Recipe[] = previewsData.map((preview: any, index: number) => {
             return {
-              id: `ai-diverse-${index}`,
-              title: recipeData.title || `AI Generated Recipe ${index + 1}`,
-              image: `https://via.placeholder.com/400x300/4CAF50/FFFFFF?text=${encodeURIComponent(recipeData.title || 'Recipe')}`,
-              cookingTime: `${recipeData.metadata?.totalTime || 30} min`,
-              servings: recipeData.metadata?.servings || 4,
-              difficulty: recipeData.metadata?.difficulty || 'Medium',
+              id: preview.id || `preview-${index}`,
+              title: preview.title,
+              image: `https://via.placeholder.com/400x300/4CAF50/FFFFFF?text=${encodeURIComponent(preview.title)}`,
+              cookingTime: `${preview.estimatedTime} min`,
+              servings: userPreferences.servingSize,
+              difficulty: preview.difficulty,
               macros: {
-                calories: Math.round(recipeData.nutrition?.calories || 350),
-                protein: Math.round(recipeData.nutrition?.protein || 15),
-                carbs: Math.round(recipeData.nutrition?.carbohydrates || 45),
-                fat: Math.round(recipeData.nutrition?.fat || 12),
+                calories: 350, // Estimated for preview
+                protein: 15,
+                carbs: 45,
+                fat: 12,
               },
               tags: [
-                ...(preferences?.dietary || []),
-                ...(preferences?.cuisine || []),
-                'AI Generated',
-                recipeData.metadata?.cuisineType || 'International',
-                recipeData.metadata?.cookingMethod || 'Mixed'
+                ...userPreferences.dietaryTags,
+                preview.cuisineType,
+                'AI Generated Preview',
+                ...(preview.appealFactors || [])
               ].filter(Boolean),
-              description: recipeData.description || `A delicious ${recipeData.metadata?.cuisineType || ''} dish using your detected ingredients.`,
-              ingredients: processedIngredients,
-              instructions: recipeData.instructions || [],
-              tips: recipeData.tips || [],
+              description: preview.description,
+              ingredients: preview.mainIngredients?.map((ing: string) => ({
+                name: ing,
+                amount: '1',
+                unit: 'portion',
+                source: 'preview'
+              })) || [],
+              instructions: [], // Will be populated when user selects "Cook"
+              tips: [],
+              // Store preview data for detailed generation
+              previewData: preview
             };
           });
 
-          console.log('✅ Successfully converted multiple AI recipes:', aiRecipes.map(r => r.title));
-          setRecipes(aiRecipes);
+          console.log('✅ Successfully converted recipe previews:', previewRecipes.map(r => r.title));
+          setRecipes(previewRecipes);
         } else {
-          console.log('⚠️ Invalid multiple recipes API response format, using fallback');
+          console.log('⚠️ Invalid preview API response format');
           console.log('Response data structure:', JSON.stringify(response.data, null, 2));
-          throw new Error('No recipes were generated. Please try different ingredients or preferences.');
+          throw new Error('No recipe previews were generated. Please try different ingredients or preferences.');
         }
       } else {
-        throw new Error(response.error || 'API call failed');
+        throw new Error(response.error || 'Preview API call failed');
       }
 
     } catch (error: any) {
-      console.error('❌ Recipe generation failed:', error);
-      setError(error.message || 'Failed to generate recipes');
+      console.error('❌ Recipe preview generation failed:', error);
+      setError(error.message || 'Failed to generate recipe previews');
       
-      // Fallback to test recipes using actual detected ingredients
-      const fallbackRecipes: Recipe[] = [
+      // Fallback to test previews using actual detected ingredients
+      const fallbackPreviews: Recipe[] = [
         {
-          id: 'fallback-1',
-          title: `Quick ${detectedIngredients.slice(0, 2).join(' & ')} Dish`,
-          image: 'https://via.placeholder.com/400x300/4CAF50/FFFFFF?text=Quick+Recipe',
-          cookingTime: '25 min',
+          id: 'fallback-preview-1',
+          title: `Quick ${detectedIngredients.slice(0, 2).join(' & ')} Stir-Fry`,
+          image: 'https://via.placeholder.com/400x300/4CAF50/FFFFFF?text=Quick+Stir-Fry',
+          cookingTime: '20 min',
           servings: 2,
           difficulty: 'Easy',
           macros: {
-            calories: 200,
-            protein: 8,
-            carbs: 25,
-            fat: 10,
+            calories: 280,
+            protein: 12,
+            carbs: 30,
+            fat: 8,
           },
-          tags: ['Quick', 'AI Generated', 'Using Your Ingredients'],
-          description: `A simple and delicious recipe using your scanned ingredients: ${detectedIngredients.slice(0, 3).join(', ')}.`,
-          ingredients: detectedIngredients.slice(0, 5).map(ing => ({ name: ing, amount: '1', unit: 'portion' })),
-          instructions: [
-            'Prepare all ingredients by washing and chopping as needed',
-            'Heat cooking oil in a large pan over medium-high heat',
-            'Add ingredients to the pan and cook according to their cooking times',
-            'Season with salt, pepper, and your preferred seasonings',
-            'Cook until ingredients are tender and flavors are well combined',
-            'Serve hot and enjoy your homemade creation!'
-          ],
-          tips: ['Taste and adjust seasoning as you cook', 'This is a fallback recipe - full AI generation will be available soon!']
+          tags: ['Quick', 'Healthy', 'Using Your Ingredients'],
+          description: `A fast and healthy stir-fry using your ingredients: ${detectedIngredients.slice(0, 3).join(', ')}.`,
+          ingredients: detectedIngredients.slice(0, 4).map(ing => ({ name: ing, amount: '1', unit: 'portion', source: 'preview' })),
+          instructions: [], // Will be filled when cooking
+          tips: [],
+          previewData: {
+            id: 'fallback-preview-1',
+            title: `Quick ${detectedIngredients.slice(0, 2).join(' & ')} Stir-Fry`,
+            description: `A fast and healthy stir-fry using your ingredients.`,
+            estimatedTime: 20,
+            difficulty: 'easy',
+            cuisineType: 'Asian',
+            mainIngredients: detectedIngredients.slice(0, 4)
+          }
         }
       ];
       
-      setRecipes(fallbackRecipes);
+      setRecipes(fallbackPreviews);
     } finally {
       setIsLoading(false);
     }
@@ -333,11 +316,81 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
     });
   };
 
-  const handleCookRecipe = () => {
+  const handleCookRecipe = async () => {
     ReactNativeHapticFeedback.trigger('impactMedium');
     const currentRecipe = recipes[frontCardIndex];
-    if (currentRecipe) {
-      navigation.navigate('CookMode', { recipe: currentRecipe });
+    
+    if (!currentRecipe || !currentRecipe.previewData || !sessionId) {
+      console.error('❌ Missing recipe preview data or session ID');
+      Alert.alert('Error', 'Unable to generate detailed recipe. Please try again.');
+      return;
+    }
+
+    try {
+      console.log('🍳 Generating detailed recipe for:', currentRecipe.title);
+      
+      // Show loading state
+      setIsLoading(true);
+      
+      // Call Step 2: Generate detailed recipe
+      const detailedResponse = await recipeService.generateDetailedRecipe({
+        selectedPreview: currentRecipe.previewData,
+        sessionId: sessionId
+      });
+
+      console.log('📥 Detailed recipe response:', detailedResponse);
+
+      if (!detailedResponse.success) {
+        throw new Error(detailedResponse.error || 'Failed to generate detailed recipe');
+      }
+
+      if (detailedResponse.data && detailedResponse.data.recipe) {
+        const detailedRecipe = detailedResponse.data.recipe;
+        
+        // Convert detailed recipe to our Recipe format for CookMode
+        const cookModeRecipe: Recipe = {
+          ...currentRecipe,
+          ingredients: detailedRecipe.ingredients || currentRecipe.ingredients,
+          instructions: detailedRecipe.instructions?.map((inst: any) => 
+            typeof inst === 'string' ? inst : inst.instruction
+          ) || [],
+          tips: detailedRecipe.tips || [],
+          macros: {
+            calories: detailedRecipe.nutritionEstimate?.calories || currentRecipe.macros.calories,
+            protein: parseInt(detailedRecipe.nutritionEstimate?.protein?.replace('g', '') || '15'),
+            carbs: parseInt(detailedRecipe.nutritionEstimate?.carbs?.replace('g', '') || '45'),
+            fat: parseInt(detailedRecipe.nutritionEstimate?.fat?.replace('g', '') || '12'),
+          },
+          cookingTime: `${detailedRecipe.totalTime || detailedRecipe.prepTime + detailedRecipe.cookTime} min`,
+          servings: detailedRecipe.servings || currentRecipe.servings,
+          difficulty: detailedRecipe.difficulty || currentRecipe.difficulty
+        };
+
+        console.log('✅ Successfully generated detailed recipe with', 
+          cookModeRecipe.instructions.length, 'steps');
+
+        // Navigate to CookMode with detailed recipe
+        navigation.navigate('CookMode', { 
+          recipe: cookModeRecipe,
+          sessionId: sessionId,
+          detailedRecipeId: detailedResponse.data.storedRecipe?.id
+        });
+      } else {
+        throw new Error('Invalid detailed recipe response format');
+      }
+
+    } catch (error: any) {
+      console.error('❌ Detailed recipe generation failed:', error);
+      Alert.alert(
+        'Recipe Generation Failed',
+        'Unable to generate detailed cooking instructions. Would you like to try again?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Try Again', onPress: () => handleCookRecipe() }
+        ]
+      );
+    } finally {
+      setIsLoading(false);
     }
   };
 

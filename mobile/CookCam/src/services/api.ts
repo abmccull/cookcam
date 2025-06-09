@@ -177,6 +177,46 @@ class ApiClient {
     });
   }
 
+  // Two-step recipe generation - Step 1: Quick previews
+  async generateRecipePreviews(data: {
+    detectedIngredients: string[];
+    userPreferences: {
+      servingSize: number;
+      cuisinePreferences: string[];
+      dietaryTags: string[];
+      selectedAppliances: string[];
+      timeAvailable: string;
+      skillLevel: string;
+      mealPrepEnabled: boolean;
+      mealPrepPortions?: number;
+    };
+    sessionId?: string;
+  }): Promise<ApiResponse<any>> {
+    return this.makeRequest('/recipes/generate-previews', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // Two-step recipe generation - Step 2: Detailed instructions
+  async generateDetailedRecipe(data: {
+    selectedPreview: {
+      id: string;
+      title: string;
+      description: string;
+      estimatedTime: number;
+      difficulty: string;
+      cuisineType: string;
+      mainIngredients: string[];
+    };
+    sessionId: string;
+  }): Promise<ApiResponse<any>> {
+    return this.makeRequest('/recipes/generate-detailed', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
   async generateFullRecipe(selectedTitle: string, sessionId: string): Promise<ApiResponse<any>> {
     return this.makeRequest('/recipes/generate-full', {
       method: 'POST',
@@ -440,6 +480,8 @@ export const authService = {
 
 export const recipeService = {
   generateSuggestions: apiClient.generateRecipeSuggestions.bind(apiClient),
+  generatePreviews: apiClient.generateRecipePreviews.bind(apiClient),
+  generateDetailedRecipe: apiClient.generateDetailedRecipe.bind(apiClient),
   generateFullRecipe: apiClient.generateFullRecipe.bind(apiClient),
   getRecipes: apiClient.getRecipes.bind(apiClient),
   getRecipe: apiClient.getRecipe.bind(apiClient),
