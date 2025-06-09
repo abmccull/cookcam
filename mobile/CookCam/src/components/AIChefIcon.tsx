@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import Svg, { Circle, Rect, Path, Ellipse, Line, Polygon, Text as SvgText } from 'react-native-svg';
+import Svg, { Circle, Rect, Path, Ellipse, Line, Polygon, Defs, LinearGradient, Stop } from 'react-native-svg';
 
 interface AIChefIconProps {
   size?: number;
@@ -15,127 +15,174 @@ const AIChefIcon: React.FC<AIChefIconProps> = ({
     switch (variant) {
       case 'analyzing':
         return (
-          <Svg height={size} viewBox="0 0 64 64" width={size}>
-            {/* Chef Hat - Main part */}
-            <Ellipse cx="32" cy="20" rx="18" ry="8" fill="#FFFFFF" stroke="#E0E0E0" strokeWidth="2"/>
-            <Rect x="14" y="20" width="36" height="12" fill="#FFFFFF" stroke="#E0E0E0" strokeWidth="2"/>
-            <Ellipse cx="32" cy="32" rx="18" ry="4" fill="#F5F5F5" stroke="#E0E0E0" strokeWidth="2"/>
+          <Svg height={size} viewBox="0 0 80 80" width={size}>
+            <Defs>
+              <LinearGradient id="robotBodyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                <Stop offset="0%" stopColor="#6B73FF" />
+                <Stop offset="100%" stopColor="#4A5568" />
+              </LinearGradient>
+              <LinearGradient id="chefHatGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                <Stop offset="0%" stopColor="#FFFFFF" />
+                <Stop offset="100%" stopColor="#F7FAFC" />
+              </LinearGradient>
+            </Defs>
             
-            {/* AI Robot Head */}
-            <Rect x="20" y="32" width="24" height="20" rx="4" fill="#4A90E2" stroke="#2D5AA0" strokeWidth="2"/>
+            {/* Chef Hat */}
+            <Ellipse cx="40" cy="22" rx="22" ry="10" fill="url(#chefHatGrad)" stroke="#E2E8F0" strokeWidth="2"/>
+            <Rect x="18" y="22" width="44" height="15" fill="url(#chefHatGrad)" stroke="#E2E8F0" strokeWidth="2"/>
+            <Ellipse cx="40" cy="37" rx="22" ry="6" fill="#F1F5F9" stroke="#E2E8F0" strokeWidth="2"/>
             
-            {/* Digital Circuit Patterns on Head */}
-            <Line x1="22" y1="36" x2="26" y2="36" stroke="#00D4AA" strokeWidth="1.5"/>
-            <Line x1="26" y1="36" x2="26" y2="40" stroke="#00D4AA" strokeWidth="1.5"/>
-            <Line x1="38" y1="36" x2="42" y2="36" stroke="#00D4AA" strokeWidth="1.5"/>
-            <Line x1="38" y1="36" x2="38" y2="40" stroke="#00D4AA" strokeWidth="1.5"/>
+            {/* Chef Hat Details */}
+            <Circle cx="35" cy="18" r="2" fill="#E2E8F0"/>
+            <Circle cx="45" cy="16" r="2" fill="#E2E8F0"/>
+            <Circle cx="40" cy="12" r="2.5" fill="#E2E8F0"/>
             
-            {/* Digital Eyes with analyzing effect */}
-            <Rect x="25" y="40" width="5" height="4" rx="1" fill="#00D4AA"/>
-            <Rect x="34" y="40" width="5" height="4" rx="1" fill="#00D4AA"/>
-            <Circle cx="27" cy="42" r="1" fill="#FFFFFF" opacity="0.8"/>
-            <Circle cx="36" cy="42" r="1" fill="#FFFFFF" opacity="0.8"/>
+            {/* Robot Head/Body - Rounded friendly design */}
+            <Ellipse cx="40" cy="52" rx="18" ry="20" fill="url(#robotBodyGrad)" stroke="#2D3748" strokeWidth="2"/>
             
-            {/* Processing indicator */}
-            <Rect x="28" y="46" width="8" height="2" rx="1" fill="#FFB800"/>
-            <Rect x="30" y="46" width="4" height="2" rx="1" fill="#FF9800"/>
+            {/* Friendly Analyzing Eyes - Cyan glow */}
+            <Circle cx="34" cy="48" r="4" fill="#00E5FF" opacity="0.9"/>
+            <Circle cx="46" cy="48" r="4" fill="#00E5FF" opacity="0.9"/>
+            <Circle cx="34" cy="48" r="2" fill="#FFFFFF"/>
+            <Circle cx="46" cy="48" r="2" fill="#FFFFFF"/>
             
-            {/* Chef's Apron/Robe */}
-            <Path d="M18 52 L20 58 L44 58 L46 52 L42 52 L42 50 L22 50 L22 52 Z" fill="#FFFFFF" stroke="#E0E0E0" strokeWidth="2"/>
+            {/* Processing indicator with pulse effect */}
+            <Rect x="32" y="56" width="16" height="3" rx="1.5" fill="#00E5FF" opacity="0.8"/>
+            <Rect x="34" y="56" width="12" height="3" rx="1.5" fill="#40E0D0"/>
             
-            {/* Apron Ties */}
-            <Line x1="22" y1="50" x2="18" y2="48" stroke="#4CAF50" strokeWidth="2"/>
-            <Line x1="42" y1="50" x2="46" y2="48" stroke="#4CAF50" strokeWidth="2"/>
+            {/* Analysis data streams */}
+            <Circle cx="15" cy="30" r="2" fill="#00E5FF" opacity="0.6"/>
+            <Circle cx="65" cy="35" r="2" fill="#40E0D0" opacity="0.6"/>
+            <Circle cx="10" cy="45" r="1.5" fill="#6B73FF" opacity="0.7"/>
+            <Circle cx="70" cy="50" r="1.5" fill="#00E5FF" opacity="0.7"/>
             
-            {/* AI Analysis Particles */}
-            <Circle cx="12" cy="25" r="1.5" fill="#00D4AA" opacity="0.6"/>
-            <Circle cx="52" cy="28" r="1.5" fill="#FFB800" opacity="0.6"/>
-            <Circle cx="8" cy="35" r="1" fill="#4A90E2" opacity="0.7"/>
-            <Circle cx="56" cy="38" r="1" fill="#FF9800" opacity="0.7"/>
+            {/* Floating analysis particles */}
+            <Path d="M8 35 Q12 33 16 35 Q20 37 24 35" stroke="#00E5FF" strokeWidth="2" fill="none" opacity="0.5"/>
+            <Path d="M56 35 Q60 37 64 35 Q68 33 72 35" stroke="#40E0D0" strokeWidth="2" fill="none" opacity="0.5"/>
             
-            {/* Data Stream Lines */}
-            <Path d="M4 30 Q8 32 12 30 Q16 28 20 30" stroke="#00D4AA" strokeWidth="1.5" fill="none" opacity="0.5"/>
-            <Path d="M44 30 Q48 28 52 30 Q56 32 60 30" stroke="#FFB800" strokeWidth="1.5" fill="none" opacity="0.5"/>
+            {/* Robot arms holding utensils */}
+            <Circle cx="20" cy="58" r="6" fill="url(#robotBodyGrad)" stroke="#2D3748" strokeWidth="2"/>
+            <Circle cx="60" cy="58" r="6" fill="url(#robotBodyGrad)" stroke="#2D3748" strokeWidth="2"/>
+            
+            {/* Spatula */}
+            <Line x1="20" y1="52" x2="15" y2="45" stroke="#8D6E63" strokeWidth="3" strokeLinecap="round"/>
+            <Ellipse cx="13" cy="42" rx="3" ry="6" fill="#FFB74D"/>
+            
+            {/* Spoon */}
+            <Line x1="60" y1="52" x2="65" y2="45" stroke="#8D6E63" strokeWidth="3" strokeLinecap="round"/>
+            <Circle cx="67" cy="42" r="3" fill="#FFB74D"/>
           </Svg>
         );
         
       case 'cooking':
         return (
-          <Svg height={size} viewBox="0 0 64 64" width={size}>
+          <Svg height={size} viewBox="0 0 80 80" width={size}>
+            <Defs>
+              <LinearGradient id="robotBodyGrad2" x1="0%" y1="0%" x2="0%" y2="100%">
+                <Stop offset="0%" stopColor="#6B73FF" />
+                <Stop offset="100%" stopColor="#4A5568" />
+              </LinearGradient>
+              <LinearGradient id="chefHatGrad2" x1="0%" y1="0%" x2="0%" y2="100%">
+                <Stop offset="0%" stopColor="#FFFFFF" />
+                <Stop offset="100%" stopColor="#F7FAFC" />
+              </LinearGradient>
+            </Defs>
+            
             {/* Chef Hat with steam */}
-            <Ellipse cx="32" cy="20" rx="18" ry="8" fill="#FFFFFF" stroke="#E0E0E0" strokeWidth="2"/>
-            <Rect x="14" y="20" width="36" height="12" fill="#FFFFFF" stroke="#E0E0E0" strokeWidth="2"/>
-            <Ellipse cx="32" cy="32" rx="18" ry="4" fill="#F5F5F5" stroke="#E0E0E0" strokeWidth="2"/>
+            <Ellipse cx="40" cy="22" rx="22" ry="10" fill="url(#chefHatGrad2)" stroke="#E2E8F0" strokeWidth="2"/>
+            <Rect x="18" y="22" width="44" height="15" fill="url(#chefHatGrad2)" stroke="#E2E8F0" strokeWidth="2"/>
+            <Ellipse cx="40" cy="37" rx="22" ry="6" fill="#F1F5F9" stroke="#E2E8F0" strokeWidth="2"/>
             
             {/* Steam from cooking */}
-            <Path d="M28 12C28 10 28 10 28 12M32 8C32 6 32 6 32 8M36 12C36 10 36 10 36 12" 
-                  stroke="#E0E0E0" strokeWidth="2" strokeLinecap="round" opacity="0.6"/>
+            <Path d="M35 8C35 6 35 6 35 8M40 4C40 2 40 2 40 4M45 8C45 6 45 6 45 8" 
+                  stroke="#E2E8F0" strokeWidth="3" strokeLinecap="round" opacity="0.7"/>
             
-            {/* AI Robot Head */}
-            <Rect x="20" y="32" width="24" height="20" rx="4" fill="#4A90E2" stroke="#2D5AA0" strokeWidth="2"/>
+            {/* Robot Head/Body */}
+            <Ellipse cx="40" cy="52" rx="18" ry="20" fill="url(#robotBodyGrad2)" stroke="#2D3748" strokeWidth="2"/>
             
-            {/* Digital Eyes - content/happy */}
-            <Rect x="25" y="40" width="5" height="4" rx="1" fill="#4CAF50"/>
-            <Rect x="34" y="40" width="5" height="4" rx="1" fill="#4CAF50"/>
-            <Circle cx="27" cy="42" r="1" fill="#FFFFFF"/>
-            <Circle cx="36" cy="42" r="1" fill="#FFFFFF"/>
+            {/* Happy Cooking Eyes - Green success */}
+            <Circle cx="34" cy="48" r="4" fill="#4ADE80"/>
+            <Circle cx="46" cy="48" r="4" fill="#4ADE80"/>
+            <Circle cx="34" cy="48" r="2" fill="#FFFFFF"/>
+            <Circle cx="46" cy="48" r="2" fill="#FFFFFF"/>
             
-            {/* Happy digital mouth */}
-            <Path d="M28 46 Q32 48 36 46" stroke="#4CAF50" strokeWidth="2" fill="none"/>
+            {/* Happy smile */}
+            <Path d="M32 56 Q40 60 48 56" stroke="#4ADE80" strokeWidth="3" fill="none" strokeLinecap="round"/>
             
-            {/* Chef's Apron */}
-            <Path d="M18 52 L20 58 L44 58 L46 52 L42 52 L42 50 L22 50 L22 52 Z" fill="#FFFFFF" stroke="#E0E0E0" strokeWidth="2"/>
+            {/* Robot arms */}
+            <Circle cx="20" cy="58" r="6" fill="url(#robotBodyGrad2)" stroke="#2D3748" strokeWidth="2"/>
+            <Circle cx="60" cy="58" r="6" fill="url(#robotBodyGrad2)" stroke="#2D3748" strokeWidth="2"/>
             
-            {/* Cooking Utensils in hands */}
-            <Line x1="16" y1="54" x2="12" y2="52" stroke="#8D6E63" strokeWidth="3"/>
-            <Circle cx="12" cy="50" r="2" fill="#FFB800"/>
+            {/* Cooking utensils */}
+            <Line x1="20" y1="52" x2="15" y2="45" stroke="#8D6E63" strokeWidth="3" strokeLinecap="round"/>
+            <Ellipse cx="13" cy="42" rx="3" ry="6" fill="#FFB74D"/>
             
-            <Line x1="48" y1="54" x2="52" y2="52" stroke="#8D6E63" strokeWidth="3"/>
-            <Path d="M52 48 L54 52 L50 52 Z" fill="#E0E0E0"/>
+            <Line x1="60" y1="52" x2="65" y2="45" stroke="#8D6E63" strokeWidth="3" strokeLinecap="round"/>
+            <Circle cx="67" cy="42" r="3" fill="#FFB74D"/>
+            
+            {/* Success sparkles */}
+            <Circle cx="25" cy="35" r="1.5" fill="#FFD700" opacity="0.8"/>
+            <Circle cx="55" cy="40" r="1.5" fill="#FFD700" opacity="0.8"/>
+            <Circle cx="15" cy="50" r="1" fill="#4ADE80" opacity="0.7"/>
+            <Circle cx="65" cy="45" r="1" fill="#4ADE80" opacity="0.7"/>
           </Svg>
         );
         
       default:
         return (
-          <Svg height={size} viewBox="0 0 64 64" width={size}>
+          <Svg height={size} viewBox="0 0 80 80" width={size}>
+            <Defs>
+              <LinearGradient id="robotBodyGradDefault" x1="0%" y1="0%" x2="0%" y2="100%">
+                <Stop offset="0%" stopColor="#6B73FF" />
+                <Stop offset="100%" stopColor="#4A5568" />
+              </LinearGradient>
+              <LinearGradient id="chefHatGradDefault" x1="0%" y1="0%" x2="0%" y2="100%">
+                <Stop offset="0%" stopColor="#FFFFFF" />
+                <Stop offset="100%" stopColor="#F7FAFC" />
+              </LinearGradient>
+            </Defs>
+            
             {/* Chef Hat */}
-            <Ellipse cx="32" cy="20" rx="18" ry="8" fill="#FFFFFF" stroke="#E0E0E0" strokeWidth="2"/>
-            <Rect x="14" y="20" width="36" height="12" fill="#FFFFFF" stroke="#E0E0E0" strokeWidth="2"/>
-            <Ellipse cx="32" cy="32" rx="18" ry="4" fill="#F5F5F5" stroke="#E0E0E0" strokeWidth="2"/>
+            <Ellipse cx="40" cy="22" rx="22" ry="10" fill="url(#chefHatGradDefault)" stroke="#E2E8F0" strokeWidth="2"/>
+            <Rect x="18" y="22" width="44" height="15" fill="url(#chefHatGradDefault)" stroke="#E2E8F0" strokeWidth="2"/>
+            <Ellipse cx="40" cy="37" rx="22" ry="6" fill="#F1F5F9" stroke="#E2E8F0" strokeWidth="2"/>
             
-            {/* Chef Hat Details */}
-            <Circle cx="28" cy="24" r="1.5" fill="#E0E0E0"/>
-            <Circle cx="36" cy="26" r="1.5" fill="#E0E0E0"/>
+            {/* Chef Hat polka dots */}
+            <Circle cx="35" cy="18" r="2" fill="#E2E8F0"/>
+            <Circle cx="45" cy="16" r="2" fill="#E2E8F0"/>
+            <Circle cx="40" cy="12" r="2.5" fill="#E2E8F0"/>
             
-            {/* AI Robot Head */}
-            <Rect x="20" y="32" width="24" height="20" rx="4" fill="#4A90E2" stroke="#2D5AA0" strokeWidth="2"/>
+            {/* Robot Head/Body - Rounded mascot style */}
+            <Ellipse cx="40" cy="52" rx="18" ry="20" fill="url(#robotBodyGradDefault)" stroke="#2D3748" strokeWidth="2"/>
             
-            {/* Digital Circuit Patterns */}
-            <Line x1="22" y1="36" x2="26" y2="36" stroke="#00D4AA" strokeWidth="1"/>
-            <Line x1="26" y1="36" x2="26" y2="38" stroke="#00D4AA" strokeWidth="1"/>
-            <Line x1="38" y1="36" x2="42" y2="36" stroke="#00D4AA" strokeWidth="1"/>
-            <Line x1="38" y1="36" x2="38" y2="38" stroke="#00D4AA" strokeWidth="1"/>
+            {/* Friendly Cyan Eyes */}
+            <Circle cx="34" cy="48" r="4" fill="#40E0D0"/>
+            <Circle cx="46" cy="48" r="4" fill="#40E0D0"/>
+            <Circle cx="34" cy="48" r="2" fill="#FFFFFF"/>
+            <Circle cx="46" cy="48" r="2" fill="#FFFFFF"/>
             
-            {/* Digital Eyes */}
-            <Rect x="25" y="40" width="5" height="4" rx="1" fill="#FFB800"/>
-            <Rect x="34" y="40" width="5" height="4" rx="1" fill="#FFB800"/>
-            <Circle cx="27" cy="42" r="1" fill="#2D5AA0"/>
-            <Circle cx="36" cy="42" r="1" fill="#2D5AA0"/>
+            {/* Friendly smile */}
+            <Path d="M32 56 Q40 58 48 56" stroke="#40E0D0" strokeWidth="2" fill="none" strokeLinecap="round"/>
             
-            {/* Digital mouth */}
-            <Rect x="29" y="46" width="6" height="2" rx="1" fill="#00D4AA"/>
+            {/* Robot chest panel */}
+            <Rect x="35" y="60" width="10" height="6" rx="2" fill="#40E0D0" opacity="0.3"/>
+            <Circle cx="40" cy="63" r="2" fill="#40E0D0"/>
             
-            {/* Chef's Apron/Body */}
-            <Path d="M18 52 L20 58 L44 58 L46 52 L42 52 L42 50 L22 50 L22 52 Z" fill="#FFFFFF" stroke="#E0E0E0" strokeWidth="2"/>
+            {/* Robot arms */}
+            <Circle cx="20" cy="58" r="6" fill="url(#robotBodyGradDefault)" stroke="#2D3748" strokeWidth="2"/>
+            <Circle cx="60" cy="58" r="6" fill="url(#robotBodyGradDefault)" stroke="#2D3748" strokeWidth="2"/>
             
-            {/* Apron Bow */}
-            <Polygon points="30,50 34,50 32,52" fill="#4CAF50"/>
-            <Circle cx="32" cy="52" r="2" fill="#4CAF50"/>
+            {/* Cooking utensils like in the mascot */}
+            <Line x1="20" y1="52" x2="15" y2="45" stroke="#8D6E63" strokeWidth="3" strokeLinecap="round"/>
+            <Ellipse cx="13" cy="42" rx="3" ry="6" fill="#FFB74D"/>
             
-            {/* AI Antenna */}
-            <Line x1="32" y1="32" x2="32" y2="28" stroke="#00D4AA" strokeWidth="2"/>
-            <Circle cx="32" cy="28" r="2" fill="#FFB800"/>
-            <Circle cx="32" cy="28" r="1" fill="#FF9800"/>
+            <Line x1="60" y1="52" x2="65" y2="45" stroke="#8D6E63" strokeWidth="3" strokeLinecap="round"/>
+            <Circle cx="67" cy="42" r="3" fill="#FFB74D"/>
+            
+            {/* AI indicator antenna */}
+            <Line x1="40" y1="37" x2="40" y2="32" stroke="#40E0D0" strokeWidth="2" strokeLinecap="round"/>
+            <Circle cx="40" cy="30" r="2" fill="#FFB74D"/>
+            <Circle cx="40" cy="30" r="1" fill="#FF9800"/>
           </Svg>
         );
     }
