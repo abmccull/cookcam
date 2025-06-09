@@ -228,7 +228,7 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
       console.error('❌ Recipe preview generation failed:', error);
       setError(error.message || 'Failed to generate recipe previews');
       
-      // Fallback to test previews using actual detected ingredients
+      // Fallback to test previews using actual detected ingredients - CREATE 3 RECIPES FOR STACKING
       const fallbackPreviews: Recipe[] = [
         {
           id: 'fallback-preview-1',
@@ -243,7 +243,7 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
             carbs: 30,
             fat: 8,
           },
-          tags: ['Quick', 'Healthy', 'Using Your Ingredients'],
+          tags: ['Quick', 'Healthy', 'Asian Fusion'],
           description: `A fast and healthy stir-fry using your ingredients: ${detectedIngredients.slice(0, 3).join(', ')}.`,
           ingredients: detectedIngredients.slice(0, 4).map(ing => ({ name: ing, amount: '1', unit: 'portion', source: 'preview' })),
           instructions: [], // Will be filled when cooking
@@ -256,6 +256,62 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
             difficulty: 'easy',
             cuisineType: 'Asian',
             mainIngredients: detectedIngredients.slice(0, 4)
+          }
+        },
+        {
+          id: 'fallback-preview-2',
+          title: `${detectedIngredients[0] || 'Fresh'} Salad Bowl`,
+          image: 'https://via.placeholder.com/400x300/2D1B69/FFFFFF?text=Fresh+Salad',
+          cookingTime: '15 min',
+          servings: 2,
+          difficulty: 'Easy',
+          macros: {
+            calories: 220,
+            protein: 8,
+            carbs: 25,
+            fat: 6,
+          },
+          tags: ['Fresh', 'Mediterranean', 'No Cook'],
+          description: `A refreshing salad featuring your fresh ingredients in Mediterranean style.`,
+          ingredients: detectedIngredients.slice(0, 5).map(ing => ({ name: ing, amount: '1', unit: 'cup', source: 'preview' })),
+          instructions: [],
+          tips: [],
+          previewData: {
+            id: 'fallback-preview-2',
+            title: `${detectedIngredients[0] || 'Fresh'} Salad Bowl`,
+            description: `A refreshing salad featuring your fresh ingredients.`,
+            estimatedTime: 15,
+            difficulty: 'easy',
+            cuisineType: 'Mediterranean',
+            mainIngredients: detectedIngredients.slice(0, 5)
+          }
+        },
+        {
+          id: 'fallback-preview-3',
+          title: `Hearty ${detectedIngredients.slice(-2).join(' & ')} Soup`,
+          image: 'https://via.placeholder.com/400x300/FF6B35/FFFFFF?text=Hearty+Soup',
+          cookingTime: '35 min',
+          servings: 4,
+          difficulty: 'Medium',
+          macros: {
+            calories: 320,
+            protein: 18,
+            carbs: 35,
+            fat: 10,
+          },
+          tags: ['Comfort Food', 'American', 'One Pot'],
+          description: `A warming, nutritious soup that makes great use of your ingredients.`,
+          ingredients: detectedIngredients.slice(0, 6).map(ing => ({ name: ing, amount: '1', unit: 'serving', source: 'preview' })),
+          instructions: [],
+          tips: [],
+          previewData: {
+            id: 'fallback-preview-3',
+            title: `Hearty ${detectedIngredients.slice(-2).join(' & ')} Soup`,
+            description: `A warming, nutritious soup.`,
+            estimatedTime: 35,
+            difficulty: 'medium',
+            cuisineType: 'American',
+            mainIngredients: detectedIngredients.slice(0, 6)
           }
         }
       ];
@@ -778,9 +834,9 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
 
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>{recipes.length} AI Recipes</Text>
+        <Text style={styles.title}>Pick-a-Plate</Text>
         <Text style={styles.subtitle}>
-          Personalized for your ingredients
+          {recipes.length} personalized recipes ready to cook
         </Text>
       </View>
 
@@ -804,11 +860,11 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
           </>
         )}
 
-        {/* Swipe hint - only show for first recipe */}
-        {frontCardIndex === 0 && (
-          <View style={styles.swipeHint}>
-            <Text style={styles.swipeHintText}>↔ Swipe to choose</Text>
-          </View>
+        {/* Swipe hint - only show for first few recipes */}
+        {frontCardIndex < 2 && (
+          <Animated.View style={styles.swipeHint}>
+            <Text style={styles.swipeHintText}>↔ Swipe to choose • Tap cards to reorder</Text>
+          </Animated.View>
         )}
       </View>
 
