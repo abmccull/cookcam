@@ -4,8 +4,14 @@ import { supabase } from '../index';
 import { generateRecipeSuggestions, generateFullRecipe, RecipeInput } from '../services/openai';
 import { logger } from '../utils/logger';
 import enhancedRecipeService from '../services/enhancedRecipeGeneration';
+import { RecipePreviewService } from '../services/recipePreviewService';
+import { DetailedRecipeService } from '../services/detailedRecipeService';
 
 const router = Router();
+
+// Initialize services for two-step recipe generation
+const previewService = new RecipePreviewService();
+const detailedService = new DetailedRecipeService();
 
 // Interfaces for better type safety
 interface RecipeIngredient {
@@ -382,6 +388,295 @@ router.post('/generate', authenticateUser, async (req: Request, res: Response) =
     res.status(500).json({
       success: false,
       error: 'Failed to generate diverse recipes',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// Generate recipe previews (Step 1 of two-step process)
+router.post('/generate-previews', authenticateUser, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user.id;
+    const { 
+      detectedIngredients, 
+      userPreferences, 
+      sessionId 
+    } = req.body;
+    
+    logger.info('🚀 Preview generation request', {
+      userId: userId,
+      ingredients: detectedIngredients?.length,
+      sessionId: sessionId
+    });
+
+    if (!detectedIngredients || !Array.isArray(detectedIngredients) || detectedIngredients.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Detected ingredients array is required'
+      });
+    }
+
+    if (!userPreferences) {
+      return res.status(400).json({
+        success: false,
+        error: 'User preferences are required'
+      });
+    }
+
+    const finalSessionId = sessionId || `session_${Date.now()}_${userId}`;
+
+    // Generate recipe previews
+    const previewResult = await previewService.generatePreviews({
+      detectedIngredients,
+      userPreferences,
+      sessionId: finalSessionId
+    });
+
+    // Store cooking session
+    const { data: sessionData, error: sessionError } = await supabase
+      .from('cooking_sessions')
+      .insert([{
+        session_id: finalSessionId,
+        user_id: userId,
+        original_ingredients: detectedIngredients,
+        user_preferences: userPreferences,
+        previews_generated: previewResult.previews.length,
+        completed: false
+      }])
+      .select()
+      .single();
+
+    if (sessionError) {
+      logger.error('Session storage error', { error: sessionError.message });
+      // Continue without storing session - not critical for preview generation
+    }
+
+    // Store recipe previews
+    const previewPromises = previewResult.previews.map(async (preview) => {
+      try {
+        const { data: previewRecord, error: previewError } = await supabase
+          .from('recipe_previews')
+          .insert([{
+            preview_id: preview.id,
+            session_id: finalSessionId,
+            user_id: userId,
+            title: preview.title,
+            description: preview.description,
+            estimated_time: preview.estimatedTime,
+            difficulty: preview.difficulty,
+            cuisine_type: preview.cuisineType,
+            main_ingredients: preview.mainIngredients,
+            appeal_factors: preview.appealFactors
+          }])
+          .select()
+          .single();
+
+        if (previewError) {
+          logger.error('Preview storage error', { error: previewError.message, previewTitle: preview.title });
+          return null;
+        }
+
+        return previewRecord;
+      } catch (error) {
+        logger.error('Error storing preview', { error, previewTitle: preview.title });
+        return null;
+      }
+    });
+
+    const storedPreviews = await Promise.all(previewPromises);
+    const successfulPreviews = storedPreviews.filter(p => p !== null);
+
+    // Award XP for generating previews
+    await supabase.rpc('add_user_xp', {
+      p_user_id: userId,
+      p_xp_amount: 15,
+      p_action: 'recipe_previews_generated',
+      p_metadata: { 
+        session_id: finalSessionId,
+        previews_count: previewResult.previews.length,
+        ingredients_count: detectedIngredients.length
+      }
+    });
+
+    logger.info('✅ Successfully generated recipe previews', {
+      userId,
+      sessionId: finalSessionId,
+      previewsGenerated: previewResult.previews.length,
+      previewsStored: successfulPreviews.length
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Recipe previews generated successfully',
+      data: {
+        sessionId: finalSessionId,
+        previews: previewResult.previews,
+        storedPreviews: successfulPreviews
+      },
+      xp_awarded: 15
+    });
+
+  } catch (error) {
+    logger.error('❌ Preview generation failed', { 
+      error: error instanceof Error ? error.message : error,
+      userId: (req as any).user?.id 
+    });
+    
+    res.status(500).json({
+      success: false,
+      error: 'Failed to generate recipe previews',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// Generate detailed recipe (Step 2 of two-step process)
+router.post('/generate-detailed', authenticateUser, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user.id;
+    const { 
+      selectedPreview, 
+      sessionId 
+    } = req.body;
+    
+    logger.info('🍳 Detailed recipe generation request', {
+      userId: userId,
+      recipeTitle: selectedPreview?.title,
+      sessionId: sessionId
+    });
+
+    if (!selectedPreview) {
+      return res.status(400).json({
+        success: false,
+        error: 'Selected preview recipe is required'
+      });
+    }
+
+    if (!sessionId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Session ID is required'
+      });
+    }
+
+    // Get cooking session to retrieve original ingredients and preferences
+    const { data: session, error: sessionError } = await supabase
+      .from('cooking_sessions')
+      .select('*')
+      .eq('session_id', sessionId)
+      .eq('user_id', userId)
+      .single();
+
+    if (sessionError || !session) {
+      return res.status(404).json({
+        success: false,
+        error: 'Cooking session not found'
+      });
+    }
+
+    // Generate detailed recipe
+    const detailedResult = await detailedService.generateDetailedRecipe({
+      selectedPreview,
+      originalIngredients: session.original_ingredients,
+      userPreferences: session.user_preferences,
+      sessionId
+    });
+
+    // Store the detailed recipe in recipes table
+    const { data: recipeRecord, error: recipeError } = await supabase
+      .from('recipes')
+      .insert([{
+        title: detailedResult.recipe.title,
+        description: detailedResult.recipe.description,
+        prep_time: detailedResult.recipe.prepTime,
+        cook_time: detailedResult.recipe.cookTime,
+        difficulty: detailedResult.recipe.difficulty,
+        servings: detailedResult.recipe.servings,
+        ingredients: detailedResult.recipe.ingredients,
+        instructions: detailedResult.recipe.instructions.map(inst => inst.instruction),
+        nutrition: detailedResult.recipe.nutritionEstimate,
+        tags: [
+          ...detailedResult.recipe.dietaryTags,
+          detailedResult.recipe.cuisineType,
+          'AI Generated',
+          'Two-Step Generated'
+        ],
+        created_by: userId,
+        is_generated: true,
+        cuisine: detailedResult.recipe.cuisineType,
+        ai_metadata: {
+          two_step_generation_version: '1.0',
+          session_id: sessionId,
+          original_ingredients: session.original_ingredients,
+          selected_preview_id: selectedPreview.id,
+          detailed_instructions_count: detailedResult.recipe.instructions.length,
+          tips_count: detailedResult.recipe.tips.length
+        }
+      }])
+      .select()
+      .single();
+
+    if (recipeError) {
+      logger.error('Detailed recipe storage error', { error: recipeError.message });
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to store detailed recipe'
+      });
+    }
+
+    // Update cooking session with detailed recipe ID and mark as completed
+    await supabase
+      .from('cooking_sessions')
+      .update({
+        detailed_recipe_id: recipeRecord.id,
+        completed: true,
+        updated_at: new Date().toISOString()
+      })
+      .eq('session_id', sessionId)
+      .eq('user_id', userId);
+
+    // Award XP for generating detailed recipe
+    await supabase.rpc('add_user_xp', {
+      p_user_id: userId,
+      p_xp_amount: 50,
+      p_action: 'detailed_recipe_generated',
+      p_metadata: { 
+        recipe_id: recipeRecord.id,
+        session_id: sessionId,
+        selected_preview: selectedPreview.title,
+        instruction_steps: detailedResult.recipe.instructions.length
+      }
+    });
+
+    logger.info('✅ Successfully generated detailed recipe', {
+      userId,
+      sessionId,
+      recipeId: recipeRecord.id,
+      recipeTitle: detailedResult.recipe.title,
+      instructionSteps: detailedResult.recipe.instructions.length
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Detailed recipe generated successfully',
+      data: {
+        sessionId,
+        recipe: detailedResult.recipe,
+        storedRecipe: recipeRecord
+      },
+      xp_awarded: 50
+    });
+
+  } catch (error) {
+    logger.error('❌ Detailed recipe generation failed', { 
+      error: error instanceof Error ? error.message : error,
+      userId: (req as any).user?.id,
+      sessionId: req.body?.sessionId
+    });
+    
+    res.status(500).json({
+      success: false,
+      error: 'Failed to generate detailed recipe',
       details: error instanceof Error ? error.message : 'Unknown error'
     });
   }
