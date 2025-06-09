@@ -538,7 +538,7 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
 
   // Animated styles for back cards
   const middleCardAnimatedStyle = useAnimatedStyle(() => {
-    const topValue = -10 + card1TranslateY.value; // Small peek from TOP (titles visible)
+    const topValue = -50 + card1TranslateY.value; // Offset up to show title
     const scaleValue = 0.96 * card1Scale.value;
     console.log('🔄 MIDDLE card animated values:', { 
       card1TranslateY: card1TranslateY.value, 
@@ -548,12 +548,13 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
     });
     return {
       top: topValue,
+      right: -15, // Offset to the right
       transform: [{ scale: scaleValue } as any],
     };
   });
 
   const backCardAnimatedStyle = useAnimatedStyle(() => {
-    const topValue = -20 + card2TranslateY.value; // Slightly more peek from TOP
+    const topValue = -80 + card2TranslateY.value; // Offset up more to show title
     const scaleValue = 0.92 * card2Scale.value;
     console.log('🔄 BACK card animated values:', { 
       card2TranslateY: card2TranslateY.value, 
@@ -563,6 +564,7 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
     });
     return {
       top: topValue,
+      right: -30, // Offset to the right more
       transform: [{ scale: scaleValue } as any],
     };
   });
