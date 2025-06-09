@@ -552,14 +552,14 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
   // Rebuilt animated styles for robust staggering
   const middleCardAnimatedStyle = useAnimatedStyle(() => ({
     transform: [
-      { translateY: card1TranslateY.value - 60 }, // Increased peek from top
+      { translateY: card1TranslateY.value - 35 }, // Tighter vertical offset
       { scale: card1Scale.value },
     ],
   } as any));
 
   const backCardAnimatedStyle = useAnimatedStyle(() => ({
     transform: [
-      { translateY: card2TranslateY.value - 120 }, // Increased peek from top
+      { translateY: card2TranslateY.value - 70 }, // Tighter vertical offset
       { scale: card2Scale.value },
     ],
   } as any));
@@ -661,7 +661,8 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
     return (
       <TouchableOpacity 
         style={styles.backCardHeader}
-        onPress={() => handleTapBackCard(index)}>
+        onPress={() => handleTapBackCard(index)}
+      >
         <View style={styles.backCardTextContainer}>
           <Text style={styles.backCardTitle} numberOfLines={1}>
             {recipe.title}
@@ -677,7 +678,6 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
   const renderCard = (recipe: Recipe, index: number, cardType: 'front' | 'middle' | 'back') => {
     const isFront = cardType === 'front';
     
-    // Calculate heights and styles according to blueprint
     let animatedStyle;
     let cardStyle;
     
@@ -696,19 +696,34 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
         break;
     }
 
-    return (
+    const cardContent = isFront 
+      ? renderFrontCard(recipe) 
+      : renderBackCard(recipe, index);
+
+    const animatedCard = (
       <Animated.View
         key={`${recipe.id}-${cardType}`}
         style={[
           styles.card,
           cardStyle,
-          // Assign zIndex based on position in stack
           { zIndex: 1000 - (index - frontCardIndex) * 100 },
           animatedStyle,
         ]}>
-        {isFront ? renderFrontCard(recipe) : renderBackCard(recipe, index)}
+        {cardContent}
       </Animated.View>
     );
+
+    if (isFront) {
+      // The front card is the only one that needs the pan gesture handler for swiping
+      return (
+        <PanGestureHandler onGestureEvent={panGestureHandler}>
+          {animatedCard}
+        </PanGestureHandler>
+      );
+    }
+    
+    // Back cards are just the animated view, they handle their own taps internally
+    return animatedCard;
   };
 
   const getVisibleRecipes = () => {
@@ -790,27 +805,25 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
 
       {/* Zone B: Stack Viewport */}
       <View style={styles.stackViewport}>
-        <PanGestureHandler onGestureEvent={panGestureHandler}>
-          <Animated.View style={{ flex: 1, alignItems: 'center', justifyContent: 'flex-end' }}>
-            {getVisibleRecipes().length > 0 && (
-              <>
-                {/* Render cards in reverse order for proper stacking (back to front) */}
-                {getVisibleRecipes().slice(0).reverse().map((recipe, i) => {
-                  const visibleIndex = getVisibleRecipes().length - 1 - i;
-                  const cardType = visibleIndex === 0 ? 'front' : visibleIndex === 1 ? 'middle' : 'back';
-                  
-                  // The actual index in the main recipes array
-                  const overallIndex = (frontCardIndex + visibleIndex);
+        {getVisibleRecipes().length > 0 && (
+          <>
+            {/* Render cards in reverse order for proper stacking. */}
+            {getVisibleRecipes().slice(0).reverse().map((recipe, i) => {
+              const visibleIndex = getVisibleRecipes().length - 1 - i;
+              const cardType = visibleIndex === 0 ? 'front' : visibleIndex === 1 ? 'middle' : 'back';
+              const overallIndex = (frontCardIndex + visibleIndex);
 
-                  // Ensure we don't go out of bounds if recipes array is small
-                  if (overallIndex >= recipes.length) return null;
+              if (overallIndex >= recipes.length) return null;
 
-                  return renderCard(recipes[overallIndex], overallIndex, cardType);
-                })}
-              </>
-            )}
-          </Animated.View>
-        </PanGestureHandler>
+              // Use a React.Fragment with a key to solve the list warning
+              return (
+                <React.Fragment key={recipe.id}>
+                  {renderCard(recipes[overallIndex], overallIndex, cardType)}
+                </React.Fragment>
+              );
+            })}
+          </>
+        )}
         
         {/* Swipe hint - only show for first few recipes */}
         {frontCardIndex < 2 && (
@@ -1164,10 +1177,9 @@ const styles = StyleSheet.create({
     height: '100%',
     flexDirection: 'column',
     alignItems: 'flex-start',
-    justifyContent: 'center',
+    justifyContent: 'flex-start', // Align content to the TOP
     paddingHorizontal: 20,
-    paddingVertical: 20,
-    backgroundColor: '#FFFFFF',
+    paddingTop: 20, // Add padding to push content down from the border
   },
   backCardTextContainer: {
     width: '100%',
