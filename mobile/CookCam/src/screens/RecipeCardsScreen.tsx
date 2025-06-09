@@ -623,6 +623,7 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.cookButton} onPress={handleCookRecipe}>
+            <ChefHat size={18} color="#FFFFFF" />
             <Text style={styles.cookButtonText}>Cook Now</Text>
           </TouchableOpacity>
         </View>
@@ -675,12 +676,7 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
         break;
     }
 
-    console.log(`🃏 Rendering ${cardType} card:`, {
-      recipe: recipe.title,
-      height: cardHeight,
-      topOffset,
-      zIndex
-    });
+
 
     return (
       <Animated.View
@@ -926,20 +922,23 @@ const styles = StyleSheet.create({
   // Header
   header: {
     paddingHorizontal: 20,
-    paddingTop: 8,
-    paddingBottom: 16,
+    paddingTop: 12,
+    paddingBottom: 20,
     alignItems: 'center',
   },
   title: {
-    fontSize: 28,
+    fontSize: 26,
     fontWeight: 'bold',
     color: '#2D1B69', // Eggplant Midnight
+    letterSpacing: -0.5,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 15,
     color: '#2D1B69',
-    marginTop: 4,
+    marginTop: 6,
     fontWeight: '500',
+    opacity: 0.8,
+    textAlign: 'center',
   },
 
   // Zone B: Stack Viewport
@@ -947,13 +946,17 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 20,
     paddingBottom: 20,
+    paddingTop: 10,
     position: 'relative',
+    alignItems: 'center', // Center cards horizontally
+    justifyContent: 'flex-start',
   },
 
   // Card Styles - rounded corners 16px, subtle shadow
   card: {
     position: 'absolute',
     width: '100%',
+    maxWidth: 400, // Max width for larger screens
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
     shadowColor: '#000',
@@ -1029,23 +1032,26 @@ const styles = StyleSheet.create({
   metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: 16,
-    gap: 16,
+    paddingHorizontal: 4,
   },
   metaItem: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
+    flex: 1,
   },
   metaText: {
     fontSize: 14,
     color: '#8E8E93',
+    fontWeight: '500',
   },
   difficultyBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
     borderRadius: 12,
-    marginLeft: 'auto',
+    alignSelf: 'flex-end',
   },
   easyBadge: {
     backgroundColor: '#4CAF50', // Fresh Basil
@@ -1090,17 +1096,19 @@ const styles = StyleSheet.create({
   chipRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 20,
+    gap: 6,
+    marginBottom: 16,
+    paddingHorizontal: 4,
   },
   chip: {
     backgroundColor: '#2D1B69', // Eggplant Midnight
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 14,
+    marginBottom: 4,
   },
   chipText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
     color: '#FFFFFF',
   },
@@ -1108,49 +1116,55 @@ const styles = StyleSheet.create({
   // Action Row - Fixed at bottom
   actionRow: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 8,
     paddingHorizontal: 16,
-    paddingBottom: 16,
-    paddingTop: 8,
+    paddingBottom: 20,
+    paddingTop: 12,
     backgroundColor: '#FFFFFF',
   },
   passButton: {
-    flex: 1,
+    minWidth: 80,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'rgba(255, 59, 48, 0.1)',
-    paddingVertical: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 12,
     borderRadius: 12,
-    gap: 6,
+    gap: 4,
   },
   passButtonText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
     color: '#FF3B30',
   },
   previewButton: {
-    flex: 1,
+    minWidth: 90,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'rgba(45, 27, 105, 0.1)',
-    paddingVertical: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 12,
     borderRadius: 12,
-    gap: 6,
+    gap: 4,
   },
   previewButtonText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
     color: '#2D1B69',
   },
   cookButton: {
-    flex: 2,
+    flex: 1,
+    minWidth: 120,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#FF6B35', // Spice Orange
-    paddingVertical: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
     borderRadius: 12,
+    gap: 6,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -1158,62 +1172,79 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   cookButtonText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: 'bold',
     color: '#FFFFFF',
   },
 
   // Back Card Header (Peeking Cards) - shows only title + 1-line teaser
   backCardHeader: {
-    flex: 1,
+    height: '100%',
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
+    justifyContent: 'flex-start',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    backgroundColor: '#FFFFFF',
   },
   backCardImage: {
-    width: 60,
-    height: 60,
-    borderRadius: 12,
-    marginRight: 16,
+    width: 54,
+    height: 54,
+    borderRadius: 10,
+    marginRight: 14,
   },
   backCardTextContainer: {
     flex: 1,
+    justifyContent: 'center',
   },
   backCardTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
     color: '#2D1B69',
-    marginBottom: 4,
+    marginBottom: 3,
+    lineHeight: 18,
   },
   backCardTeaser: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#8E8E93',
+    fontWeight: '500',
+    lineHeight: 16,
   },
 
   // Swipe Hint
   swipeHint: {
     position: 'absolute',
-    bottom: 20,
-    left: 0,
-    right: 0,
+    bottom: 10,
+    left: 20,
+    right: 20,
     alignItems: 'center',
+    backgroundColor: 'rgba(248, 248, 255, 0.9)',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   swipeHintText: {
-    fontSize: 12,
-    color: 'rgba(45, 27, 105, 0.5)', // Ghosted Eggplant
-    fontWeight: '500',
+    fontSize: 11,
+    color: 'rgba(45, 27, 105, 0.7)', // Ghosted Eggplant
+    fontWeight: '600',
+    textAlign: 'center',
   },
 
   // Saved Toast
   savedToast: {
     position: 'absolute',
-    bottom: 100,
-    left: 20,
-    right: 20,
+    bottom: 80,
+    left: 30,
+    right: 30,
     backgroundColor: '#4CAF50', // Fresh Basil background
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 16,
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
