@@ -683,17 +683,17 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
     
     switch (cardType) {
       case 'front':
-        cardHeight = '100%';
+        cardHeight = '78%';   // Front card: 78% size (smallest - on top)
         zIndex = 1000;
         animatedStyle = frontCardAnimatedStyle;
         break;
       case 'middle':
-        cardHeight = '85%';
+        cardHeight = '90%';   // Middle card: 90% size (medium - behind front)
         zIndex = 900;
         animatedStyle = middleCardAnimatedStyle;
         break;
       case 'back':
-        cardHeight = '70%';
+        cardHeight = '100%';  // Back card: 100% size (largest - furthest back)
         zIndex = 800;
         animatedStyle = backCardAnimatedStyle;
         break;
