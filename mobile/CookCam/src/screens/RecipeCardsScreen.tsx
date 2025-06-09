@@ -150,20 +150,30 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
       });
 
       console.log('📥 Preview API Response:', response);
+      console.log('🔍 Response structure:', {
+        success: response.success,
+        hasData: !!response.data,
+        dataKeys: response.data ? Object.keys(response.data) : [],
+        previewsPath1: !!response.data?.previews,
+        previewsPath2: !!response.data?.data?.previews,
+        sessionIdPath1: !!response.data?.sessionId,
+        sessionIdPath2: !!response.data?.data?.sessionId
+      });
 
       if (!response.success) {
         throw new Error(response.error || 'Failed to generate recipe previews');
       }
 
       if (response.success && response.data) {
-        // Store session ID for detailed recipe generation later
-        if (response.data.sessionId) {
-          setSessionId(response.data.sessionId);
-          console.log('💾 Stored session ID:', response.data.sessionId);
+        // Store session ID for detailed recipe generation later - check both possible structures
+        const sessionId = response.data.sessionId || response.data.data?.sessionId;
+        if (sessionId) {
+          setSessionId(sessionId);
+          console.log('💾 Stored session ID:', sessionId);
         }
 
-        // Handle preview response format
-        const previewsData = response.data.previews;
+        // Handle preview response format - check both possible structures
+        const previewsData = response.data.previews || response.data.data?.previews;
         
         if (previewsData && Array.isArray(previewsData) && previewsData.length > 0) {
           console.log('✅ Received recipe previews:', previewsData.length);
