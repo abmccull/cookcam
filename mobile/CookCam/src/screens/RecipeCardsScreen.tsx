@@ -582,10 +582,37 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
     ReactNativeHapticFeedback.trigger('impactLight');
     const recipe = recipes.find(r => r.id === recipeId);
     console.log('Rejected:', recipe?.title);
-    setDismissedRecipes(prev => new Set([...prev, recipeId]));
-    // If this was the expanded recipe, collapse it
-    if (expandedRecipe === recipeId) {
-      setExpandedRecipe(null);
+    
+    // Animate card out
+    const animations = cardAnimations.current[recipeId];
+    if (animations) {
+      Animated.parallel([
+        Animated.timing(animations.translateY, {
+          toValue: -600, // Slide up and out
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.timing(animations.opacity, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        // Remove from dismissed recipes and set new expanded recipe
+        setDismissedRecipes(prev => new Set([...prev, recipeId]));
+        
+        // If this was the expanded recipe, expand the next available one
+        if (expandedRecipe === recipeId) {
+          const remainingRecipes = recipes.filter(r => 
+            !dismissedRecipes.has(r.id) && r.id !== recipeId
+          );
+          if (remainingRecipes.length > 0) {
+            setExpandedRecipe(remainingRecipes[0].id);
+          } else {
+            setExpandedRecipe(null);
+          }
+        }
+      });
     }
   };
 
@@ -647,162 +674,236 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
 
   // Filter out dismissed recipes
   const visibleRecipes = recipes.filter(recipe => !dismissedRecipes.has(recipe.id));
+  
+  // Set first recipe as expanded by default if none is expanded
+  useEffect(() => {
+    if (visibleRecipes.length > 0 && !expandedRecipe) {
+      setExpandedRecipe(visibleRecipes[0].id);
+    }
+  }, [visibleRecipes, expandedRecipe]);
 
-  const renderSummaryCard = (recipe: Recipe) => {
+  // Animation refs for each card
+  const cardAnimations = useRef<{[key: string]: {
+    translateY: Animated.Value;
+    scale: Animated.Value;
+    opacity: Animated.Value;
+  }}>({});
+
+  // Initialize animations for each recipe
+  useEffect(() => {
+    visibleRecipes.forEach((recipe, index) => {
+      if (!cardAnimations.current[recipe.id]) {
+        cardAnimations.current[recipe.id] = {
+          translateY: new Animated.Value(index * 60), // Stack offset
+          scale: new Animated.Value(1 - index * 0.05), // Slight scale reduction
+          opacity: new Animated.Value(1),
+        };
+      }
+    });
+  }, [visibleRecipes]);
+
+  // Animate card positions when expanded recipe changes
+  useEffect(() => {
+    if (expandedRecipe && visibleRecipes.length > 0) {
+      const expandedIndex = visibleRecipes.findIndex(r => r.id === expandedRecipe);
+      
+      visibleRecipes.forEach((recipe, index) => {
+        const animations = cardAnimations.current[recipe.id];
+        if (!animations) return;
+
+        const isExpanded = recipe.id === expandedRecipe;
+        const stackIndex = isExpanded ? 0 : (index > expandedIndex ? index : index + 1);
+        
+        Animated.parallel([
+          Animated.spring(animations.translateY, {
+            toValue: isExpanded ? 0 : stackIndex * 60,
+            useNativeDriver: true,
+            tension: 100,
+            friction: 8,
+          }),
+          Animated.spring(animations.scale, {
+            toValue: isExpanded ? 1 : (1 - stackIndex * 0.05),
+            useNativeDriver: true,
+            tension: 100,
+            friction: 8,
+          }),
+          Animated.timing(animations.opacity, {
+            toValue: 1,
+            duration: 300,
+            useNativeDriver: true,
+          }),
+        ]).start();
+      });
+    }
+  }, [expandedRecipe, visibleRecipes]);
+
+  const renderStackedCard = (recipe: Recipe, index: number) => {
+    const isExpanded = expandedRecipe === recipe.id;
+    const animations = cardAnimations.current[recipe.id];
+    
+    if (!animations) return null;
+
+    const zIndex = isExpanded ? 1000 : (visibleRecipes.length - index);
+
     return (
-      <TouchableOpacity 
+      <Animated.View
         key={recipe.id}
-        style={styles.summaryCard}
-        onPress={() => handleExpandCard(recipe.id)}>
-        <Image source={{uri: recipe.image}} style={styles.summaryImage} />
-        <View style={styles.summaryContent}>
-          <Text style={styles.summaryTitle} numberOfLines={2}>{recipe.title}</Text>
-          <View style={styles.summaryInfo}>
-            <Clock size={12} color="#8E8E93" />
-            <Text style={styles.summaryInfoText}>{recipe.cookingTime}</Text>
-          </View>
-          <View style={styles.summaryInfo}>
-            <Users size={12} color="#8E8E93" />
-            <Text style={styles.summaryInfoText}>{recipe.servings}</Text>
-          </View>
-        </View>
-      </TouchableOpacity>
-    );
-  };
-
-  const renderExpandedCard = (recipe: Recipe) => {
-    return (
-      <View key={recipe.id} style={styles.expandedCard}>
-        <View style={styles.imageContainer}>
-          <Image source={{uri: recipe.image}} style={styles.expandedImage} />
-          
-          {/* XP Badge */}
-          <Animated.View style={[
-            styles.xpBadge, 
-            { transform: [{ scale: xpAnimScale }] }
-          ]}>
-            <Trophy size={10} color="#2D1B69" />
-            <Text style={styles.xpBadgeText}>+{calculateRecipeXP(recipe)} XP</Text>
-          </Animated.View>
-
-          {/* Trending Badge */}
-          {recipe.isTrending && (
-            <Animated.View style={[
-              styles.trendingBadge,
-              { transform: [{ scale: trendingPulse }] }
-            ]}>
-              <TrendingUp size={10} color="#FFFFFF" />
-              <Text style={styles.trendingText}>TRENDING</Text>
-            </Animated.View>
-          )}
-        </View>
-
-        <ScrollView style={styles.expandedContent} showsVerticalScrollIndicator={false}>
-          <TouchableOpacity 
-            style={styles.expandedTitleContainer}
-            onPress={() => handleExpandCard(recipe.id)}>
-            <Text style={styles.expandedTitle}>{recipe.title}</Text>
-          </TouchableOpacity>
-          
-          {/* Creator Row */}
-          {recipe.isCreatorRecipe && recipe.creatorName && (
-            <View style={styles.creatorRow}>
-              <ChefBadge 
-                tier={recipe.creatorTier || 1} 
-                size="small" 
-              />
-              <Text style={styles.creatorName}>{recipe.creatorName}</Text>
+        style={[
+          styles.stackedCard,
+          {
+            zIndex,
+            transform: [
+              { translateY: animations.translateY },
+              { scale: animations.scale },
+            ],
+            opacity: animations.opacity,
+          },
+        ]}>
+        
+        {isExpanded ? (
+          // Expanded Card Content
+          <View style={styles.expandedCardContent}>
+            <View style={styles.imageContainer}>
+              <Image source={{uri: recipe.image}} style={styles.stackedCardImage} />
               
-              {recipe.rating && recipe.viewCount && recipe.viewCount > 5000 && (
-                <View style={styles.popularBadge}>
-                  <Star size={8} color="#FFB800" />
-                  <Text style={styles.popularText}>POPULAR</Text>
+              {/* XP Badge */}
+              <Animated.View style={[
+                styles.xpBadge, 
+                { transform: [{ scale: xpAnimScale }] }
+              ]}>
+                <Trophy size={10} color="#2D1B69" />
+                <Text style={styles.xpBadgeText}>+{calculateRecipeXP(recipe)} XP</Text>
+              </Animated.View>
+
+              {/* Trending Badge */}
+              {recipe.isTrending && (
+                <Animated.View style={[
+                  styles.trendingBadge,
+                  { transform: [{ scale: trendingPulse }] }
+                ]}>
+                  <TrendingUp size={10} color="#FFFFFF" />
+                  <Text style={styles.trendingText}>TRENDING</Text>
+                </Animated.View>
+              )}
+            </View>
+
+            <ScrollView style={styles.expandedContentScroll} showsVerticalScrollIndicator={false}>
+              <Text style={styles.stackedCardTitle}>{recipe.title}</Text>
+              
+              {/* Creator Row */}
+              {recipe.isCreatorRecipe && recipe.creatorName && (
+                <View style={styles.creatorRow}>
+                  <ChefBadge tier={recipe.creatorTier || 1} size="small" />
+                  <Text style={styles.creatorName}>{recipe.creatorName}</Text>
+                  
+                  {recipe.rating && recipe.viewCount && recipe.viewCount > 5000 && (
+                    <View style={styles.popularBadge}>
+                      <Star size={8} color="#FFB800" />
+                      <Text style={styles.popularText}>POPULAR</Text>
+                    </View>
+                  )}
                 </View>
               )}
-            </View>
-          )}
 
-          {/* Rating Row */}
-          {recipe.rating && (
-            <View style={styles.ratingRow}>
-              <Star size={14} color="#FFB800" fill="#FFB800" />
-              <Text style={styles.ratingText}>{recipe.rating}</Text>
-              <Text style={styles.ratingCount}>({recipe.ratingCount})</Text>
-              {recipe.viewCount && (
-                <Text style={styles.viewCount}>{recipe.viewCount.toLocaleString()} views</Text>
+              {/* Rating Row */}
+              {recipe.rating && (
+                <View style={styles.ratingRow}>
+                  <Star size={14} color="#FFB800" fill="#FFB800" />
+                  <Text style={styles.ratingText}>{recipe.rating}</Text>
+                  <Text style={styles.ratingCount}>({recipe.ratingCount})</Text>
+                  {recipe.viewCount && (
+                    <Text style={styles.viewCount}>{recipe.viewCount.toLocaleString()} views</Text>
+                  )}
+                </View>
               )}
-            </View>
-          )}
 
-          <View style={styles.cardInfo}>
-            <View style={styles.infoItem}>
-              <Clock size={16} color="#8E8E93" />
-              <Text style={styles.infoText}>{recipe.cookingTime}</Text>
-            </View>
-            <View style={styles.infoItem}>
-              <Users size={16} color="#8E8E93" />
-              <Text style={styles.infoText}>{recipe.servings} servings</Text>
-            </View>
-            <View style={[styles.difficultyBadge, 
-              recipe.difficulty === 'Easy' ? styles.easyBadge :
-              recipe.difficulty === 'Medium' ? styles.mediumBadge : styles.hardBadge
-            ]}>
-              <Text style={styles.difficultyText}>{recipe.difficulty}</Text>
-            </View>
-          </View>
-
-          {/* Macros */}
-          <View style={styles.macrosRow}>
-            <View style={styles.macroItem}>
-              <Text style={styles.macroValue}>{recipe.macros.calories}</Text>
-              <Text style={styles.macroLabel}>Calories</Text>
-            </View>
-            <View style={styles.macroItem}>
-              <Text style={styles.macroValue}>{recipe.macros.protein}g</Text>
-              <Text style={styles.macroLabel}>Protein</Text>
-            </View>
-            <View style={styles.macroItem}>
-              <Text style={styles.macroValue}>{recipe.macros.carbs}g</Text>
-              <Text style={styles.macroLabel}>Carbs</Text>
-            </View>
-            <View style={styles.macroItem}>
-              <Text style={styles.macroValue}>{recipe.macros.fat}g</Text>
-              <Text style={styles.macroLabel}>Fat</Text>
-            </View>
-          </View>
-
-          <View style={styles.tagsRow}>
-            {recipe.tags.map(tag => (
-              <View key={tag} style={styles.tag}>
-                <Text style={styles.tagText}>{tag}</Text>
+              <View style={styles.cardInfo}>
+                <View style={styles.infoItem}>
+                  <Clock size={16} color="#8E8E93" />
+                  <Text style={styles.infoText}>{recipe.cookingTime}</Text>
+                </View>
+                <View style={styles.infoItem}>
+                  <Users size={16} color="#8E8E93" />
+                  <Text style={styles.infoText}>{recipe.servings} servings</Text>
+                </View>
+                <View style={[styles.difficultyBadge, 
+                  recipe.difficulty === 'Easy' ? styles.easyBadge :
+                  recipe.difficulty === 'Medium' ? styles.mediumBadge : styles.hardBadge
+                ]}>
+                  <Text style={styles.difficultyText}>{recipe.difficulty}</Text>
+                </View>
               </View>
-            ))}
-          </View>
 
-          {/* Action Buttons */}
-          <View style={styles.actionButtons}>
-            <TouchableOpacity 
-              style={styles.passButton}
-              onPress={() => handlePassRecipe(recipe.id)}>
-              <X size={20} color="#FF3B30" />
-              <Text style={styles.passButtonText}>Pass</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={styles.detailsButton}
-              onPress={() => handleViewRecipeDetails(recipe)}>
-              <Info size={20} color="#2D1B69" />
-              <Text style={styles.detailsButtonText}>Details</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={styles.cookButtonCard}
-              onPress={() => handleCookRecipeFromCard(recipe)}>
-              <Text style={styles.cookButtonCardText}>Cook This!</Text>
-            </TouchableOpacity>
+              {/* Macros */}
+              <View style={styles.macrosRow}>
+                <View style={styles.macroItem}>
+                  <Text style={styles.macroValue}>{recipe.macros.calories}</Text>
+                  <Text style={styles.macroLabel}>Calories</Text>
+                </View>
+                <View style={styles.macroItem}>
+                  <Text style={styles.macroValue}>{recipe.macros.protein}g</Text>
+                  <Text style={styles.macroLabel}>Protein</Text>
+                </View>
+                <View style={styles.macroItem}>
+                  <Text style={styles.macroValue}>{recipe.macros.carbs}g</Text>
+                  <Text style={styles.macroLabel}>Carbs</Text>
+                </View>
+                <View style={styles.macroItem}>
+                  <Text style={styles.macroValue}>{recipe.macros.fat}g</Text>
+                  <Text style={styles.macroLabel}>Fat</Text>
+                </View>
+              </View>
+
+              <View style={styles.tagsRow}>
+                {recipe.tags.map(tag => (
+                  <View key={tag} style={styles.tag}>
+                    <Text style={styles.tagText}>{tag}</Text>
+                  </View>
+                ))}
+              </View>
+
+              {/* Action Buttons */}
+              <View style={styles.actionButtons}>
+                <TouchableOpacity 
+                  style={styles.passButton}
+                  onPress={() => handlePassRecipe(recipe.id)}>
+                  <X size={20} color="#FF3B30" />
+                  <Text style={styles.passButtonText}>Pass</Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity 
+                  style={styles.detailsButton}
+                  onPress={() => handleViewRecipeDetails(recipe)}>
+                  <Info size={20} color="#2D1B69" />
+                  <Text style={styles.detailsButtonText}>Details</Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity 
+                  style={styles.cookButtonCard}
+                  onPress={() => handleCookRecipeFromCard(recipe)}>
+                  <Text style={styles.cookButtonCardText}>Cook This!</Text>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
           </View>
-        </ScrollView>
-      </View>
+        ) : (
+          // Collapsed Card Header (Peeking Card)
+          <TouchableOpacity 
+            style={styles.collapsedCardHeader}
+            onPress={() => handleExpandCard(recipe.id)}>
+            <Image source={{uri: recipe.image}} style={styles.peekingCardImage} />
+            <View style={styles.peekingCardContent}>
+              <Text style={styles.peekingCardTitle} numberOfLines={1}>{recipe.title}</Text>
+              <View style={styles.peekingCardInfo}>
+                <Clock size={12} color="#8E8E93" />
+                <Text style={styles.peekingCardInfoText}>{recipe.cookingTime}</Text>
+                <Users size={12} color="#8E8E93" />
+                <Text style={styles.peekingCardInfoText}>{recipe.servings}</Text>
+              </View>
+            </View>
+          </TouchableOpacity>
+        )}
+      </Animated.View>
     );
   };
 
@@ -822,20 +923,9 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
             <ActivityIndicator size="large" color="#FF6B35" />
           </View>
         ) : visibleRecipes.length > 0 ? (
-          <ScrollView 
-            horizontal 
-            showsHorizontalScrollIndicator={false}
-            style={styles.cardsScrollView}
-            contentContainerStyle={styles.cardsRow}
-            decelerationRate="fast"
-            snapToInterval={292} // 280 (card width) + 12 (gap)
-            snapToAlignment="start">
-            {visibleRecipes.map((recipe) => (
-              expandedRecipe === recipe.id 
-                ? renderExpandedCard(recipe)
-                : renderSummaryCard(recipe)
-            ))}
-          </ScrollView>
+          <View style={{ flex: 1, position: 'relative' }}>
+            {visibleRecipes.map((recipe, index) => renderStackedCard(recipe, index))}
+          </View>
         ) : (
           <View style={styles.aiLoadingContainer}>
             <Text style={styles.noRecipes}>
@@ -1472,64 +1562,18 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
   
-  // Multi-card layout styles
+  // Stacked cards layout styles
   cardsContainer: {
     flex: 1,
     paddingHorizontal: 16,
     paddingTop: 8,
   },
-  cardsScrollView: {
-    flex: 1,
-  },
-  cardsRow: {
-    flexDirection: 'row',
-    gap: 12,
-    paddingBottom: 20,
-  },
   
-  // Summary card styles
-  summaryCard: {
-    width: 120,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-    overflow: 'hidden',
-  },
-  summaryImage: {
+  // Stacked card styles
+  stackedCard: {
+    position: 'absolute',
     width: '100%',
-    height: 80,
-    borderTopLeftRadius: 12,
-    borderTopRightRadius: 12,
-  },
-  summaryContent: {
-    padding: 8,
-    flex: 1,
-  },
-  summaryTitle: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#2D1B69',
-    marginBottom: 6,
-    lineHeight: 14,
-  },
-  summaryInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 3,
-  },
-  summaryInfoText: {
-    fontSize: 10,
-    color: '#8E8E93',
-    marginLeft: 4,
-  },
-  
-  // Expanded card styles
-  expandedCard: {
-    width: 280,
+    height: 500,
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
     shadowColor: '#000',
@@ -1539,25 +1583,64 @@ const styles = StyleSheet.create({
     elevation: 5,
     overflow: 'hidden',
   },
-  expandedImage: {
+  
+  // Expanded card content
+  expandedCardContent: {
+    flex: 1,
+    height: '100%',
+  },
+  stackedCardImage: {
     width: '100%',
-    height: 140,
+    height: 200,
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
   },
-  expandedContent: {
+  expandedContentScroll: {
     flex: 1,
     padding: 16,
   },
-  expandedTitleContainer: {
-    marginBottom: 8,
-  },
-  expandedTitle: {
-    fontSize: 18,
+  stackedCardTitle: {
+    fontSize: 20,
     fontWeight: 'bold',
     color: '#2D1B69',
-    marginBottom: 8,
-    lineHeight: 22,
+    marginBottom: 12,
+    lineHeight: 24,
+  },
+  
+  // Collapsed/Peeking card styles
+  collapsedCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    height: 80,
+  },
+  peekingCardImage: {
+    width: 50,
+    height: 50,
+    borderRadius: 8,
+    marginRight: 12,
+  },
+  peekingCardContent: {
+    flex: 1,
+  },
+  peekingCardTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#2D1B69',
+    marginBottom: 4,
+  },
+  peekingCardInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  peekingCardInfoText: {
+    fontSize: 12,
+    color: '#8E8E93',
+    marginLeft: 2,
+    marginRight: 6,
   },
   
   // Action buttons
