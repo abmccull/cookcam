@@ -94,16 +94,18 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
   const [sessionId, setSessionId] = useState<string | null>(null);
 
   // Animation values for swipe gestures
-  const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
-  const scale = useSharedValue(1);
-  const opacity = useSharedValue(1);
+  const translateX = useSharedValue(0);
 
-  // Animation values for card cascade effect (cards use fixed positioning, transforms are for animation only)
+  // Corrected Scaling: Front card is smallest, back is largest
+  const scale = useSharedValue(0.9); // Front card scale
+  const card1Scale = useSharedValue(0.95); // Middle card scale
+  const card2Scale = useSharedValue(1); // Back card scale
+
+  // Shared values for back card animations
   const card1TranslateY = useSharedValue(0);
   const card2TranslateY = useSharedValue(0);
-  const card1Scale = useSharedValue(0.95);
-  const card2Scale = useSharedValue(0.9);
+  const opacity = useSharedValue(1);
 
   // Generate recipe previews from backend API (Step 1 of two-step process)
   const generateRecipesFromAPI = async () => {
@@ -293,9 +295,11 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
     card1TranslateY.value = 0;
     card2TranslateY.value = 0;
     opacity.value = 1;
-    scale.value = 1;
-    card1Scale.value = 0.95; // Corresponds to middle card
-    card2Scale.value = 0.9;  // Corresponds to back card
+    
+    // Set final, correct scales
+    scale.value = 0.9;
+    card1Scale.value = 0.95;
+    card2Scale.value = 1;
   };
 
   const calculateRecipeXP = (recipe: Recipe) => {
@@ -538,16 +542,14 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
   // Rebuilt animated styles for robust staggering
   const middleCardAnimatedStyle = useAnimatedStyle(() => ({
     transform: [
-      { translateY: card1TranslateY.value - 25 }, // Stagger Up
-      { translateX: 20 }, // Stagger Right
+      { translateY: card1TranslateY.value - 40 }, // Stagger Up
       { scale: card1Scale.value },
     ],
   } as any));
 
   const backCardAnimatedStyle = useAnimatedStyle(() => ({
     transform: [
-      { translateY: card2TranslateY.value - 50 }, // Stagger Up More
-      { translateX: 40 }, // Stagger Right More
+      { translateY: card2TranslateY.value - 80 }, // Stagger Up More
       { scale: card2Scale.value },
     ],
   } as any));
@@ -773,39 +775,28 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
 
       {/* Zone B: Stack Viewport */}
       <View style={styles.stackViewport}>
-        {getVisibleRecipes().length > 0 && (
-          <>
-            {/* Render cards in reverse order for proper stacking (back to front) */}
-            {getVisibleRecipes().length > 2 && (
-              renderCard(getVisibleRecipes()[2], frontCardIndex + 2, 'back')
-            )}
-            
-            {getVisibleRecipes().length > 1 && (
-              renderCard(getVisibleRecipes()[1], frontCardIndex + 1, 'middle')
-            )}
-            
-            {/* Front Card with Gesture Handler */}
-            <PanGestureHandler onGestureEvent={panGestureHandler}>
-              {renderCard(getVisibleRecipes()[0], frontCardIndex, 'front')}
-            </PanGestureHandler>
-          </>
-        )}
+        <PanGestureHandler onGestureEvent={panGestureHandler}>
+          <Animated.View style={{ flex: 1, alignItems: 'center', justifyContent: 'flex-end' }}>
+            {getVisibleRecipes().length > 0 && (
+              <>
+                {/* Render cards in reverse order for proper stacking (back to front) */}
+                {getVisibleRecipes().slice(0).reverse().map((recipe, i) => {
+                  const visibleIndex = getVisibleRecipes().length - 1 - i;
+                  const cardType = visibleIndex === 0 ? 'front' : visibleIndex === 1 ? 'middle' : 'back';
+                  
+                  // The actual index in the main recipes array
+                  const overallIndex = (frontCardIndex + visibleIndex);
 
-        {/* DEBUG: Show card count */}
-        <View style={{
-          position: 'absolute',
-          top: 10,
-          right: 10,
-          backgroundColor: 'red',
-          padding: 8,
-          borderRadius: 4,
-          zIndex: 9999,
-        }}>
-          <Text style={{ color: 'white', fontSize: 12, fontWeight: 'bold' }}>
-            Cards: {getVisibleRecipes().length}
-          </Text>
-        </View>
+                  // Ensure we don't go out of bounds if recipes array is small
+                  if (overallIndex >= recipes.length) return null;
 
+                  return renderCard(recipes[overallIndex], overallIndex, cardType);
+                })}
+              </>
+            )}
+          </Animated.View>
+        </PanGestureHandler>
+        
         {/* Swipe hint - only show for first few recipes */}
         {frontCardIndex < 2 && (
           <Animated.View style={styles.swipeHint}>
