@@ -525,6 +525,7 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
     );
 
     return {
+      bottom: 0, // Position front card at bottom
       transform: [
         { translateX: translateX.value } as any,
         { translateY: translateY.value } as any,
@@ -537,7 +538,7 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
 
   // Animated styles for back cards
   const middleCardAnimatedStyle = useAnimatedStyle(() => {
-    const topValue = 40 + card1TranslateY.value;
+    const topValue = -60 + card1TranslateY.value; // Peek from TOP (negative offset)
     const scaleValue = 0.96 * card1Scale.value;
     console.log('🔄 MIDDLE card animated values:', { 
       card1TranslateY: card1TranslateY.value, 
@@ -552,7 +553,7 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
   });
 
   const backCardAnimatedStyle = useAnimatedStyle(() => {
-    const topValue = 80 + card2TranslateY.value;
+    const topValue = -120 + card2TranslateY.value; // Peek from TOP (more negative)
     const scaleValue = 0.92 * card2Scale.value;
     console.log('🔄 BACK card animated values:', { 
       card2TranslateY: card2TranslateY.value, 
@@ -569,25 +570,26 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
   const renderFrontCard = (recipe: Recipe) => {
     return (
       <View style={styles.frontCardContent}>
-        {/* Card Header with Heart and Title */}
+        {/* Card Header with Title and Heart */}
         <View style={styles.cardHeader}>
-          <TouchableOpacity
-            style={styles.heartButton}
-            onPress={() => handleSaveRecipe(recipe.id)}>
-            <Heart
-              size={20}
-              color={savedRecipes.has(recipe.id) ? '#FF6B35' : '#8E8E93'}
-              fill={savedRecipes.has(recipe.id) ? '#FF6B35' : 'transparent'}
-            />
-          </TouchableOpacity>
+          <View style={styles.cardHeaderContent}>
+            <Text style={styles.frontCardTitle} numberOfLines={2}>
+              {recipe.title}
+            </Text>
+            <TouchableOpacity
+              style={styles.heartButton}
+              onPress={() => handleSaveRecipe(recipe.id)}>
+              <Heart
+                size={20}
+                color={savedRecipes.has(recipe.id) ? '#FF6B35' : '#8E8E93'}
+                fill={savedRecipes.has(recipe.id) ? '#FF6B35' : 'transparent'}
+              />
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Scrollable Content */}
         <ScrollView style={styles.cardContentContainer} showsVerticalScrollIndicator={false}>
-          {/* Title (2-line max) */}
-          <Text style={styles.frontCardTitle} numberOfLines={2}>
-            {recipe.title}
-          </Text>
 
           {/* Meta Row: time • servings • difficulty */}
           <View style={styles.metaRow}>
@@ -990,11 +992,17 @@ const styles = StyleSheet.create({
   },
   cardHeader: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
-    alignItems: 'center',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
     paddingHorizontal: 16,
     paddingTop: 16,
     paddingBottom: 8,
+  },
+  cardHeaderContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    flex: 1,
   },
   heartButton: {
     backgroundColor: 'rgba(255, 255, 255, 0.95)',
@@ -1012,11 +1020,12 @@ const styles = StyleSheet.create({
     paddingTop: 4,
   },
   frontCardTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: 'bold',
     color: '#2D1B69',
-    marginBottom: 12,
-    lineHeight: 24,
+    lineHeight: 22,
+    flex: 1,
+    marginRight: 12,
   },
 
   // Meta Row
