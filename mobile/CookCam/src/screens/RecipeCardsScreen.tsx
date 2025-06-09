@@ -285,6 +285,7 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
   };
 
   const resetCardsToStablePosition = () => {
+    'worklet';
     console.log('🔄 Resetting cards to stable position');
     // Set all cards to their final stable positions without animation
     translateX.value = 0;
@@ -293,8 +294,8 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
     card2TranslateY.value = 0;
     opacity.value = 1;
     scale.value = 1;
-    card1Scale.value = 0.95;
-    card2Scale.value = 0.9;
+    card1Scale.value = 0.95; // Corresponds to middle card
+    card2Scale.value = 0.9;  // Corresponds to back card
   };
 
   const calculateRecipeXP = (recipe: Recipe) => {
@@ -517,57 +518,39 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
 
   // Animated style for front card
   const frontCardAnimatedStyle = useAnimatedStyle(() => {
-    const rotation = interpolate(
-      translateX.value,
-      [-SCREEN_WIDTH, 0, SCREEN_WIDTH],
-      [-15, 0, 15],
-      Extrapolate.CLAMP
-    );
-
     return {
-      bottom: 0, // Position front card at bottom
       transform: [
-        { translateX: translateX.value } as any,
-        { translateY: translateY.value } as any,
-        { scale: scale.value } as any,
-        { rotate: `${rotation}deg` } as any,
+        { translateX: translateX.value },
+        { translateY: translateY.value },
+        { rotate: `${interpolate(
+            translateX.value,
+            [-SCREEN_WIDTH, 0, SCREEN_WIDTH],
+            [-15, 0, 15],
+            Extrapolate.CLAMP
+          )}deg` 
+        },
+        { scale: scale.value },
       ],
       opacity: opacity.value,
-    };
+    } as any; // Cast to any to bypass strict transform typing
   });
 
-  // Animated styles for back cards
-  const middleCardAnimatedStyle = useAnimatedStyle(() => {
-    const topValue = -25 + card1TranslateY.value; // Closer vertical spacing
-    const scaleValue = 0.96 * card1Scale.value;
-    console.log('🔄 MIDDLE card animated values:', { 
-      card1TranslateY: card1TranslateY.value, 
-      card1Scale: card1Scale.value,
-      finalTop: topValue,
-      finalScale: scaleValue
-    });
-    return {
-      top: topValue,
-      right: -20, // Consistent horizontal spacing
-      transform: [{ scale: scaleValue } as any],
-    };
-  });
+  // Rebuilt animated styles for robust staggering
+  const middleCardAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateY: card1TranslateY.value - 25 }, // Stagger Up
+      { translateX: 20 }, // Stagger Right
+      { scale: card1Scale.value },
+    ],
+  } as any));
 
-  const backCardAnimatedStyle = useAnimatedStyle(() => {
-    const topValue = -50 + card2TranslateY.value; // Consistent vertical spacing
-    const scaleValue = 0.92 * card2Scale.value;
-    console.log('🔄 BACK card animated values:', { 
-      card2TranslateY: card2TranslateY.value, 
-      card2Scale: card2Scale.value,
-      finalTop: topValue,
-      finalScale: scaleValue
-    });
-    return {
-      top: topValue,
-      right: -40, // Consistent horizontal spacing (20px intervals)
-      transform: [{ scale: scaleValue } as any],
-    };
-  });
+  const backCardAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateY: card2TranslateY.value - 50 }, // Stagger Up More
+      { translateX: 40 }, // Stagger Right More
+      { scale: card2Scale.value },
+    ],
+  } as any));
 
   const renderFrontCard = (recipe: Recipe) => {
     return (
@@ -683,46 +666,27 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
     const isFront = cardType === 'front';
     
     // Calculate heights and styles according to blueprint
-    let cardHeight, zIndex, animatedStyle;
+    let animatedStyle;
     
     switch (cardType) {
       case 'front':
-        cardHeight = '78%';   // Front card: 78% size (smallest - on top)
-        zIndex = 1000;
         animatedStyle = frontCardAnimatedStyle;
         break;
       case 'middle':
-        cardHeight = '90%';   // Middle card: 90% size (medium - behind front)
-        zIndex = 900;
         animatedStyle = middleCardAnimatedStyle;
         break;
       case 'back':
-        cardHeight = '100%';  // Back card: 100% size (largest - furthest back)
-        zIndex = 800;
         animatedStyle = backCardAnimatedStyle;
         break;
     }
-
-    console.log(`🃏 DEBUG: Rendering ${cardType} card`, {
-      title: recipe.title,
-      cardType,
-      height: cardHeight,
-      zIndex,
-      index,
-    });
 
     return (
       <Animated.View
         key={`${recipe.id}-${cardType}`}
         style={[
           styles.card,
-          { 
-            height: cardHeight, 
-            zIndex,
-            // DEBUG: Add colored borders to see each card type
-            borderWidth: 3,
-            borderColor: cardType === 'front' ? 'green' : cardType === 'middle' ? 'blue' : 'red',
-          },
+          // Assign zIndex based on position in stack
+          { zIndex: 1000 - (index - frontCardIndex) * 100 },
           animatedStyle,
         ]}>
         {isFront ? renderFrontCard(recipe) : renderBackCard(recipe, index)}
@@ -965,26 +929,24 @@ const styles = StyleSheet.create({
   // Zone B: Stack Viewport
   stackViewport: {
     flex: 1,
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-    paddingTop: 10,
-    position: 'relative',
-    alignItems: 'center', // Center cards horizontally
-    justifyContent: 'flex-start',
+    alignItems: 'center', // Center card stack horizontally
+    justifyContent: 'flex-end', // Anchor card stack to the bottom
+    paddingBottom: 20, // Give some space from the tab bar
   },
 
   // Card Styles - rounded corners 16px, subtle shadow
   card: {
     position: 'absolute',
-    width: '100%',
-    maxWidth: 340, // Narrower cards for better stacking
+    width: '90%', // Use a percentage of the viewport
+    maxWidth: 360, // Set a max-width for larger screens
+    aspectRatio: 0.75, // Maintain a consistent card shape
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    borderRadius: 24, // Softer corners
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 5,
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 8,
     overflow: 'hidden',
   },
 
