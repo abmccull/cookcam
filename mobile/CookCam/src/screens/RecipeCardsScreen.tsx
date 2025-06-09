@@ -538,7 +538,7 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
 
   // Animated styles for back cards
   const middleCardAnimatedStyle = useAnimatedStyle(() => {
-    const topValue = -60 + card1TranslateY.value; // Peek from TOP (negative offset)
+    const topValue = -10 + card1TranslateY.value; // Small peek from TOP (titles visible)
     const scaleValue = 0.96 * card1Scale.value;
     console.log('🔄 MIDDLE card animated values:', { 
       card1TranslateY: card1TranslateY.value, 
@@ -553,7 +553,7 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
   });
 
   const backCardAnimatedStyle = useAnimatedStyle(() => {
-    const topValue = -120 + card2TranslateY.value; // Peek from TOP (more negative)
+    const topValue = -20 + card2TranslateY.value; // Slightly more peek from TOP
     const scaleValue = 0.92 * card2Scale.value;
     console.log('🔄 BACK card animated values:', { 
       card2TranslateY: card2TranslateY.value, 
