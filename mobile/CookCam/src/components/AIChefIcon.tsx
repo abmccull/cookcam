@@ -35,7 +35,7 @@ const AIChefIcon: React.FC<AIChefIconProps> = ({
   return (
     <View style={[styles.container, { width: size, height: size }]}>
       <Image
-        source={require('../../../Public/robot-chef-holding-spatula-spoon-mascot-illustration-288841450.png')}
+        source={require('../../assets/robot-chef-holding-spatula-spoon-mascot-illustration-288841450.png')}
         style={[
           {
             width: size,
