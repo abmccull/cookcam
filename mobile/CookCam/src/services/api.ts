@@ -64,10 +64,20 @@ class ApiClient {
         headers.Authorization = `Bearer ${token}`;
       }
 
+      // Set longer timeout for recipe generation endpoints
+      const isRecipeGeneration = endpoint.includes('/recipes/generate');
+      const timeoutMs = isRecipeGeneration ? 120000 : 30000; // 2 minutes for recipe generation, 30s for others
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
       const response = await fetch(`${this.baseURL}${endpoint}`, {
         ...options,
         headers,
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
 
       const data = await response.json();
 
@@ -84,6 +94,15 @@ class ApiClient {
       };
     } catch (error) {
       console.error('API request failed:', error);
+      
+      // Handle timeout errors specifically
+      if (error instanceof Error && error.name === 'AbortError') {
+        return {
+          success: false,
+          error: 'Request timed out. Recipe generation may take longer than usual.',
+        };
+      }
+      
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
