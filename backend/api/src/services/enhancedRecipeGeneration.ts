@@ -148,7 +148,28 @@ export class EnhancedRecipeGenerationService {
         contentLength: content.length
       });
 
-      const result = JSON.parse(content) as MultipleRecipesResponse;
+      // Debug logging: Log the first and last 500 characters to see if content is truncated
+      logger.info('🔍 Debug - OpenAI response preview:', {
+        first500Chars: content.substring(0, 500),
+        last500Chars: content.substring(Math.max(0, content.length - 500)),
+        startsWithBrace: content.trim().startsWith('{'),
+        endsWithBrace: content.trim().endsWith('}'),
+        fullContentLength: content.length
+      });
+
+      let result: MultipleRecipesResponse;
+      try {
+        result = JSON.parse(content) as MultipleRecipesResponse;
+      } catch (parseError) {
+        logger.error('❌ JSON Parse Error Details:', {
+          error: parseError,
+          contentPreview: content.substring(0, 1000),
+          contentSuffix: content.substring(Math.max(0, content.length - 1000)),
+          contentLength: content.length,
+          parseErrorMessage: (parseError as Error).message
+        });
+        throw new Error(`JSON parsing failed: ${(parseError as Error).message}`);
+      }
       
       // Validate we got 3 recipes
       if (!result.recipes || result.recipes.length !== 3) {
