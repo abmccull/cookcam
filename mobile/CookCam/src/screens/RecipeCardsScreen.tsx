@@ -669,6 +669,7 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
     
     // Calculate heights and styles according to blueprint
     let animatedStyle;
+    let cardStyle;
     
     switch (cardType) {
       case 'front':
@@ -676,9 +677,11 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
         break;
       case 'middle':
         animatedStyle = middleCardAnimatedStyle;
+        cardStyle = styles.middleCard;
         break;
       case 'back':
         animatedStyle = backCardAnimatedStyle;
+        cardStyle = styles.backCard;
         break;
     }
 
@@ -687,6 +690,7 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
         key={`${recipe.id}-${cardType}`}
         style={[
           styles.card,
+          cardStyle,
           // Assign zIndex based on position in stack
           { zIndex: 1000 - (index - frontCardIndex) * 100 },
           animatedStyle,
@@ -939,6 +943,12 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 8,
     overflow: 'hidden',
+  },
+  middleCard: {
+    backgroundColor: '#F5F5F7', // Subtle gray for depth
+  },
+  backCard: {
+    backgroundColor: '#E8E8ED', // Darker gray for more depth
   },
 
   // Front Card Content
