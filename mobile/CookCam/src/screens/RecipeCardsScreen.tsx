@@ -538,7 +538,7 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
 
   // Animated styles for back cards
   const middleCardAnimatedStyle = useAnimatedStyle(() => {
-    const topValue = -50 + card1TranslateY.value; // Offset up to show title
+    const topValue = -25 + card1TranslateY.value; // Closer vertical spacing
     const scaleValue = 0.96 * card1Scale.value;
     console.log('🔄 MIDDLE card animated values:', { 
       card1TranslateY: card1TranslateY.value, 
@@ -548,13 +548,13 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
     });
     return {
       top: topValue,
-      right: -15, // Offset to the right
+      right: -20, // Consistent horizontal spacing
       transform: [{ scale: scaleValue } as any],
     };
   });
 
   const backCardAnimatedStyle = useAnimatedStyle(() => {
-    const topValue = -80 + card2TranslateY.value; // Offset up more to show title
+    const topValue = -50 + card2TranslateY.value; // Consistent vertical spacing
     const scaleValue = 0.92 * card2Scale.value;
     console.log('🔄 BACK card animated values:', { 
       card2TranslateY: card2TranslateY.value, 
@@ -564,7 +564,7 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
     });
     return {
       top: topValue,
-      right: -30, // Offset to the right more
+      right: -40, // Consistent horizontal spacing (20px intervals)
       transform: [{ scale: scaleValue } as any],
     };
   });
@@ -977,7 +977,7 @@ const styles = StyleSheet.create({
   card: {
     position: 'absolute',
     width: '100%',
-    maxWidth: 400, // Max width for larger screens
+    maxWidth: 340, // Narrower cards for better stacking
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
     shadowColor: '#000',
