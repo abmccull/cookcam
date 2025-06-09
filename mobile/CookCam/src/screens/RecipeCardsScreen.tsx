@@ -1,296 +1,134 @@
-import React, {useState, useRef, useEffect} from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
-  StyleSheet,
   Text,
-  TouchableOpacity,
   Image,
+  TouchableOpacity,
   SafeAreaView,
-  Modal,
+  StyleSheet,
   ScrollView,
-  Alert,
-  Animated,
-  ActivityIndicator,
   Dimensions,
+  Modal,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
-// import Swiper from 'react-native-deck-swiper'; // Temporarily disabled due to PropTypes issue
-import {Clock, Users, X, Heart, Info, TrendingUp, Star, Trophy, Home, Check, AlertCircle} from 'lucide-react-native';
-import {useGamification, XP_VALUES} from '../context/GamificationContext';
-import ChefBadge from '../components/ChefBadge';
+import { 
+  Clock, 
+  Users, 
+  X, 
+  Info, 
+  Trophy,
+  Heart,
+  ChefHat,
+  Star,
+} from 'lucide-react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  useAnimatedGestureHandler,
+  withSpring,
+  withTiming,
+  runOnJS,
+  interpolate,
+  Extrapolate,
+  withDelay,
+  withSequence,
+} from 'react-native-reanimated';
+import { PanGestureHandler } from 'react-native-gesture-handler';
 import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
-import {recipeService, authService} from '../services/api';
-import {useAuth} from '../context/AuthContext';
-import CardStack from '../components/CardStack';
-import { Recipe } from '../utils/recipeTypes';
-import AIChefIcon from '../components/AIChefIcon';
-import { moderateScale } from '../utils/responsive';
+import { recipeService } from '../services/api';
 
-// Temporary simple swiper replacement
-const SimpleSwiper = ({ children, onSwipedRight, onSwipedLeft }: any) => {
-  return (
-    <View style={styles.swiperContainer}>
-      {children}
-    </View>
-  );
-};
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.25; // 25% of screen width
+
+interface Recipe {
+  id: string;
+  title: string;
+  image: string;
+  cookingTime: string;
+  servings: number;
+  difficulty: string;
+  macros: {
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+  };
+  tags: string[];
+  description: string;
+  ingredients: any[];
+  instructions?: string[];
+  tips?: string[];
+}
 
 interface RecipeCardsScreenProps {
   navigation: any;
   route: any;
 }
 
-// Component for displaying ingredient with source highlighting
-const IngredientTag: React.FC<{
-  ingredient: any;
-  style?: any;
-}> = ({ingredient, style}) => {
-  const getIngredientStyle = (source: string) => {
-    switch (source) {
-      case 'scanned':
-        return {
-          backgroundColor: '#E8F5E8',
-          borderColor: '#4CAF50',
-          iconColor: '#4CAF50',
-          icon: Check,
-        };
-      case 'pantry':
-        return {
-          backgroundColor: '#FFF3E0',
-          borderColor: '#FF9800',
-          iconColor: '#FF9800',
-          icon: Home,
-        };
-      case 'optional':
-        return {
-          backgroundColor: '#F3E5F5',
-          borderColor: '#9C27B0',
-          iconColor: '#9C27B0',
-          icon: AlertCircle,
-        };
-      default:
-        return {
-          backgroundColor: '#F5F5F5',
-          borderColor: '#E0E0E0',
-          iconColor: '#757575',
-          icon: Check,
-        };
-    }
-  };
-
-  const ingredientName = typeof ingredient === 'string' ? ingredient : ingredient.name;
-  const ingredientSource = typeof ingredient === 'string' ? 'scanned' : (ingredient.source || 'scanned');
-  const ingredientAmount = typeof ingredient === 'string' ? '' : `${ingredient.amount} ${ingredient.unit}`;
-  
-  const styleConfig = getIngredientStyle(ingredientSource);
-  const IconComponent = styleConfig.icon;
-
-  return (
-    <View style={[styles.ingredientTag, {
-      backgroundColor: styleConfig.backgroundColor,
-      borderColor: styleConfig.borderColor,
-    }, style]}>
-      <IconComponent size={14} color={styleConfig.iconColor} />
-      <Text style={[styles.ingredientTagText, {color: styleConfig.iconColor}]}>
-        {ingredientAmount} {ingredientName}
-      </Text>
-    </View>
-  );
-};
-
-// Component for showing recipe analysis
-const RecipeAnalysis: React.FC<{
-  recipe: any;
-  ingredientAnalysis?: any;
-}> = ({recipe, ingredientAnalysis}) => {
-  if (!recipe.ingredientsUsed && !recipe.ingredientsSkipped) return null;
-
-  return (
-    <View style={styles.analysisContainer}>
-      <Text style={styles.analysisTitle}>Recipe Analysis</Text>
-      
-      {recipe.ingredientsUsed && recipe.ingredientsUsed.length > 0 && (
-        <View style={styles.analysisSection}>
-          <Text style={styles.analysisSectionTitle}>✅ Ingredients Used</Text>
-          <View style={styles.analysisTagsContainer}>
-            {recipe.ingredientsUsed.map((ingredient: string, index: number) => (
-              <View key={index} style={[styles.analysisTag, styles.usedTag]}>
-                <Text style={styles.usedTagText}>{ingredient}</Text>
-              </View>
-            ))}
-          </View>
-        </View>
-      )}
-
-      {recipe.ingredientsSkipped && recipe.ingredientsSkipped.length > 0 && (
-        <View style={styles.analysisSection}>
-          <Text style={styles.analysisSectionTitle}>⏭️ Ingredients Skipped</Text>
-          <View style={styles.analysisTagsContainer}>
-            {recipe.ingredientsSkipped.map((ingredient: string, index: number) => (
-              <View key={index} style={[styles.analysisTag, styles.skippedTag]}>
-                <Text style={styles.skippedTagText}>{ingredient}</Text>
-              </View>
-            ))}
-          </View>
-          {recipe.skipReason && (
-            <Text style={styles.skipReason}>💡 {recipe.skipReason}</Text>
-          )}
-        </View>
-      )}
-
-      {recipe.cookingMethod && (
-        <View style={styles.analysisSection}>
-          <Text style={styles.analysisSectionTitle}>🍳 Cooking Method</Text>
-          <View style={[styles.analysisTag, styles.methodTag]}>
-            <Text style={styles.methodTagText}>{recipe.cookingMethod}</Text>
-          </View>
-        </View>
-      )}
-    </View>
-  );
-};
-
 const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
   navigation,
   route,
 }) => {
-  const {ingredients, imageUri, preferences} = route.params || {};
-  const {xp} = useGamification();
-  const {user} = useAuth();
-  const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
-  const [showDetails, setShowDetails] = useState(false);
+  const { ingredients = [], preferences = {} } = route.params || {};
+
+  // State management
   const [recipes, setRecipes] = useState<Recipe[]>([]);
-  const [dismissedRecipes, setDismissedRecipes] = useState<Set<string>>(new Set());
-  const [expandedRecipe, setExpandedRecipe] = useState<string | null>(null);
+  const [frontCardIndex, setFrontCardIndex] = useState(0);
+  const [savedRecipes, setSavedRecipes] = useState<Set<string>>(new Set());
+  const [showSavedToast, setShowSavedToast] = useState(false);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [previewRecipe, setPreviewRecipe] = useState<Recipe | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [sessionId, setSessionId] = useState<string>('');
-  
-  // Animation values
-  const xpAnimScale = useRef(new Animated.Value(1)).current;
-  const trendingPulse = useRef(new Animated.Value(1)).current;
-  const aiPulseAnim = useRef(new Animated.Value(1)).current;
-  const aiOpacityAnim = useRef(new Animated.Value(0.7)).current;
+  const [error, setError] = useState<string | null>(null);
+  const [sessionId, setSessionId] = useState<string | null>(null);
 
-  // Enhanced dummy data with creator info and ratings (fallback)
-  const fallbackRecipes: Recipe[] = [
-    {
-      id: '1',
-      title: 'Mediterranean Vegetable Pasta',
-      image: 'https://via.placeholder.com/400x300/4CAF50/FFFFFF?text=Pasta',
-      cookingTime: '25 min',
-      servings: 4,
-      difficulty: 'Easy',
-      macros: {
-        calories: 485,
-        protein: 18,
-        carbs: 72,
-        fat: 15,
-      },
-      tags: ['Vegetarian', 'Mediterranean'],
-      description: 'A vibrant pasta dish with fresh Mediterranean vegetables and herbs.',
-      ingredients: ['Pasta', 'Tomatoes', 'Onions', 'Garlic', 'Bell Peppers', 'Olive Oil'],
-      creatorName: 'Chef Emma',
-      creatorTier: 3,
-      rating: 4.8,
-      ratingCount: 234,
-      viewCount: 15420,
-      isTrending: true,
-      isCreatorRecipe: true,
-    },
-    {
-      id: '2',
-      title: 'Garlic Herb Roasted Vegetables',
-      image: 'https://via.placeholder.com/400x300/FF6B35/FFFFFF?text=Veggies',
-      cookingTime: '35 min',
-      servings: 6,
-      difficulty: 'Easy',
-      macros: {
-        calories: 165,
-        protein: 5,
-        carbs: 28,
-        fat: 8,
-      },
-      tags: ['Vegan', 'Gluten-Free'],
-      description: 'Perfectly roasted vegetables with aromatic herbs and golden garlic.',
-      ingredients: ['Bell Peppers', 'Onions', 'Garlic', 'Olive Oil', 'Mixed Herbs'],
-      creatorName: 'Home Cook Lisa',
-      creatorTier: 1,
-      rating: 4.5,
-      ratingCount: 89,
-      viewCount: 8900,
-      isTrending: false,
-      isCreatorRecipe: true,
-    },
-    {
-      id: '3',
-      title: 'Italian Tomato Basil Soup',
-      image: 'https://via.placeholder.com/400x300/2D1B69/FFFFFF?text=Soup',
-      cookingTime: '20 min',
-      servings: 4,
-      difficulty: 'Easy',
-      macros: {
-        calories: 125,
-        protein: 4,
-        carbs: 22,
-        fat: 3,
-      },
-      tags: ['Vegetarian', 'Italian'],
-      description: 'A comforting classic Italian soup with fresh tomatoes and basil.',
-      ingredients: ['Tomatoes', 'Onions', 'Garlic', 'Basil', 'Olive Oil'],
-      rating: 4.2,
-      ratingCount: 45,
-      viewCount: 5200,
-      isTrending: false,
-      isCreatorRecipe: false,
-    },
-  ];
+  // Animation values for swipe gestures
+  const translateX = useSharedValue(0);
+  const translateY = useSharedValue(0);
+  const scale = useSharedValue(1);
+  const opacity = useSharedValue(1);
 
-  // Generate recipes from AI based on ingredients and preferences
-  useEffect(() => {
-    generateRecipes();
-  }, [ingredients, preferences]);
+  // Animation values for card cascade effect
+  const card1TranslateY = useSharedValue(12);
+  const card2TranslateY = useSharedValue(24);
+  const card1Scale = useSharedValue(0.95);
+  const card2Scale = useSharedValue(0.9);
 
-  const generateRecipes = async () => {
+  // Generate recipes from backend API
+  const generateRecipesFromAPI = async () => {
+    // Map ingredients to the format expected by the backend (move outside try block)
+    const detectedIngredients = ingredients.map((ingredient: any) => 
+      typeof ingredient === 'string' ? ingredient : ingredient.name || ingredient.title
+    ).filter(Boolean);
+
     try {
       setIsLoading(true);
-      console.log('🤖 Generating AI recipes with ingredients:', ingredients);
-      console.log('🎯 User preferences:', preferences);
+      setError(null);
 
-      if (!ingredients || ingredients.length === 0) {
-        console.log('⚠️ No ingredients provided, using fallback recipes');
-        setRecipes(fallbackRecipes);
-        setIsLoading(false);
-        return;
+      console.log('🍳 Generating recipes with data:', {
+        ingredients: ingredients.length,
+        preferences: Object.keys(preferences).length,
+        ingredientsList: ingredients,
+        preferencesData: preferences
+      });
+
+      if (detectedIngredients.length === 0) {
+        throw new Error('No ingredients detected. Please go back and scan some ingredients first.');
       }
 
-      // Send full ingredient data including quantities, units, and varieties
-      const detectedIngredients = ingredients.map((ing: any) => {
-        if (typeof ing === 'string') {
-          return { name: ing, quantity: '1', unit: 'unit' };
-        }
-        return {
-          name: ing.name,
-          quantity: ing.quantity || '1',
-          unit: ing.unit || 'unit',
-          variety: ing.variety,
-          category: ing.category,
-          confidence: ing.confidence
-        };
-      });
+      // Build enhanced preferences (this was the missing piece!)
+      const enhancedPreferences = {
+        servingSize: preferences?.servingSize || 2,
+        mealPrepEnabled: preferences?.mealPrepEnabled || false,
+        mealPrepPortions: preferences?.mealPrepPortions,
+        selectedAppliances: preferences?.selectedAppliances || ['oven', 'stove'],
+        dietary: preferences?.dietary || [],
+        cuisine: preferences?.cuisine || [],
+        cookingTime: preferences?.cookingTime || 'any',
+        difficulty: preferences?.difficulty || 'any'
+      };
 
-      // Debug: Check if user is authenticated and what token we have
-      const AsyncStorage = require('@react-native-async-storage/async-storage').default;
-      const token = await AsyncStorage.getItem('@cookcam_token');
-      console.log('🔐 Debug - Token check:', {
-        hasToken: !!token,
-        tokenLength: token?.length,
-        tokenPrefix: token?.substring(0, 20) + '...',
-        isAuthenticated: user ? true : false,
-        userId: user?.id
-      });
-
-      // Get enhanced preferences from route params
-      const enhancedPreferences = route.params?.preferences || {};
-      
       console.log('📤 Sending enhanced data to AI:', {
         detectedIngredients,
         servingSize: enhancedPreferences.servingSize || 2,
@@ -303,7 +141,7 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
         skillLevel: enhancedPreferences.difficulty || preferences?.difficulty || 'any'
       });
 
-      // Call the recipe generation API with enhanced data
+      // Call the recipe generation API with enhanced data (original working format)
       const response = await recipeService.generateSuggestions({
         detectedIngredients,
         servingSize: enhancedPreferences.servingSize || 2,
@@ -318,13 +156,17 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
 
       console.log('📥 API Response:', response);
 
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to generate recipes');
+      }
+
       if (response.success && response.data) {
         // Store session ID for full recipe generation later
         if (response.data.sessionId) {
           setSessionId(response.data.sessionId);
         }
 
-        // Handle multiple recipes response (3 diverse recipes)
+        // Handle multiple recipes response (3 diverse recipes) - original working format
         const recipesData = response.data.recipes || response.data.data?.recipes;
         const ingredientAnalysis = response.data.ingredientAnalysis || response.data.data?.ingredientAnalysis;
         
@@ -332,11 +174,8 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
           console.log('✅ Received multiple recipes:', recipesData.length);
           console.log('📊 Ingredient Analysis:', ingredientAnalysis);
           
-          // Convert each recipe to our Recipe format
+          // Convert each recipe to our Recipe format (original working transformation)
           const aiRecipes: Recipe[] = recipesData.map((recipeData: any, index: number) => {
-            // Debug: Log the nutrition data we're receiving
-            console.log(`📊 Recipe ${index + 1} nutrition data:`, JSON.stringify(recipeData.nutrition, null, 2));
-            
             // Map ingredient sources for highlighting
             const processedIngredients = recipeData.ingredients?.map((ing: any) => {
               if (typeof ing === 'string') {
@@ -380,20 +219,6 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
               ingredients: processedIngredients,
               instructions: recipeData.instructions || [],
               tips: recipeData.tips || [],
-              creatorName: 'AI Chef',
-              creatorTier: 5,
-              // Add diversity metadata for UI hints
-              // @ts-ignore - Adding custom properties for recipe diversity info
-              ingredientsUsed: recipeData.ingredientsUsed || [],
-              ingredientsSkipped: recipeData.ingredientsSkipped || [],
-              skipReason: recipeData.skipReason,
-              cookingMethod: recipeData.metadata?.cookingMethod,
-              // No rating/reviews for fresh AI recipes
-              rating: undefined,
-              ratingCount: undefined,
-              viewCount: undefined,
-              isTrending: false,
-              isCreatorRecipe: false,
             };
           });
 
@@ -402,648 +227,604 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
         } else {
           console.log('⚠️ Invalid multiple recipes API response format, using fallback');
           console.log('Response data structure:', JSON.stringify(response.data, null, 2));
-          setRecipes(fallbackRecipes);
+          throw new Error('No recipes were generated. Please try different ingredients or preferences.');
         }
       } else {
-        console.log('❌ API call failed:', response.error);
-        
-        // Handle authentication errors specifically
-        if (response.error?.includes('Token expired') || response.error?.includes('invalid')) {
-          console.log('🔐 Authentication issue detected - checking session...');
-          // Try to refresh the user profile to see if session is still valid
-          try {
-                         const profileResponse = await authService.getProfile();
-            if (profileResponse?.success) {
-              console.log('✅ Session is valid, retrying recipe generation...');
-              // Retry the API call once with enhanced data
-              const retryResponse = await recipeService.generateSuggestions({
-                detectedIngredients,
-                servingSize: enhancedPreferences.servingSize || 2,
-                mealPrepEnabled: enhancedPreferences.mealPrepEnabled || false,
-                mealPrepPortions: enhancedPreferences.mealPrepPortions,
-                selectedAppliances: enhancedPreferences.selectedAppliances || ['oven', 'stove'],
-                dietaryTags: enhancedPreferences.dietary || preferences?.dietary || [],
-                cuisinePreferences: enhancedPreferences.cuisine || preferences?.cuisine || [],
-                timeAvailable: enhancedPreferences.cookingTime || preferences?.cookingTime || 'any',
-                skillLevel: enhancedPreferences.difficulty || preferences?.difficulty || 'any'
-              });
-              
-              const retryRecipeData = retryResponse.data?.data || retryResponse.data;
-              if (retryResponse.success && retryRecipeData?.title) {
-                console.log('✅ Retry successful!');
-                                 const aiRecipe: Recipe = {
-                   id: 'ai-enhanced-retry',
-                   title: retryRecipeData.title || 'AI Generated Recipe',
-                   image: `https://via.placeholder.com/400x300/4CAF50/FFFFFF?text=${encodeURIComponent(retryRecipeData.title || 'Recipe')}`,
-                   cookingTime: `${retryRecipeData.metadata?.totalTime || 30} min`,
-                   servings: retryRecipeData.metadata?.servings || 4,
-                   difficulty: retryRecipeData.metadata?.difficulty || 'Medium',
-                   macros: {
-                     calories: Math.round(retryRecipeData.nutrition?.calories || 350),
-                     protein: Math.round(retryRecipeData.nutrition?.protein || 15),
-                     carbs: Math.round(retryRecipeData.nutrition?.carbohydrates || 45),
-                     fat: Math.round(retryRecipeData.nutrition?.fat || 12),
-                   },
-                   tags: [
-                     ...(preferences?.dietary || []),
-                     ...(preferences?.cuisine || []),
-                     'AI Generated',
-                     retryRecipeData.metadata?.cuisineType || 'International'
-                   ],
-                   description: retryRecipeData.description || 'A delicious AI-generated recipe using your detected ingredients.',
-                   ingredients: retryRecipeData.ingredients || detectedIngredients,
-                   instructions: retryRecipeData.instructions || [],
-                   tips: retryRecipeData.tips || [],
-                   creatorName: 'AI Chef',
-                   creatorTier: 5,
-                   // No rating/reviews for fresh AI recipes
-                   rating: undefined,
-                   ratingCount: undefined,
-                   viewCount: undefined,
-                   isTrending: false, // Fresh recipes aren't trending yet
-                   isCreatorRecipe: false,
-                 };
-                setRecipes([aiRecipe]);
-                return; // Success, exit early
-              }
-            }
-          } catch (sessionError) {
-            console.log('❌ Session validation failed:', sessionError);
-          }
-        }
-        
-        console.log('🔄 Using fallback recipes due to API error');
-        setRecipes(fallbackRecipes);
+        throw new Error(response.error || 'API call failed');
       }
 
-    } catch (error) {
-      console.error('❌ Recipe generation error:', error);
-      console.log('🔄 Using fallback recipes due to error');
+    } catch (error: any) {
+      console.error('❌ Recipe generation failed:', error);
+      setError(error.message || 'Failed to generate recipes');
+      
+      // Fallback to test recipes using actual detected ingredients
+      const fallbackRecipes: Recipe[] = [
+        {
+          id: 'fallback-1',
+          title: `Quick ${detectedIngredients.slice(0, 2).join(' & ')} Dish`,
+          image: 'https://via.placeholder.com/400x300/4CAF50/FFFFFF?text=Quick+Recipe',
+          cookingTime: '25 min',
+          servings: 2,
+          difficulty: 'Easy',
+          macros: {
+            calories: 200,
+            protein: 8,
+            carbs: 25,
+            fat: 10,
+          },
+          tags: ['Quick', 'AI Generated', 'Using Your Ingredients'],
+          description: `A simple and delicious recipe using your scanned ingredients: ${detectedIngredients.slice(0, 3).join(', ')}.`,
+          ingredients: detectedIngredients.slice(0, 5).map(ing => ({ name: ing, amount: '1', unit: 'portion' })),
+          instructions: [
+            'Prepare all ingredients by washing and chopping as needed',
+            'Heat cooking oil in a large pan over medium-high heat',
+            'Add ingredients to the pan and cook according to their cooking times',
+            'Season with salt, pepper, and your preferred seasonings',
+            'Cook until ingredients are tender and flavors are well combined',
+            'Serve hot and enjoy your homemade creation!'
+          ],
+          tips: ['Taste and adjust seasoning as you cook', 'This is a fallback recipe - full AI generation will be available soon!']
+        }
+      ];
+      
       setRecipes(fallbackRecipes);
     } finally {
       setIsLoading(false);
     }
   };
-  
-  // Start animations
+
   useEffect(() => {
-    // Pulse animation for XP badge
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(xpAnimScale, {
-          toValue: 1.1,
-          duration: 1000,
-          useNativeDriver: true,
-        }),
-        Animated.timing(xpAnimScale, {
-          toValue: 1,
-          duration: 1000,
-          useNativeDriver: true,
-        }),
-      ]),
-    ).start();
-    
-    // Trending pulse
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(trendingPulse, {
-          toValue: 1.2,
-          duration: 1500,
-          useNativeDriver: true,
-        }),
-        Animated.timing(trendingPulse, {
-          toValue: 1,
-          duration: 1500,
-          useNativeDriver: true,
-        }),
-      ]),
-    ).start();
+    generateRecipesFromAPI();
   }, []);
 
-  // AI Analysis animation effect
   useEffect(() => {
-    if (isLoading) {
-      // Start pulsing animation when loading
-      const pulse = Animated.loop(
-        Animated.sequence([
-          Animated.timing(aiPulseAnim, {
-            toValue: 1.1,
-            duration: 1000,
-            useNativeDriver: true,
-          }),
-          Animated.timing(aiPulseAnim, {
-            toValue: 1,
-            duration: 1000,
-            useNativeDriver: true,
-          }),
-        ])
-      );
-
-      const opacity = Animated.loop(
-        Animated.sequence([
-          Animated.timing(aiOpacityAnim, {
-            toValue: 1,
-            duration: 1500,
-            useNativeDriver: true,
-          }),
-          Animated.timing(aiOpacityAnim, {
-            toValue: 0.7,
-            duration: 1500,
-            useNativeDriver: true,
-          }),
-        ])
-      );
-
-      pulse.start();
-      opacity.start();
-
-      return () => {
-        pulse.stop();
-        opacity.stop();
-      };
+    if (recipes.length > 0 && !isLoading) {
+      // Enhanced entrance animation with staggered timing
+      animateCardsEntrance();
     }
-  }, [isLoading]);
-  
-  // Calculate potential XP for a recipe
-  const calculateRecipeXP = (recipe: Recipe) => {
-    let totalXP = XP_VALUES.COMPLETE_RECIPE;
+  }, [recipes, isLoading]);
+
+  const animateCardsEntrance = () => {
+    // Start all cards below screen
+    translateY.value = SCREEN_HEIGHT;
+    card1TranslateY.value = SCREEN_HEIGHT + 50;
+    card2TranslateY.value = SCREEN_HEIGHT + 100;
+    opacity.value = 0;
     
-    // Bonus for difficulty
+    // Staggered entrance animation
+    setTimeout(() => {
+      // Front card enters first
+      translateY.value = withSpring(0, { damping: 15, stiffness: 100 });
+      opacity.value = withTiming(1, { duration: 500 });
+      
+      // Middle card follows with delay
+      setTimeout(() => {
+        card1TranslateY.value = withSpring(12, { damping: 15, stiffness: 100 });
+        card1Scale.value = withSpring(0.95, { damping: 15, stiffness: 100 });
+      }, 150);
+      
+      // Back card follows last
+      setTimeout(() => {
+        card2TranslateY.value = withSpring(24, { damping: 15, stiffness: 100 });
+        card2Scale.value = withSpring(0.9, { damping: 15, stiffness: 100 });
+      }, 300);
+    }, 200);
+  };
+
+  const calculateRecipeXP = (recipe: Recipe) => {
+    let totalXP = 50; // Base XP
     if (recipe.difficulty === 'Medium') totalXP += 10;
     if (recipe.difficulty === 'Hard') totalXP += 20;
-    
-    // Bonus for trying creator recipes
-    if (recipe.isCreatorRecipe) totalXP += 15;
-    
     return totalXP;
   };
 
-  const handlePassRecipe = (recipeId: string) => {
+  const handleSaveRecipe = (recipeId: string) => {
     ReactNativeHapticFeedback.trigger('impactLight');
-    const recipe = recipes.find(r => r.id === recipeId);
-    console.log('Rejected:', recipe?.title);
-    
-    // Animate card out
-    const animations = cardAnimations.current[recipeId];
-    if (animations) {
-      Animated.parallel([
-        Animated.timing(animations.translateY, {
-          toValue: -600, // Slide up and out
-          duration: 300,
-          useNativeDriver: true,
-        }),
-        Animated.timing(animations.opacity, {
-          toValue: 0,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-      ]).start(() => {
-        // Remove from dismissed recipes and set new expanded recipe
-        setDismissedRecipes(prev => new Set([...prev, recipeId]));
-        
-        // If this was the expanded recipe, expand the next available one
-        if (expandedRecipe === recipeId) {
-          const remainingRecipes = recipes.filter(r => 
-            !dismissedRecipes.has(r.id) && r.id !== recipeId
-          );
-          if (remainingRecipes.length > 0) {
-            setExpandedRecipe(remainingRecipes[0].id);
-          } else {
-            setExpandedRecipe(null);
-          }
-        }
-      });
-    }
-  };
-
-  const handleExpandCard = (recipeId: string) => {
-    ReactNativeHapticFeedback.trigger('selection');
-    setExpandedRecipe(expandedRecipe === recipeId ? null : recipeId);
-  };
-
-  const handleCookRecipeFromCard = (recipe: Recipe) => {
-    ReactNativeHapticFeedback.trigger('impactMedium');
-    console.log('Accepted:', recipe.title);
-    // Navigate directly to CookMode
-    navigation.navigate('CookMode', {recipe});
-  };
-
-  const handleCardPress = (recipe: Recipe) => {
-    ReactNativeHapticFeedback.trigger('selection');
-    setSelectedRecipe(recipe);
-    setShowDetails(true);
-  };
-
-  const handleCookRecipe = async (recipe: Recipe) => {
-    try {
-      console.log('🧑‍🍳 Starting to cook recipe:', recipe.title);
-      navigation.navigate('CookMode', {
-        recipe: recipe,
-        sessionId: sessionId,
-      });
-    } catch (error) {
-      console.error('Error starting cook mode:', error);
-    }
-  };
-
-  const handleFavoriteRecipe = async (recipe: Recipe) => {
-    try {
-      console.log('❤️ Favoriting recipe:', recipe.title);
-      // TODO: Implement favorite functionality  
-    } catch (error) {
-      console.error('Error favoriting recipe:', error);
-    }
-  };
-
-  const handleViewRecipeDetails = (recipe: Recipe) => {
-    setSelectedRecipe(recipe);
-    setShowDetails(true);
-  };
-
-  const handleRefreshRecipes = () => {
-    generateRecipes();
-  };
-
-  const handleSelectRecipe = () => {
-    if (selectedRecipe) {
-      ReactNativeHapticFeedback.trigger('impactMedium');
-      setShowDetails(false);
-      navigation.navigate('CookMode', {recipe: selectedRecipe});
-    }
-  };
-
-  // Filter out dismissed recipes
-  const visibleRecipes = recipes.filter(recipe => !dismissedRecipes.has(recipe.id));
-  
-  // Set first recipe as expanded by default if none is expanded
-  useEffect(() => {
-    if (visibleRecipes.length > 0 && !expandedRecipe) {
-      setExpandedRecipe(visibleRecipes[0].id);
-    }
-  }, [visibleRecipes, expandedRecipe]);
-
-  // Animation refs for each card
-  const cardAnimations = useRef<{[key: string]: {
-    translateY: Animated.Value;
-    scale: Animated.Value;
-    opacity: Animated.Value;
-  }}>({});
-
-  // Initialize animations for each recipe
-  useEffect(() => {
-    visibleRecipes.forEach((recipe, index) => {
-      if (!cardAnimations.current[recipe.id]) {
-        cardAnimations.current[recipe.id] = {
-          translateY: new Animated.Value(index * 60), // Stack offset
-          scale: new Animated.Value(1 - index * 0.05), // Slight scale reduction
-          opacity: new Animated.Value(1),
-        };
+    setSavedRecipes(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(recipeId)) {
+        newSet.delete(recipeId);
+      } else {
+        newSet.add(recipeId);
+        setShowSavedToast(true);
+        setTimeout(() => setShowSavedToast(false), 1500);
       }
+      return newSet;
     });
-  }, [visibleRecipes]);
+  };
 
-  // Animate card positions when expanded recipe changes
-  useEffect(() => {
-    if (expandedRecipe && visibleRecipes.length > 0) {
-      const expandedIndex = visibleRecipes.findIndex(r => r.id === expandedRecipe);
-      
-      visibleRecipes.forEach((recipe, index) => {
-        const animations = cardAnimations.current[recipe.id];
-        if (!animations) return;
-
-        const isExpanded = recipe.id === expandedRecipe;
-        const stackIndex = isExpanded ? 0 : (index > expandedIndex ? index : index + 1);
-        
-        Animated.parallel([
-          Animated.spring(animations.translateY, {
-            toValue: isExpanded ? 0 : stackIndex * 60,
-            useNativeDriver: true,
-            tension: 100,
-            friction: 8,
-          }),
-          Animated.spring(animations.scale, {
-            toValue: isExpanded ? 1 : (1 - stackIndex * 0.05),
-            useNativeDriver: true,
-            tension: 100,
-            friction: 8,
-          }),
-          Animated.timing(animations.opacity, {
-            toValue: 1,
-            duration: 300,
-            useNativeDriver: true,
-          }),
-        ]).start();
-      });
+  const handleCookRecipe = () => {
+    ReactNativeHapticFeedback.trigger('impactMedium');
+    const currentRecipe = recipes[frontCardIndex];
+    if (currentRecipe) {
+      navigation.navigate('CookMode', { recipe: currentRecipe });
     }
-  }, [expandedRecipe, visibleRecipes]);
+  };
 
-  const renderStackedCard = (recipe: Recipe, index: number) => {
-    const isExpanded = expandedRecipe === recipe.id;
-    const animations = cardAnimations.current[recipe.id];
+  const handlePassRecipe = () => {
+    ReactNativeHapticFeedback.trigger('impactLight');
+    animateCardOut('left');
+  };
+
+  const handleTapBackCard = (targetIndex: number) => {
+    ReactNativeHapticFeedback.trigger('selection');
     
-    if (!animations) return null;
+    // Enhanced cascade animation when bringing card to front
+    const direction = targetIndex > frontCardIndex ? 'forward' : 'backward';
+    animateCardCascade(direction);
+    
+    setTimeout(() => {
+      setFrontCardIndex(targetIndex);
+    }, 150);
+  };
 
-    const zIndex = isExpanded ? 1000 : (visibleRecipes.length - index);
+  const animateCardCascade = (direction: 'forward' | 'backward') => {
+    if (direction === 'forward') {
+      // Animate current front card sliding down/back
+      translateY.value = withSpring(12, { damping: 15, stiffness: 100 });
+      scale.value = withSpring(0.95, { damping: 15, stiffness: 100 });
+      
+      // Animate middle card to front
+      card1TranslateY.value = withSpring(0, { damping: 15, stiffness: 100 });
+      card1Scale.value = withSpring(1, { damping: 15, stiffness: 100 });
+    } else {
+      // Similar animation for backward direction
+      card1TranslateY.value = withSpring(0, { damping: 15, stiffness: 100 });
+      card1Scale.value = withSpring(1, { damping: 15, stiffness: 100 });
+    }
+  };
+
+  const handlePreviewRecipe = () => {
+    ReactNativeHapticFeedback.trigger('selection');
+    const currentRecipe = recipes[frontCardIndex];
+    if (currentRecipe) {
+      setPreviewRecipe(currentRecipe);
+      setShowPreviewModal(true);
+    }
+  };
+
+  const animateCardOut = (direction: 'left' | 'right') => {
+    const targetX = direction === 'right' ? SCREEN_WIDTH * 1.5 : -SCREEN_WIDTH * 1.5;
+    
+    translateX.value = withTiming(targetX, { duration: 300 });
+    translateY.value = withTiming(-50, { duration: 300 }); // Slight upward motion
+    opacity.value = withTiming(0, { duration: 300 });
+    
+    // Move to next card after animation
+    setTimeout(() => {
+      if (frontCardIndex < recipes.length - 1) {
+        setFrontCardIndex(prev => prev + 1);
+        // Reset animations for next card with bounce effect
+        translateX.value = 0;
+        translateY.value = withSequence(
+          withTiming(20, { duration: 100 }),
+          withSpring(0, { damping: 15, stiffness: 100 })
+        );
+        opacity.value = withTiming(1, { duration: 200 });
+        scale.value = withSequence(
+          withTiming(1.05, { duration: 100 }),
+          withSpring(1, { damping: 15, stiffness: 100 })
+        );
+      }
+    }, 300);
+  };
+
+  // Gesture handler for front card swipes
+  const panGestureHandler = useAnimatedGestureHandler({
+    onStart: () => {
+      runOnJS(ReactNativeHapticFeedback.trigger)('selection');
+    },
+    onActive: (event) => {
+      translateX.value = event.translationX;
+      
+      // Add rotation effect based on swipe direction
+      const rotation = interpolate(
+        event.translationX,
+        [-SCREEN_WIDTH, 0, SCREEN_WIDTH],
+        [-15, 0, 15],
+        Extrapolate.CLAMP
+      );
+      
+      // Scale down slightly as user swipes
+      scale.value = interpolate(
+        Math.abs(event.translationX),
+        [0, SWIPE_THRESHOLD],
+        [1, 0.95],
+        Extrapolate.CLAMP
+      );
+    },
+    onEnd: (event) => {
+      if (event.translationX > SWIPE_THRESHOLD) {
+        // Swipe right - Cook
+        runOnJS(ReactNativeHapticFeedback.trigger)('impactMedium');
+        runOnJS(handleCookRecipe)();
+        runOnJS(animateCardOut)('right');
+      } else if (event.translationX < -SWIPE_THRESHOLD) {
+        // Swipe left - Pass
+        runOnJS(ReactNativeHapticFeedback.trigger)('impactLight');
+        runOnJS(animateCardOut)('left');
+      } else {
+        // Snap back to center
+        translateX.value = withSpring(0);
+        scale.value = withSpring(1);
+      }
+    },
+  });
+
+  // Animated style for front card
+  const frontCardAnimatedStyle = useAnimatedStyle(() => {
+    const rotation = interpolate(
+      translateX.value,
+      [-SCREEN_WIDTH, 0, SCREEN_WIDTH],
+      [-15, 0, 15],
+      Extrapolate.CLAMP
+    );
+
+    return {
+      transform: [
+        { translateX: translateX.value } as any,
+        { translateY: translateY.value } as any,
+        { scale: scale.value } as any,
+        { rotate: `${rotation}deg` } as any,
+      ],
+      opacity: opacity.value,
+    };
+  });
+
+  // Animated styles for back cards
+  const middleCardAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateY: card1TranslateY.value } as any,
+      { scale: card1Scale.value } as any,
+    ],
+  }));
+
+  const backCardAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateY: card2TranslateY.value } as any,
+      { scale: card2Scale.value } as any,
+    ],
+  }));
+
+  const renderFrontCard = (recipe: Recipe) => {
+    return (
+      <View style={styles.frontCardContent}>
+        {/* Hero Image - 40% height */}
+        <View style={styles.heroImageContainer}>
+          <Image source={{ uri: recipe.image }} style={styles.heroImage} />
+          
+          {/* Heart/Save button - top right */}
+          <TouchableOpacity
+            style={styles.heartButton}
+            onPress={() => handleSaveRecipe(recipe.id)}>
+            <Heart
+              size={24}
+              color={savedRecipes.has(recipe.id) ? '#FF6B35' : '#8E8E93'}
+              fill={savedRecipes.has(recipe.id) ? '#FF6B35' : 'transparent'}
+            />
+          </TouchableOpacity>
+
+          {/* XP Chip - top left */}
+          <View style={styles.xpChip}>
+            <Trophy size={12} color="#2D1B69" />
+            <Text style={styles.xpChipText}>+{calculateRecipeXP(recipe)} XP</Text>
+          </View>
+        </View>
+
+        {/* Scrollable Content */}
+        <ScrollView style={styles.cardContentContainer} showsVerticalScrollIndicator={false}>
+          {/* Title (2-line max) */}
+          <Text style={styles.frontCardTitle} numberOfLines={2}>
+            {recipe.title}
+          </Text>
+
+          {/* Meta Row: time • servings • difficulty */}
+          <View style={styles.metaRow}>
+            <View style={styles.metaItem}>
+              <Clock size={16} color="#8E8E93" />
+              <Text style={styles.metaText}>{recipe.cookingTime}</Text>
+            </View>
+            <View style={styles.metaItem}>
+              <Users size={16} color="#8E8E93" />
+              <Text style={styles.metaText}>{recipe.servings} serv</Text>
+            </View>
+            <View style={[styles.difficultyBadge, 
+              recipe.difficulty === 'Easy' ? styles.easyBadge :
+              recipe.difficulty === 'Medium' ? styles.mediumBadge : styles.hardBadge
+            ]}>
+              <Text style={styles.difficultyText}>{recipe.difficulty}</Text>
+            </View>
+          </View>
+
+          {/* Macro Row (colour numbers) */}
+          <View style={styles.macroRow}>
+            <View style={styles.macroItem}>
+              <Text style={styles.macroValue}>{recipe.macros.calories}</Text>
+              <Text style={styles.macroLabel}>Calories</Text>
+            </View>
+            <View style={styles.macroItem}>
+              <Text style={styles.macroValue}>{recipe.macros.protein}g</Text>
+              <Text style={styles.macroLabel}>Protein</Text>
+            </View>
+            <View style={styles.macroItem}>
+              <Text style={styles.macroValue}>{recipe.macros.carbs}g</Text>
+              <Text style={styles.macroLabel}>Carbs</Text>
+            </View>
+            <View style={styles.macroItem}>
+              <Text style={styles.macroValue}>{recipe.macros.fat}g</Text>
+              <Text style={styles.macroLabel}>Fat</Text>
+            </View>
+          </View>
+
+          {/* Chip Row */}
+          <View style={styles.chipRow}>
+            {recipe.tags.slice(0, 4).map((tag, tagIndex) => (
+              <View key={tagIndex} style={styles.chip}>
+                <Text style={styles.chipText}>{tag}</Text>
+              </View>
+            ))}
+          </View>
+        </ScrollView>
+
+        {/* Action Row - Fixed at bottom */}
+        <View style={styles.actionRow}>
+          <TouchableOpacity style={styles.passButton} onPress={handlePassRecipe}>
+            <X size={20} color="#FF3B30" />
+            <Text style={styles.passButtonText}>Pass</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.previewButton} onPress={handlePreviewRecipe}>
+            <Info size={20} color="#2D1B69" />
+            <Text style={styles.previewButtonText}>Preview</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.cookButton} onPress={handleCookRecipe}>
+            <Text style={styles.cookButtonText}>Cook Now</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  };
+
+  const renderBackCard = (recipe: Recipe, index: number) => {
+    return (
+      <TouchableOpacity 
+        style={styles.backCardHeader}
+        onPress={() => handleTapBackCard(index)}>
+        <Image source={{ uri: recipe.image }} style={styles.backCardImage} />
+        <View style={styles.backCardTextContainer}>
+          <Text style={styles.backCardTitle} numberOfLines={1}>
+            {recipe.title}
+          </Text>
+          <Text style={styles.backCardTeaser}>
+            {recipe.cookingTime} • {recipe.servings} servings
+          </Text>
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
+  const renderCard = (recipe: Recipe, index: number, cardType: 'front' | 'middle' | 'back') => {
+    const isFront = cardType === 'front';
+    
+    // Calculate heights and positions according to blueprint (76%, 88%, 100%)
+    let cardHeight, zIndex, animatedStyle;
+    
+    switch (cardType) {
+      case 'front':
+        cardHeight = '100%';
+        zIndex = 1000;
+        animatedStyle = frontCardAnimatedStyle;
+        break;
+      case 'middle':
+        cardHeight = '88%';
+        zIndex = 900;
+        animatedStyle = middleCardAnimatedStyle;
+        break;
+      case 'back':
+        cardHeight = '76%';
+        zIndex = 800;
+        animatedStyle = backCardAnimatedStyle;
+        break;
+    }
 
     return (
       <Animated.View
-        key={recipe.id}
+        key={`${recipe.id}-${cardType}`}
         style={[
-          styles.stackedCard,
-          {
-            zIndex,
-            transform: [
-              { translateY: animations.translateY },
-              { scale: animations.scale },
-            ],
-            opacity: animations.opacity,
-          },
+          styles.card,
+          { height: cardHeight, zIndex },
+          animatedStyle,
         ]}>
-        
-        {isExpanded ? (
-          // Expanded Card Content
-          <View style={styles.expandedCardContent}>
-            <View style={styles.imageContainer}>
-              <Image source={{uri: recipe.image}} style={styles.stackedCardImage} />
-              
-              {/* XP Badge */}
-              <Animated.View style={[
-                styles.xpBadge, 
-                { transform: [{ scale: xpAnimScale }] }
-              ]}>
-                <Trophy size={10} color="#2D1B69" />
-                <Text style={styles.xpBadgeText}>+{calculateRecipeXP(recipe)} XP</Text>
-              </Animated.View>
-
-              {/* Trending Badge */}
-              {recipe.isTrending && (
-                <Animated.View style={[
-                  styles.trendingBadge,
-                  { transform: [{ scale: trendingPulse }] }
-                ]}>
-                  <TrendingUp size={10} color="#FFFFFF" />
-                  <Text style={styles.trendingText}>TRENDING</Text>
-                </Animated.View>
-              )}
-            </View>
-
-            <ScrollView style={styles.expandedContentScroll} showsVerticalScrollIndicator={false}>
-              <Text style={styles.stackedCardTitle}>{recipe.title}</Text>
-              
-              {/* Creator Row */}
-              {recipe.isCreatorRecipe && recipe.creatorName && (
-                <View style={styles.creatorRow}>
-                  <ChefBadge tier={recipe.creatorTier || 1} size="small" />
-                  <Text style={styles.creatorName}>{recipe.creatorName}</Text>
-                  
-                  {recipe.rating && recipe.viewCount && recipe.viewCount > 5000 && (
-                    <View style={styles.popularBadge}>
-                      <Star size={8} color="#FFB800" />
-                      <Text style={styles.popularText}>POPULAR</Text>
-                    </View>
-                  )}
-                </View>
-              )}
-
-              {/* Rating Row */}
-              {recipe.rating && (
-                <View style={styles.ratingRow}>
-                  <Star size={14} color="#FFB800" fill="#FFB800" />
-                  <Text style={styles.ratingText}>{recipe.rating}</Text>
-                  <Text style={styles.ratingCount}>({recipe.ratingCount})</Text>
-                  {recipe.viewCount && (
-                    <Text style={styles.viewCount}>{recipe.viewCount.toLocaleString()} views</Text>
-                  )}
-                </View>
-              )}
-
-              <View style={styles.cardInfo}>
-                <View style={styles.infoItem}>
-                  <Clock size={16} color="#8E8E93" />
-                  <Text style={styles.infoText}>{recipe.cookingTime}</Text>
-                </View>
-                <View style={styles.infoItem}>
-                  <Users size={16} color="#8E8E93" />
-                  <Text style={styles.infoText}>{recipe.servings} servings</Text>
-                </View>
-                <View style={[styles.difficultyBadge, 
-                  recipe.difficulty === 'Easy' ? styles.easyBadge :
-                  recipe.difficulty === 'Medium' ? styles.mediumBadge : styles.hardBadge
-                ]}>
-                  <Text style={styles.difficultyText}>{recipe.difficulty}</Text>
-                </View>
-              </View>
-
-              {/* Macros */}
-              <View style={styles.macrosRow}>
-                <View style={styles.macroItem}>
-                  <Text style={styles.macroValue}>{recipe.macros.calories}</Text>
-                  <Text style={styles.macroLabel}>Calories</Text>
-                </View>
-                <View style={styles.macroItem}>
-                  <Text style={styles.macroValue}>{recipe.macros.protein}g</Text>
-                  <Text style={styles.macroLabel}>Protein</Text>
-                </View>
-                <View style={styles.macroItem}>
-                  <Text style={styles.macroValue}>{recipe.macros.carbs}g</Text>
-                  <Text style={styles.macroLabel}>Carbs</Text>
-                </View>
-                <View style={styles.macroItem}>
-                  <Text style={styles.macroValue}>{recipe.macros.fat}g</Text>
-                  <Text style={styles.macroLabel}>Fat</Text>
-                </View>
-              </View>
-
-              <View style={styles.tagsRow}>
-                {recipe.tags.map(tag => (
-                  <View key={tag} style={styles.tag}>
-                    <Text style={styles.tagText}>{tag}</Text>
-                  </View>
-                ))}
-              </View>
-
-              {/* Action Buttons */}
-              <View style={styles.actionButtons}>
-                <TouchableOpacity 
-                  style={styles.passButton}
-                  onPress={() => handlePassRecipe(recipe.id)}>
-                  <X size={20} color="#FF3B30" />
-                  <Text style={styles.passButtonText}>Pass</Text>
-                </TouchableOpacity>
-                
-                <TouchableOpacity 
-                  style={styles.detailsButton}
-                  onPress={() => handleViewRecipeDetails(recipe)}>
-                  <Info size={20} color="#2D1B69" />
-                  <Text style={styles.detailsButtonText}>Details</Text>
-                </TouchableOpacity>
-                
-                <TouchableOpacity 
-                  style={styles.cookButtonCard}
-                  onPress={() => handleCookRecipeFromCard(recipe)}>
-                  <Text style={styles.cookButtonCardText}>Cook This!</Text>
-                </TouchableOpacity>
-              </View>
-            </ScrollView>
-          </View>
-        ) : (
-          // Collapsed Card Header (Peeking Card)
-          <TouchableOpacity 
-            style={styles.collapsedCardHeader}
-            onPress={() => handleExpandCard(recipe.id)}>
-            <Image source={{uri: recipe.image}} style={styles.peekingCardImage} />
-            <View style={styles.peekingCardContent}>
-              <Text style={styles.peekingCardTitle} numberOfLines={1}>{recipe.title}</Text>
-              <View style={styles.peekingCardInfo}>
-                <Clock size={12} color="#8E8E93" />
-                <Text style={styles.peekingCardInfoText}>{recipe.cookingTime}</Text>
-                <Users size={12} color="#8E8E93" />
-                <Text style={styles.peekingCardInfoText}>{recipe.servings}</Text>
-              </View>
-            </View>
-          </TouchableOpacity>
-        )}
+        {isFront ? renderFrontCard(recipe) : renderBackCard(recipe, index)}
       </Animated.View>
     );
   };
 
+  const getVisibleRecipes = () => {
+    return recipes.slice(frontCardIndex, frontCardIndex + 3);
+  };
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.statusBar}>
+          <View style={styles.xpCapsule}>
+            <Trophy size={16} color="#2D1B69" />
+            <Text style={styles.xpText}>+75 XP</Text>
+          </View>
+        </View>
+        
+        <View style={styles.header}>
+          <Text style={styles.title}>Generating Recipes</Text>
+          <Text style={styles.subtitle}>AI Chef is cooking up something special...</Text>
+        </View>
+        
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#4CAF50" />
+          <Text style={styles.loadingText}>Creating personalized recipes</Text>
+          <Text style={styles.loadingSubtext}>Using your {ingredients.length} ingredients</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.statusBar}>
+          <View style={styles.xpCapsule}>
+            <Trophy size={16} color="#2D1B69" />
+            <Text style={styles.xpText}>+0 XP</Text>
+          </View>
+        </View>
+        
+        <View style={styles.header}>
+          <Text style={styles.title}>Oops!</Text>
+          <Text style={styles.subtitle}>Something went wrong</Text>
+        </View>
+        
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity 
+            style={styles.retryButton} 
+            onPress={generateRecipesFromAPI}>
+            <Text style={styles.retryButtonText}>Try Again</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.goBackButton} 
+            onPress={() => navigation.goBack()}>
+            <Text style={styles.goBackButtonText}>Go Back</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
+      {/* Zone A: Status Bar (48px high) */}
+      <View style={styles.statusBar}>
+        <View style={styles.xpCapsule}>
+          <Trophy size={16} color="#2D1B69" />
+          <Text style={styles.xpText}>+75 XP</Text>
+        </View>
+      </View>
+
+      {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>3 Diverse Recipes</Text>
+        <Text style={styles.title}>{recipes.length} AI Recipes</Text>
         <Text style={styles.subtitle}>
-          Same ingredients, different dishes
+          Personalized for your ingredients
         </Text>
       </View>
 
-      <View style={styles.cardsContainer}>
-        {isLoading ? (
-          <View style={styles.aiLoadingContainer}>
-            <Text style={styles.noRecipes}>Loading AI recipes...</Text>
-            <ActivityIndicator size="large" color="#FF6B35" />
-          </View>
-        ) : visibleRecipes.length > 0 ? (
-          <View style={{ flex: 1, position: 'relative' }}>
-            {visibleRecipes.map((recipe, index) => renderStackedCard(recipe, index))}
-          </View>
-        ) : (
-          <View style={styles.aiLoadingContainer}>
-            <Text style={styles.noRecipes}>
-              {dismissedRecipes.size === recipes.length 
-                ? "All recipes passed! Generate new ones?" 
-                : "No recipes available"}
-            </Text>
-            {dismissedRecipes.size === recipes.length && (
-              <TouchableOpacity 
-                style={styles.cookButton}
-                onPress={handleRefreshRecipes}>
-                <Text style={styles.cookButtonText}>Generate New Recipes</Text>
-              </TouchableOpacity>
+      {/* Zone B: Stack Viewport */}
+      <View style={styles.stackViewport}>
+        {getVisibleRecipes().length > 0 && (
+          <>
+            {/* Render cards in reverse order for proper stacking (back to front) */}
+            {getVisibleRecipes().length > 2 && (
+              renderCard(getVisibleRecipes()[2], frontCardIndex + 2, 'back')
             )}
+            
+            {getVisibleRecipes().length > 1 && (
+              renderCard(getVisibleRecipes()[1], frontCardIndex + 1, 'middle')
+            )}
+            
+            {/* Front Card with Gesture Handler */}
+            <PanGestureHandler onGestureEvent={panGestureHandler}>
+              {renderCard(getVisibleRecipes()[0], frontCardIndex, 'front')}
+            </PanGestureHandler>
+          </>
+        )}
+
+        {/* Swipe hint - only show for first recipe */}
+        {frontCardIndex === 0 && (
+          <View style={styles.swipeHint}>
+            <Text style={styles.swipeHintText}>↔ Swipe to choose</Text>
           </View>
         )}
       </View>
 
-      {/* AI Recipe Generation Loading Modal */}
-      <Modal
-        visible={isLoading}
-        animationType="fade"
-        transparent={true}>
-        <View style={styles.aiModalOverlay}>
-          <Animated.View style={[
-            styles.aiModal,
-            {
-              transform: [{scale: aiPulseAnim}],
-              opacity: aiOpacityAnim,
-            }
-          ]}>
-            <View style={styles.aiModalContent}>
-              <Animated.View style={[
-                styles.aiChefIconContainer,
-                { transform: [{ scale: aiPulseAnim }] }
-              ]}>
-                <AIChefIcon size={moderateScale(64)} variant="analyzing" />
-              </Animated.View>
-              <Text style={styles.aiModalTitle}>AI Chef Analyzing...</Text>
-              <Text style={styles.aiModalSubtitle}>Generating 3 diverse recipes</Text>
-              <View style={styles.processingSteps}>
-                <Text style={styles.stepText}>• Analyzing ingredient compatibility</Text>
-                <Text style={styles.stepText}>• Applying your preferences</Text>
-                <Text style={styles.stepText}>• Creating 3 unique dishes</Text>
-              </View>
-            </View>
-          </Animated.View>
-        </View>
-      </Modal>
+      {/* Saved Toast */}
+      {showSavedToast && (
+        <Animated.View 
+          style={styles.savedToast}
+          entering={undefined} // Will use manual animation
+        >
+          <Text style={styles.savedToastText}>Added to Saved</Text>
+        </Animated.View>
+      )}
 
-      {/* Recipe Details Modal */}
+      {/* Preview Modal */}
       <Modal
-        visible={showDetails}
+        visible={showPreviewModal}
         animationType="slide"
         transparent={true}
-        onRequestClose={() => setShowDetails(false)}>
+        onRequestClose={() => setShowPreviewModal(false)}>
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <TouchableOpacity
-              style={styles.closeButton}
-              onPress={() => setShowDetails(false)}>
-              <X size={24} color="#2D1B69" />
-            </TouchableOpacity>
+          <View style={styles.previewModalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalHeaderTitle}>Recipe Preview</Text>
+              <TouchableOpacity
+                style={styles.modalCloseButton}
+                onPress={() => setShowPreviewModal(false)}>
+                <X size={24} color="#2D1B69" />
+              </TouchableOpacity>
+            </View>
 
             <ScrollView showsVerticalScrollIndicator={false}>
-              {selectedRecipe && (
+              {previewRecipe && (
                 <>
-                  <Image source={{uri: selectedRecipe.image}} style={styles.modalImage} />
-                  <Text style={styles.modalTitle}>{selectedRecipe.title}</Text>
-                  <Text style={styles.modalDescription}>{selectedRecipe.description}</Text>
+                  <Image source={{ uri: previewRecipe.image }} style={styles.previewImage} />
                   
-                  <View style={styles.modalSection}>
-                    <Text style={styles.sectionTitle}>Ingredients</Text>
-                    <View style={styles.ingredientsGrid}>
-                      {selectedRecipe.ingredients?.map((ing, index) => (
-                        <IngredientTag key={index} ingredient={ing} />
-                      ))}
-                    </View>
+                  <View style={styles.previewContent}>
+                    <Text style={styles.previewTitle}>{previewRecipe.title}</Text>
+                    <Text style={styles.previewDescription}>{previewRecipe.description}</Text>
                     
-                    {/* Legend for ingredient sources */}
-                    <View style={styles.ingredientLegend}>
-                      <View style={styles.legendItem}>
-                        <Check size={12} color="#4CAF50" />
-                        <Text style={styles.legendText}>Scanned</Text>
+                    {/* Instructions */}
+                    {previewRecipe.instructions && (
+                      <View style={styles.previewSection}>
+                        <Text style={styles.previewSectionTitle}>Instructions</Text>
+                        {previewRecipe.instructions.map((instruction, index) => (
+                          <View key={index} style={styles.instructionItem}>
+                            <View style={styles.instructionNumber}>
+                              <Text style={styles.instructionNumberText}>{index + 1}</Text>
+                            </View>
+                            <Text style={styles.instructionText}>{instruction}</Text>
+                          </View>
+                        ))}
                       </View>
-                      <View style={styles.legendItem}>
-                        <Home size={12} color="#FF9800" />
-                        <Text style={styles.legendText}>Pantry</Text>
+                    )}
+
+                    {/* Tips */}
+                    {previewRecipe.tips && previewRecipe.tips.length > 0 && (
+                      <View style={styles.previewSection}>
+                        <Text style={styles.previewSectionTitle}>💡 Chef's Tips</Text>
+                        {previewRecipe.tips.map((tip, index) => (
+                          <Text key={index} style={styles.tipText}>• {tip}</Text>
+                        ))}
                       </View>
-                      <View style={styles.legendItem}>
-                        <AlertCircle size={12} color="#9C27B0" />
-                        <Text style={styles.legendText}>Optional</Text>
-                      </View>
-                    </View>
+                    )}
                   </View>
-
-                  {/* Recipe Analysis */}
-                  <RecipeAnalysis recipe={selectedRecipe} />
-
-                  <View style={styles.modalInfo}>
-                    <View style={styles.infoItem}>
-                      <Clock size={20} color="#8E8E93" />
-                      <Text style={styles.infoText}>{selectedRecipe.cookingTime}</Text>
-                    </View>
-                    <View style={styles.infoItem}>
-                      <Users size={20} color="#8E8E93" />
-                      <Text style={styles.infoText}>{selectedRecipe.servings} servings</Text>
-                    </View>
-                  </View>
-
-                  <TouchableOpacity
-                    style={styles.cookButton}
-                    onPress={handleSelectRecipe}>
-                    <Text style={styles.cookButtonText}>Start Cooking</Text>
-                  </TouchableOpacity>
                 </>
               )}
             </ScrollView>
+
+            <View style={styles.previewActions}>
+              <TouchableOpacity 
+                style={styles.previewCookButton} 
+                onPress={() => {
+                  setShowPreviewModal(false);
+                  handleCookRecipe();
+                }}>
+                <ChefHat size={20} color="#FFFFFF" />
+                <Text style={styles.previewCookButtonText}>Start Cooking</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
@@ -1054,23 +835,47 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F8FF',
+    backgroundColor: '#F8F8FF', // Light background
   },
-  swiperContainer: {
-    flex: 1,
-    alignItems: 'center',
+  
+  // Zone A: Status Bar
+  statusBar: {
+    height: 48,
+    paddingHorizontal: 20,
     justifyContent: 'center',
+    alignItems: 'flex-start',
   },
+  xpCapsule: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFB800', // Spice Orange variant
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    gap: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  xpText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#2D1B69', // Eggplant Midnight
+  },
+
+  // Header
   header: {
     paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 8,
+    paddingTop: 8,
+    paddingBottom: 16,
     alignItems: 'center',
   },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#2D1B69',
+    color: '#2D1B69', // Eggplant Midnight
   },
   subtitle: {
     fontSize: 16,
@@ -1079,64 +884,113 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
 
+  // Zone B: Stack Viewport
+  stackViewport: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    position: 'relative',
+  },
+
+  // Card Styles - rounded corners 16px, subtle shadow
   card: {
-    height: '95%',
-    borderRadius: 20,
-    backgroundColor: '#FFFFFF',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 10,
-    elevation: 5,
-  },
-  cardTouchable: {
-    flex: 1,
-  },
-  cardImage: {
+    position: 'absolute',
     width: '100%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 5,
+    overflow: 'hidden',
+  },
+
+  // Front Card Content
+  frontCardContent: {
+    flex: 1,
+  },
+  heroImageContainer: {
     height: '40%',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    position: 'relative',
   },
-  cardContent: {
+  heroImage: {
+    width: '100%',
+    height: '100%',
+  },
+  heartButton: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)', // More opaque for better shadow performance
+    borderRadius: 20,
+    padding: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  xpChip: {
+    position: 'absolute',
+    top: 12,
+    left: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFB800',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    gap: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  xpChipText: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#2D1B69',
+  },
+
+  cardContentContainer: {
     flex: 1,
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingTop: 16,
   },
-  cardContentScroll: {
-    flex: 1,
-  },
-  cardTitle: {
+  frontCardTitle: {
     fontSize: 20,
     fontWeight: 'bold',
     color: '#2D1B69',
-    marginBottom: 8,
-  },
-  cardInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
     marginBottom: 12,
+    lineHeight: 24,
   },
-  infoItem: {
+
+  // Meta Row
+  metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginRight: 12,
+    marginBottom: 16,
+    gap: 16,
   },
-  infoText: {
-    fontSize: 13,
+  metaItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  metaText: {
+    fontSize: 14,
     color: '#8E8E93',
-    marginLeft: 4,
   },
   difficultyBadge: {
     paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
     marginLeft: 'auto',
   },
   easyBadge: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#4CAF50', // Fresh Basil
   },
   mediumBadge: {
     backgroundColor: '#FF9800',
@@ -1145,512 +999,62 @@ const styles = StyleSheet.create({
     backgroundColor: '#F44336',
   },
   difficultyText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '600',
     color: '#FFFFFF',
   },
-  macrosRow: {
+
+  // Macro Row (colour numbers)
+  macroRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 12,
-    paddingTop: 12,
+    marginBottom: 16,
+    paddingVertical: 12,
     borderTopWidth: 1,
-    borderTopColor: '#E5E5E7',
+    borderBottomWidth: 1,
+    borderColor: '#E5E5E7',
   },
   macroItem: {
     alignItems: 'center',
   },
   macroValue: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
-    color: '#FF6B35',
+    color: '#FF6B35', // Spice Orange
   },
   macroLabel: {
-    fontSize: 11,
+    fontSize: 12,
     color: '#8E8E93',
-    marginTop: 1,
+    marginTop: 2,
   },
-  tagsRow: {
+
+  // Chip Row
+  chipRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 6,
+    gap: 8,
+    marginBottom: 20,
   },
-  tag: {
-    backgroundColor: '#2D1B69',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 10,
+  chip: {
+    backgroundColor: '#2D1B69', // Eggplant Midnight
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
   },
-  tagText: {
-    fontSize: 11,
-    color: '#F8F8FF',
-    fontWeight: '500',
-  },
-  infoButton: {
-    position: 'absolute',
-    top: 16,
-    right: 16,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 6,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  skipLabel: {
-    backgroundColor: '#E5E5E7',
-    color: '#8E8E93',
-    fontSize: 24,
-    fontWeight: 'bold',
-    padding: 10,
-    borderRadius: 10,
-  },
-  skipWrapper: {
-    flexDirection: 'column',
-    alignItems: 'flex-end',
-    justifyContent: 'flex-start',
-    marginTop: 30,
-    marginLeft: -30,
-  },
-  cookLabel: {
-    backgroundColor: '#4CAF50',
+  chipText: {
+    fontSize: 12,
+    fontWeight: '600',
     color: '#FFFFFF',
-    fontSize: 24,
-    fontWeight: 'bold',
-    padding: 10,
-    borderRadius: 10,
   },
-  cookWrapper: {
-    flexDirection: 'column',
-    alignItems: 'flex-start',
-    justifyContent: 'flex-start',
-    marginTop: 30,
-    marginLeft: 30,
-  },
-  noRecipes: {
-    fontSize: 18,
-    color: '#8E8E93',
-    textAlign: 'center',
-    marginTop: 100,
-  },
-  // Modal styles
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 40,
-    maxHeight: '80%',
-  },
-  closeButton: {
-    alignSelf: 'flex-end',
-    padding: 8,
-  },
-  modalImage: {
-    width: '100%',
-    height: 200,
-    borderRadius: 12,
-    marginBottom: 16,
-  },
-  modalTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#2D1B69',
-    marginBottom: 8,
-  },
-  modalDescription: {
-    fontSize: 16,
-    color: '#8E8E93',
-    marginBottom: 20,
-    lineHeight: 24,
-  },
-  modalSection: {
-    marginBottom: 20,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#2D1B69',
-    marginBottom: 12,
-  },
-  ingredientItem: {
-    fontSize: 16,
-    color: '#2D1B69',
-    marginBottom: 4,
-  },
-  modalInfo: {
+
+  // Action Row - Fixed at bottom
+  actionRow: {
     flexDirection: 'row',
-    gap: 20,
-    marginBottom: 24,
-  },
-  cookButton: {
-    backgroundColor: '#FF6B35',
-    paddingVertical: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-    marginTop: 12,
-  },
-  cookButtonText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#F8F8FF',
-  },
-  imageContainer: {
-    position: 'relative',
-    width: '100%',
-    height: '40%',
-  },
-  trendingBadge: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
-    backgroundColor: '#FF6B35',
-    paddingHorizontal: 6,
-    paddingVertical: 3,
-    borderRadius: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  trendingText: {
-    fontSize: 9,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    marginLeft: 3,
-  },
-  xpBadge: {
-    position: 'absolute',
-    top: 10,
-    left: 10,
-    backgroundColor: '#FFB800',
-    paddingHorizontal: 6,
-    paddingVertical: 3,
-    borderRadius: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  xpBadgeText: {
-    fontSize: 11,
-    fontWeight: 'bold',
-    color: '#2D1B69',
-    marginLeft: 3,
-  },
-  creatorRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 6,
-  },
-  creatorName: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#2D1B69',
-    marginLeft: 6,
-  },
-  popularBadge: {
-    backgroundColor: 'rgba(255, 184, 0, 0.15)',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 8,
-    marginLeft: 'auto',
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  popularText: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: '#FFB800',
-    marginLeft: 3,
-  },
-  ratingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 6,
-  },
-  ratingText: {
-    fontSize: 13,
-    fontWeight: 'bold',
-    color: '#FFB800',
-    marginLeft: 3,
-  },
-  ratingCount: {
-    fontSize: 11,
-    color: '#8E8E93',
-    marginLeft: 3,
-  },
-  viewCount: {
-    fontSize: 11,
-    color: '#8E8E93',
-    marginLeft: 'auto',
-  },
-  // AI Loading styles
-  aiLoadingContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  aiModalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(139, 69, 19, 0.4)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  aiModal: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 30,
-    margin: 40,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 8,
-    borderWidth: 2,
-    borderColor: '#FFB800',
-  },
-  aiModalContent: {
-    alignItems: 'center',
-  },
-  aiChefIconContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 20,
-  },
-  aiModalTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#2D1B69',
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  aiModalSubtitle: {
-    fontSize: 16,
-    color: '#8E8E93',
-    marginBottom: 20,
-    textAlign: 'center',
-  },
-  processingSteps: {
-    alignItems: 'flex-start',
-  },
-  stepText: {
-    fontSize: 14,
-    color: '#2D1B69',
-    marginBottom: 5,
-    fontWeight: '500',
-  },
-  analysisContainer: {
-    marginTop: 20,
-    padding: 20,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 10,
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-  analysisTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#2D1B69',
-    marginBottom: 12,
-  },
-  analysisSection: {
-    marginBottom: 20,
-  },
-  analysisSectionTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#2D1B69',
-    marginBottom: 8,
-  },
-  analysisTagsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-  },
-  analysisTag: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 10,
-    marginRight: 6,
-  },
-  usedTag: {
-    backgroundColor: '#E8F5E8',
-    borderColor: '#4CAF50',
-  },
-  usedTagText: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: '#4CAF50',
-  },
-  skippedTag: {
-    backgroundColor: '#FFF3E0',
-    borderColor: '#FF9800',
-  },
-  skippedTagText: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: '#FF9800',
-  },
-  skipReason: {
-    fontSize: 12,
-    color: '#8E8E93',
-    marginTop: 4,
-  },
-  methodTag: {
-    backgroundColor: '#F3E5F5',
-    borderColor: '#9C27B0',
-  },
-  methodTagText: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: '#9C27B0',
-  },
-  ingredientTag: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    borderWidth: 1,
-    marginRight: 6,
-    marginBottom: 4,
-    gap: 4,
-  },
-  ingredientTagText: {
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  ingredientsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-  },
-  ingredientLegend: {
-    flexDirection: 'row',
-    gap: 6,
-  },
-  legendItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  legendText: {
-    fontSize: 12,
-    color: '#8E8E93',
-    marginLeft: 4,
-  },
-  
-  // Stacked cards layout styles
-  cardsContainer: {
-    flex: 1,
+    gap: 12,
     paddingHorizontal: 16,
+    paddingBottom: 16,
     paddingTop: 8,
-  },
-  
-  // Stacked card styles
-  stackedCard: {
-    position: 'absolute',
-    width: '100%',
-    height: 500,
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 4},
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 5,
-    overflow: 'hidden',
-  },
-  
-  // Expanded card content
-  expandedCardContent: {
-    flex: 1,
-    height: '100%',
-  },
-  stackedCardImage: {
-    width: '100%',
-    height: 200,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-  },
-  expandedContentScroll: {
-    flex: 1,
-    padding: 16,
-  },
-  stackedCardTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#2D1B69',
-    marginBottom: 12,
-    lineHeight: 24,
-  },
-  
-  // Collapsed/Peeking card styles
-  collapsedCardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    height: 80,
-  },
-  peekingCardImage: {
-    width: 50,
-    height: 50,
-    borderRadius: 8,
-    marginRight: 12,
-  },
-  peekingCardContent: {
-    flex: 1,
-  },
-  peekingCardTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#2D1B69',
-    marginBottom: 4,
-  },
-  peekingCardInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  peekingCardInfoText: {
-    fontSize: 12,
-    color: '#8E8E93',
-    marginLeft: 2,
-    marginRight: 6,
-  },
-  
-  // Action buttons
-  actionButtons: {
-    flexDirection: 'row',
-    gap: 8,
-    marginTop: 16,
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#E5E5E7',
   },
   passButton: {
     flex: 1,
@@ -1658,43 +1062,296 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'rgba(255, 59, 48, 0.1)',
-    paddingVertical: 8,
-    borderRadius: 8,
-    gap: 4,
+    paddingVertical: 12,
+    borderRadius: 12,
+    gap: 6,
   },
   passButtonText: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '600',
     color: '#FF3B30',
   },
-  detailsButton: {
+  previewButton: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'rgba(45, 27, 105, 0.1)',
-    paddingVertical: 8,
-    borderRadius: 8,
-    gap: 4,
+    paddingVertical: 12,
+    borderRadius: 12,
+    gap: 6,
   },
-  detailsButtonText: {
-    fontSize: 12,
+  previewButtonText: {
+    fontSize: 14,
     fontWeight: '600',
     color: '#2D1B69',
   },
-  cookButtonCard: {
+  cookButton: {
     flex: 2,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FF6B35',
-    paddingVertical: 10,
-    borderRadius: 8,
+    backgroundColor: '#FF6B35', // Spice Orange
+    paddingVertical: 12,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  cookButtonCardText: {
+  cookButtonText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+  },
+
+  // Back Card Header (Peeking Cards) - shows only title + 1-line teaser
+  backCardHeader: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+  },
+  backCardImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 12,
+    marginRight: 16,
+  },
+  backCardTextContainer: {
+    flex: 1,
+  },
+  backCardTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#2D1B69',
+    marginBottom: 4,
+  },
+  backCardTeaser: {
+    fontSize: 14,
+    color: '#8E8E93',
+  },
+
+  // Swipe Hint
+  swipeHint: {
+    position: 'absolute',
+    bottom: 20,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+  },
+  swipeHintText: {
+    fontSize: 12,
+    color: 'rgba(45, 27, 105, 0.5)', // Ghosted Eggplant
+    fontWeight: '500',
+  },
+
+  // Saved Toast
+  savedToast: {
+    position: 'absolute',
+    bottom: 100,
+    left: 20,
+    right: 20,
+    backgroundColor: '#4CAF50', // Fresh Basil background
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  savedToastText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+
+  // Preview Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  previewModalContent: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '85%',
+    paddingBottom: 20,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E5E7',
+  },
+  modalHeaderTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#2D1B69',
+  },
+  modalCloseButton: {
+    padding: 4,
+  },
+  previewImage: {
+    width: '100%',
+    height: 200,
+  },
+  previewContent: {
+    padding: 20,
+  },
+  previewTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#2D1B69',
+    marginBottom: 12,
+  },
+  previewDescription: {
+    fontSize: 16,
+    color: '#8E8E93',
+    lineHeight: 24,
+    marginBottom: 24,
+  },
+  previewSection: {
+    marginBottom: 24,
+  },
+  previewSectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#2D1B69',
+    marginBottom: 12,
+  },
+  instructionItem: {
+    flexDirection: 'row',
+    marginBottom: 12,
+  },
+  instructionNumber: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#FF6B35',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+    marginTop: 2,
+  },
+  instructionNumberText: {
     fontSize: 14,
     fontWeight: 'bold',
     color: '#FFFFFF',
   },
+  instructionText: {
+    flex: 1,
+    fontSize: 16,
+    color: '#2D1B69',
+    lineHeight: 24,
+  },
+  tipText: {
+    fontSize: 14,
+    color: '#8E8E93',
+    lineHeight: 20,
+    marginBottom: 6,
+  },
+  previewActions: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E5E7',
+  },
+  previewCookButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FF6B35',
+    paddingVertical: 16,
+    borderRadius: 12,
+    gap: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  previewCookButtonText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+  },
+
+  // Loading and Error States
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 40,
+  },
+  loadingText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#2D1B69',
+    marginTop: 20,
+    textAlign: 'center',
+  },
+  loadingSubtext: {
+    fontSize: 14,
+    color: '#8E8E93',
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 40,
+  },
+  errorText: {
+    fontSize: 16,
+    color: '#FF3B30',
+    textAlign: 'center',
+    marginBottom: 24,
+    lineHeight: 24,
+  },
+  retryButton: {
+    backgroundColor: '#4CAF50',
+    paddingHorizontal: 32,
+    paddingVertical: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  retryButtonText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+  },
+  goBackButton: {
+    backgroundColor: '#FFFFFF', // White background instead of transparent for better shadow performance
+    paddingHorizontal: 32,
+    paddingVertical: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#2D1B69',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  goBackButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#2D1B69',
+  },
 });
 
-export default RecipeCardsScreen;
+export default RecipeCardsScreen; 
