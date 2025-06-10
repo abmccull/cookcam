@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { supabase } from '../index';
+import { supabase, createAuthenticatedClient } from '../index';
 import { authenticateUser } from '../middleware/auth';
 import { logger } from '../utils/logger';
 
@@ -73,23 +73,25 @@ router.post('/check-streak', authenticateUser, async (req: Request, res: Respons
 router.get('/progress', authenticateUser, async (req: Request, res: Response) => {
   try {
     const userId = (req as AuthenticatedRequest).user.id;
+    const token = req.headers.authorization?.replace('Bearer ', '') || '';
+    const userClient = createAuthenticatedClient(token);
 
     // Get user stats
-    const { data: user } = await supabase
+    const { data: user } = await userClient
       .from('users')
       .select('level, xp, total_xp, streak_current, streak_shields')
       .eq('id', userId)
       .single();
 
     // Get user progress
-    const { data: progress } = await supabase
+    const { data: progress } = await userClient
       .from('user_progress')
       .select('*')
       .eq('user_id', userId)
       .single();
 
     // Get user achievements  
-    const { data: achievements } = await supabase
+    const { data: achievements } = await userClient
       .from('user_achievements')
       .select(`
         achievement_id,

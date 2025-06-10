@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { supabase } from '../index';
+import { supabase, createAuthenticatedClient } from '../index';
 import { authenticateUser, generateAccessToken, generateRefreshToken, verifyRefreshToken } from '../middleware/auth';
 import { authRateLimiter } from '../middleware/security';
 import { validateAuthInput } from '../middleware/validation';
@@ -495,6 +495,8 @@ router.put('/profile', authenticateUser, async (req: Request, res: Response) => 
 router.delete('/account', authenticateUser, async (req: Request, res: Response) => {
   try {
     const userId = (req as AuthenticatedRequest).user.id;
+    const token = req.headers.authorization?.replace('Bearer ', '') || '';
+    const userClient = createAuthenticatedClient(token);
     const { confirmPassword } = req.body;
 
     if (!confirmPassword) {
@@ -509,7 +511,7 @@ router.delete('/account', authenticateUser, async (req: Request, res: Response) 
     }
 
     // Verify password before deletion (get user's email first)
-    const { data: userData, error: userError } = await supabase
+    const { data: userData, error: userError } = await userClient
       .from('users')
       .select('email')
       .eq('id', userId)
@@ -534,38 +536,38 @@ router.delete('/account', authenticateUser, async (req: Request, res: Response) 
       // Delete user data in proper order (respecting foreign keys)
       
       // 1. Delete scan history and related data
-      await supabase.from('scan_results').delete().eq('user_id', userId);
-      await supabase.from('scan_ingredients').delete().eq('user_id', userId);
+      await userClient.from('scan_results').delete().eq('user_id', userId);
+      await userClient.from('scan_ingredients').delete().eq('user_id', userId);
       
       // 2. Delete recipe data
-      await supabase.from('recipe_ratings').delete().eq('user_id', userId);
-      await supabase.from('recipe_favorites').delete().eq('user_id', userId);
-      await supabase.from('user_recipes').delete().eq('user_id', userId);
+      await userClient.from('recipe_ratings').delete().eq('user_id', userId);
+      await userClient.from('recipe_favorites').delete().eq('user_id', userId);
+      await userClient.from('user_recipes').delete().eq('user_id', userId);
       
       // 3. Delete gamification data
-      await supabase.from('user_xp_logs').delete().eq('user_id', userId);
-      await supabase.from('user_achievements').delete().eq('user_id', userId);
-      await supabase.from('user_badges').delete().eq('user_id', userId);
+      await userClient.from('user_xp_logs').delete().eq('user_id', userId);
+      await userClient.from('user_achievements').delete().eq('user_id', userId);
+      await userClient.from('user_badges').delete().eq('user_id', userId);
       
       // 4. Delete subscription data
-      await supabase.from('user_subscriptions').delete().eq('user_id', userId);
-      await supabase.from('subscription_usage').delete().eq('user_id', userId);
+      await userClient.from('user_subscriptions').delete().eq('user_id', userId);
+      await userClient.from('subscription_usage').delete().eq('user_id', userId);
       
       // 5. Delete creator-specific data
-      await supabase.from('creator_revenues').delete().eq('user_id', userId);
-      await supabase.from('creator_payouts').delete().eq('user_id', userId);
-      await supabase.from('affiliate_links').delete().eq('user_id', userId);
-      await supabase.from('creator_tiers').delete().eq('user_id', userId);
+      await userClient.from('creator_revenues').delete().eq('user_id', userId);
+      await userClient.from('creator_payouts').delete().eq('user_id', userId);
+      await userClient.from('affiliate_links').delete().eq('user_id', userId);
+      await userClient.from('creator_tiers').delete().eq('user_id', userId);
       
       // 6. Delete notification preferences and logs
-      await supabase.from('notification_preferences').delete().eq('user_id', userId);
-      await supabase.from('notification_logs').delete().eq('user_id', userId);
+      await userClient.from('notification_preferences').delete().eq('user_id', userId);
+      await userClient.from('notification_logs').delete().eq('user_id', userId);
       
       // 7. Delete usage analytics
-      await supabase.from('user_analytics').delete().eq('user_id', userId);
+      await userClient.from('user_analytics').delete().eq('user_id', userId);
       
       // 8. Delete the user profile
-      const { error: deleteUserError } = await supabase
+      const { error: deleteUserError } = await userClient
         .from('users')
         .delete()
         .eq('id', userId);

@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { authenticateUser } from '../middleware/auth';
-import { supabase } from '../index';
+import { supabase, createAuthenticatedClient } from '../index';
 import { generateRecipeSuggestions, generateFullRecipe, RecipeInput } from '../services/openai';
 import { logger } from '../utils/logger';
 import enhancedRecipeService from '../services/enhancedRecipeGeneration';
@@ -59,6 +59,9 @@ interface NutritionCalculation {
 router.post('/suggestions', authenticateUser, async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user.id;
+    const token = req.headers.authorization?.replace('Bearer ', '') || '';
+    const userClient = createAuthenticatedClient(token);
+    
     const { 
       detectedIngredients, 
       dietaryTags, 
@@ -85,7 +88,7 @@ router.post('/suggestions', authenticateUser, async (req: Request, res: Response
     const suggestions = await generateRecipeSuggestions(recipeInput);
 
     // Store the input for potential full recipe generation
-    const { data: sessionData, error: sessionError } = await supabase
+    const { data: sessionData, error: sessionError } = await userClient
       .from('recipe_sessions')
       .insert([{
         user_id: userId,
@@ -129,6 +132,9 @@ router.post('/suggestions', authenticateUser, async (req: Request, res: Response
 router.post('/generate-full', authenticateUser, async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user.id;
+    const token = req.headers.authorization?.replace('Bearer ', '') || '';
+    const userClient = createAuthenticatedClient(token);
+    
     const { selectedTitle, sessionId } = req.body;
 
     if (!selectedTitle) {
@@ -139,7 +145,7 @@ router.post('/generate-full', authenticateUser, async (req: Request, res: Respon
     let originalInput: RecipeInput;
     
     if (sessionId) {
-      const { data: session, error: sessionError } = await supabase
+      const { data: session, error: sessionError } = await userClient
         .from('recipe_sessions')
         .select('input_data')
         .eq('id', sessionId)
@@ -163,7 +169,7 @@ router.post('/generate-full', authenticateUser, async (req: Request, res: Respon
     const fullRecipe = await generateFullRecipe(selectedTitle, originalInput);
 
     // Store the generated recipe
-    const { data: recipe, error: recipeError } = await supabase
+    const { data: recipe, error: recipeError } = await userClient
       .from('recipes')
       .insert([{
         title: fullRecipe.title,
@@ -235,6 +241,9 @@ router.post('/generate-full', authenticateUser, async (req: Request, res: Respon
 router.post('/generate', authenticateUser, async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user.id;
+    const token = req.headers.authorization?.replace('Bearer ', '') || '';
+    const userClient = createAuthenticatedClient(token);
+    
     const { 
       ingredients, 
       detectedIngredients, 
@@ -303,7 +312,7 @@ router.post('/generate', authenticateUser, async (req: Request, res: Response) =
     // Store the recipes and analytics data
     const recipePromises = multipleRecipesResult.recipes.map(async (recipe, index) => {
       try {
-        const { data: recipeRecord, error: recipeError } = await supabase
+        const { data: recipeRecord, error: recipeError } = await userClient
           .from('recipes')
           .insert([{
             title: recipe.title,
@@ -397,6 +406,9 @@ router.post('/generate', authenticateUser, async (req: Request, res: Response) =
 router.post('/generate-previews', authenticateUser, async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user.id;
+    const token = req.headers.authorization?.replace('Bearer ', '') || '';
+    const userClient = createAuthenticatedClient(token);
+    
     const { 
       detectedIngredients, 
       userPreferences, 
@@ -432,8 +444,8 @@ router.post('/generate-previews', authenticateUser, async (req: Request, res: Re
       sessionId: finalSessionId
     });
 
-    // Store cooking session
-    const { data: sessionData, error: sessionError } = await supabase
+    // Store cooking session with authenticated user client
+    const { data: sessionData, error: sessionError } = await userClient
       .from('cooking_sessions')
       .insert([{
         session_id: finalSessionId,
@@ -462,9 +474,9 @@ router.post('/generate-previews', authenticateUser, async (req: Request, res: Re
     }
 
     // Store recipe previews
-    const previewPromises = previewResult.previews.map(async (preview) => {
+    const previewPromises = previewResult.previews.map(async (preview: any) => {
       try {
-        const { data: previewRecord, error: previewError } = await supabase
+        const { data: previewRecord, error: previewError } = await userClient
           .from('recipe_previews')
           .insert([{
             preview_id: preview.id,
@@ -494,7 +506,7 @@ router.post('/generate-previews', authenticateUser, async (req: Request, res: Re
     });
 
     const storedPreviews = await Promise.all(previewPromises);
-    const successfulPreviews = storedPreviews.filter(p => p !== null);
+    const successfulPreviews = storedPreviews.filter((p: any) => p !== null);
 
     // Award XP for generating previews
     await supabase.rpc('add_user_xp', {
@@ -544,6 +556,9 @@ router.post('/generate-previews', authenticateUser, async (req: Request, res: Re
 router.post('/generate-detailed', authenticateUser, async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user.id;
+    const token = req.headers.authorization?.replace('Bearer ', '') || '';
+    const userClient = createAuthenticatedClient(token);
+    
     const { 
       selectedPreview, 
       sessionId 
@@ -570,7 +585,7 @@ router.post('/generate-detailed', authenticateUser, async (req: Request, res: Re
     }
 
     // Get cooking session to retrieve original ingredients and preferences
-    const { data: session, error: sessionError } = await supabase
+    const { data: session, error: sessionError } = await userClient
       .from('cooking_sessions')
       .select('*')
       .eq('session_id', sessionId)
@@ -579,31 +594,27 @@ router.post('/generate-detailed', authenticateUser, async (req: Request, res: Re
 
     if (sessionError || !session) {
       // Enhanced debugging: Let's see what sessions exist for this user
-      const { data: userSessions, error: debugError } = await supabase
+      const { data: userSessions, error: debugError } = await userClient
         .from('cooking_sessions')
         .select('session_id, user_id, created_at')
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
         .limit(5);
 
-      logger.error('❌ Cooking session not found - Debug info', {
-        searchedSessionId: sessionId,
-        searchedUserId: userId,
+      logger.error('❌ Cooking session not found', {
+        sessionId: sessionId,
+        userId: userId,
         sessionError: sessionError?.message,
-        userRecentSessions: userSessions,
+        userRecentSessions: userSessions || [],
         debugError: debugError?.message
       });
 
       return res.status(404).json({
         success: false,
         error: 'Cooking session not found',
-        debug: {
-          searchedSessionId: sessionId,
-          searchedUserId: userId,
-          userRecentSessions: userSessions?.map(s => ({
-            sessionId: s.session_id,
-            createdAt: s.created_at
-          }))
+        details: {
+          requested_session: sessionId,
+          user_recent_sessions: userSessions?.map((s: any) => s.session_id) || []
         }
       });
     }
@@ -617,7 +628,7 @@ router.post('/generate-detailed', authenticateUser, async (req: Request, res: Re
     });
 
     // Store the detailed recipe in recipes table
-    const { data: recipeRecord, error: recipeError } = await supabase
+    const { data: recipeRecord, error: recipeError } = await userClient
       .from('recipes')
       .insert([{
         title: detailedResult.recipe.title,
@@ -629,20 +640,13 @@ router.post('/generate-detailed', authenticateUser, async (req: Request, res: Re
         ingredients: detailedResult.recipe.ingredients,
         instructions: detailedResult.recipe.instructions.map(inst => inst.instruction),
         nutrition: detailedResult.recipe.nutritionEstimate,
-        tags: [
-          ...detailedResult.recipe.dietaryTags,
-          detailedResult.recipe.cuisineType,
-          'AI Generated',
-          'Two-Step Generated'
-        ],
+        tags: detailedResult.recipe.dietaryTags,
         created_by: userId,
         is_generated: true,
         cuisine: detailedResult.recipe.cuisineType,
         ai_metadata: {
-          two_step_generation_version: '1.0',
           session_id: sessionId,
-          original_ingredients: session.original_ingredients,
-          selected_preview_id: selectedPreview.id,
+          preview_id: selectedPreview.id,
           detailed_instructions_count: detailedResult.recipe.instructions.length,
           tips_count: detailedResult.recipe.tips.length
         }
@@ -651,7 +655,7 @@ router.post('/generate-detailed', authenticateUser, async (req: Request, res: Re
       .single();
 
     if (recipeError) {
-      logger.error('Detailed recipe storage error', { error: recipeError.message });
+      logger.error('Recipe storage error', { error: recipeError.message });
       return res.status(500).json({
         success: false,
         error: 'Failed to store detailed recipe'
@@ -659,26 +663,34 @@ router.post('/generate-detailed', authenticateUser, async (req: Request, res: Re
     }
 
     // Update cooking session with detailed recipe ID and mark as completed
-    await supabase
+    await userClient
       .from('cooking_sessions')
       .update({
         detailed_recipe_id: recipeRecord.id,
+        selected_preview_id: selectedPreview.id,
         completed: true,
-        updated_at: new Date().toISOString()
+        completed_at: new Date().toISOString()
       })
       .eq('session_id', sessionId)
       .eq('user_id', userId);
 
-    // Award XP for generating detailed recipe
+    // Mark the selected preview
+    await userClient
+      .from('recipe_previews')
+      .update({ selected_for_details: true })
+      .eq('preview_id', selectedPreview.id)
+      .eq('session_id', sessionId)
+      .eq('user_id', userId);
+
+    // Award XP for completing detailed recipe generation
     await supabase.rpc('add_user_xp', {
       p_user_id: userId,
       p_xp_amount: 50,
       p_action: 'detailed_recipe_generated',
       p_metadata: { 
-        recipe_id: recipeRecord.id,
         session_id: sessionId,
-        selected_preview: selectedPreview.title,
-        instruction_steps: detailedResult.recipe.instructions.length
+        recipe_id: recipeRecord.id,
+        recipe_title: detailedResult.recipe.title
       }
     });
 
@@ -686,17 +698,16 @@ router.post('/generate-detailed', authenticateUser, async (req: Request, res: Re
       userId,
       sessionId,
       recipeId: recipeRecord.id,
-      recipeTitle: detailedResult.recipe.title,
-      instructionSteps: detailedResult.recipe.instructions.length
+      recipeTitle: detailedResult.recipe.title
     });
 
     res.status(201).json({
       success: true,
       message: 'Detailed recipe generated successfully',
       data: {
-        sessionId,
         recipe: detailedResult.recipe,
-        storedRecipe: recipeRecord
+        stored_recipe: recipeRecord,
+        session_completed: true
       },
       xp_awarded: 50
     });
@@ -704,8 +715,7 @@ router.post('/generate-detailed', authenticateUser, async (req: Request, res: Re
   } catch (error) {
     logger.error('❌ Detailed recipe generation failed', { 
       error: error instanceof Error ? error.message : error,
-      userId: (req as any).user?.id,
-      sessionId: req.body?.sessionId
+      userId: (req as any).user?.id 
     });
     
     res.status(500).json({

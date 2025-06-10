@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { supabase } from '../index';
+import { supabase, createAuthenticatedClient } from '../index';
 import { authenticateUser } from '../middleware/auth';
 import express from 'express';
 import sharp from 'sharp';
@@ -374,6 +374,10 @@ if (process.env.NODE_ENV === 'development') {
 // Scan image for ingredients
 router.post('/ingredients', authenticateUser, upload, async (req: express.Request, res: express.Response) => {
   try {
+    const userId = (req as any).user.id;
+    const token = req.headers.authorization?.replace('Bearer ', '') || '';
+    const userClient = createAuthenticatedClient(token);
+    
     console.log('🔍 Scan ingredient request received');
 
     // Check if file data exists in request body
@@ -410,10 +414,10 @@ router.post('/ingredients', authenticateUser, upload, async (req: express.Reques
     }
 
     // Store scan result
-    const { data: scanResult, error: scanError } = await supabase
+    const { data: scanResult, error: scanError } = await userClient
       .from('ingredient_scans')
       .insert([{
-        user_id: (req as any).user.id,
+        user_id: userId,
         detected_ingredients: detectedIngredients,
         image_url: null, // Would store actual image URL after uploading to storage
         confidence_score: detectedIngredients.reduce((acc, ing) => acc + ing.confidence, 0) / detectedIngredients.length,
@@ -432,7 +436,7 @@ router.post('/ingredients', authenticateUser, upload, async (req: express.Reques
 
     // Award XP for scanning
     await supabase.rpc('add_user_xp', {
-      p_user_id: (req as any).user.id,
+      p_user_id: userId,
       p_xp_amount: 10,
       p_action: 'ingredient_scan',
       p_metadata: { scan_id: scanResult.id, ingredients_count: detectedIngredients.length }
@@ -454,9 +458,11 @@ router.post('/ingredients', authenticateUser, upload, async (req: express.Reques
 router.get('/history', authenticateUser, async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user.id;
+    const token = req.headers.authorization?.replace('Bearer ', '') || '';
+    const userClient = createAuthenticatedClient(token);
     const { limit = 20, offset = 0 } = req.query;
 
-    const { data: scans, error } = await supabase
+    const { data: scans, error } = await userClient
       .from('ingredient_scans')
       .select('*')
       .eq('user_id', userId)
@@ -479,8 +485,10 @@ router.get('/:scanId', authenticateUser, async (req: Request, res: Response) => 
   try {
     const { scanId } = req.params;
     const userId = (req as any).user.id;
+    const token = req.headers.authorization?.replace('Bearer ', '') || '';
+    const userClient = createAuthenticatedClient(token);
 
-    const { data: scan, error } = await supabase
+    const { data: scan, error } = await userClient
       .from('ingredient_scans')
       .select('*')
       .eq('id', scanId)

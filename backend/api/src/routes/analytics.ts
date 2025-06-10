@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { Request, Response } from 'express';
 import { authenticateUser } from '../middleware/auth';
 import { logger } from '../utils/logger';
-import { supabase } from '../index';
+import { supabase, createAuthenticatedClient } from '../index';
 
 // Extend Express Request type to include user
 interface AuthenticatedRequest extends Request {
@@ -20,6 +20,8 @@ router.post('/track', authenticateUser, async (req: AuthenticatedRequest, res: R
   try {
     const { event_type, event_data, metadata, xp_gained = 0 } = req.body;
     const userId = req.user?.id;
+    const token = req.headers.authorization?.replace('Bearer ', '') || '';
+    const userClient = createAuthenticatedClient(token);
 
     if (!event_type) {
       return res.status(400).json({ error: 'Event type is required' });
@@ -30,7 +32,7 @@ router.post('/track', authenticateUser, async (req: AuthenticatedRequest, res: R
     }
 
     // Get current user data for total_xp calculation
-    const { data: userData, error: userError } = await supabase
+    const { data: userData, error: userError } = await userClient
       .from('users')
       .select('total_xp, level')
       .eq('id', userId)
@@ -49,7 +51,7 @@ router.post('/track', authenticateUser, async (req: AuthenticatedRequest, res: R
     const newLevel = Math.floor(newTotalXp / 100) + 1;
 
     // Insert analytics event into user_progress table
-    const { data, error } = await supabase
+    const { data, error } = await userClient
       .from('user_progress')
       .insert({
         user_id: userId,
@@ -76,7 +78,7 @@ router.post('/track', authenticateUser, async (req: AuthenticatedRequest, res: R
 
     // Update user's total XP and level if XP was gained
     if (xp_gained > 0) {
-      const { error: updateError } = await supabase
+      const { error: updateError } = await userClient
         .from('users')
         .update({ 
           total_xp: newTotalXp, 
@@ -109,6 +111,8 @@ router.post('/track', authenticateUser, async (req: AuthenticatedRequest, res: R
 router.get('/dashboard', authenticateUser, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const userId = req.user?.id;
+    const token = req.headers.authorization?.replace('Bearer ', '') || '';
+    const userClient = createAuthenticatedClient(token);
     const { timeframe = '7d' } = req.query;
 
     if (!userId) {
@@ -137,7 +141,7 @@ router.get('/dashboard', authenticateUser, async (req: AuthenticatedRequest, res
     }
 
     // Fetch user progress events
-    const { data: progressEvents, error: progressError } = await supabase
+    const { data: progressEvents, error: progressError } = await userClient
       .from('user_progress')
       .select('*')
       .eq('user_id', userId)
@@ -146,7 +150,7 @@ router.get('/dashboard', authenticateUser, async (req: AuthenticatedRequest, res
       .order('created_at', { ascending: false });
 
     // Fetch scan activity
-    const { data: scanEvents, error: scanError } = await supabase
+    const { data: scanEvents, error: scanError } = await userClient
       .from('scans')
       .select('*')
       .eq('user_id', userId)
@@ -154,7 +158,7 @@ router.get('/dashboard', authenticateUser, async (req: AuthenticatedRequest, res
       .lte('created_at', endDate.toISOString());
 
     // Fetch recipe generation sessions
-    const { data: recipeEvents, error: recipeError } = await supabase
+    const { data: recipeEvents, error: recipeError } = await userClient
       .from('recipe_sessions')
       .select('*')
       .eq('user_id', userId)
