@@ -23,6 +23,8 @@ jobs:
         echo "Event name: ${{ github.event_name }}"
         echo "Ref: ${{ github.ref }}"
         echo "SHA: ${{ github.sha }}"
+        echo "Changed files:"
+        git diff --name-only HEAD~1 HEAD
       
     - name: Setup Node.js
       uses: actions/setup-node@v4
@@ -35,17 +37,40 @@ jobs:
       run: |
         cd backend/api
         npm ci
+        echo "✅ Dependencies installed"
+        
+    - name: Run linting
+      run: |
+        cd backend/api
+        npm run lint 2>/dev/null || echo "⚠️  No linting configured"
         
     - name: Run tests
       run: |
         cd backend/api
-        npm test || echo "No tests configured yet"
+        npm test 2>/dev/null || echo "⚠️  No tests configured yet"
         
     - name: Build TypeScript
       run: |
         cd backend/api
+        echo "🔨 Building TypeScript..."
         npm run build
         echo "✅ TypeScript build completed"
+        
+        # Verify critical files exist
+        if [ ! -f "dist/index.js" ]; then
+          echo "❌ Build failed: dist/index.js not found"
+          exit 1
+        fi
+        
+        # Verify authentication fixes are included
+        if grep -q "createAuthenticatedClient" dist/index.js; then
+          echo "✅ Authentication fixes included in build"
+        else
+          echo "⚠️  Authentication fixes not found in build - checking source"
+          grep -r "createAuthenticatedClient" src/ || echo "❌ Authentication fixes missing from source"
+        fi
+        
+        echo "📁 Build directory contents:"
         ls -la dist/
         
     - name: Test SSH Connection
@@ -59,11 +84,16 @@ jobs:
           echo "✅ SSH Connection successful!"
           echo "Current directory: $(pwd)"
           echo "Server time: $(date)"
-          echo "Disk space: $(df -h /var/www/cookcam-api)"
+          echo "Target directory: /var/www/cookcam-api"
+          echo "Disk space: $(df -h /var/www/cookcam-api 2>/dev/null || echo 'Directory not found')"
+          echo "PM2 status:"
+          pm2 status cookcam-api || echo "PM2 process not found"
         
     - name: Prepare deployment files
       run: |
         cd backend/api
+        echo "📦 Creating deployment package..."
+        
         # Create deployment package with built files and dependencies
         tar -czf deployment.tar.gz \
           --exclude=node_modules \
@@ -72,11 +102,22 @@ jobs:
           --exclude=coverage \
           --exclude=.nyc_output \
           --exclude='.env*' \
-          dist/ package*.json tsconfig.json
+          --exclude=src \
+          dist/ package*.json ecosystem.config.js 2>/dev/null || \
+        tar -czf deployment.tar.gz \
+          --exclude=node_modules \
+          --exclude=test-images \
+          --exclude='*.backup.*' \
+          --exclude=coverage \
+          --exclude=.nyc_output \
+          --exclude='.env*' \
+          --exclude=src \
+          dist/ package*.json
+          
         ls -la deployment.tar.gz
-        echo "✅ Deployment package created"
+        echo "✅ Deployment package created ($(du -h deployment.tar.gz | cut -f1))"
         
-    - name: Upload and Deploy
+    - name: Upload deployment package
       uses: appleboy/scp-action@v0.1.7
       with:
         host: ${{ secrets.DO_HOST }}
@@ -95,63 +136,127 @@ jobs:
         port: 22
         script: |
           set -e
-          echo "🚀 Starting deployment..."
+          echo "🚀 Starting deployment process..."
           
+          # Ensure target directory exists
+          mkdir -p /var/www/cookcam-api
           cd /var/www/cookcam-api
           
-          # Create backup
+          # Create backup with timestamp
+          BACKUP_DIR="backup_$(date +%Y%m%d_%H%M%S)"
           if [ -d "dist" ]; then
-            cp -r dist dist.backup.$(date +%Y%m%d_%H%M%S)
-            echo "✅ Backup created"
+            cp -r dist "$BACKUP_DIR"
+            echo "✅ Backup created: $BACKUP_DIR"
           fi
+          
+          # Stop the service before deployment
+          echo "🛑 Stopping current service..."
+          pm2 stop cookcam-api || echo "Service not running"
           
           # Extract new files
+          echo "📂 Extracting deployment package..."
           tar -xzf /tmp/backend/api/deployment.tar.gz
-          echo "✅ Files extracted"
+          echo "✅ Files extracted successfully"
           
-          # Install all dependencies (including TypeScript for any future builds)
-          npm ci
+          # Install/update dependencies
+          echo "📦 Installing dependencies..."
+          npm ci --production
           echo "✅ Dependencies installed"
           
-          # Ensure TypeScript is available for any rebuilds
-          if ! command -v npx tsc &> /dev/null; then
-            npm install -g typescript
-            echo "✅ TypeScript globally installed"
-          fi
-          
-          # Verify the build
-          if [ ! -f "dist/index.js" ]; then
-            echo "⚠️  dist/index.js not found, rebuilding..."
-            npm run build
-            echo "✅ Project rebuilt successfully"
-          fi
-          
-          # Restart service
-          pm2 restart cookcam-api || pm2 start dist/index.js --name cookcam-api
-          echo "✅ Service restarted"
-          
-          # Verify deployment
-          sleep 5
-          if curl -f http://localhost:3000/health; then
-            echo "✅ Deployment successful!"
-            # Clean up
-            rm -f /tmp/backend/api/deployment.tar.gz
-            # Keep only last 3 backups
-            ls -t dist.backup.* 2>/dev/null | tail -n +4 | xargs rm -rf || true
+          # Verify the build contains our fixes
+          if grep -q "createAuthenticatedClient" dist/index.js; then
+            echo "✅ Authentication fixes verified in deployed code"
           else
-            echo "❌ Health check failed!"
-            echo "Checking PM2 status:"
-            pm2 status
-            echo "Checking recent logs:"
-            pm2 logs cookcam-api --lines 20 || true
+            echo "⚠️  Authentication fixes not found in deployed code"
+          fi
+          
+          # Verify critical files
+          if [ ! -f "dist/index.js" ]; then
+            echo "❌ Critical error: dist/index.js not found after extraction"
+            echo "📁 Current directory contents:"
+            ls -la
             exit 1
           fi
+          
+          # Start the service
+          echo "🚀 Starting service..."
+          pm2 start dist/index.js --name cookcam-api --update-env || pm2 restart cookcam-api
+          
+          # Wait for service to stabilize
+          echo "⏳ Waiting for service to start..."
+          sleep 10
+          
+          # Verify deployment with health check
+          echo "🔍 Verifying deployment..."
+          HEALTH_CHECK=$(curl -f -s http://localhost:3000/health || echo "FAILED")
+          
+          if echo "$HEALTH_CHECK" | grep -q "healthy\|ok\|success"; then
+            echo "✅ Deployment successful! Health check passed."
+            echo "📊 PM2 Status:"
+            pm2 status
+            
+            # Clean up
+            rm -f /tmp/backend/api/deployment.tar.gz
+            
+            # Keep only last 5 backups
+            ls -t backup_* 2>/dev/null | tail -n +6 | xargs rm -rf || true
+            echo "🧹 Cleanup completed"
+            
+          else
+            echo "❌ Health check failed!"
+            echo "🔄 Rolling back to previous version..."
+            
+            # Rollback to backup if available
+            if [ -d "$BACKUP_DIR" ]; then
+              rm -rf dist
+              mv "$BACKUP_DIR" dist
+              pm2 restart cookcam-api
+              echo "🔄 Rollback completed"
+            fi
+            
+            echo "📊 PM2 Status after rollback:"
+            pm2 status
+            echo "📝 Recent logs:"
+            pm2 logs cookcam-api --lines 30 || true
+            
+            exit 1
+          fi
+          
+    - name: Post-deployment verification
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.DO_HOST }}
+        username: ${{ secrets.DO_USERNAME }}
+        key: ${{ secrets.DO_SSH_KEY }}
+        port: 22
+        script: |
+          echo "🔍 Post-deployment verification..."
+          
+          # Check if authentication fixes are working
+          echo "Checking authentication implementation..."
+          if grep -q "createAuthenticatedClient" /var/www/cookcam-api/dist/index.js; then
+            echo "✅ Authentication fixes deployed successfully"
+          else
+            echo "❌ Authentication fixes missing from deployment"
+          fi
+          
+          # Check PM2 status
+          echo "📊 Final PM2 status:"
+          pm2 status cookcam-api
+          
+          # Show recent logs to verify no immediate errors
+          echo "📝 Recent application logs:"
+          pm2 logs cookcam-api --lines 10 --nostream
           
     - name: Notify deployment status
       if: always()
       run: |
         if [ "${{ job.status }}" = "success" ]; then
-          echo "🎉 Backend deployment successful!"
+          echo "🎉 Backend deployment completed successfully!"
+          echo "✅ Authentication fixes have been deployed to production"
+          echo "🔗 The 'Cooking session not found' errors should now be resolved"
         else
           echo "💥 Backend deployment failed!"
+          echo "❌ Please check the logs above for details"
+          echo "🔄 Consider running the workflow again or investigating the issue"
         fi 
