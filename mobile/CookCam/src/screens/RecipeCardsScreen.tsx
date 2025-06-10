@@ -469,8 +469,8 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
         throw new Error(detailedResponse.error || 'Failed to generate detailed recipe');
       }
 
-      if (detailedResponse.data && detailedResponse.data.recipe) {
-        const detailedRecipe = detailedResponse.data.recipe;
+      if (detailedResponse.data && detailedResponse.data.data && detailedResponse.data.data.recipe) {
+        const detailedRecipe = detailedResponse.data.data.recipe;
         
         // Convert detailed recipe to our Recipe format for CookMode
         const cookModeRecipe: Recipe = {
@@ -516,7 +516,7 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
         navigation.navigate('CookMode', { 
           recipe: cookModeRecipe,
           sessionId: sessionId,
-          detailedRecipeId: detailedResponse.data.storedRecipe?.id
+          detailedRecipeId: detailedResponse.data.data.stored_recipe?.id
         });
       } else {
         throw new Error('Invalid detailed recipe response format');
