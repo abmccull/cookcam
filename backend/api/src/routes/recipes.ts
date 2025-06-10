@@ -447,8 +447,18 @@ router.post('/generate-previews', authenticateUser, async (req: Request, res: Re
       .single();
 
     if (sessionError) {
-      logger.error('Session storage error', { error: sessionError.message });
+      logger.error('❌ Session storage error', { 
+        error: sessionError.message,
+        sessionId: finalSessionId,
+        userId: userId
+      });
       // Continue without storing session - not critical for preview generation
+    } else {
+      logger.info('✅ Cooking session stored successfully', {
+        sessionId: finalSessionId,
+        userId: userId,
+        sessionDataId: sessionData?.id
+      });
     }
 
     // Store recipe previews
@@ -568,9 +578,33 @@ router.post('/generate-detailed', authenticateUser, async (req: Request, res: Re
       .single();
 
     if (sessionError || !session) {
+      // Enhanced debugging: Let's see what sessions exist for this user
+      const { data: userSessions, error: debugError } = await supabase
+        .from('cooking_sessions')
+        .select('session_id, user_id, created_at')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      logger.error('❌ Cooking session not found - Debug info', {
+        searchedSessionId: sessionId,
+        searchedUserId: userId,
+        sessionError: sessionError?.message,
+        userRecentSessions: userSessions,
+        debugError: debugError?.message
+      });
+
       return res.status(404).json({
         success: false,
-        error: 'Cooking session not found'
+        error: 'Cooking session not found',
+        debug: {
+          searchedSessionId: sessionId,
+          searchedUserId: userId,
+          userRecentSessions: userSessions?.map(s => ({
+            sessionId: s.session_id,
+            createdAt: s.created_at
+          }))
+        }
       });
     }
 
