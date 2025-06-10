@@ -469,6 +469,18 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
         throw new Error(detailedResponse.error || 'Failed to generate detailed recipe');
       }
 
+      // Debug: Log the exact response structure
+      console.log('🔍 Response structure debug:', {
+        hasData: !!detailedResponse.data,
+        dataKeys: detailedResponse.data ? Object.keys(detailedResponse.data) : [],
+        dataType: typeof detailedResponse.data,
+        dataStructure: detailedResponse.data,
+        hasDataData: detailedResponse.data?.data ? true : false,
+        dataDataKeys: detailedResponse.data?.data ? Object.keys(detailedResponse.data.data) : [],
+        hasRecipe: detailedResponse.data?.recipe ? true : false,
+        hasDataDataRecipe: detailedResponse.data?.data?.recipe ? true : false
+      });
+
       if (detailedResponse.data && detailedResponse.data.data && detailedResponse.data.data.recipe) {
         const detailedRecipe = detailedResponse.data.data.recipe;
         
@@ -518,7 +530,65 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
           sessionId: sessionId,
           detailedRecipeId: detailedResponse.data.data.stored_recipe?.id
         });
+      } else if (detailedResponse.data && detailedResponse.data.recipe) {
+        // Fallback: Try direct recipe access (in case API response format changed)
+        console.log('🔄 Using fallback direct recipe access');
+        const detailedRecipe = detailedResponse.data.recipe;
+        
+        // Convert detailed recipe to our Recipe format for CookMode
+        const cookModeRecipe: Recipe = {
+          ...currentRecipe,
+          ingredients: detailedRecipe.ingredients || currentRecipe.ingredients,
+          instructions: detailedRecipe.instructions?.map((inst: any) => 
+            typeof inst === 'string' ? inst : inst.instruction
+          ) || [],
+          tips: detailedRecipe.tips || [],
+          macros: {
+            calories: detailedRecipe.nutritionEstimate?.calories || currentRecipe.macros.calories,
+            protein: parseInt(detailedRecipe.nutritionEstimate?.protein?.replace('g', '') || '15'),
+            carbs: parseInt(detailedRecipe.nutritionEstimate?.carbs?.replace('g', '') || '45'),
+            fat: parseInt(detailedRecipe.nutritionEstimate?.fat?.replace('g', '') || '12'),
+          },
+          cookingTime: `${detailedRecipe.totalTime || detailedRecipe.prepTime + detailedRecipe.cookTime} min`,
+          servings: detailedRecipe.servings || currentRecipe.servings,
+          difficulty: detailedRecipe.difficulty || currentRecipe.difficulty
+        };
+
+        console.log('✅ Successfully generated detailed recipe with', 
+          cookModeRecipe.instructions.length, 'steps');
+
+        // Remove the card now that recipe generation was successful
+        console.log('👨‍🍳 [SUCCESS] Recipe generated, removing card from stack');
+        removeCurrentCard();
+        
+        // Reset card animations for the new front card
+        translateX.value = 0;
+        translateY.value = 0;
+        opacity.value = 1;
+        resetCardsToStablePosition();
+        
+        // Small bounce effect for the new front card
+        setTimeout(() => {
+          scale.value = withSequence(
+            withTiming(1.05, { duration: 100 }),
+            withSpring(0.9, { damping: 15, stiffness: 100 })
+          );
+        }, 50);
+
+        // Navigate to CookMode with detailed recipe
+        navigation.navigate('CookMode', { 
+          recipe: cookModeRecipe,
+          sessionId: sessionId,
+          detailedRecipeId: detailedResponse.data.stored_recipe?.id
+        });
       } else {
+        console.error('❌ Invalid response structure. Available keys:', {
+          responseKeys: Object.keys(detailedResponse),
+          dataKeys: detailedResponse.data ? Object.keys(detailedResponse.data) : null,
+          hasData: !!detailedResponse.data,
+          hasDataData: !!detailedResponse.data?.data,
+          hasDataRecipe: !!detailedResponse.data?.recipe
+        });
         throw new Error('Invalid detailed recipe response format');
       }
 
