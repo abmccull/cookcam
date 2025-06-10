@@ -45,6 +45,8 @@ jobs:
       run: |
         cd backend/api
         npm run build
+        echo "✅ TypeScript build completed"
+        ls -la dist/
         
     - name: Test SSH Connection
       uses: appleboy/ssh-action@v1.0.3
@@ -62,15 +64,17 @@ jobs:
     - name: Prepare deployment files
       run: |
         cd backend/api
-        # Create deployment package with only essential files
+        # Create deployment package with built files and dependencies
         tar -czf deployment.tar.gz \
           --exclude=node_modules \
           --exclude=test-images \
           --exclude='*.backup.*' \
           --exclude=coverage \
           --exclude=.nyc_output \
-          dist/ package*.json
+          --exclude='.env*' \
+          dist/ package*.json tsconfig.json
         ls -la deployment.tar.gz
+        echo "✅ Deployment package created"
         
     - name: Upload and Deploy
       uses: appleboy/scp-action@v0.1.7
@@ -105,16 +109,29 @@ jobs:
           tar -xzf /tmp/backend/api/deployment.tar.gz
           echo "✅ Files extracted"
           
-          # Install dependencies
-          npm ci --only=production
+          # Install all dependencies (including TypeScript for any future builds)
+          npm ci
           echo "✅ Dependencies installed"
+          
+          # Ensure TypeScript is available for any rebuilds
+          if ! command -v npx tsc &> /dev/null; then
+            npm install -g typescript
+            echo "✅ TypeScript globally installed"
+          fi
+          
+          # Verify the build
+          if [ ! -f "dist/index.js" ]; then
+            echo "⚠️  dist/index.js not found, rebuilding..."
+            npm run build
+            echo "✅ Project rebuilt successfully"
+          fi
           
           # Restart service
           pm2 restart cookcam-api || pm2 start dist/index.js --name cookcam-api
           echo "✅ Service restarted"
           
           # Verify deployment
-          sleep 3
+          sleep 5
           if curl -f http://localhost:3000/health; then
             echo "✅ Deployment successful!"
             # Clean up
@@ -123,6 +140,10 @@ jobs:
             ls -t dist.backup.* 2>/dev/null | tail -n +4 | xargs rm -rf || true
           else
             echo "❌ Health check failed!"
+            echo "Checking PM2 status:"
+            pm2 status
+            echo "Checking recent logs:"
+            pm2 logs cookcam-api --lines 20 || true
             exit 1
           fi
           
