@@ -50,11 +50,19 @@ export const createAuthenticatedClient = async (userJwt: string) => {
     process.env.SUPABASE_ANON_KEY || ''
   );
   
-  // Set the user's JWT token to maintain auth context
-  await client.auth.setSession({
+  logger.info('Attempting to set user session for authenticated client...');
+  const { data, error } = await client.auth.setSession({
     access_token: userJwt,
     refresh_token: '', // Not needed for backend operations
-  } as any);
+  });
+
+  if (error) {
+    logger.error('❌ Failed to set session for authenticated client', { error: error.message });
+  } else if (!data.session) {
+    logger.warn('⚠️ setSession completed without error, but NO session data was returned.');
+  } else {
+    logger.info('✅ Successfully set session for authenticated client', { userId: data.session.user.id });
+  }
   
   return client;
 };
