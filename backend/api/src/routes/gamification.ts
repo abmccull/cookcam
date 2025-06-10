@@ -70,14 +70,14 @@ router.post('/check-streak', authenticateUser, async (req: Request, res: Respons
 });
 
 // Get user progress and achievements
-router.get('/progress', authenticateUser, async (req: Request, res: Response) => {
+router.get('/progress', authenticateUser, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const userId = (req as AuthenticatedRequest).user.id;
     const token = req.headers.authorization?.replace('Bearer ', '') || '';
-    const userClient = await createAuthenticatedClient(token);
+    const userClient = createAuthenticatedClient(token);
 
     // Get user stats
-    const { data: user } = await userClient
+    const { data: user, error: userError } = await userClient
       .from('users')
       .select('level, xp, total_xp, streak_current, streak_shields')
       .eq('id', userId)

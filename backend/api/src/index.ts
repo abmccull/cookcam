@@ -44,26 +44,21 @@ export const supabaseServiceRole = createClient(
 );
 
 // Helper function to create authenticated client for a specific user
-export const createAuthenticatedClient = async (userJwt: string) => {
+export const createAuthenticatedClient = (userJwt: string) => {
+  // This client is now properly scoped to the user's request by passing their JWT
+  // in the Authorization header for all subsequent requests.
   const client = createClient(
     process.env.SUPABASE_URL || '',
-    process.env.SUPABASE_ANON_KEY || ''
+    process.env.SUPABASE_ANON_KEY || '',
+    {
+      global: {
+        headers: {
+          Authorization: `Bearer ${userJwt}`,
+        },
+      },
+    }
   );
-  
-  logger.info('Attempting to set user session for authenticated client...');
-  const { data, error } = await client.auth.setSession({
-    access_token: userJwt,
-    refresh_token: '', // Not needed for backend operations
-  });
-
-  if (error) {
-    logger.error('❌ Failed to set session for authenticated client', { error: error.message });
-  } else if (!data.session) {
-    logger.warn('⚠️ setSession completed without error, but NO session data was returned.');
-  } else {
-    logger.info('✅ Successfully set session for authenticated client', { userId: data.session.user.id });
-  }
-  
+  logger.info('Created authenticated Supabase client for a user request.');
   return client;
 };
 

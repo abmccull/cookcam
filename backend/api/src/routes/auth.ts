@@ -492,11 +492,11 @@ router.put('/profile', authenticateUser, async (req: Request, res: Response) => 
 });
 
 // Delete user account and all data
-router.delete('/account', authenticateUser, async (req: Request, res: Response) => {
+router.delete('/account', authenticateUser, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const userId = (req as AuthenticatedRequest).user.id;
     const token = req.headers.authorization?.replace('Bearer ', '') || '';
-    const userClient = await createAuthenticatedClient(token);
+    const userClient = createAuthenticatedClient(token);
     const { confirmPassword } = req.body;
 
     if (!confirmPassword) {

@@ -60,7 +60,7 @@ router.post('/suggestions', authenticateUser, async (req: Request, res: Response
   try {
     const userId = (req as any).user.id;
     const token = req.headers.authorization?.replace('Bearer ', '') || '';
-    const userClient = await createAuthenticatedClient(token);
+    const userClient = createAuthenticatedClient(token);
     
     const { 
       detectedIngredients, 
@@ -133,7 +133,7 @@ router.post('/generate-full', authenticateUser, async (req: Request, res: Respon
   try {
     const userId = (req as any).user.id;
     const token = req.headers.authorization?.replace('Bearer ', '') || '';
-    const userClient = await createAuthenticatedClient(token);
+    const userClient = createAuthenticatedClient(token);
     
     const { selectedTitle, sessionId } = req.body;
 
@@ -242,7 +242,7 @@ router.post('/generate', authenticateUser, async (req: Request, res: Response) =
   try {
     const userId = (req as any).user.id;
     const token = req.headers.authorization?.replace('Bearer ', '') || '';
-    const userClient = await createAuthenticatedClient(token);
+    const userClient = createAuthenticatedClient(token);
     
     const { 
       ingredients, 
@@ -407,7 +407,7 @@ router.post('/generate-previews', authenticateUser, async (req: Request, res: Re
   try {
     const userId = (req as any).user.id;
     const token = req.headers.authorization?.replace('Bearer ', '') || '';
-    const userClient = await createAuthenticatedClient(token);
+    const userClient = createAuthenticatedClient(token);
     
     const { 
       detectedIngredients, 
@@ -557,7 +557,7 @@ router.post('/generate-detailed', authenticateUser, async (req: Request, res: Re
   try {
     const userId = (req as any).user.id;
     const token = req.headers.authorization?.replace('Bearer ', '') || '';
-    const userClient = await createAuthenticatedClient(token);
+    const userClient = createAuthenticatedClient(token);
     
     const { 
       selectedPreview, 
