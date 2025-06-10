@@ -70,7 +70,7 @@ router.post('/check-streak', authenticateUser, async (req: Request, res: Respons
 });
 
 // Get user progress and achievements
-router.get('/progress', authenticateUser, async (req: AuthenticatedRequest, res: Response) => {
+router.get('/progress', authenticateUser, async (req: Request, res: Response) => {
   try {
     const userId = (req as AuthenticatedRequest).user.id;
     const token = req.headers.authorization?.replace('Bearer ', '') || '';
