@@ -120,14 +120,14 @@ const CookModeScreen: React.FC<CookModeScreenProps> = ({navigation, route}) => {
   }, [isPlaying, timeRemaining]);
 
   useEffect(() => {
-    // Animate progress bar
+    // Animate progress bar based on current step position
     Animated.spring(progressAnim, {
-      toValue: completedSteps / steps.length,
+      toValue: (currentStep + 1) / steps.length,
       tension: 50,
       friction: 7,
       useNativeDriver: false,
     }).start();
-  }, [completedSteps]);
+  }, [currentStep, steps.length]);
 
   useEffect(() => {
     // Pulse animation for claim preview
@@ -333,7 +333,8 @@ const CookModeScreen: React.FC<CookModeScreenProps> = ({navigation, route}) => {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const progress = ((completedSteps + (steps[currentStep]?.completed ? 1 : 0)) / steps.length) * 100;
+  // Progress should reflect current step position, not just completed steps
+  const progress = ((currentStep + 1) / steps.length) * 100;
   const currentStepData = steps[currentStep];
   const potentialXP = recipe?.isGenerated ? XP_VALUES.COMPLETE_RECIPE + XP_VALUES.CLAIM_RECIPE : XP_VALUES.COMPLETE_RECIPE;
 
@@ -462,9 +463,11 @@ const CookModeScreen: React.FC<CookModeScreenProps> = ({navigation, route}) => {
             {transform: [{translateX: stepTranslateX}]}
           ]}>
           
-          {/* Step Number Badge */}
-          <View style={styles.stepBadge}>
-            <Text style={styles.stepBadgeText}>Step {currentStep + 1}</Text>
+          {/* Step Number Badge - Moved to top-left with better spacing */}
+          <View style={styles.stepBadgeContainer}>
+            <View style={styles.stepBadge}>
+              <Text style={styles.stepBadgeText}>Step {currentStep + 1}</Text>
+            </View>
           </View>
           
           <ScrollView 
@@ -931,15 +934,17 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(45, 27, 105, 0.08)',
   },
+  stepBadgeContainer: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 8,
+  },
   stepBadge: {
-    position: 'absolute',
-    top: 20,
-    right: 20,
+    alignSelf: 'flex-start',
     backgroundColor: '#2D1B69',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 12,
-    zIndex: 1,
   },
   stepBadgeText: {
     fontSize: 12,
@@ -950,7 +955,7 @@ const styles = StyleSheet.create({
   heroInstructionContainer: {
     flex: 1,
     paddingHorizontal: 32,
-    paddingTop: 24,
+    paddingTop: 8,
     paddingBottom: 20,
   },
   heroInstructionContent: {
