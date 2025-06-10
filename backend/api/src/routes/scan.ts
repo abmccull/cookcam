@@ -298,7 +298,7 @@ Return ONLY the JSON array, no explanatory text.`
     
     return validIngredients;
     
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('❌ OpenAI Vision analysis error:', error);
     
     // Re-throw the error instead of falling back to mock data
@@ -360,7 +360,7 @@ if (process.env.NODE_ENV === 'development') {
         });
       }
       
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('❌ Test endpoint error:', error);
       res.status(500).json({ 
         success: false,
@@ -448,7 +448,7 @@ router.post('/ingredients', authenticateUser, upload, async (req: express.Reques
       confidence_score: scanResult.confidence_score,
       xp_awarded: 10
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Scan error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
@@ -474,7 +474,7 @@ router.get('/history', authenticateUser, async (req: Request, res: Response) => 
     }
 
     res.json({ scans: scans || [] });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Get scan history error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
@@ -500,7 +500,7 @@ router.get('/:scanId', authenticateUser, async (req: Request, res: Response) => 
     }
 
     res.json({ scan });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Get scan error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
@@ -536,7 +536,7 @@ router.put('/:scanId/ingredients', authenticateUser, async (req: Request, res: R
       scan,
       message: 'Ingredients updated successfully'
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Update scan error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
@@ -631,7 +631,7 @@ router.post('/analyze', authenticateUser, validateScanInput, async (req: express
       xp_awarded: 15
     });
 
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Image analysis error:', error);
     res.status(500).json({ 
       success: false,

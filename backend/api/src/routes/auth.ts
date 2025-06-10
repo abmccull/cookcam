@@ -389,7 +389,7 @@ router.get('/me', authenticateUser, async (req: Request, res: Response) => {
     }
 
     res.json({ user });
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('Get profile error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
@@ -485,7 +485,7 @@ router.put('/profile', authenticateUser, async (req: Request, res: Response) => 
       user: data,
       message: 'Profile updated successfully'
     });
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('Update profile error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
@@ -603,7 +603,7 @@ router.delete('/account', authenticateUser, async (req: Request, res: Response) 
       });
     }
 
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('Account deletion error:', error);
     res.status(500).json({ error: 'Internal server error during account deletion' });
   }

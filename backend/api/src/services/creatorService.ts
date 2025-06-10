@@ -44,7 +44,7 @@ export class CreatorService {
     try {
       const subscription = await subscriptionService.getUserSubscription(userId);
       return subscription?.tier_id === SUBSCRIPTION_TIERS.CREATOR.id;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('❌ Failed to check creator status', { error, userId });
       return false;
     }
@@ -119,7 +119,7 @@ export class CreatorService {
       });
 
       return data;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('❌ Failed to generate affiliate link', { error, params });
       throw error;
     }
@@ -139,7 +139,7 @@ export class CreatorService {
       }
 
       return data || [];
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('❌ Failed to get creator affiliate links', { error, creatorId });
       return [];
     }
@@ -172,7 +172,7 @@ export class CreatorService {
         });
 
       logger.info('📊 Affiliate link clicked', { linkCode });
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('❌ Failed to track affiliate click', { error, linkCode });
     }
   }
@@ -220,7 +220,7 @@ export class CreatorService {
 
       // Update creator's monthly revenue
       await this.updateCreatorMonthlyRevenue(link.creator_id);
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('❌ Failed to record affiliate conversion', { error, params });
       throw error;
     }
@@ -249,7 +249,7 @@ export class CreatorService {
       }
 
       return revenue;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('❌ Failed to get creator revenue', { error, creatorId, month, year });
       return null;
     }
@@ -307,7 +307,7 @@ export class CreatorService {
       });
 
       return saved;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('❌ Failed to calculate creator revenue', { error, creatorId, month, year });
       throw error;
     }
@@ -320,7 +320,7 @@ export class CreatorService {
       const year = new Date().getFullYear();
 
       await this.calculateAndSaveCreatorRevenue(creatorId, month, year);
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('❌ Failed to update creator monthly revenue', { error, creatorId });
     }
   }
@@ -356,7 +356,7 @@ export class CreatorService {
       }
 
       return data || [];
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('❌ Failed to get creator referrals', { error, creatorId });
       return [];
     }
@@ -403,7 +403,7 @@ export class CreatorService {
 
       // TODO: Process payment through Stripe
       // TODO: Send notification to creator
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('❌ Failed to tip recipe creator', { error, params });
       throw error;
     }
@@ -457,7 +457,7 @@ export class CreatorService {
       });
 
       return collection;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('❌ Failed to create premium collection', { error, params });
       throw error;
     }
@@ -518,7 +518,7 @@ export class CreatorService {
 
       // TODO: Process payment through Stripe
       // TODO: Grant access to collection recipes
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('❌ Failed to purchase collection', { error, params });
       throw error;
     }
@@ -567,7 +567,7 @@ export class CreatorService {
         recentTips: recentTips || [],
         lastUpdated: new Date()
       };
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('❌ Failed to get creator analytics', { error, creatorId });
       return null;
     }
@@ -632,7 +632,7 @@ export class CreatorService {
       // TODO: Send notification to creator
 
       return data;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('❌ Failed to request payout', { error, params });
       throw error;
     }
@@ -653,7 +653,7 @@ export class CreatorService {
       }
 
       return data;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('❌ Failed to get affiliate link', { error, linkCode });
       return null;
     }
@@ -672,7 +672,7 @@ export class CreatorService {
       }
 
       logger.info('🔄 Affiliate conversions deactivated', { subscriberId });
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('❌ Failed to deactivate affiliate conversions', { error, subscriberId });
     }
   }

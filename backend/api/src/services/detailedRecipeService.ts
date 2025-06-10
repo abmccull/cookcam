@@ -150,7 +150,7 @@ export class DetailedRecipeService {
         recipe: detailedRecipe
       };
 
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('❌ Error generating detailed recipe:', {
         error: error instanceof Error ? error.message : error,
         sessionId: request.sessionId

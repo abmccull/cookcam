@@ -39,7 +39,7 @@ router.post('/add-xp', authenticateUser, async (req: Request, res: Response) => 
       success: true,
       result: data
     });
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('Add XP error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
@@ -63,7 +63,7 @@ router.post('/check-streak', authenticateUser, async (req: Request, res: Respons
       success: true,
       streak_data: data
     });
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('Check streak error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
@@ -112,7 +112,7 @@ router.get('/progress', authenticateUser, async (req: Request, res: Response) =>
       recent_progress: progress || {},
       achievements: achievements || []
     });
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('Get progress error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
@@ -150,7 +150,7 @@ router.get('/leaderboard', async (req: Request, res: Response) => {
         updated_at: new Date().toISOString()
       }
     });
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('Get leaderboard error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }

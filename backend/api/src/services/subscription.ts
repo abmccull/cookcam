@@ -96,7 +96,7 @@ export class SubscriptionService {
         valid: true,
         subscription
       };
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('iOS receipt verification error:', error);
       return {
         valid: false,
@@ -180,7 +180,7 @@ export class SubscriptionService {
         valid: true,
         subscription
       };
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Android purchase verification error:', error);
       return {
         valid: false,
@@ -278,7 +278,7 @@ export class SubscriptionService {
       }
       
       return data && data.length > 0;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Subscription check error:', error);
       return false;
     }
@@ -313,7 +313,7 @@ export class SubscriptionService {
         createdAt: new Date(data.created_at),
         updatedAt: new Date(data.updated_at)
       };
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Get subscription error:', error);
       return null;
     }

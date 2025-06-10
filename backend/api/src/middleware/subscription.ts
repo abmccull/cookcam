@@ -47,7 +47,7 @@ export async function checkSubscriptionMiddleware(
     });
 
     next();
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('Subscription middleware error', { error });
     // Don't block the request, just log the error
     next();
@@ -80,7 +80,7 @@ export function requireTier(tierSlug: string) {
       }
 
       next();
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Tier check error', { error });
       res.status(500).json({ error: 'Failed to verify subscription tier' });
     }
@@ -108,7 +108,7 @@ export function requireFeature(featureKey: string) {
       }
 
       next();
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Feature check error', { error });
       res.status(500).json({ error: 'Failed to verify feature access' });
     }
@@ -170,7 +170,7 @@ export async function checkSubscriptionLimits(
       }
 
       next();
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Subscription limit check error', { error });
       res.status(500).json({ error: 'Failed to check subscription limits' });
     }
@@ -196,7 +196,7 @@ export async function isCreator(req: Request, res: Response, next: NextFunction)
     }
 
     next();
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('Creator check error', { error });
     res.status(500).json({ error: 'Failed to verify creator status' });
   }

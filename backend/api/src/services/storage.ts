@@ -53,7 +53,7 @@ export class StorageService {
         url: publicUrl,
         path: filename
       };
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Image upload error:', error);
       throw error;
     }
@@ -69,7 +69,7 @@ export class StorageService {
       if (error) {
         throw new Error(`Storage deletion failed: ${error.message}`);
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Image deletion error:', error);
       throw error;
     }
@@ -91,7 +91,7 @@ export class StorageService {
       }
       
       return data.signedUrl;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Signed URL error:', error);
       throw error;
     }

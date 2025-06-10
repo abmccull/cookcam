@@ -55,7 +55,7 @@ export class AnalyticsService {
         console.error('Track event error:', error);
         // Don't throw - analytics shouldn't break app flow
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Analytics tracking error:', error);
     }
   }
@@ -140,7 +140,7 @@ export class AnalyticsService {
       
       // Sort by engagement score
       return analyticsData.sort((a, b) => b.engagement_score - a.engagement_score);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Get popular recipes error:', error);
       throw error;
     }
@@ -206,7 +206,7 @@ export class AnalyticsService {
         favorite_cuisine: null, // Would need to analyze recipe preferences
         most_scanned_ingredient: mostScanned?.[0] || null
       };
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Get user analytics error:', error);
       throw error;
     }
@@ -240,7 +240,7 @@ export class AnalyticsService {
         .sort(([, a], [, b]) => b - a)
         .slice(0, limit)
         .map(([name, count]) => ({ name, count }));
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Get trending ingredients error:', error);
       throw error;
     }
@@ -288,7 +288,7 @@ export class AnalyticsService {
         },
         timestamp: now.toISOString()
       };
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Get app statistics error:', error);
       throw error;
     }
@@ -323,7 +323,7 @@ export class AnalyticsService {
           });
         }
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.log('Track ingredient scan patterns error:', error);
     }
   }
@@ -359,7 +359,7 @@ export class AnalyticsService {
           });
         }
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.log('Track recipe generation patterns error:', error);
     }
   }

@@ -69,7 +69,7 @@ export class SubscriptionService {
       }
 
       return data;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('❌ Failed to get user subscription', { error, userId });
       return null;
     }
@@ -85,7 +85,7 @@ export class SubscriptionService {
       }
 
       return this.getTierById(subscription.tier_id);
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('❌ Failed to get user tier', { error, userId });
       return this.getTierById(SUBSCRIPTION_TIERS.FREE.id);
     }
@@ -122,7 +122,7 @@ export class SubscriptionService {
       }
 
       return data === true;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('❌ Failed to check feature access', { error, userId, featureKey });
       return false;
     }
@@ -145,7 +145,7 @@ export class SubscriptionService {
       }
 
       return features?.map(f => f.feature_key) || [];
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('❌ Failed to get user features', { error, userId });
       return [];
     }
@@ -201,7 +201,7 @@ export class SubscriptionService {
       });
 
       return data;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('❌ Failed to create subscription', { error, params });
       throw error;
     }
@@ -246,7 +246,7 @@ export class SubscriptionService {
       }
 
       logger.info('✅ Subscription status updated', { subscriptionId, status });
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('❌ Failed to update subscription', { error, subscriptionId, status });
       throw error;
     }
@@ -287,7 +287,7 @@ export class SubscriptionService {
       });
 
       logger.info('✅ Subscription canceled', { userId, immediately });
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('❌ Failed to cancel subscription', { error, userId });
       throw error;
     }
@@ -340,7 +340,7 @@ export class SubscriptionService {
       });
 
       return data;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('❌ Failed to change subscription tier', { error, userId, newTierId });
       throw error;
     }
@@ -370,7 +370,7 @@ export class SubscriptionService {
       if (error) {
         logger.error('❌ Failed to log subscription history', { error, params });
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('❌ Error logging subscription history', { error, params });
     }
   }
@@ -402,7 +402,7 @@ export class SubscriptionService {
       logger.info('✅ Processed expired subscriptions', { 
         count: expiredSubs?.length || 0 
       });
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('❌ Failed to process expired subscriptions', { error });
     }
   }
@@ -450,7 +450,7 @@ export class SubscriptionService {
       });
 
       return session.url;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('❌ Failed to create checkout session', { error, params });
       return null;
     }
@@ -472,7 +472,7 @@ export class SubscriptionService {
           await this.handleSubscriptionDeleted(event.data.object);
           break;
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('❌ Failed to handle Stripe webhook', { error, eventType: event.type });
       throw error;
     }
@@ -531,7 +531,7 @@ export class SubscriptionService {
         revenue,
         lastUpdated: new Date()
       };
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('❌ Failed to get subscription stats', { error });
       return null;
     }
@@ -585,7 +585,7 @@ export class SubscriptionService {
           periodEnd: new Date(parseInt(params.validationResult.expiryTimeMillis || params.validationResult.expires_date_ms))
         });
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('❌ Failed to create/update subscription', { error, params });
       throw error;
     }
@@ -611,7 +611,7 @@ export class SubscriptionService {
       } else {
         logger.info('✅ Updated user JWT claims', { userId, tier: tier.slug });
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('❌ Failed to update user JWT claims', { error, userId });
     }
   }
@@ -633,7 +633,7 @@ export class SubscriptionService {
       }
 
       logger.info('✅ Marked subscription as expired', { subscriptionId });
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('❌ Failed to mark subscription expired', { error, subscriptionId });
       throw error;
     }
@@ -668,7 +668,7 @@ export class SubscriptionService {
       });
 
       logger.info('✅ Marked subscription for cancellation', { userId, subscriptionId: subscription.id });
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('❌ Failed to mark subscription for cancellation', { error, userId });
       throw error;
     }
@@ -704,7 +704,7 @@ export class SubscriptionService {
 
       logger.info('✅ Upgraded user to creator', { userId });
       return updatedUser;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('❌ Failed to upgrade user to creator', { error, userId });
       throw error;
     }
@@ -744,7 +744,7 @@ export class SubscriptionService {
       }
 
       logger.info('✅ Setup creator features', { userId });
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('❌ Failed to setup creator features', { error, userId });
       throw error;
     }

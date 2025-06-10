@@ -113,7 +113,7 @@ export class RecipePreviewService {
         previews
       };
 
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('❌ Error generating recipe previews:', {
         error: error instanceof Error ? error.message : error,
         sessionId: request.sessionId

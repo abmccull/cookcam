@@ -122,7 +122,7 @@ router.post('/suggestions', authenticateUser, async (req: Request, res: Response
       xp_awarded: 20,
       message: 'Recipe suggestions generated successfully'
     });
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('Generate suggestions error', { error: error instanceof Error ? error.message : 'Unknown error' });
     res.status(500).json({ error: 'Failed to generate recipe suggestions' });
   }
@@ -231,7 +231,7 @@ router.post('/generate-full', authenticateUser, async (req: Request, res: Respon
       xp_awarded: 100,
       message: 'Full recipe generated successfully'
     });
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('Generate full recipe error', { error: error instanceof Error ? error.message : 'Unknown error' });
     res.status(500).json({ error: 'Failed to generate full recipe' });
   }
@@ -353,7 +353,7 @@ router.post('/generate', authenticateUser, async (req: Request, res: Response) =
         }
 
         return recipeRecord;
-      } catch (error) {
+      } catch (error: unknown) {
         logger.error('Error storing recipe', { error, recipeTitle: recipe.title });
         return null;
       }
@@ -392,7 +392,7 @@ router.post('/generate', authenticateUser, async (req: Request, res: Response) =
       }
     });
 
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('❌ Enhanced multiple recipe generation failed', { error });
     res.status(500).json({
       success: false,
@@ -499,7 +499,7 @@ router.post('/generate-previews', authenticateUser, async (req: Request, res: Re
         }
 
         return previewRecord;
-      } catch (error) {
+      } catch (error: unknown) {
         logger.error('Error storing preview', { error, previewTitle: preview.title });
         return null;
       }
@@ -538,7 +538,7 @@ router.post('/generate-previews', authenticateUser, async (req: Request, res: Re
       xp_awarded: 15
     });
 
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('❌ Preview generation failed', { 
       error: error instanceof Error ? error.message : error,
       userId: (req as any).user?.id 
@@ -712,7 +712,7 @@ router.post('/generate-detailed', authenticateUser, async (req: Request, res: Re
       xp_awarded: 50
     });
 
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('❌ Detailed recipe generation failed', { 
       error: error instanceof Error ? error.message : error,
       userId: (req as any).user?.id 
@@ -763,7 +763,7 @@ router.post('/:recipeId/variations', authenticateUser, async (req: Request, res:
       message: `Generated ${variations.length} recipe variations`
     });
 
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('❌ Recipe variation generation failed', { 
       error,
       recipeId: req.params.recipeId,
@@ -810,7 +810,7 @@ router.post('/test-suggestions', async (req: Request, res: Response) => {
       message: 'Recipe suggestions generated successfully (test mode)',
       input_used: recipeInput
     });
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('Test suggestions error:', error);
     res.status(500).json({ 
       error: 'Failed to generate recipe suggestions',
@@ -835,7 +835,7 @@ router.post('/test-full-recipe', async (req: Request, res: Response) => {
       full_recipe: fullRecipe,
       message: 'Full recipe generated successfully (test mode)'
     });
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('Test full recipe error:', error);
     res.status(500).json({ 
       error: 'Failed to generate full recipe',
@@ -901,7 +901,7 @@ router.get('/', async (req, res) => {
       }
     });
 
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('Fetch recipes error:', error);
     res.status(500).json({
       success: false,
@@ -958,7 +958,7 @@ router.get('/:id', async (req, res) => {
       data: data
     });
 
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('Fetch recipe error:', error);
     res.status(500).json({
       success: false,
@@ -1053,7 +1053,7 @@ router.get('/:id/nutrition', async (req, res) => {
       }
     });
 
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('Recipe nutrition analysis error:', error);
     res.status(500).json({
       success: false,
@@ -1138,7 +1138,7 @@ router.post('/:id/save-nutrition', async (req, res) => {
       data: savedNutrition
     });
 
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('Save recipe nutrition error:', error);
     res.status(500).json({
       success: false,
@@ -1189,7 +1189,7 @@ router.post('/:recipeId/save', authenticateUser, async (req: Request, res: Respo
 
       res.json({ message: 'Recipe saved successfully', saved: true });
     }
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('Save/unsave recipe error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
@@ -1220,7 +1220,7 @@ router.post('/:recipeId/rate', authenticateUser, async (req: Request, res: Respo
     }
 
     res.json({ message: 'Recipe rated successfully' });
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('Rate recipe error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
@@ -1250,7 +1250,7 @@ router.get('/saved/my', authenticateUser, async (req: Request, res: Response) =>
     }
 
     res.json({ saved_recipes: savedRecipes || [] });
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('Get saved recipes error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
@@ -1336,7 +1336,7 @@ router.post('/test-nutrition', async (req, res) => {
       }
     });
 
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('Test nutrition analysis error:', error);
     res.status(500).json({
       success: false,
@@ -1400,7 +1400,7 @@ router.post('/:recipeId/upload-completion-photo', authenticateUser, async (req: 
       photo,
       message: 'Recipe completion photo uploaded successfully'
     });
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('Upload completion photo error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
@@ -1466,7 +1466,7 @@ router.get('/:recipeId/completion-photos', async (req: Request, res: Response) =
       photos: photos || [],
       total: photos?.length || 0
     });
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('Get completion photos error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }

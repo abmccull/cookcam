@@ -101,7 +101,7 @@ router.post('/track', authenticateUser, async (req: AuthenticatedRequest, res: R
       level_up: newLevel > currentLevel
     });
 
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('Error tracking analytics event', { error });
     res.status(500).json({ error: 'Internal server error' });
   }
@@ -239,7 +239,7 @@ router.get('/dashboard', authenticateUser, async (req: AuthenticatedRequest, res
       data: analytics
     });
 
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('Error fetching analytics dashboard', { error });
     res.status(500).json({ error: 'Internal server error' });
   }
@@ -350,7 +350,7 @@ router.get('/global', authenticateUser, async (req: AuthenticatedRequest, res: R
       data: globalAnalytics
     });
 
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('Error fetching global analytics', { error });
     res.status(500).json({ error: 'Internal server error' });
   }

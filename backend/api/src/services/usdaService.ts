@@ -101,7 +101,7 @@ class USDAService {
 
       this.requestCount++;
       return response.data;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('USDA API request failed:', error);
       throw error;
     }
@@ -290,7 +290,7 @@ class USDAService {
       }
 
       await client.query('COMMIT');
-    } catch (error) {
+    } catch (error: unknown) {
       await client.query('ROLLBACK');
       throw error;
     } finally {
@@ -402,7 +402,7 @@ class USDAService {
         return detailedFood.fdcId;
       }
 
-    } catch (error) {
+    } catch (error: unknown) {
       console.error(`Failed to sync ingredient "${ingredientName}" with USDA:`, error);
       return null;
     }
@@ -449,7 +449,7 @@ class USDAService {
       const updatedResults = await pool.query(localSearchQuery, [query, limit]);
       return updatedResults.rows;
       
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('USDA fallback search failed:', error);
       return localResults.rows;
     }

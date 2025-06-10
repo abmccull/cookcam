@@ -65,7 +65,7 @@ export class AppStoreReceiptValidator {
         error: `Apple validation failed with status: ${response.status}`
       };
       
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Apple receipt validation error:', error);
       return {
         isValid: false,

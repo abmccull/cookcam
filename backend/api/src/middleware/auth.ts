@@ -98,7 +98,7 @@ export const authenticateUser = async (req: AuthenticatedRequest, res: Response,
 
       req.user = { id: user.id, email: user.email };
       next();
-    } catch (validationError) {
+    } catch (validationError: unknown) {
       logger.error('❌ Supabase token validation error:', {
         error: validationError instanceof Error ? validationError.message : 'Unknown error',
         tokenPrefix: token.substring(0, 20) + '...'
@@ -110,7 +110,7 @@ export const authenticateUser = async (req: AuthenticatedRequest, res: Response,
         message: 'Please refresh your session'
       });
     }
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('Auth middleware error', { error: error instanceof Error ? error.message : 'Unknown error' });
     res.status(401).json({ error: 'Authentication failed' });
   }
@@ -156,7 +156,7 @@ export const optionalAuth = async (req: AuthenticatedRequest, res: Response, nex
       req.isFreeTier = true;
       next();
     }
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('Optional auth middleware error', { error: error instanceof Error ? error.message : 'Unknown error' });
     // Even on error, continue as guest
     console.log('⚠️ Error in optionalAuth - continuing as guest');

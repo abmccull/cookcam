@@ -113,7 +113,7 @@ export class MonitoringService {
         status: 'up',
         latency
       };
-    } catch (error) {
+    } catch (error: unknown) {
       return {
         status: 'down',
         error: error instanceof Error ? error.message : 'Unknown error'
@@ -130,7 +130,7 @@ export class MonitoringService {
         status: 'up',
         latency: 1
       };
-    } catch (error) {
+    } catch (error: unknown) {
       return {
         status: 'down',
         error: error instanceof Error ? error.message : 'Unknown error'
@@ -168,7 +168,7 @@ export class MonitoringService {
         status: 'up',
         latency
       };
-    } catch (error) {
+    } catch (error: unknown) {
       return {
         status: 'down',
         error: error instanceof Error ? error.message : 'Unknown error'

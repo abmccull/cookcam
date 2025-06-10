@@ -72,7 +72,7 @@ export class StripeConnectService {
 
       logger.info('✅ Stripe Connected Account created', { creatorId, accountId: account.id });
       return account.id;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('❌ Failed to create Connected Account', { error, creatorId });
       return null;
     }
@@ -94,7 +94,7 @@ export class StripeConnectService {
       });
 
       return accountLink.url;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('❌ Failed to create account link', { error, accountId });
       return null;
     }
@@ -121,7 +121,7 @@ export class StripeConnectService {
       if (error) {
         logger.error('❌ Failed to update account status', { error, accountId });
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('❌ Failed to retrieve account', { error, accountId });
     }
   }
@@ -201,7 +201,7 @@ export class StripeConnectService {
       // based on the connected account's payout schedule
 
       return true;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('❌ Failed to process payout', { error, params });
 
       // Update payout status to failed
@@ -234,7 +234,7 @@ export class StripeConnectService {
 
       const loginLink = await stripe.accounts.createLoginLink(account.stripe_account_id);
       return loginLink.url;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('❌ Failed to create dashboard link', { error, creatorId });
       return null;
     }
@@ -264,7 +264,7 @@ export class StripeConnectService {
           await this.handlePayoutFailed(failedPayout);
           break;
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('❌ Failed to handle Connect webhook', { error, eventType: event.type });
     }
   }
@@ -288,7 +288,7 @@ export class StripeConnectService {
       }
 
       logger.info('✅ Payout completed', { payoutId: payout.id });
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('❌ Error handling payout paid', { error, payoutId: payout.id });
     }
   }
@@ -314,7 +314,7 @@ export class StripeConnectService {
         payoutId: payout.id, 
         reason: payout.failure_message 
       });
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('❌ Error handling payout failure', { error, payoutId: payout.id });
     }
   }
@@ -329,7 +329,7 @@ export class StripeConnectService {
         });
 
       return revenue || 0;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('❌ Failed to get creator balance', { error, creatorId });
       return 0;
     }

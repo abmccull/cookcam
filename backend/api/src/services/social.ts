@@ -41,7 +41,7 @@ export class SocialService {
       await this.createActivity(followerId, 'started_following', {
         following_id: followingId
       });
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Follow user error:', error);
       throw error;
     }
@@ -59,7 +59,7 @@ export class SocialService {
       if (error) {
         throw error;
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Unfollow user error:', error);
       throw error;
     }
@@ -85,7 +85,7 @@ export class SocialService {
       if (error) {throw error;}
       
       return data || [];
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Get followers error:', error);
       throw error;
     }
@@ -111,7 +111,7 @@ export class SocialService {
       if (error) {throw error;}
       
       return data || [];
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Get following error:', error);
       throw error;
     }
@@ -129,7 +129,7 @@ export class SocialService {
       if (error) {throw error;}
       
       return (count || 0) > 0;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Check following error:', error);
       return false;
     }
@@ -171,7 +171,7 @@ export class SocialService {
         recipes_shared: recipes_shared || 0,
         total_likes
       };
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Get user stats error:', error);
       throw error;
     }
@@ -208,7 +208,7 @@ export class SocialService {
       if (error) {throw error;}
       
       return activities || [];
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Get activity feed error:', error);
       throw error;
     }
@@ -225,7 +225,7 @@ export class SocialService {
           data,
           created_at: new Date().toISOString()
         });
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Create activity error:', error);
       // Don't throw - activity creation shouldn't break main flow
     }
@@ -238,7 +238,7 @@ export class SocialService {
         recipe_id: recipeId,
         message
       });
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Share recipe error:', error);
       throw error;
     }
@@ -274,7 +274,7 @@ export class SocialService {
       
       // Sort by followers
       return creatorsWithStats.sort((a, b) => b.followers - a.followers);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Get trending creators error:', error);
       throw error;
     }
@@ -309,7 +309,7 @@ export class SocialService {
       if (error) {throw error;}
       
       return suggestions || [];
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Get suggested users error:', error);
       throw error;
     }

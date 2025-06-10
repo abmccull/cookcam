@@ -74,7 +74,7 @@ export class RealTimeService {
 
         logger.info('🔐 User authenticated for WebSocket', { userId: decoded.id });
         next();
-      } catch (error) {
+      } catch (error: unknown) {
         logger.error('❌ WebSocket authentication failed', { error });
         next(new Error('Authentication failed'));
       }
@@ -183,7 +183,7 @@ export class RealTimeService {
 
       logger.info('🍳 Cooking session created', { sessionId, hostId: socket.userId });
 
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('❌ Failed to create cooking session', { error });
       socket.emit('error', { message: 'Failed to create cooking session' });
     }
@@ -227,7 +227,7 @@ export class RealTimeService {
         userId: socket.userId 
       });
 
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('❌ Failed to join cooking session', { error });
       socket.emit('error', { message: 'Failed to join cooking session' });
     }
@@ -270,7 +270,7 @@ export class RealTimeService {
         step: data.newStep 
       });
 
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('❌ Failed to update cooking step', { error });
     }
   }
@@ -314,7 +314,7 @@ export class RealTimeService {
 
       logger.info('📢 Recipe shared live', { shareId, userId: socket.userId });
 
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('❌ Failed to share recipe live', { error });
     }
   }
@@ -342,7 +342,7 @@ export class RealTimeService {
         ingredients: data.ingredients.length 
       });
 
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('❌ Failed to share scan result', { error });
     }
   }
@@ -375,7 +375,7 @@ export class RealTimeService {
         userId: socket.userId 
       });
 
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('❌ Failed to send cooking message', { error });
     }
   }
@@ -403,7 +403,7 @@ export class RealTimeService {
         status: data.status 
       });
 
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('❌ Failed to update status', { error });
     }
   }
@@ -441,7 +441,7 @@ export class RealTimeService {
         userId: socket.userId 
       });
 
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('❌ Failed to leave cooking session', { error });
     }
   }

@@ -120,7 +120,7 @@ export class EmailService {
           sent_at: new Date().toISOString(),
           status: 'sent'
         });
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Email logging error:', error);
     }
     

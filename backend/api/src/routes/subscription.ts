@@ -34,7 +34,7 @@ router.get('/tiers', async (_req: Request, res: Response) => {
       success: true,
       tiers: tiers || []
     });
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('Get subscription tiers error', { error });
     res.status(500).json({ error: 'Failed to fetch subscription tiers' });
   }
@@ -58,7 +58,7 @@ router.get('/status', authenticateUser, async (req: Request, res: Response) => {
       features,
       isCreator: tier.slug === 'creator'
     });
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('Get subscription status error', { error });
     res.status(500).json({ error: 'Failed to get subscription status' });
   }
@@ -98,7 +98,7 @@ router.post('/create-checkout', authenticateUser, async (req: Request, res: Resp
       success: true,
       checkoutUrl
     });
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('Create checkout error', { error });
     res.status(500).json({ error: 'Failed to create checkout session' });
   }
@@ -121,7 +121,7 @@ router.post('/change-tier', authenticateUser, async (req: Request, res: Response
       subscription: updatedSubscription,
       message: 'Subscription tier updated successfully'
     });
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('Change tier error', { error });
     res.status(500).json({ error: 'Failed to change subscription tier' });
   }
@@ -141,7 +141,7 @@ router.post('/cancel', authenticateUser, async (req: Request, res: Response) => 
         ? 'Subscription cancelled immediately' 
         : 'Subscription will be cancelled at the end of the billing period'
     });
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('Cancel subscription error', { error });
     res.status(500).json({ error: 'Failed to cancel subscription' });
   }
@@ -180,7 +180,7 @@ router.post('/webhook/stripe', async (req: Request, res: Response) => {
     }
 
     res.json({ received: true });
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('Stripe webhook error', { error });
     res.status(500).json({ error: 'Webhook processing failed' });
   }
@@ -212,7 +212,7 @@ router.post('/affiliate/generate', authenticateUser, isCreator, async (req: Requ
         fullUrl
       }
     });
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('Generate affiliate link error', { error });
     res.status(500).json({ error: 'Failed to generate affiliate link' });
   }
@@ -236,7 +236,7 @@ router.get('/affiliate/links', authenticateUser, isCreator, async (req: Request,
       success: true,
       links: linksWithUrls
     });
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('Get affiliate links error', { error });
     res.status(500).json({ error: 'Failed to get affiliate links' });
   }
@@ -262,7 +262,7 @@ router.post('/affiliate/track/:linkCode', async (req: Request, res: Response) =>
       success: true,
       message: 'Click tracked'
     });
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('Track affiliate click error', { error });
     res.status(500).json({ error: 'Failed to track click' });
   }
@@ -284,7 +284,7 @@ router.get('/creator/revenue', authenticateUser, isCreator, async (req: Request,
       success: true,
       revenue
     });
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('Get creator revenue error', { error });
     res.status(500).json({ error: 'Failed to get revenue data' });
   }
@@ -300,7 +300,7 @@ router.get('/creator/analytics', authenticateUser, isCreator, async (req: Reques
       success: true,
       analytics
     });
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('Get creator analytics error', { error });
     res.status(500).json({ error: 'Failed to get analytics' });
   }
@@ -330,7 +330,7 @@ router.post('/creator/payout', authenticateUser, isCreator, async (req: Request,
       payout,
       message: 'Payout request submitted successfully'
     });
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('Request payout error', { error });
     res.status(500).json({ error: 'Failed to request payout' });
   }
@@ -367,7 +367,7 @@ router.post('/recipe/:recipeId/tip', authenticateUser, async (req: Request, res:
       success: true,
       message: 'Tip sent successfully'
     });
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('Tip recipe error', { error });
     res.status(500).json({ error: 'Failed to send tip' });
   }
@@ -399,7 +399,7 @@ router.post('/verify-ios', authenticateUser, async (req: Request, res: Response)
       subscription,
       message: 'iOS subscription created'
     });
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('iOS receipt verification error', { error });
     res.status(500).json({ error: 'Failed to verify iOS receipt' });
   }
@@ -429,7 +429,7 @@ router.post('/verify-android', authenticateUser, async (req: Request, res: Respo
       subscription,
       message: 'Android subscription created'
     });
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('Android purchase verification error', { error });
     res.status(500).json({ error: 'Failed to verify Android purchase' });
   }
@@ -465,7 +465,7 @@ router.post('/creator/stripe/onboard', authenticateUser, isCreator, async (req: 
       accountId,
       onboardingUrl
     });
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('Stripe onboarding error', { error });
     res.status(500).json({ error: 'Failed to start Stripe onboarding' });
   }
@@ -506,7 +506,7 @@ router.get('/creator/stripe/status', authenticateUser, isCreator, async (req: Re
       },
       needsOnboarding: account.account_status === 'pending'
     });
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('Get Stripe status error', { error });
     res.status(500).json({ error: 'Failed to get Stripe account status' });
   }
@@ -526,7 +526,7 @@ router.get('/creator/stripe/dashboard', authenticateUser, isCreator, async (req:
       success: true,
       dashboardUrl
     });
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('Get Stripe dashboard error', { error });
     res.status(500).json({ error: 'Failed to get dashboard link' });
   }
@@ -543,7 +543,7 @@ router.get('/creator/balance', authenticateUser, isCreator, async (req: Request,
       balance,
       currency: 'USD'
     });
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('Get creator balance error', { error });
     res.status(500).json({ error: 'Failed to get balance' });
   }

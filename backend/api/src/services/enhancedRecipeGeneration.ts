@@ -182,7 +182,7 @@ export class EnhancedRecipeGenerationService {
       });
 
       return result;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('❌ Error generating multiple recipes:', error);
       throw new Error('Failed to generate diverse recipes');
     }
@@ -607,7 +607,7 @@ Return the recipe as a JSON object with this exact structure:
           const variation = JSON.parse(content) as GeneratedRecipe;
           variations.push(variation);
         }
-      } catch (error) {
+      } catch (error: unknown) {
         logger.error('❌ Failed to generate recipe variation', { error, variationIndex: i + 1 });
       }
     }

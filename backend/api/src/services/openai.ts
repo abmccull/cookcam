@@ -114,7 +114,7 @@ Return JSON in this exact format:
 
     const parsed = JSON.parse(response);
     return parsed.recipes;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error generating recipe suggestions:', error);
     throw new Error('Failed to generate recipe suggestions');
   }
@@ -174,7 +174,7 @@ Important:
 
     const parsed = JSON.parse(response);
     return parsed;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error generating full recipe:', error);
     throw new Error('Failed to generate full recipe');
   }

@@ -27,7 +27,7 @@ export class NotificationService {
       if (error) {
         throw new Error(`Failed to register device: ${error.message}`);
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Device registration error:', error);
       throw error;
     }
@@ -45,7 +45,7 @@ export class NotificationService {
       if (error) {
         throw new Error(`Failed to unregister device: ${error.message}`);
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Device unregistration error:', error);
       throw error;
     }
@@ -75,7 +75,7 @@ export class NotificationService {
       
       // Log notification
       await this.logNotification(userId, payload);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Send to user error:', error);
       throw error;
     }
@@ -185,7 +185,7 @@ export class NotificationService {
           type: payload.data?.type || 'general',
           sent_at: new Date().toISOString()
         });
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Notification logging error:', error);
       // Don't throw - logging failure shouldn't stop notifications
     }
@@ -217,7 +217,7 @@ export class NotificationService {
         // Check for expiring challenges
         // Add more scheduled notification logic here
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Schedule daily notifications error:', error);
     }
   }

@@ -20,7 +20,7 @@ async function searchUSDAFoods(query: string, limit: number = 5) {
       }
     });
     return response.data;
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('USDA search error:', error);
     throw error;
   }
@@ -35,7 +35,7 @@ async function getUSDAFoodDetails(fdcId: number) {
       }
     });
     return response.data;
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('USDA food details error:', error);
     throw error;
   }
@@ -124,7 +124,7 @@ router.get('/search', async (req, res) => {
       }
     });
 
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('Search error:', error);
     res.status(500).json({
       success: false,
@@ -152,7 +152,7 @@ router.get('/usda/search', async (req, res) => {
       data: results
     });
 
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('USDA search error:', error);
     res.status(500).json({
       success: false,
@@ -273,7 +273,7 @@ router.post('/:id/sync-usda', async (req, res) => {
       }
     });
 
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('❌ USDA sync error:', error);
     res.status(500).json({
       success: false,
@@ -322,7 +322,7 @@ router.get('/', async (req, res) => {
       }
     });
 
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('Fetch ingredients error:', error);
     res.status(500).json({
       success: false,
@@ -361,7 +361,7 @@ router.get('/:id', async (req, res) => {
       data: data
     });
 
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('Fetch ingredient error:', error);
     res.status(500).json({
       success: false,

@@ -25,11 +25,46 @@ const PORT = process.env.PORT || 3000;
 // Create HTTP server for Socket.IO
 const httpServer = http.createServer(app);
 
-// Initialize Supabase client
+// Initialize Supabase client (for regular operations)
 export const supabase = createClient(
   process.env.SUPABASE_URL || '',
   process.env.SUPABASE_ANON_KEY || ''
 );
+
+// Initialize Supabase service role client (for user impersonation)
+export const supabaseServiceRole = createClient(
+  process.env.SUPABASE_URL || '',
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || '',
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  }
+);
+
+// Helper function to create authenticated client for a specific user
+export const createAuthenticatedClient = (userJwt: string) => {
+  const client = createClient(
+    process.env.SUPABASE_URL || '',
+    process.env.SUPABASE_ANON_KEY || ''
+  );
+  
+  // Set the user's JWT token to maintain auth context
+  client.auth.setSession({
+    access_token: userJwt,
+    refresh_token: '', // Not needed for backend operations
+  } as any); // Temporary fix for deployment
+  
+  return client;
+};
+
+// Log which keys are being used (without exposing the actual keys)
+logger.info('Supabase clients initialized', {
+  hasAnonKey: !!process.env.SUPABASE_ANON_KEY,
+  hasServiceRoleKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+  securityMode: 'user-context-aware'
+});
 
 // Initialize Real-time service
 const realTimeService = initializeRealTimeService(httpServer);
