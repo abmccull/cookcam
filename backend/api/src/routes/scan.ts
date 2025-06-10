@@ -376,7 +376,7 @@ router.post('/ingredients', authenticateUser, upload, async (req: express.Reques
   try {
     const userId = (req as any).user.id;
     const token = req.headers.authorization?.replace('Bearer ', '') || '';
-    const userClient = createAuthenticatedClient(token);
+    const userClient = await createAuthenticatedClient(token);
     
     console.log('🔍 Scan ingredient request received');
 
@@ -459,7 +459,7 @@ router.get('/history', authenticateUser, async (req: Request, res: Response) => 
   try {
     const userId = (req as any).user.id;
     const token = req.headers.authorization?.replace('Bearer ', '') || '';
-    const userClient = createAuthenticatedClient(token);
+    const userClient = await createAuthenticatedClient(token);
     const { limit = 20, offset = 0 } = req.query;
 
     const { data: scans, error } = await userClient
@@ -486,7 +486,7 @@ router.get('/:scanId', authenticateUser, async (req: Request, res: Response) => 
     const { scanId } = req.params;
     const userId = (req as any).user.id;
     const token = req.headers.authorization?.replace('Bearer ', '') || '';
-    const userClient = createAuthenticatedClient(token);
+    const userClient = await createAuthenticatedClient(token);
 
     const { data: scan, error } = await userClient
       .from('ingredient_scans')

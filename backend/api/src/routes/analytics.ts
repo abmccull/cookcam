@@ -21,7 +21,7 @@ router.post('/track', authenticateUser, async (req: AuthenticatedRequest, res: R
     const { event_type, event_data, metadata, xp_gained = 0 } = req.body;
     const userId = req.user?.id;
     const token = req.headers.authorization?.replace('Bearer ', '') || '';
-    const userClient = createAuthenticatedClient(token);
+    const userClient = await createAuthenticatedClient(token);
 
     if (!event_type) {
       return res.status(400).json({ error: 'Event type is required' });
@@ -112,7 +112,7 @@ router.get('/dashboard', authenticateUser, async (req: AuthenticatedRequest, res
   try {
     const userId = req.user?.id;
     const token = req.headers.authorization?.replace('Bearer ', '') || '';
-    const userClient = createAuthenticatedClient(token);
+    const userClient = await createAuthenticatedClient(token);
     const { timeframe = '7d' } = req.query;
 
     if (!userId) {

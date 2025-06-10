@@ -496,7 +496,7 @@ router.delete('/account', authenticateUser, async (req: Request, res: Response) 
   try {
     const userId = (req as AuthenticatedRequest).user.id;
     const token = req.headers.authorization?.replace('Bearer ', '') || '';
-    const userClient = createAuthenticatedClient(token);
+    const userClient = await createAuthenticatedClient(token);
     const { confirmPassword } = req.body;
 
     if (!confirmPassword) {

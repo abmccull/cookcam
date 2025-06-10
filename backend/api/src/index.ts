@@ -44,17 +44,17 @@ export const supabaseServiceRole = createClient(
 );
 
 // Helper function to create authenticated client for a specific user
-export const createAuthenticatedClient = (userJwt: string) => {
+export const createAuthenticatedClient = async (userJwt: string) => {
   const client = createClient(
     process.env.SUPABASE_URL || '',
     process.env.SUPABASE_ANON_KEY || ''
   );
   
   // Set the user's JWT token to maintain auth context
-  client.auth.setSession({
+  await client.auth.setSession({
     access_token: userJwt,
     refresh_token: '', // Not needed for backend operations
-  } as any); // Temporary fix for deployment
+  } as any);
   
   return client;
 };
