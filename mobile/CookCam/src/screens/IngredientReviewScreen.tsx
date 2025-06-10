@@ -19,6 +19,7 @@ import {useAuth} from '../context/AuthContext';
 import {ingredientService, scanService} from '../services/api';
 import MysteryBox from '../components/MysteryBox';
 import AIChefIcon from '../components/AIChefIcon';
+import LoadingAnimation from '../components/LoadingAnimation';
 
 interface Ingredient {
   id: string;
@@ -75,53 +76,9 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
   
   // Animation values
   const addAnimScale = useRef(new Animated.Value(1)).current;
-  const aiPulseAnim = useRef(new Animated.Value(1)).current;
-  const aiOpacityAnim = useRef(new Animated.Value(0.7)).current;
   const [showConfetti, setShowConfetti] = useState(false);
 
-  // AI Analysis animation effect
-  useEffect(() => {
-    if (loading) {
-      // Start pulsing animation when loading
-      const pulse = Animated.loop(
-        Animated.sequence([
-          Animated.timing(aiPulseAnim, {
-            toValue: 1.1,
-            duration: 1000,
-            useNativeDriver: true,
-          }),
-          Animated.timing(aiPulseAnim, {
-            toValue: 1,
-            duration: 1000,
-            useNativeDriver: true,
-          }),
-        ])
-      );
 
-      const opacity = Animated.loop(
-        Animated.sequence([
-          Animated.timing(aiOpacityAnim, {
-            toValue: 1,
-            duration: 1500,
-            useNativeDriver: true,
-          }),
-          Animated.timing(aiOpacityAnim, {
-            toValue: 0.7,
-            duration: 1500,
-            useNativeDriver: true,
-          }),
-        ])
-      );
-
-      pulse.start();
-      opacity.start();
-
-      return () => {
-        pulse.stop();
-        opacity.stop();
-      };
-    }
-  }, [loading]);
 
   // Track if image analysis has been completed for this imageUri
   const [hasAnalyzedImage, setHasAnalyzedImage] = useState(false);
@@ -777,36 +734,8 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
         </View>
       )}
       
-      {/* AI Analysis Modal */}
-      <Modal
-        visible={loading}
-        transparent
-        animationType="fade">
-        <View style={styles.aiAnalysisOverlay}>
-          <Animated.View style={[
-            styles.aiAnalysisModal,
-            {
-              transform: [{ scale: aiPulseAnim }],
-              opacity: aiOpacityAnim,
-            }
-          ]}>
-            <View style={styles.aiAnalysisIcon}>
-              <AIChefIcon size={moderateScale(48)} variant="analyzing" />
-            </View>
-            <Text style={styles.aiAnalysisTitle}>
-              AI Chef Analyzing...
-            </Text>
-            <Text style={styles.aiAnalysisSubtitle}>
-              Identifying ingredients with computer vision
-            </Text>
-            <View style={styles.aiAnalysisSteps}>
-              <Text style={styles.aiAnalysisStep}>🔍 Scanning image patterns</Text>
-              <Text style={styles.aiAnalysisStep}>🧠 Processing with neural networks</Text>
-              <Text style={styles.aiAnalysisStep}>✨ Matching to ingredient database</Text>
-            </View>
-          </Animated.View>
-        </View>
-      </Modal>
+      {/* AI Analysis Loading Animation */}
+      <LoadingAnimation visible={loading} variant="scanning" />
 
       {/* Mystery Box Reward Modal */}
       <Modal
@@ -1149,57 +1078,6 @@ const styles = StyleSheet.create({
     fontSize: responsive.fontSize.medium,
     fontWeight: 'bold',
     color: '#FFFFFF',
-  },
-  // AI Analysis Modal Styles
-  aiAnalysisOverlay: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(45, 27, 105, 0.85)',
-  },
-  aiAnalysisModal: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: responsive.borderRadius.large,
-    padding: responsive.spacing.xl,
-    margin: responsive.spacing.m,
-    alignItems: 'center',
-    shadowColor: '#2D1B69',
-    shadowOffset: {
-      width: 0,
-      height: 8,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 8,
-    borderWidth: 2,
-    borderColor: '#FFB800',
-  },
-  aiAnalysisIcon: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: verticalScale(16),
-  },
-  aiAnalysisTitle: {
-    fontSize: responsive.fontSize.xlarge,
-    fontWeight: 'bold',
-    color: '#2D1B69',
-    marginBottom: verticalScale(8),
-    textAlign: 'center',
-  },
-  aiAnalysisSubtitle: {
-    fontSize: responsive.fontSize.medium,
-    color: '#8E8E93',
-    marginBottom: verticalScale(20),
-    textAlign: 'center',
-  },
-  aiAnalysisSteps: {
-    alignItems: 'flex-start',
-    gap: verticalScale(8),
-  },
-  aiAnalysisStep: {
-    fontSize: responsive.fontSize.regular,
-    color: '#6B46C1',
-    fontWeight: '500',
   },
 });
 

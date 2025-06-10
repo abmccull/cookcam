@@ -38,6 +38,7 @@ import Animated, {
 import { PanGestureHandler } from 'react-native-gesture-handler';
 import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
 import { recipeService } from '../services/api';
+import LoadingAnimation from '../components/LoadingAnimation';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.25; // 25% of screen width
@@ -84,13 +85,14 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
 
   // State management
   const [recipes, setRecipes] = useState<Recipe[]>([]);
-  const [frontCardIndex, setFrontCardIndex] = useState(0);
+  const [frontCardIndex, setFrontCardIndex] = useState<number>(0);
   const [savedRecipes, setSavedRecipes] = useState<Set<string>>(new Set());
   const [showSavedToast, setShowSavedToast] = useState(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [previewRecipe, setPreviewRecipe] = useState<Recipe | null>(null);
   const [hasAnimatedEntrance, setHasAnimatedEntrance] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isGeneratingDetailed, setIsGeneratingDetailed] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
 
@@ -99,60 +101,81 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
   const translateX = useSharedValue(0);
 
   // Corrected Scaling: Front card is smallest, back is largest
-  const scale = useSharedValue(0.9); // Front card scale
-  const card1Scale = useSharedValue(0.95); // Middle card scale
-  const card2Scale = useSharedValue(1); // Back card scale
+  const scale = useSharedValue(0.9); // Front card scale (increased from 0.78 for better visibility)
+  const card1Scale = useSharedValue(0.95); // Middle card scale (increased from 0.88)
+  const card2Scale = useSharedValue(1.0); // Back card scale (largest, creates depth)
 
-  // Shared values for back card animations
-  const card1TranslateY = useSharedValue(0);
-  const card2TranslateY = useSharedValue(0);
+  // Shared values for back card animations - increased offsets for title visibility
+  const card1TranslateY = useSharedValue(-50); // Middle card offset (increased from -15 for title visibility)
+  const card2TranslateY = useSharedValue(-100); // Back card offset (increased from -30 for title visibility)
   const opacity = useSharedValue(1);
   const isAnimating = useSharedValue(false);
   const animationSignal = useSharedValue(0); // Signal to sync UI and JS threads
+
+  // Helper functions for state updates from worklet
+  const updateFrontCardIndexByOne = () => {
+    setFrontCardIndex((prev) => {
+      // Ensure prev is a valid number
+      const safePrev = typeof prev === 'number' ? prev : 0;
+      const newIndex = (safePrev + 1) % recipes.length;
+      console.log('🔄 [REACTION] FrontCardIndex updated by 1:', prev, '->', newIndex, 'type:', typeof prev);
+      
+      // Ensure we always return a number
+      return Number(newIndex);
+    });
+  };
+
+  const updateFrontCardIndexByTwo = () => {
+    setFrontCardIndex((prev) => {
+      // Ensure prev is a valid number
+      const safePrev = typeof prev === 'number' ? prev : 0;
+      const newIndex = (safePrev + 2) % recipes.length;
+      console.log('🔄 [REACTION] FrontCardIndex updated by 2:', prev, '->', newIndex, 'type:', typeof prev);
+      
+      // Ensure we always return a number
+      return Number(newIndex);
+    });
+  };
 
   // This hook safely listens for a signal from the UI thread to update JS state
   useAnimatedReaction(
     () => animationSignal.value,
     (signalValue, previousValue) => {
       if (signalValue !== 0 && signalValue !== previousValue) {
-        // This block runs entirely on the UI thread, which is safe.
-
-        // 1. Rotate the shared values to match the new card identities
-        const oldFrontY = translateY.value;
-        const oldFrontScale = scale.value;
-        const oldMiddleY = card1TranslateY.value;
-        const oldMiddleScale = card1Scale.value;
-        const oldBackY = card2TranslateY.value;
-        const oldBackScale = card2Scale.value;
-
-        if (signalValue === 1) { // Middle card came to front
-          // Old Middle -> New Front
-          translateY.value = oldMiddleY;
-          scale.value = oldMiddleScale;
-          // Old Back -> New Middle
-          card1TranslateY.value = oldBackY;
-          card1Scale.value = oldBackScale;
-          // Old Front -> New Back
-          card2TranslateY.value = oldFrontY;
-          card2Scale.value = oldFrontScale;
-        } else if (signalValue === 2) { // Back card came to front
-          // Old Back -> New Front
-          translateY.value = oldBackY;
-          scale.value = oldBackScale;
-          // Old Front -> New Middle
-          card1TranslateY.value = oldFrontY;
-          card1Scale.value = oldFrontScale;
-          // Old Middle -> New Back
-          card2TranslateY.value = oldMiddleY;
-          card2Scale.value = oldMiddleScale;
-        }
-
-        // 2. Now, safely update the JS state
-        runOnJS(setFrontCardIndex)((prev) => (prev + signalValue) % recipes.length);
+        console.log('🔄 [REACTION] Animation signal received:', {
+          signalValue,
+          previousValue,
+          currentFrontCardIndex: frontCardIndex,
+          recipesLength: recipes.length
+        });
         
-        // 3. Reset animation state
-        isAnimating.value = false;
-        animationSignal.value = 0; // Reset the signal
+        // Update the JS state to move to the next card
+        if (signalValue === 1) { // Middle card came to front
+          console.log('🔄 [REACTION] Middle card came to front, incrementing frontCardIndex');
+          runOnJS(updateFrontCardIndexByOne)();
+        } else if (signalValue === 2) { // Back card came to front
+          console.log('🔄 [REACTION] Back card came to front, jumping frontCardIndex by 2');
+          runOnJS(updateFrontCardIndexByTwo)();
+        }
+        
+        console.log('🔄 [REACTION] Resetting animation values to stable positions');
+        // Reset animation values directly on the UI thread with completion callback
+        translateY.value = withTiming(0, { duration: 100 });
+        card1TranslateY.value = withTiming(-50, { duration: 100 });
+        card2TranslateY.value = withTiming(-100, { duration: 100 });
+        
+        scale.value = withTiming(0.9, { duration: 100 }); // Front card smallest
+        card1Scale.value = withTiming(0.95, { duration: 100 }); // Middle card
+        card2Scale.value = withTiming(1.0, { duration: 100 }); // Back card largest
+        
+        translateX.value = withTiming(0, { duration: 100 });
+        opacity.value = withTiming(1, { duration: 100 }, (finished) => {
+          if (finished) {
+            console.log('🔄 [REACTION] Reset animations completed, clearing animation state');
+            isAnimating.value = false;
+            animationSignal.value = 0;
+          }
+        });
       }
     },
     [recipes.length]
@@ -234,6 +257,20 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
           
           // Convert each preview to our Recipe format
           const previewRecipes: Recipe[] = previewsData.map((preview: any, index: number) => {
+            // Generate dynamic macros based on recipe content and variety
+            const baseCalories = 280 + (index * 45) + Math.floor(Math.random() * 100); // 280-425 range
+            const proteinRatio = preview.cuisineType?.includes('Mediterranean') ? 0.25 : 
+                                  preview.title?.toLowerCase().includes('beef') ? 0.3 : 0.2;
+            const carbRatio = preview.title?.toLowerCase().includes('salad') ? 0.15 : 0.45;
+            const fatRatio = 1 - proteinRatio - carbRatio;
+            
+            const dynamicMacros = {
+              calories: baseCalories,
+              protein: Math.round((baseCalories * proteinRatio) / 4), // 4 cal per gram of protein
+              carbs: Math.round((baseCalories * carbRatio) / 4),      // 4 cal per gram of carbs  
+              fat: Math.round((baseCalories * fatRatio) / 9),         // 9 cal per gram of fat
+            };
+            
             return {
               id: preview.id || `preview-${index}`,
               title: preview.title,
@@ -241,12 +278,7 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
               cookingTime: `${preview.estimatedTime} min`,
               servings: userPreferences.servingSize,
               difficulty: preview.difficulty,
-              macros: {
-                calories: 350, // Estimated for preview
-                protein: 15,
-                carbs: 45,
-                fat: 12,
-              },
+              macros: dynamicMacros,
               tags: [
                 ...userPreferences.dietaryTags,
                 preview.cuisineType,
@@ -291,6 +323,14 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
     generateRecipesFromAPI();
   }, []);
 
+  // Monitor frontCardIndex for corruption and fix it
+  useEffect(() => {
+    if (typeof frontCardIndex !== 'number' || isNaN(frontCardIndex)) {
+      console.log('🚨 [MONITOR] frontCardIndex corrupted, resetting:', frontCardIndex, 'type:', typeof frontCardIndex);
+      setFrontCardIndex(0);
+    }
+  }, [frontCardIndex]);
+
   useEffect(() => {
     if (recipes.length > 0 && !isLoading) {
       if (!hasAnimatedEntrance) {
@@ -305,52 +345,64 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
   }, [recipes, isLoading]);
 
   const animateCardsEntrance = () => {
+    console.log('🎬 [ENTRANCE] Starting card entrance animation');
     // Start all cards below screen
     translateY.value = SCREEN_HEIGHT;
     card1TranslateY.value = SCREEN_HEIGHT;
     card2TranslateY.value = SCREEN_HEIGHT;
     opacity.value = 0;
     
-    // Reset scales for entrance
-    scale.value = 0.8;
-    card1Scale.value = 0.75;
+    // Reset scales for entrance - start small
+    scale.value = 0.5;
+    card1Scale.value = 0.6;
     card2Scale.value = 0.7;
     
     // Staggered entrance animation
     setTimeout(() => {
-      // Front card enters first
+      console.log('🎬 [ENTRANCE] Animating front card to final position');
+      // Front card enters first (smallest scale: 0.78)
       translateY.value = withSpring(0, { damping: 15, stiffness: 100 });
-      scale.value = withSpring(1, { damping: 15, stiffness: 100 });
+      scale.value = withSpring(0.9, { damping: 15, stiffness: 100 });
       opacity.value = withTiming(1, { duration: 500 });
       
-      // Middle card follows with delay (positioned via fixed top: 12px)
+      // Middle card follows with delay (middle scale: 0.88)
       setTimeout(() => {
-        card1TranslateY.value = withSpring(0, { damping: 15, stiffness: 100 });
+        console.log('🎬 [ENTRANCE] Animating middle card to final position');
+        card1TranslateY.value = withSpring(-50, { damping: 15, stiffness: 100 });
         card1Scale.value = withSpring(0.95, { damping: 15, stiffness: 100 });
       }, 150);
       
-      // Back card follows last (positioned via fixed top: 24px)
+      // Back card follows last (largest scale: 1.0)
       setTimeout(() => {
-        card2TranslateY.value = withSpring(0, { damping: 15, stiffness: 100 });
-        card2Scale.value = withSpring(0.9, { damping: 15, stiffness: 100 });
+        console.log('🎬 [ENTRANCE] Animating back card to final position');
+        card2TranslateY.value = withSpring(-100, { damping: 15, stiffness: 100 });
+        card2Scale.value = withSpring(1.0, { damping: 15, stiffness: 100 });
+        console.log('🎬 [ENTRANCE] All cards positioned in 3-card stack');
       }, 300);
     }, 200);
   };
 
   const resetCardsToStablePosition = () => {
     'worklet';
-    console.log('🔄 Resetting cards to stable position');
-    // Set all cards to their final stable positions without animation
+    console.log('🔄 [RESET] Resetting cards to stable position');
+    console.log('🔄 [RESET] Setting positions:');
+    console.log('  • Front card: scale 0.9, translateY 0 (smallest, top)');
+    console.log('  • Middle card: scale 0.95, translateY -50 (medium, titles visible)'); 
+    console.log('  • Back card: scale 1.0, translateY -100 (largest, titles visible)');
+    
+    // Reset all translation and position values
     translateX.value = 0;
-    translateY.value = 0;
-    card1TranslateY.value = 0;
-    card2TranslateY.value = 0;
+    translateY.value = 0;           // Front card at base position
+    card1TranslateY.value = -50;    // Middle card offset up slightly
+    card2TranslateY.value = -100;    // Back card offset up most
     opacity.value = 1;
     
-    // Set final, correct scales
-    scale.value = 0.9;
-    card1Scale.value = 0.95;
-    card2Scale.value = 1;
+    // Set final, correct scales with proper hierarchy
+    scale.value = 0.9;      // Front card smallest (most important, on top visually)
+    card1Scale.value = 0.95; // Middle card medium
+    card2Scale.value = 1.0;  // Back card largest (creates depth)
+    
+    console.log('🔄 [RESET] Cards reset to stable 3-card stack position');
   };
 
   const calculateRecipeXP = (recipe: Recipe) => {
@@ -377,19 +429,33 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
 
   const handleCookRecipe = async () => {
     ReactNativeHapticFeedback.trigger('impactMedium');
-    const currentRecipe = recipes[frontCardIndex];
+    const safeFrontCardIndex = typeof frontCardIndex === 'number' ? frontCardIndex : 0;
+    const currentRecipe = recipes[safeFrontCardIndex];
     
     if (!currentRecipe || !currentRecipe.previewData || !sessionId) {
       console.error('❌ Missing recipe preview data or session ID');
+      console.error('Debug info:', {
+        hasCurrentRecipe: !!currentRecipe,
+        hasPreviewData: !!currentRecipe?.previewData,
+        hasSessionId: !!sessionId,
+        sessionId: sessionId
+      });
+      
+      // Reset card position since cook failed
+      translateX.value = withSpring(0);
+      translateY.value = withSpring(0);
+      opacity.value = withSpring(1);
+      
       Alert.alert('Error', 'Unable to generate detailed recipe. Please try again.');
       return;
     }
 
     try {
       console.log('🍳 Generating detailed recipe for:', currentRecipe.title);
+      console.log('📤 Using sessionId:', sessionId);
       
-      // Show loading state
-      setIsLoading(true);
+      // Show detailed recipe loading state
+      setIsGeneratingDetailed(true);
       
       // Call Step 2: Generate detailed recipe
       const detailedResponse = await recipeService.generateDetailedRecipe({
@@ -428,6 +494,24 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
         console.log('✅ Successfully generated detailed recipe with', 
           cookModeRecipe.instructions.length, 'steps');
 
+        // Remove the card now that recipe generation was successful
+        console.log('👨‍🍳 [SUCCESS] Recipe generated, removing card from stack');
+        removeCurrentCard();
+        
+        // Reset card animations for the new front card
+        translateX.value = 0;
+        translateY.value = 0;
+        opacity.value = 1;
+        resetCardsToStablePosition();
+        
+        // Small bounce effect for the new front card
+        setTimeout(() => {
+          scale.value = withSequence(
+            withTiming(1.05, { duration: 100 }),
+            withSpring(0.9, { damping: 15, stiffness: 100 })
+          );
+        }, 50);
+
         // Navigate to CookMode with detailed recipe
         navigation.navigate('CookMode', { 
           recipe: cookModeRecipe,
@@ -440,44 +524,81 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
 
     } catch (error: any) {
       console.error('❌ Detailed recipe generation failed:', error);
+      console.error('🔍 Debug info:', {
+        sessionId: sessionId,
+        sessionIdType: typeof sessionId,
+        hasSessionId: !!sessionId,
+        currentRecipe: currentRecipe?.title,
+        hasPreviewData: !!currentRecipe?.previewData,
+        previewDataId: currentRecipe?.previewData?.id,
+        errorMessage: error?.message
+      });
+      
+      // Reset card position since cook failed
+      translateX.value = withSpring(0);
+      translateY.value = withSpring(0);  
+      opacity.value = withSpring(1);
+      
       Alert.alert(
         'Recipe Generation Failed',
-        'Unable to generate detailed cooking instructions. Would you like to try again?',
+        `Unable to generate detailed cooking instructions. ${error?.message || 'Please try again.'}`,
         [
           { text: 'Cancel', style: 'cancel' },
           { text: 'Try Again', onPress: () => handleCookRecipe() }
         ]
       );
     } finally {
-      setIsLoading(false);
+      setIsGeneratingDetailed(false);
     }
   };
 
   const handlePassRecipe = () => {
     ReactNativeHapticFeedback.trigger('impactLight');
-    animateCardOut('left');
+    animateCardOut('pass');
   };
 
-  const handleTapBackCard = (tappedIndex: number) => {
-    if (isAnimating.value) return;
+  const handleTapBackCard = (visualIndex: number) => {
+    console.log('🟡 [TAP] Back card tapped:', {
+      visualIndex,
+      isAnimating: isAnimating.value,
+      currentFrontCardIndex: frontCardIndex,
+      totalRecipes: recipes.length,
+      recipeTitles: recipes.map(r => r.title)
+    });
 
-    const diff = tappedIndex - frontCardIndex;
-    if (diff <= 0) return;
+    if (isAnimating.value) {
+      console.log('⚠️ [TAP] Animation already in progress, ignoring tap');
+      return;
+    }
 
+    // Only allow tapping on back cards (visual index 1 or 2)
+    if (visualIndex <= 0) {
+      console.log('⚠️ [TAP] Invalid visual index, ignoring tap:', visualIndex);
+      return;
+    }
+
+    console.log('✅ [TAP] Starting cascade animation for visual index:', visualIndex);
     isAnimating.value = true;
-    animateCardCascade(diff);
+    animateCardCascade(visualIndex);
   };
 
   const animateCardCascade = (tappedVisualIndex: number) => {
     'worklet';
+    console.log('🎬 [ANIMATE] Starting cascade for tapped visual index:', tappedVisualIndex);
+    
     const SPRING_CONFIG = { damping: 18, stiffness: 120 };
 
-    // Define target positions
-    const POS_FRONT = { scale: 0.9, y: 0 };
-    const POS_MIDDLE = { scale: 0.95, y: -40 }; // Use refined offset
-    const POS_BACK = { scale: 1.0, y: -80 }; // Use refined offset
+    // Define target positions with correct scale hierarchy
+    const POS_FRONT = { scale: 0.9, y: 0 };      // Front card smallest
+    const POS_MIDDLE = { scale: 0.95, y: -50 };   // Middle card medium
+    const POS_BACK = { scale: 1.0, y: -100 };      // Back card largest
 
     if (tappedVisualIndex === 1) { // Middle card tapped
+      console.log('🎬 [ANIMATE] Middle card tapped - rotating positions');
+      console.log('  • Front -> Back (scale:', POS_FRONT.scale, '->', POS_BACK.scale, ')');
+      console.log('  • Middle -> Front (scale:', POS_MIDDLE.scale, '->', POS_FRONT.scale, ')');
+      console.log('  • Back -> Middle (scale:', POS_BACK.scale, '->', POS_MIDDLE.scale, ')');
+      
       // Front -> Back
       scale.value = withSpring(POS_BACK.scale, SPRING_CONFIG);
       translateY.value = withSpring(POS_BACK.y, SPRING_CONFIG);
@@ -488,10 +609,18 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
       card2Scale.value = withSpring(POS_MIDDLE.scale, SPRING_CONFIG);
       // The last animation signals completion
       card2TranslateY.value = withSpring(POS_MIDDLE.y, SPRING_CONFIG, (finished) => {
-        if (finished) { animationSignal.value = 1; }
+        if (finished) { 
+          console.log('🎬 [ANIMATE] Middle card animation completed, signaling state change');
+          animationSignal.value = 1; 
+        }
       });
 
     } else if (tappedVisualIndex === 2) { // Back card tapped
+      console.log('🎬 [ANIMATE] Back card tapped - rotating positions');
+      console.log('  • Front -> Middle (scale:', POS_FRONT.scale, '->', POS_MIDDLE.scale, ')');
+      console.log('  • Middle -> Back (scale:', POS_MIDDLE.scale, '->', POS_BACK.scale, ')');
+      console.log('  • Back -> Front (scale:', POS_BACK.scale, '->', POS_FRONT.scale, ')');
+      
       // Front -> Middle
       scale.value = withSpring(POS_MIDDLE.scale, SPRING_CONFIG);
       translateY.value = withSpring(POS_MIDDLE.y, SPRING_CONFIG);
@@ -502,42 +631,111 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
       card2Scale.value = withSpring(POS_FRONT.scale, SPRING_CONFIG);
       // The last animation signals completion
       card2TranslateY.value = withSpring(POS_FRONT.y, SPRING_CONFIG, (finished) => {
-        if (finished) { animationSignal.value = 2; }
+        if (finished) { 
+          console.log('🎬 [ANIMATE] Back card animation completed, signaling state change');
+          animationSignal.value = 2; 
+        }
       });
     }
   };
 
   const handlePreviewRecipe = () => {
     ReactNativeHapticFeedback.trigger('selection');
-    const currentRecipe = recipes[frontCardIndex];
+    const safeFrontCardIndex = typeof frontCardIndex === 'number' ? frontCardIndex : 0;
+    const currentRecipe = recipes[safeFrontCardIndex];
     if (currentRecipe) {
       setPreviewRecipe(currentRecipe);
       setShowPreviewModal(true);
     }
   };
 
-  const animateCardOut = (direction: 'left' | 'right') => {
-    const targetX = direction === 'right' ? SCREEN_WIDTH * 1.5 : -SCREEN_WIDTH * 1.5;
+  // Function to remove the current front card from recipes array (Tinder-style dismissal)
+  const removeCurrentCard = () => {
+    const safeFrontCardIndex = typeof frontCardIndex === 'number' ? frontCardIndex : 0;
+    
+    console.log('🗑️ [DISMISS] Removing card at index:', safeFrontCardIndex);
+    console.log('🗑️ [DISMISS] Card being removed:', recipes[safeFrontCardIndex]?.title);
+    console.log('🗑️ [DISMISS] Recipes before removal:', recipes.length);
+    
+    setRecipes(prevRecipes => {
+      const newRecipes = [...prevRecipes];
+      newRecipes.splice(safeFrontCardIndex, 1); // Remove the current card
+      console.log('🗑️ [DISMISS] Recipes after removal:', newRecipes.length);
+      return newRecipes;
+    });
+    
+    // Adjust frontCardIndex if needed
+    setFrontCardIndex(prev => {
+      const safePrev = typeof prev === 'number' ? prev : 0;
+      const newLength = recipes.length - 1; // New length after removal
+      
+      if (newLength === 0) {
+        console.log('🗑️ [DISMISS] No more recipes left');
+        return 0;
+      }
+      
+      // If we removed the last card, wrap to beginning
+      if (safePrev >= newLength) {
+        console.log('🗑️ [DISMISS] Wrapped to beginning, frontCardIndex:', 0);
+        return 0;
+      }
+      
+      // Otherwise keep the same index (next card slides up)
+      console.log('🗑️ [DISMISS] Keeping frontCardIndex:', safePrev);
+      return safePrev;
+    });
+  };
+
+  const animateCardOut = (direction: 'left' | 'right' | 'cook' | 'pass') => {
+    let targetX;
+    let shouldRemoveCard = true;
+    
+    switch (direction) {
+      case 'cook':
+        targetX = SCREEN_WIDTH * 1.5; // Slide right for cooking
+        shouldRemoveCard = false; // Don't remove yet, handleCookRecipe will handle it
+        break;
+      case 'pass':
+        targetX = -SCREEN_WIDTH * 1.5; // Slide left for passing
+        shouldRemoveCard = true; // Remove immediately
+        break;
+      case 'right':
+        targetX = SCREEN_WIDTH * 1.5;
+        shouldRemoveCard = true;
+        break;
+      case 'left':
+        targetX = -SCREEN_WIDTH * 1.5;
+        shouldRemoveCard = true;
+        break;
+    }
+    
+    console.log('🎬 [SWIPE OUT] Animating card out:', direction, 'shouldRemoveCard:', shouldRemoveCard);
     
     translateX.value = withTiming(targetX, { duration: 300 });
     translateY.value = withTiming(-50, { duration: 300 }); // Slight upward motion
     opacity.value = withTiming(0, { duration: 300 });
     
-    // Move to next card after animation
-    setTimeout(() => {
-      if (frontCardIndex < recipes.length - 1) {
-        setFrontCardIndex(prev => prev + 1);
-        // Reset all cards to stable position
+    // Only remove card if specified (pass immediately, cook waits for handleCookRecipe)
+    if (shouldRemoveCard) {
+      setTimeout(() => {
+        console.log('🗑️ [DISMISS] Card dismissed:', direction === 'pass' || direction === 'left' ? 'PASSED' : 'COOKED');
+        removeCurrentCard();
+        
+        // Reset card animations for the new front card
+        translateX.value = 0;
+        translateY.value = 0;
+        opacity.value = 1;
         resetCardsToStablePosition();
-        // Small bounce effect for front card only
+        
+        // Small bounce effect for the new front card
         setTimeout(() => {
           scale.value = withSequence(
             withTiming(1.05, { duration: 100 }),
-            withSpring(1, { damping: 15, stiffness: 100 })
+            withSpring(0.9, { damping: 15, stiffness: 100 }) // Reset to proper front card scale
           );
         }, 50);
-      }
-    }, 300);
+      }, 300);
+    }
   };
 
   // Gesture handler for front card swipes
@@ -566,14 +764,15 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
     },
     onEnd: (event) => {
       if (event.translationX > SWIPE_THRESHOLD) {
-        // Swipe right - Cook
+        // Swipe right - Cook (Don't remove card immediately, let handleCookRecipe handle it)
         runOnJS(ReactNativeHapticFeedback.trigger)('impactMedium');
         runOnJS(handleCookRecipe)();
-        runOnJS(animateCardOut)('right');
+        // Animate card out but don't remove it yet - handleCookRecipe will handle removal after success
+        runOnJS(animateCardOut)('cook');
       } else if (event.translationX < -SWIPE_THRESHOLD) {
-        // Swipe left - Pass
+        // Swipe left - Pass (Remove card immediately)
         runOnJS(ReactNativeHapticFeedback.trigger)('impactLight');
-        runOnJS(animateCardOut)('left');
+        runOnJS(animateCardOut)('pass');
       } else {
         // Snap back to center
         translateX.value = withSpring(0);
@@ -604,14 +803,14 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
   // Rebuilt animated styles for robust staggering
   const middleCardAnimatedStyle = useAnimatedStyle(() => ({
     transform: [
-      { translateY: card1TranslateY.value - 40 }, // Tighter, more polished offset
+      { translateY: card1TranslateY.value },
       { scale: card1Scale.value },
     ],
   } as any));
 
   const backCardAnimatedStyle = useAnimatedStyle(() => ({
     transform: [
-      { translateY: card2TranslateY.value - 80 }, // Tighter, more polished offset
+      { translateY: card2TranslateY.value },
       { scale: card2Scale.value },
     ],
   } as any));
@@ -688,32 +887,43 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
           </View>
         </ScrollView>
 
-        {/* Action Row - Fixed at bottom */}
-        <View style={styles.actionRow}>
-          <TouchableOpacity style={styles.passButton} onPress={handlePassRecipe}>
-            <X size={20} color="#FF3B30" />
-            <Text style={styles.passButtonText}>Pass</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.previewButton} onPress={handlePreviewRecipe}>
-            <Info size={20} color="#2D1B69" />
-            <Text style={styles.previewButtonText}>Preview</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.cookButton} onPress={handleCookRecipe}>
-            <ChefHat size={18} color="#FFFFFF" />
-            <Text style={styles.cookButtonText}>Cook Now</Text>
-          </TouchableOpacity>
+        {/* Tinder-style interface with large curved arrows */}
+        <View style={styles.swipeIndicatorContainer}>
+          <View style={styles.swipeArrowsContainer}>
+            {/* Left curved arrow - Pass */}
+            <View style={styles.leftArrowSection}>
+              <View style={styles.largeCurvedArrowLeft}>
+                <Text style={[styles.largeCurvedArrowIcon, { color: '#FF3B30' }]}>↰</Text>
+              </View>
+              <Text style={styles.swipeActionTextLeft}>Pass</Text>
+            </View>
+            
+            {/* Center divider */}
+            <View style={styles.centerDivider}>
+              <View style={styles.dividerLine} />
+            </View>
+            
+            {/* Right curved arrow - Cook */}
+            <View style={styles.rightArrowSection}>
+              <View style={styles.largeCurvedArrowRight}>
+                <Text style={[styles.largeCurvedArrowIcon, { color: '#4CAF50' }]}>↱</Text>
+              </View>
+              <Text style={styles.swipeActionTextRight}>Cook</Text>
+            </View>
+          </View>
+          
+          {/* Bottom instruction text */}
+          <Text style={styles.swipeInstructionText}>Swipe cards to choose</Text>
         </View>
       </View>
     );
   };
 
-  const renderBackCard = (recipe: Recipe, index: number) => {
+  const renderBackCard = (recipe: Recipe, index: number, visualIndex: number) => {
     return (
       <TouchableOpacity 
         style={styles.backCardHeader}
-        onPress={() => handleTapBackCard(index)}
+        onPress={() => handleTapBackCard(visualIndex)}
       >
         <View style={styles.backCardTextContainer}>
           <Text style={styles.backCardTitle} numberOfLines={1}>
@@ -727,7 +937,23 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
     );
   };
 
-  const renderCard = (recipe: Recipe, index: number, cardType: 'front' | 'middle' | 'back') => {
+  const renderCard = (recipe: Recipe, index: number, cardType: 'front' | 'middle' | 'back', visualIndex: number) => {
+    // Add safety guard for undefined recipe
+    if (!recipe || typeof recipe !== 'object') {
+      console.log('⚠️ [RENDER] Recipe is null/undefined in renderCard, returning null');
+      return null;
+    }
+    
+    console.log('🎨 [RENDER] Rendering card:', {
+      recipeTitle: recipe.title,
+      recipeId: recipe.id,
+      index,
+      cardType,
+      visualIndex,
+      frontCardIndex,
+      isFront: cardType === 'front'
+    });
+    
     const isFront = cardType === 'front';
     
     let animatedStyle;
@@ -737,20 +963,47 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
       case 'front':
         animatedStyle = frontCardAnimatedStyle;
         cardStyle = styles.frontCardStyle;
+        console.log('🎨 [RENDER] Using FRONT card style (purple border)');
         break;
       case 'middle':
         animatedStyle = middleCardAnimatedStyle;
         cardStyle = styles.middleCardStyle;
+        console.log('🎨 [RENDER] Using MIDDLE card style (orange border)');
         break;
       case 'back':
         animatedStyle = backCardAnimatedStyle;
         cardStyle = styles.backCardStyle;
+        console.log('🎨 [RENDER] Using BACK card style (green border)');
         break;
     }
 
+    console.log('🎨 [RENDER] Card content type:', isFront ? 'FRONT (full content)' : 'BACK (simple content)');
+
     const cardContent = isFront 
       ? renderFrontCard(recipe) 
-      : renderBackCard(recipe, index);
+      : renderBackCard(recipe, index, visualIndex);
+
+    // Fix z-index calculation: base it on visual position, not recipe index
+    let zIndex;
+    switch (cardType) {
+      case 'front':
+        zIndex = 1000; // Front card always highest
+        break;
+      case 'middle':
+        zIndex = 900;  // Middle card medium
+        break;
+      case 'back':
+        zIndex = 800;  // Back card lowest
+        break;
+      default:
+        zIndex = 700;
+    }
+    
+    console.log('🎨 [RENDER] Card z-index calculated:', zIndex, 'for cardType:', cardType);
+    console.log('🎨 [RENDER] Expected border color:', 
+      cardType === 'front' ? 'PURPLE (#2D1B69)' : 
+      cardType === 'middle' ? 'ORANGE (#FF6B35)' : 
+      'GREEN (#4CAF50)');
 
     const animatedCard = (
       <Animated.View
@@ -758,7 +1011,11 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
         style={[
           styles.card,
           cardStyle,
-          { zIndex: 1000 - (index - frontCardIndex) * 100 },
+          { 
+            zIndex,
+            // Add extra visual emphasis for front card
+            backgroundColor: cardType === 'front' ? '#FFFFFF' : '#FAFAFA',
+          },
           animatedStyle,
         ]}>
         {cardContent}
@@ -766,6 +1023,7 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
     );
 
     if (isFront) {
+      console.log('🎨 [RENDER] Wrapping front card with pan gesture handler');
       // The front card is the only one that needs the pan gesture handler for swiping
       return (
         <PanGestureHandler onGestureEvent={panGestureHandler}>
@@ -774,6 +1032,7 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
       );
     }
     
+    console.log('🎨 [RENDER] Returning back card without gesture handler');
     // Back cards are just the animated view, they handle their own taps internally
     return animatedCard;
   };
@@ -781,13 +1040,50 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
   const getVisibleRecipes = () => {
     // Always try to show 3 cards by wrapping around if needed
     const totalRecipes = recipes.length;
-    if (totalRecipes === 0) return [];
+    
+    // Ensure frontCardIndex is a valid number
+    const safeFrontCardIndex = typeof frontCardIndex === 'number' ? frontCardIndex : 0;
+    
+    console.log('👁️ [RENDER] getVisibleRecipes called:', {
+      totalRecipes,
+      frontCardIndex,
+      safeFrontCardIndex,
+      frontCardIndexType: typeof frontCardIndex,
+      recipesTitles: recipes.map(r => r.title)
+    });
+    
+    if (totalRecipes === 0) {
+      console.log('👁️ [RENDER] No recipes available');
+      return [];
+    }
+    
+    // If frontCardIndex is corrupted, reset it
+    if (typeof frontCardIndex !== 'number' || isNaN(frontCardIndex)) {
+      console.log('⚠️ [RENDER] frontCardIndex is corrupted, resetting to 0');
+      setFrontCardIndex(0);
+      return [];
+    }
     
     const visible = [];
     for (let i = 0; i < Math.min(3, totalRecipes); i++) {
-      const recipeIndex = (frontCardIndex + i) % totalRecipes;
-      visible.push(recipes[recipeIndex]);
+      const recipeIndex = (safeFrontCardIndex + i) % totalRecipes;
+      const recipe = recipes[recipeIndex];
+      
+      // Add safety check for recipe existence
+      if (!recipe) {
+        console.log('⚠️ [RENDER] Recipe at index', recipeIndex, 'is undefined, skipping');
+        continue;
+      }
+      
+      visible.push(recipe);
+      console.log(`👁️ [RENDER] Card ${i} (${i === 0 ? 'front' : i === 1 ? 'middle' : 'back'}):`, {
+        visualIndex: i,
+        recipeIndex,
+        recipeTitle: recipe.title
+      });
     }
+    
+    console.log('👁️ [RENDER] Visible recipes count:', visible.length);
     return visible;
   };
 
@@ -796,15 +1092,16 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.title}>Generating Recipes</Text>
+          <Text style={styles.title}>Pick-a-Plate</Text>
           <Text style={styles.subtitle}>AI Chef is cooking up something special...</Text>
         </View>
         
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#4CAF50" />
           <Text style={styles.loadingText}>Creating personalized recipes</Text>
-          <Text style={styles.loadingSubtext}>AI Chef is analyzing your ingredients...</Text>
         </View>
+        
+        <LoadingAnimation visible={isLoading} variant="previews" />
       </SafeAreaView>
     );
   }
@@ -835,6 +1132,36 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
     );
   }
 
+  // All done state - when all cards have been dismissed
+  if (recipes.length === 0 && !isLoading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.title}>All Done! 🎉</Text>
+          <Text style={styles.subtitle}>You've reviewed all your personalized recipes</Text>
+        </View>
+        
+        <View style={styles.allDoneContainer}>
+          <Text style={styles.allDoneText}>Great job exploring your options!</Text>
+          <Text style={styles.allDoneSubtext}>Ready for more recipe ideas?</Text>
+          
+          <TouchableOpacity 
+            style={styles.generateMoreButton} 
+            onPress={generateRecipesFromAPI}>
+            <ChefHat size={20} color="#FFFFFF" />
+            <Text style={styles.generateMoreButtonText}>Generate New Recipes</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.goBackButton} 
+            onPress={() => navigation.goBack()}>
+            <Text style={styles.goBackButtonText}>Back to Ingredients</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
 
@@ -843,7 +1170,7 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
       <View style={styles.header}>
         <Text style={styles.title}>Pick-a-Plate</Text>
         <Text style={styles.subtitle}>
-          {recipes.length} personalized recipes ready to cook
+          {recipes.length} {recipes.length === 1 ? 'recipe' : 'recipes'} remaining
         </Text>
       </View>
 
@@ -853,15 +1180,45 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
           <>
             {/* Render cards in reverse order for proper stacking. */}
             {getVisibleRecipes().slice(0).reverse().map((recipe, i) => {
-              if (!recipe) return null; // Add guard against undefined recipe
+              console.log('🔁 [RENDER LOOP] Processing reversed recipe:', {
+                reverseIndex: i,
+                recipeTitle: recipe?.title,
+                recipeId: recipe?.id
+              });
+              
+              if (!recipe) {
+                console.log('⚠️ [RENDER LOOP] Recipe is null/undefined, skipping');
+                return null; // Add guard against undefined recipe
+              }
+              
               const visibleIndex = getVisibleRecipes().length - 1 - i;
               const cardType = visibleIndex === 0 ? 'front' : visibleIndex === 1 ? 'middle' : 'back';
-              const overallIndex = (frontCardIndex + visibleIndex);
+              
+              // Ensure frontCardIndex is a valid number before calculation
+              const safeFrontCardIndex = typeof frontCardIndex === 'number' ? frontCardIndex : 0;
+              const overallIndex = (safeFrontCardIndex + visibleIndex) % recipes.length;
+              
+              // Safety check for the calculated overall index
+              const targetRecipe = recipes[overallIndex];
+              if (!targetRecipe) {
+                console.log('⚠️ [RENDER LOOP] Target recipe at overallIndex', overallIndex, 'is undefined, skipping');
+                return null;
+              }
+
+              console.log('🔁 [RENDER LOOP] Card mapping:', {
+                reverseIndex: i,
+                visibleIndex,
+                cardType,
+                overallIndex,
+                frontCardIndex,
+                safeFrontCardIndex,
+                recipeTitle: targetRecipe.title
+              });
 
               // Use a React.Fragment with a key to solve the list warning
               return (
-                <React.Fragment key={`${recipe.id}-${overallIndex}`}>
-                  {renderCard(recipes[overallIndex], overallIndex, cardType)}
+                <React.Fragment key={`${targetRecipe.id}-${overallIndex}`}>
+                  {renderCard(targetRecipe, overallIndex, cardType, visibleIndex)}
                 </React.Fragment>
               );
             })}
@@ -869,9 +1226,9 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
         )}
         
         {/* Swipe hint - only show for first few recipes */}
-        {frontCardIndex < 2 && (
+        {(typeof frontCardIndex === 'number' && frontCardIndex < 2) && (
           <Animated.View style={styles.swipeHint}>
-            <Text style={styles.swipeHintText}>↔ Swipe to choose • Tap cards to reorder</Text>
+            <Text style={styles.swipeHintText}>👈 Swipe to choose • Tap back cards to reorder 👆</Text>
           </Animated.View>
         )}
       </View>
@@ -955,6 +1312,9 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
           </View>
         </View>
       </Modal>
+      
+      {/* Loading Animation for Detailed Recipe Generation */}
+      <LoadingAnimation visible={isGeneratingDetailed} variant="detailed" />
     </SafeAreaView>
   );
 };
@@ -1151,68 +1511,78 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
 
-  // Action Row - Fixed at bottom
-  actionRow: {
-    flexDirection: 'row',
-    gap: 8,
+  // Tinder-style interface with large curved arrows
+  swipeIndicatorContainer: {
     paddingHorizontal: 16,
-    paddingBottom: 20,
-    paddingTop: 12,
-    backgroundColor: '#FFFFFF',
+    paddingBottom: 16,
+    paddingTop: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
   },
-  passButton: {
-    minWidth: 80,
+  swipeArrowsContainer: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(255, 59, 48, 0.1)',
-    paddingVertical: 14,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-    gap: 4,
   },
-  passButtonText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#FF3B30',
-  },
-  previewButton: {
-    minWidth: 90,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(45, 27, 105, 0.1)',
-    paddingVertical: 14,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-    gap: 4,
-  },
-  previewButtonText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#2D1B69',
-  },
-  cookButton: {
+  leftArrowSection: {
     flex: 1,
-    minWidth: 120,
-    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  largeCurvedArrowLeft: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: 'rgba(255, 59, 48, 0.1)', // Light red background
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#FF3B30',
+  },
+  centerDivider: {
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FF6B35', // Spice Orange
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    gap: 6,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    height: 40,
   },
-  cookButtonText: {
-    fontSize: 15,
+  dividerLine: {
+    width: 1,
+    height: 20,
+    backgroundColor: 'rgba(142, 142, 147, 0.3)', // Light divider
+  },
+  rightArrowSection: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 8,
+  },
+  largeCurvedArrowRight: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: 'rgba(76, 175, 80, 0.1)', // Light green background
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#4CAF50',
+  },
+  largeCurvedArrowIcon: {
+    fontSize: 24,
     fontWeight: 'bold',
-    color: '#FFFFFF',
+  },
+  swipeActionTextLeft: {
+    fontSize: 14,
+    color: '#FF3B30',
+    fontWeight: '600',
+  },
+  swipeActionTextRight: {
+    fontSize: 14,
+    color: '#4CAF50',
+    fontWeight: '600',
+  },
+  swipeInstructionText: {
+    fontSize: 11,
+    color: 'rgba(45, 27, 105, 0.7)', // Ghosted Eggplant
+    fontWeight: '600',
+    textAlign: 'center',
+    marginTop: 8,
   },
 
   // Back Card Header (Peeking Cards) - shows only title + 1-line teaser
@@ -1242,7 +1612,7 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
 
-  // Swipe Hint
+  // Swipe Hint for bottom
   swipeHint: {
     position: 'absolute',
     bottom: 10,
@@ -1258,12 +1628,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
-  },
-  swipeHintText: {
-    fontSize: 11,
-    color: 'rgba(45, 27, 105, 0.7)', // Ghosted Eggplant
-    fontWeight: '600',
-    textAlign: 'center',
   },
 
   // Saved Toast
@@ -1473,6 +1837,50 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#2D1B69',
+  },
+  swipeHintText: {
+    fontSize: 11,
+    color: 'rgba(45, 27, 105, 0.7)', // Ghosted Eggplant
+    fontWeight: '600',
+  },
+
+  // All Done State Styles
+  allDoneContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  allDoneText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#2D1B69',
+    marginBottom: 12,
+  },
+  allDoneSubtext: {
+    fontSize: 16,
+    color: '#8E8E93',
+    marginBottom: 24,
+  },
+  generateMoreButton: {
+    backgroundColor: '#4CAF50',
+    paddingHorizontal: 32,
+    paddingVertical: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  generateMoreButtonText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
   },
 });
 
