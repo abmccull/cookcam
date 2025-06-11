@@ -1,5 +1,5 @@
--- Step 4: Setup RLS Policies and Permissions
--- Run this fourth in Supabase SQL Editor
+-- Step 6: Setup RLS Policies and Permissions
+-- Run this sixth in Supabase SQL Editor
 
 -- Enable RLS on all tables
 ALTER TABLE system_metrics ENABLE ROW LEVEL SECURITY;
@@ -40,4 +40,4 @@ GRANT EXECUTE ON FUNCTION get_performance_metrics() TO anon, authenticated, serv
 GRANT EXECUTE ON FUNCTION add_user_xp(UUID, INTEGER, TEXT, JSONB) TO authenticated, service_role;
 
 -- Success message
-SELECT 'Step 4: RLS policies and permissions setup completed!' as status; 
+SELECT 'Step 6: RLS policies and permissions setup completed!' as status; 
