@@ -65,7 +65,7 @@ RETURNS TABLE(
   level_up BOOLEAN
 ) AS $$
 DECLARE
-  current_user RECORD;
+  user_data RECORD;
   new_total_xp INTEGER;
   new_level INTEGER;
   old_level INTEGER;
@@ -75,7 +75,7 @@ BEGIN
   SELECT 
     COALESCE((raw_user_meta_data->>'total_xp')::INTEGER, 0) as total_xp,
     COALESCE((raw_user_meta_data->>'level')::INTEGER, 1) as level
-  INTO current_user
+  INTO user_data
   FROM auth.users 
   WHERE id = p_user_id;
   
@@ -85,8 +85,8 @@ BEGIN
   END IF;
   
   -- Calculate new totals
-  new_total_xp := COALESCE(current_user.total_xp, 0) + p_xp_amount;
-  old_level := COALESCE(current_user.level, 1);
+  new_total_xp := COALESCE(user_data.total_xp, 0) + p_xp_amount;
+  old_level := COALESCE(user_data.level, 1);
   
   -- Calculate new level (simple formula: level = floor(total_xp / 100) + 1, max level 100)
   new_level := LEAST(FLOOR(new_total_xp / 100.0) + 1, 100);
@@ -127,7 +127,7 @@ BEGIN
   -- Return the results
   RETURN QUERY SELECT 
     p_user_id,
-    COALESCE(current_user.total_xp, 0),
+    COALESCE(user_data.total_xp, 0),
     new_total_xp,
     old_level,
     new_level,
