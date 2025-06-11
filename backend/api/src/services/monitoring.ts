@@ -1,4 +1,5 @@
 import { supabase } from '../index';
+import { createClient } from '@supabase/supabase-js';
 import os from 'os';
 import { logger } from '../utils/logger';
 
@@ -42,9 +43,18 @@ interface SystemMetrics {
 
 export class MonitoringService {
   private startTime: Date;
+  private serviceRoleClient: any;
   
   constructor() {
     this.startTime = new Date();
+    
+    // Create service role client for monitoring functions
+    if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      this.serviceRoleClient = createClient(
+        process.env.SUPABASE_URL || '',
+        process.env.SUPABASE_SERVICE_ROLE_KEY
+      );
+    }
   }
   
   // Get comprehensive health status
@@ -266,8 +276,9 @@ export class MonitoringService {
         memory: health.system.memory.percentage
       });
       
-      // Get API response times
-      const { data: apiMetrics, error } = await supabase
+      // Get API response times (using service role client if available)
+      const client = this.serviceRoleClient || supabase;
+      const { data: apiMetrics, error } = await client
         .rpc('get_performance_metrics');
 
       if (error) {
@@ -275,7 +286,7 @@ export class MonitoringService {
       }
 
       // Get slow queries
-      const { data: slowQueries } = await supabase
+      const { data: slowQueries } = await client
         .from('slow_queries')
         .select('query, execution_time, timestamp')
         .gte('timestamp', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
@@ -289,7 +300,7 @@ export class MonitoringService {
       });
       
       // Log to database for historical tracking
-      await supabase
+      await client
         .from('system_metrics')
         .insert({
           status: health.status,
@@ -313,8 +324,9 @@ export class MonitoringService {
   // Get performance metrics
   async getPerformanceMetrics(): Promise<any> {
     try {
-      // Get API response times
-      const { data: apiMetrics, error } = await supabase
+      // Get API response times (using service role client if available)
+      const client = this.serviceRoleClient || supabase;
+      const { data: apiMetrics, error } = await client
         .rpc('get_performance_metrics');
 
       if (error) {
@@ -322,7 +334,7 @@ export class MonitoringService {
       }
 
       // Get slow queries  
-      const { data: slowQueries } = await supabase
+      const { data: slowQueries } = await client
         .from('slow_queries')
         .select('query, execution_time, timestamp')
         .gte('timestamp', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
