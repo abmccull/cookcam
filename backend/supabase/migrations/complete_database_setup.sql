@@ -135,21 +135,49 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- 5. Create subscription tiers table
-CREATE TABLE IF NOT EXISTS subscription_tiers (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  slug TEXT UNIQUE NOT NULL,
-  name TEXT NOT NULL,
-  price INTEGER NOT NULL, -- in cents
-  currency TEXT DEFAULT 'USD',
-  billing_period TEXT DEFAULT 'monthly',
-  features JSONB DEFAULT '[]',
-  limits JSONB DEFAULT '{}',
-  revenue_share_percentage INTEGER DEFAULT 0,
-  active BOOLEAN DEFAULT true,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
+-- 5. Create/update subscription tiers table
+-- First, check if table exists and add missing columns
+DO $$
+BEGIN
+  -- Create table if it doesn't exist
+  CREATE TABLE IF NOT EXISTS subscription_tiers (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    slug TEXT UNIQUE NOT NULL,
+    name TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+  );
+  
+  -- Add columns if they don't exist
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'subscription_tiers' AND column_name = 'price') THEN
+    ALTER TABLE subscription_tiers ADD COLUMN price INTEGER NOT NULL DEFAULT 0;
+  END IF;
+  
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'subscription_tiers' AND column_name = 'currency') THEN
+    ALTER TABLE subscription_tiers ADD COLUMN currency TEXT DEFAULT 'USD';
+  END IF;
+  
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'subscription_tiers' AND column_name = 'billing_period') THEN
+    ALTER TABLE subscription_tiers ADD COLUMN billing_period TEXT DEFAULT 'monthly';
+  END IF;
+  
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'subscription_tiers' AND column_name = 'features') THEN
+    ALTER TABLE subscription_tiers ADD COLUMN features JSONB DEFAULT '[]';
+  END IF;
+  
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'subscription_tiers' AND column_name = 'limits') THEN
+    ALTER TABLE subscription_tiers ADD COLUMN limits JSONB DEFAULT '{}';
+  END IF;
+  
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'subscription_tiers' AND column_name = 'revenue_share_percentage') THEN
+    ALTER TABLE subscription_tiers ADD COLUMN revenue_share_percentage INTEGER DEFAULT 0;
+  END IF;
+  
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'subscription_tiers' AND column_name = 'active') THEN
+    ALTER TABLE subscription_tiers ADD COLUMN active BOOLEAN DEFAULT true;
+  END IF;
+END
+$$;
 
 -- 6. Insert default subscription tiers
 INSERT INTO subscription_tiers (slug, name, price, features, limits) VALUES
