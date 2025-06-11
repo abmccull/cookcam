@@ -17,6 +17,15 @@ const config = {
   },
 
   resolver: {
+    // Enhanced asset and source extensions
+    assetExts: ['bin', 'txt', 'jpg', 'png', 'json', 'gif', 'webp', 'svg'],
+    sourceExts: ['js', 'json', 'ts', 'tsx', 'jsx'],
+    
+    // Ensure Metro resolves node_modules properly
+    nodeModulesPaths: [
+      `${__dirname}/node_modules`,
+    ],
+    
     // Block unnecessary directories from Metro watching (excluding essential dist folders)
     blockList: [
       // Backend and documentation folders
