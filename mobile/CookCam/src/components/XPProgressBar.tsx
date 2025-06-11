@@ -22,7 +22,7 @@ const XPProgressBar: React.FC<XPProgressBarProps> = ({
       duration: 1000,
       useNativeDriver: false,
     }).start();
-  }, [levelProgress]);
+  }, [levelProgress, animatedWidth]);
 
   const widthInterpolated = animatedWidth.interpolate({
     inputRange: [0, 100],
@@ -39,7 +39,7 @@ const XPProgressBar: React.FC<XPProgressBarProps> = ({
           </Text>
         </View>
       )}
-      
+
       <View style={[styles.progressBar, {height}]}>
         <Animated.View
           style={[
@@ -50,7 +50,7 @@ const XPProgressBar: React.FC<XPProgressBarProps> = ({
             },
           ]}
         />
-        
+
         {/* Shimmer effect */}
         <Animated.View
           style={[
@@ -62,7 +62,7 @@ const XPProgressBar: React.FC<XPProgressBarProps> = ({
           ]}
         />
       </View>
-      
+
       {showLabels && (
         <Text style={styles.progressText}>{Math.round(levelProgress)}%</Text>
       )}
@@ -112,4 +112,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default XPProgressBar; 
+export default XPProgressBar;

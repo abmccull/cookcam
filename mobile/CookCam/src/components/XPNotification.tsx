@@ -30,7 +30,7 @@ const XPNotification: React.FC<XPNotificationProps> = ({
   reason,
   currentXP,
   currentLevel,
-  levelProgress,
+  levelProgress, // eslint-disable-line @typescript-eslint/no-unused-vars
   nextLevelXP,
   onComplete,
   showConfetti = false,
@@ -44,7 +44,7 @@ const XPNotification: React.FC<XPNotificationProps> = ({
       y: new Animated.Value(0),
       rotate: new Animated.Value(0),
       opacity: new Animated.Value(0),
-    }))
+    })),
   ).current;
 
   const [progressWidth, setProgressWidth] = useState(0);
@@ -73,7 +73,8 @@ const XPNotification: React.FC<XPNotificationProps> = ({
       });
 
       // Calculate new progress
-      const newProgress = ((currentXP + xpGained - (nextLevelXP - 100)) / 100) * 100;
+      const newProgress =
+        ((currentXP + xpGained - (nextLevelXP - 100)) / 100) * 100;
       setProgressWidth(Math.min(newProgress, 100));
 
       // Slide in animation
@@ -176,13 +177,23 @@ const XPNotification: React.FC<XPNotificationProps> = ({
         anim.rotate.setValue(0);
         anim.opacity.setValue(0);
       });
-      if (onComplete) onComplete();
+      if (onComplete) {
+        onComplete();
+      }
     });
   };
 
-  if (!visible) return null;
+  if (!visible) {
+    return null;
+  }
 
-  const confettiColors = ['#FF6B35', '#FFB800', '#4CAF50', '#9C27B0', '#2196F3'];
+  const confettiColors = [
+    '#FF6B35',
+    '#FFB800',
+    '#4CAF50',
+    '#9C27B0',
+    '#2196F3',
+  ];
 
   return (
     <>
@@ -190,16 +201,13 @@ const XPNotification: React.FC<XPNotificationProps> = ({
         style={[
           styles.container,
           {
-            transform: [
-              {translateY: slideAnim},
-              {scale: scaleAnim},
-            ],
+            transform: [{translateY: slideAnim}, {scale: scaleAnim}],
           },
         ]}>
         {/* XP Icon and Amount */}
         <View style={styles.xpSection}>
           <View style={styles.xpIcon}>
-                            <TrendingUp size={24} color="#FFB800" />
+            <TrendingUp size={24} color="#FFB800" />
           </View>
           <Text style={styles.xpAmount}>+{xpGained} XP</Text>
         </View>
@@ -215,7 +223,7 @@ const XPNotification: React.FC<XPNotificationProps> = ({
               {currentXP}/{nextLevelXP} XP
             </Text>
           </View>
-          
+
           <View style={styles.progressBarContainer}>
             <View style={styles.progressBarBg} />
             <Animated.View
@@ -251,7 +259,8 @@ const XPNotification: React.FC<XPNotificationProps> = ({
               style={[
                 styles.confettiParticle,
                 {
-                  backgroundColor: confettiColors[index % confettiColors.length],
+                  backgroundColor:
+                    confettiColors[index % confettiColors.length],
                   opacity: anim.opacity,
                   transform: [
                     {translateX: anim.x},
@@ -396,4 +405,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default XPNotification; 
+export default XPNotification;

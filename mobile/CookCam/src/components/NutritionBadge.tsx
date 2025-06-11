@@ -1,7 +1,12 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { Zap, Activity } from 'lucide-react-native';
-import { scale, verticalScale, moderateScale, responsive } from '../utils/responsive';
+import {View, Text, StyleSheet} from 'react-native';
+import {Zap, Activity} from 'lucide-react-native';
+import {
+  scale,
+  verticalScale,
+  moderateScale,
+  responsive,
+} from '../utils/responsive';
 
 interface NutritionData {
   calories: number;
@@ -23,7 +28,7 @@ const NutritionBadge: React.FC<NutritionBadgeProps> = ({
   nutrition,
   servings = 1,
   variant = 'compact',
-  style
+  style,
 }) => {
   if (!nutrition) {
     return null;
@@ -54,23 +59,23 @@ const NutritionBadge: React.FC<NutritionBadgeProps> = ({
         <Activity size={moderateScale(16)} color="#4CAF50" />
         <Text style={styles.nutritionTitle}>Per Serving</Text>
       </View>
-      
+
       <View style={styles.nutritionGrid}>
         <View style={styles.nutritionItem}>
           <Text style={styles.nutritionValue}>{perServing.calories}</Text>
           <Text style={styles.nutritionLabel}>Calories</Text>
         </View>
-        
+
         <View style={styles.nutritionItem}>
           <Text style={styles.nutritionValue}>{perServing.protein}g</Text>
           <Text style={styles.nutritionLabel}>Protein</Text>
         </View>
-        
+
         <View style={styles.nutritionItem}>
           <Text style={styles.nutritionValue}>{perServing.carbs}g</Text>
           <Text style={styles.nutritionLabel}>Carbs</Text>
         </View>
-        
+
         <View style={styles.nutritionItem}>
           <Text style={styles.nutritionValue}>{perServing.fat}g</Text>
           <Text style={styles.nutritionLabel}>Fat</Text>
@@ -143,4 +148,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default NutritionBadge; 
+export default NutritionBadge;

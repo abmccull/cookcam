@@ -33,7 +33,7 @@ const LevelUpModal: React.FC<LevelUpModalProps> = ({
       scale: new Animated.Value(0),
       opacity: new Animated.Value(0),
       rotate: new Animated.Value(0),
-    }))
+    })),
   ).current;
 
   useEffect(() => {
@@ -61,9 +61,8 @@ const LevelUpModal: React.FC<LevelUpModalProps> = ({
 
       // Star burst animations
       starAnims.forEach((anim, index) => {
-        const angle = (index * 45) * Math.PI / 180;
-        const distance = 100;
-        
+        // Animation setup
+
         Animated.sequence([
           Animated.delay(index * 50),
           Animated.parallel([
@@ -97,12 +96,12 @@ const LevelUpModal: React.FC<LevelUpModalProps> = ({
         duration: 300,
         useNativeDriver: true,
       }),
-      ...starAnims.map(anim => 
+      ...starAnims.map(anim =>
         Animated.timing(anim.opacity, {
           toValue: 0,
           duration: 300,
           useNativeDriver: true,
-        })
+        }),
       ),
     ]).start(() => {
       // Reset animations
@@ -136,10 +135,11 @@ const LevelUpModal: React.FC<LevelUpModalProps> = ({
           ]}>
           {/* Star burst background */}
           {starAnims.map((anim, index) => {
-            const angle = (index * 45) * Math.PI / 180;
-            const x = Math.cos(angle) * 100;
-            const y = Math.sin(angle) * 100;
-            
+            const _angle = Math.random() * 2 * Math.PI;
+            const _distance = 20 + Math.random() * 30;
+            const x = Math.cos(_angle) * _distance;
+            const y = Math.sin(_angle) * _distance;
+
             return (
               <Animated.View
                 key={index}
@@ -167,17 +167,15 @@ const LevelUpModal: React.FC<LevelUpModalProps> = ({
 
           {/* Trophy Icon */}
           <Animated.View
-            style={[
-              styles.trophyContainer,
-              {transform: [{rotate: spin}]},
-            ]}>
+            style={[styles.trophyContainer, {transform: [{rotate: spin}]}]}>
             <Trophy size={80} color="#FFD700" />
           </Animated.View>
 
           {/* Level Up Text */}
           <Text style={styles.title}>LEVEL UP!</Text>
           <Text style={styles.levelText}>
-            You've reached <Text style={styles.levelNumber}>Level {newLevel}</Text>
+            You've reached{' '}
+            <Text style={styles.levelNumber}>Level {newLevel}</Text>
           </Text>
 
           {/* Rewards Section */}
@@ -301,4 +299,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default LevelUpModal; 
+export default LevelUpModal;

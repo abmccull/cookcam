@@ -97,15 +97,15 @@ export interface Recipe {
   cookTime?: number;
   cookingTime?: string; // Alternative format
   totalTime?: number;
-  
+
   servings: number;
   difficulty: string;
-  
+
   // Cuisine and cooking details
   cuisineType?: string;
   cookingMethod?: string;
   cuisine?: string;
-  
+
   // Nutritional information
   calories?: number;
   macros?: {
@@ -114,7 +114,7 @@ export interface Recipe {
     carbs: number;
     fat: number;
   };
-  
+
   // Recipe content
   ingredients: any[];
   instructions?: Array<{
@@ -124,32 +124,32 @@ export interface Recipe {
     temperature?: string;
     tips?: string;
   }>;
-  
+
   // Tags and categorization
   tags?: string[];
-  
+
   // Metadata
   metadata?: {
     totalTime: number;
     skillLevel: string;
   };
-  
+
   // Creator information
   creatorName?: string;
   creatorTier?: 1 | 2 | 3 | 4 | 5;
-  
+
   // Social metrics
   rating?: number;
   ratingCount?: number;
   viewCount?: number;
   isTrending?: boolean;
   isCreatorRecipe?: boolean;
-  
+
   // Additional recipe analysis (from AI generation)
   ingredientsUsed?: string[];
   ingredientsSkipped?: string[];
   skipReason?: string;
-  
+
   // Tips and additional info
   tips?: string[];
 }
@@ -159,17 +159,29 @@ export const normalizeRecipe = (recipe: any): Recipe => {
   return {
     ...recipe,
     // Normalize time properties
-    prepTime: recipe.prepTime || (recipe.cookingTime ? parseInt(recipe.cookingTime.replace(/\D/g, '')) / 2 : 0),
-    cookTime: recipe.cookTime || (recipe.cookingTime ? parseInt(recipe.cookingTime.replace(/\D/g, '')) / 2 : 0),
-    cookingTime: recipe.cookingTime || (recipe.prepTime && recipe.cookTime ? `${recipe.prepTime + recipe.cookTime} min` : undefined),
-    
+    prepTime:
+      recipe.prepTime ||
+      (recipe.cookingTime
+        ? parseInt(recipe.cookingTime.replace(/\D/g, ''), 10) / 2
+        : 0),
+    cookTime:
+      recipe.cookTime ||
+      (recipe.cookingTime
+        ? parseInt(recipe.cookingTime.replace(/\D/g, ''), 10) / 2
+        : 0),
+    cookingTime:
+      recipe.cookingTime ||
+      (recipe.prepTime && recipe.cookTime
+        ? `${recipe.prepTime + recipe.cookTime} min`
+        : undefined),
+
     // Normalize cuisine properties
     cuisineType: recipe.cuisineType || recipe.cuisine,
     cuisine: recipe.cuisine || recipe.cuisineType,
-    
+
     // Normalize nutrition
     calories: recipe.calories || recipe.macros?.calories,
-    
+
     // Ensure required properties have defaults
     ingredients: recipe.ingredients || [],
     tags: recipe.tags || [],
@@ -185,4 +197,4 @@ export const convertToCardStackRecipe = (recipe: Recipe): Recipe => {
     cookingMethod: recipe.cookingMethod || 'Standard',
     calories: recipe.calories || recipe.macros?.calories || 0,
   };
-}; 
+};

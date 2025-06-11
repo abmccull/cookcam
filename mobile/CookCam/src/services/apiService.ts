@@ -1,13 +1,14 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { 
-  API_CONFIG, 
-  API_ENDPOINTS, 
-  API_ERROR_CODES, 
+import {
+  API_CONFIG,
+  API_ENDPOINTS,
+  API_ERROR_CODES,
   SUCCESS_CODES,
   LOG_API_REQUESTS,
   LOG_API_RESPONSES,
-  LOG_API_ERRORS 
+  LOG_API_ERRORS,
 } from '../config/api';
+import {secureStorage, SECURE_KEYS, STORAGE_KEYS} from './secureStorage';
 
 // Types
 export interface ApiResponse<T = any> {
@@ -26,7 +27,7 @@ export interface ApiError {
 }
 
 // Storage keys
-const STORAGE_KEYS = {
+const DEPRECATED_STORAGE_KEYS = {
   ACCESS_TOKEN: 'access_token',
   REFRESH_TOKEN: '@cookcam_refresh_token',
   USER_DATA: 'user_data',
@@ -44,7 +45,7 @@ class ApiService {
   // Get stored authentication token
   private async getAuthToken(): Promise<string | null> {
     try {
-      return await AsyncStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
+      return await secureStorage.getSecureItem(SECURE_KEYS.ACCESS_TOKEN);
     } catch (error) {
       console.error('Error getting auth token:', error);
       return null;
@@ -52,9 +53,9 @@ class ApiService {
   }
 
   // Set authentication token
-  async setAuthToken(token: string): Promise<void> {
+  async setAuthToken(token: string, refreshToken?: string): Promise<void> {
     try {
-      await AsyncStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, token);
+      await secureStorage.setAuthTokens(token, refreshToken);
     } catch (error) {
       console.error('Error setting auth token:', error);
     }
@@ -63,20 +64,19 @@ class ApiService {
   // Remove authentication token
   async removeAuthToken(): Promise<void> {
     try {
-      await AsyncStorage.multiRemove([
-        STORAGE_KEYS.ACCESS_TOKEN,
-        STORAGE_KEYS.REFRESH_TOKEN,
-        STORAGE_KEYS.USER_DATA
-      ]);
+      await secureStorage.clearAllSecureData();
+      await secureStorage.removeItem(STORAGE_KEYS.USER_PREFERENCES); // Example of removing non-sensitive data
     } catch (error) {
       console.error('Error removing auth token:', error);
     }
   }
 
   // Build headers with authentication
-  private async buildHeaders(customHeaders?: Record<string, string>): Promise<Record<string, string>> {
-    const headers = { ...this.defaultHeaders, ...customHeaders };
-    
+  private async buildHeaders(
+    customHeaders?: Record<string, string>,
+  ): Promise<Record<string, string>> {
+    const headers = {...this.defaultHeaders, ...customHeaders};
+
     const token = await this.getAuthToken();
     if (token) {
       headers.Authorization = `Bearer ${token}`;
@@ -88,7 +88,7 @@ class ApiService {
   // Log API requests (development only)
   private logRequest(method: string, url: string, data?: any) {
     if (LOG_API_REQUESTS) {
-      console.log(`🔄 API ${method.toUpperCase()} ${url}`, data ? { data } : '');
+      console.log(`🔄 API ${method.toUpperCase()} ${url}`, data ? {data} : '');
     }
   }
 
@@ -113,22 +113,25 @@ class ApiService {
     if (error.response) {
       // Server responded with error status
       apiError = {
-        message: error.response.data?.message || error.response.data?.error || 'Server error',
+        message:
+          error.response.data?.message ||
+          error.response.data?.error ||
+          'Server error',
         status: error.response.status,
         code: error.response.data?.code,
-        details: error.response.data
+        details: error.response.data,
       };
     } else if (error.request) {
       // Network error
       apiError = {
         message: 'Network error. Please check your connection.',
-        code: API_ERROR_CODES.NETWORK_ERROR
+        code: API_ERROR_CODES.NETWORK_ERROR,
       };
     } else {
       // Other error
       apiError = {
         message: error.message || 'An unexpected error occurred',
-        code: 'UNKNOWN_ERROR'
+        code: 'UNKNOWN_ERROR',
       };
     }
 
@@ -139,7 +142,7 @@ class ApiService {
   // Retry logic for failed requests
   private async retryRequest<T>(
     requestFn: () => Promise<T>,
-    retries: number = API_CONFIG.retryAttempts
+    retries: number = API_CONFIG.retryAttempts,
   ): Promise<T> {
     try {
       return await requestFn();
@@ -155,7 +158,9 @@ class ApiService {
   // Check if request should be retried
   private shouldRetry(error: any): boolean {
     // Retry on network errors or 5xx server errors
-    if (!error.response) return true; // Network error
+    if (!error.response) {
+      return true;
+    } // Network error
     const status = error.response.status;
     return status >= 500 && status < 600;
   }
@@ -170,18 +175,21 @@ class ApiService {
     method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH',
     endpoint: string,
     data?: any,
-    customHeaders?: Record<string, string>
+    customHeaders?: Record<string, string>,
   ): Promise<ApiResponse<T>> {
     const url = `${this.baseURL}${endpoint}`;
-    
+
     try {
       this.logRequest(method, url, data);
 
       const headers = await this.buildHeaders(customHeaders);
-      
+
       const response = await this.retryRequest(async () => {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), API_CONFIG.timeout);
+        const timeoutId = setTimeout(
+          () => controller.abort(),
+          API_CONFIG.timeout,
+        );
 
         try {
           const fetchResponse = await fetch(url, {
@@ -200,26 +208,25 @@ class ApiService {
       });
 
       const responseData = await response.json();
-      
+
       this.logResponse(method, url, responseData);
 
       if (SUCCESS_CODES.includes(response.status)) {
         return {
           success: true,
           data: responseData,
-          status: response.status
+          status: response.status,
         };
       } else {
         return {
           success: false,
           error: responseData.message || responseData.error || 'Request failed',
-          status: response.status
+          status: response.status,
         };
       }
-
     } catch (error: any) {
       const apiError = this.handleApiError(error, url);
-      
+
       // Handle unauthorized errors by clearing tokens
       if (apiError.status === API_ERROR_CODES.UNAUTHORIZED) {
         await this.removeAuthToken();
@@ -228,41 +235,63 @@ class ApiService {
       return {
         success: false,
         error: apiError.message,
-        status: apiError.status
+        status: apiError.status,
       };
     }
   }
 
   // GET request
-  async get<T = any>(endpoint: string, headers?: Record<string, string>): Promise<ApiResponse<T>> {
+  async get<T = any>(
+    endpoint: string,
+    headers?: Record<string, string>,
+  ): Promise<ApiResponse<T>> {
     return this.request<T>('GET', endpoint, undefined, headers);
   }
 
   // POST request
-  async post<T = any>(endpoint: string, data?: any, headers?: Record<string, string>): Promise<ApiResponse<T>> {
+  async post<T = any>(
+    endpoint: string,
+    data?: any,
+    headers?: Record<string, string>,
+  ): Promise<ApiResponse<T>> {
     return this.request<T>('POST', endpoint, data, headers);
   }
 
   // PUT request
-  async put<T = any>(endpoint: string, data?: any, headers?: Record<string, string>): Promise<ApiResponse<T>> {
+  async put<T = any>(
+    endpoint: string,
+    data?: any,
+    headers?: Record<string, string>,
+  ): Promise<ApiResponse<T>> {
     return this.request<T>('PUT', endpoint, data, headers);
   }
 
   // DELETE request
-  async delete<T = any>(endpoint: string, headers?: Record<string, string>): Promise<ApiResponse<T>> {
+  async delete<T = any>(
+    endpoint: string,
+    headers?: Record<string, string>,
+  ): Promise<ApiResponse<T>> {
     return this.request<T>('DELETE', endpoint, undefined, headers);
   }
 
   // PATCH request
-  async patch<T = any>(endpoint: string, data?: any, headers?: Record<string, string>): Promise<ApiResponse<T>> {
+  async patch<T = any>(
+    endpoint: string,
+    data?: any,
+    headers?: Record<string, string>,
+  ): Promise<ApiResponse<T>> {
     return this.request<T>('PATCH', endpoint, data, headers);
   }
 
   // Upload file (for image scanning)
-  async uploadFile(endpoint: string, file: any, additionalData?: Record<string, any>): Promise<ApiResponse> {
+  async uploadFile(
+    endpoint: string,
+    file: any,
+    additionalData?: Record<string, any>,
+  ): Promise<ApiResponse> {
     try {
       const formData = new FormData();
-      
+
       // Add file to form data
       formData.append('image', {
         uri: file.uri,
@@ -282,7 +311,7 @@ class ApiService {
       });
 
       const url = `${this.baseURL}${endpoint}`;
-      this.logRequest('POST', url, { file: file.fileName, additionalData });
+      this.logRequest('POST', url, {file: file.fileName, additionalData});
 
       const response = await fetch(url, {
         method: 'POST',
@@ -297,22 +326,21 @@ class ApiService {
         return {
           success: true,
           data: responseData,
-          status: response.status
+          status: response.status,
         };
       } else {
         return {
           success: false,
           error: responseData.message || responseData.error || 'Upload failed',
-          status: response.status
+          status: response.status,
         };
       }
-
     } catch (error: any) {
       const apiError = this.handleApiError(error, endpoint);
       return {
         success: false,
         error: apiError.message,
-        status: apiError.status
+        status: apiError.status,
       };
     }
   }
@@ -326,10 +354,8 @@ class ApiService {
       return false;
     }
   }
-
-
 }
 
 // Export singleton instance
 export const apiService = new ApiService();
-export default apiService; 
+export default apiService;

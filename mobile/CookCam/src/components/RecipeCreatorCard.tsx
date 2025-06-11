@@ -1,12 +1,14 @@
 import React from 'react';
+import {View, Text, StyleSheet, TouchableOpacity, Image} from 'react-native';
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Image,
-} from 'react-native';
-import {Star, Eye, Heart, Share2, ChefHat} from 'lucide-react-native';
+  Star,
+  Eye,
+  Heart,
+  ChefHat,
+  Users,
+  Award,
+  TrendingUp,
+} from 'lucide-react-native';
 import ChefBadge from './ChefBadge';
 
 interface RecipeCreatorCardProps {
@@ -59,13 +61,17 @@ const RecipeCreatorCard: React.FC<RecipeCreatorCardProps> = ({
     return count.toString();
   };
 
-  const cardStyles = size === 'small' ? smallStyles : 
-                     size === 'large' ? largeStyles : mediumStyles;
+  const cardStyles =
+    size === 'small'
+      ? smallStyles
+      : size === 'large'
+      ? largeStyles
+      : mediumStyles;
 
   const iconSize = size === 'small' ? 30 : size === 'large' ? 50 : 40;
 
   return (
-    <TouchableOpacity 
+    <TouchableOpacity
       style={[styles.container, cardStyles.container]}
       onPress={onPress}
       activeOpacity={0.8}>
@@ -78,14 +84,12 @@ const RecipeCreatorCard: React.FC<RecipeCreatorCardProps> = ({
             <ChefHat size={iconSize} color="#E5E5E7" />
           </View>
         )}
-        
+
         {/* Save Button */}
         {onSavePress && (
-          <TouchableOpacity 
-            style={styles.saveButton}
-            onPress={onSavePress}>
-            <Heart 
-              size={20} 
+          <TouchableOpacity style={styles.saveButton} onPress={onSavePress}>
+            <Heart
+              size={20}
               color={recipe.isSaved ? '#FF6B35' : '#FFFFFF'}
               fill={recipe.isSaved ? '#FF6B35' : 'transparent'}
             />
@@ -93,8 +97,16 @@ const RecipeCreatorCard: React.FC<RecipeCreatorCardProps> = ({
         )}
 
         {/* Difficulty Badge */}
-        <View style={[styles.difficultyBadge, {backgroundColor: getDifficultyColor(recipe.difficulty) + '20'}]}>
-          <Text style={[styles.difficultyText, {color: getDifficultyColor(recipe.difficulty)}]}>
+        <View
+          style={[
+            styles.difficultyBadge,
+            {backgroundColor: getDifficultyColor(recipe.difficulty) + '20'},
+          ]}>
+          <Text
+            style={[
+              styles.difficultyText,
+              {color: getDifficultyColor(recipe.difficulty)},
+            ]}>
             {recipe.difficulty}
           </Text>
         </View>
@@ -110,25 +122,32 @@ const RecipeCreatorCard: React.FC<RecipeCreatorCardProps> = ({
         <View style={styles.statsRow}>
           <View style={styles.stat}>
             <Star size={14} color="#FFB800" fill="#FFB800" />
-            <Text style={styles.statText}>{recipe.averageRating.toFixed(1)}</Text>
+            <Text style={styles.statText}>
+              {recipe.averageRating.toFixed(1)}
+            </Text>
             <Text style={styles.statSubtext}>({recipe.ratingCount})</Text>
           </View>
           <View style={styles.stat}>
             <Eye size={14} color="#8E8E93" />
-            <Text style={styles.statText}>{formatViewCount(recipe.viewCount)}</Text>
+            <Text style={styles.statText}>
+              {formatViewCount(recipe.viewCount)}
+            </Text>
           </View>
           <Text style={styles.prepTime}>{recipe.prepTime}min</Text>
         </View>
 
         {/* Creator Info */}
         {recipe.creatorName && (
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.creatorRow}
             onPress={onCreatorPress}
             disabled={!onCreatorPress}>
             <View style={styles.creatorAvatar}>
               {recipe.creatorAvatar ? (
-                <Image source={{uri: recipe.creatorAvatar}} style={styles.avatarImage} />
+                <Image
+                  source={{uri: recipe.creatorAvatar}}
+                  style={styles.avatarImage}
+                />
               ) : (
                 <Text style={styles.avatarText}>
                   {recipe.creatorName.charAt(0).toUpperCase()}
@@ -136,9 +155,14 @@ const RecipeCreatorCard: React.FC<RecipeCreatorCardProps> = ({
               )}
             </View>
             <Text style={styles.creatorName}>by {recipe.creatorName}</Text>
-            {recipe.creatorTier && recipe.creatorTier >= 1 && recipe.creatorTier <= 5 && (
-              <ChefBadge tier={recipe.creatorTier as 1 | 2 | 3 | 4 | 5} size="small" />
-            )}
+            {recipe.creatorTier &&
+              recipe.creatorTier >= 1 &&
+              recipe.creatorTier <= 5 && (
+                <ChefBadge
+                  tier={recipe.creatorTier as 1 | 2 | 3 | 4 | 5}
+                  size="small"
+                />
+              )}
           </TouchableOpacity>
         )}
       </View>
@@ -314,4 +338,4 @@ const largeStyles = StyleSheet.create({
   },
 });
 
-export default RecipeCreatorCard; 
+export default RecipeCreatorCard;

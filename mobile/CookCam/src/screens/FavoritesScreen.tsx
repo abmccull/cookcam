@@ -11,7 +11,15 @@ import {
   ActivityIndicator,
   RefreshControl,
 } from 'react-native';
-import {Heart, Clock, ChefHat, Star, Trophy, TrendingUp, Award} from 'lucide-react-native';
+import {
+  Heart,
+  Clock,
+  ChefHat,
+  Star,
+  Trophy,
+  TrendingUp,
+  Award,
+} from 'lucide-react-native';
 import {useGamification} from '../context/GamificationContext';
 import {useAuth} from '../context/AuthContext';
 import {apiClient} from '../services/api';
@@ -52,25 +60,29 @@ interface CollectionBadge {
 }
 
 const FavoritesScreen = ({navigation}: {navigation: any}) => {
-  const [selectedFilter, setSelectedFilter] = useState<'all' | 'recent' | 'top-rated' | 'collections'>('all');
+  const [selectedFilter, setSelectedFilter] = useState<
+    'all' | 'recent' | 'top-rated' | 'collections'
+  >('all');
   const [savedRecipes, setSavedRecipes] = useState<SavedRecipe[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const {addXP} = useGamification();
   const {user} = useAuth();
-  
+
   // Animation values
   const milestoneScale = useRef(new Animated.Value(0)).current;
   const recommendScale = useRef(new Animated.Value(0.95)).current;
-  
+
   // Fetch saved recipes from API
   const fetchSavedRecipes = async () => {
-    if (!user) return;
-    
+    if (!user) {
+      return;
+    }
+
     try {
       setIsLoading(true);
-      const response = await apiClient.getSavedRecipes({ limit: 50, offset: 0 });
-      
+      const response = await apiClient.getSavedRecipes({limit: 50, offset: 0});
+
       if (response.success && response.data) {
         setSavedRecipes(response.data.saved_recipes || []);
       } else {
@@ -91,13 +103,48 @@ const FavoritesScreen = ({navigation}: {navigation: any}) => {
 
   // Collection badges
   const collectionBadges: CollectionBadge[] = [
-    {id: '1', name: 'Italian Master', icon: '🇮🇹', requirement: 10, cuisineType: 'Italian', earned: false},
-    {id: '2', name: 'Asian Explorer', icon: '🥢', requirement: 10, cuisineType: 'Asian', earned: false},
-    {id: '3', name: 'Indian Guru', icon: '🌶️', requirement: 10, cuisineType: 'Indian', earned: false},
-    {id: '4', name: 'French Connoisseur', icon: '🥖', requirement: 10, cuisineType: 'French', earned: false},
-    {id: '5', name: 'Mexican Aficionado', icon: '🌮', requirement: 10, cuisineType: 'Mexican', earned: false},
+    {
+      id: '1',
+      name: 'Italian Master',
+      icon: '🇮🇹',
+      requirement: 10,
+      cuisineType: 'Italian',
+      earned: false,
+    },
+    {
+      id: '2',
+      name: 'Asian Explorer',
+      icon: '🥢',
+      requirement: 10,
+      cuisineType: 'Asian',
+      earned: false,
+    },
+    {
+      id: '3',
+      name: 'Indian Guru',
+      icon: '🌶️',
+      requirement: 10,
+      cuisineType: 'Indian',
+      earned: false,
+    },
+    {
+      id: '4',
+      name: 'French Connoisseur',
+      icon: '🥖',
+      requirement: 10,
+      cuisineType: 'French',
+      earned: false,
+    },
+    {
+      id: '5',
+      name: 'Mexican Aficionado',
+      icon: '🌮',
+      requirement: 10,
+      cuisineType: 'Mexican',
+      earned: false,
+    },
   ];
-  
+
   // Savings milestones
   const savingsMilestones = [
     {count: 5, reward: 'Recipe Rookie', xp: 50, icon: '🌟'},
@@ -106,10 +153,15 @@ const FavoritesScreen = ({navigation}: {navigation: any}) => {
     {count: 50, reward: 'Master Collector', xp: 500, icon: '👑'},
     {count: 100, reward: 'Recipe Legend', xp: 1000, icon: '💎'},
   ];
-  
-  const currentMilestone = savingsMilestones.find(m => m.count > savedRecipes.length) || savingsMilestones[savingsMilestones.length - 1];
-  const progress = Math.min((savedRecipes.length / currentMilestone.count) * 100, 100);
-  
+
+  const currentMilestone =
+    savingsMilestones.find(m => m.count > savedRecipes.length) ||
+    savingsMilestones[savingsMilestones.length - 1];
+  const progress = Math.min(
+    (savedRecipes.length / currentMilestone.count) * 100,
+    100,
+  );
+
   // Recipe recommendations based on saved
   const recommendations = [
     {id: 'r1', title: 'Fettuccine Alfredo', cuisine: 'Italian', match: '92%'},
@@ -123,7 +175,7 @@ const FavoritesScreen = ({navigation}: {navigation: any}) => {
     {key: 'top-rated', label: 'Top Rated'},
     {key: 'collections', label: 'Collections'},
   ];
-  
+
   useEffect(() => {
     fetchSavedRecipes();
   }, [user]);
@@ -138,7 +190,7 @@ const FavoritesScreen = ({navigation}: {navigation: any}) => {
         useNativeDriver: true,
       }).start();
     }
-    
+
     // Pulse recommendations
     Animated.loop(
       Animated.sequence([
@@ -187,7 +239,9 @@ const FavoritesScreen = ({navigation}: {navigation: any}) => {
       const response = await apiClient.unsaveRecipe(recipeId);
       if (response.success) {
         // Remove from local state
-        setSavedRecipes(prev => prev.filter(item => item.recipe.id !== recipeId));
+        setSavedRecipes(prev =>
+          prev.filter(item => item.recipe.id !== recipeId),
+        );
       }
     } catch (error) {
       console.error('Error unsaving recipe:', error);
@@ -216,8 +270,8 @@ const FavoritesScreen = ({navigation}: {navigation: any}) => {
 
       {/* Filter Tabs */}
       <View style={styles.filterContainer}>
-        <ScrollView 
-          horizontal 
+        <ScrollView
+          horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.filterContent}>
           {filters.map(filter => (
@@ -242,7 +296,7 @@ const FavoritesScreen = ({navigation}: {navigation: any}) => {
           ))}
         </ScrollView>
       </View>
-      
+
       {/* Collections View */}
       {selectedFilter === 'collections' ? (
         <ScrollView
@@ -250,25 +304,42 @@ const FavoritesScreen = ({navigation}: {navigation: any}) => {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.recipeListContent}
           refreshControl={
-            <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />
+            <RefreshControl
+              refreshing={isRefreshing}
+              onRefresh={handleRefresh}
+            />
           }>
           {collectionBadges.map(badge => {
-            const cuisineCount = savedRecipes.filter(r => r.recipe.cuisine_type === badge.cuisineType).length;
+            const cuisineCount = savedRecipes.filter(
+              r => r.recipe.cuisine_type === badge.cuisineType,
+            ).length;
             const progress = (cuisineCount / badge.requirement) * 100;
-            
+
             return (
               <View key={badge.id} style={styles.collectionCard}>
                 <View style={styles.collectionIcon}>
                   <Text style={styles.collectionEmoji}>{badge.icon}</Text>
-                  {progress >= 100 && <Trophy size={16} color="#FFB800" style={styles.earnedBadge} />}
+                  {progress >= 100 && (
+                    <Trophy
+                      size={16}
+                      color="#FFB800"
+                      style={styles.earnedBadge}
+                    />
+                  )}
                 </View>
                 <View style={styles.collectionInfo}>
                   <Text style={styles.collectionName}>{badge.name}</Text>
                   <View style={styles.collectionProgress}>
-                    <View style={[styles.collectionProgressFill, {width: `${Math.min(progress, 100)}%`}]} />
+                    <View
+                      style={[
+                        styles.collectionProgressFill,
+                        {width: `${Math.min(progress, 100)}%`},
+                      ]}
+                    />
                   </View>
                   <Text style={styles.collectionProgressText}>
-                    {cuisineCount} / {badge.requirement} {badge.cuisineType} recipes
+                    {cuisineCount} / {badge.requirement} {badge.cuisineType}{' '}
+                    recipes
                   </Text>
                 </View>
               </View>
@@ -282,13 +353,17 @@ const FavoritesScreen = ({navigation}: {navigation: any}) => {
             <Text style={styles.recommendationsTitle}>Recommended for you</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               {recommendations.map(rec => (
-                <Animated.View 
-                  key={rec.id} 
-                  style={[styles.recommendCard, {transform: [{scale: recommendScale}]}]}
-                >
+                <Animated.View
+                  key={rec.id}
+                  style={[
+                    styles.recommendCard,
+                    {transform: [{scale: recommendScale}]},
+                  ]}>
                   <View style={styles.recommendMatch}>
                     <TrendingUp size={12} color="#4CAF50" />
-                    <Text style={styles.recommendMatchText}>{rec.match} match</Text>
+                    <Text style={styles.recommendMatchText}>
+                      {rec.match} match
+                    </Text>
                   </View>
                   <Text style={styles.recommendTitle}>{rec.title}</Text>
                   <Text style={styles.recommendCuisine}>{rec.cuisine}</Text>
@@ -303,14 +378,18 @@ const FavoritesScreen = ({navigation}: {navigation: any}) => {
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.recipeListContent}
             refreshControl={
-              <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />
+              <RefreshControl
+                refreshing={isRefreshing}
+                onRefresh={handleRefresh}
+              />
             }>
             {savedRecipes.length === 0 ? (
               <View style={styles.emptyState}>
                 <Heart size={48} color="#E5E5E7" />
                 <Text style={styles.emptyStateTitle}>No saved recipes yet</Text>
                 <Text style={styles.emptyStateText}>
-                  Start saving recipes by tapping the heart icon when browsing recipes!
+                  Start saving recipes by tapping the heart icon when browsing
+                  recipes!
                 </Text>
               </View>
             ) : (
@@ -323,8 +402,8 @@ const FavoritesScreen = ({navigation}: {navigation: any}) => {
                   {/* Recipe Image */}
                   <View style={styles.imageContainer}>
                     {savedRecipe.recipe.image_url ? (
-                      <Image 
-                        source={{ uri: savedRecipe.recipe.image_url }} 
+                      <Image
+                        source={{uri: savedRecipe.recipe.image_url}}
                         style={styles.recipeImage}
                         resizeMode="cover"
                       />
@@ -333,7 +412,7 @@ const FavoritesScreen = ({navigation}: {navigation: any}) => {
                         <ChefHat size={40} color="#E5E5E7" />
                       </View>
                     )}
-                    <TouchableOpacity 
+                    <TouchableOpacity
                       style={styles.favoriteButton}
                       onPress={() => handleUnsaveRecipe(savedRecipe.recipe.id)}>
                       <Heart size={20} color="#FF6B35" fill="#FF6B35" />
@@ -348,23 +427,45 @@ const FavoritesScreen = ({navigation}: {navigation: any}) => {
                     <Text style={styles.recipeCuisine}>
                       {savedRecipe.recipe.cuisine_type || 'Unknown'}
                     </Text>
-                    
+
                     <View style={styles.recipeStats}>
                       <View style={styles.stat}>
                         <Clock size={14} color="#8E8E93" />
                         <Text style={styles.statText}>
-                          {savedRecipe.recipe.total_time_minutes || savedRecipe.recipe.prep_time_minutes || 30}min
+                          {savedRecipe.recipe.total_time_minutes ||
+                            savedRecipe.recipe.prep_time_minutes ||
+                            30}
+                          min
                         </Text>
                       </View>
                       {savedRecipe.recipe.servings && (
                         <View style={styles.stat}>
                           <Star size={14} color="#FFB800" fill="#FFB800" />
-                          <Text style={styles.statText}>{savedRecipe.recipe.servings}</Text>
+                          <Text style={styles.statText}>
+                            {savedRecipe.recipe.servings}
+                          </Text>
                         </View>
                       )}
                       {savedRecipe.recipe.difficulty && (
-                        <View style={[styles.difficultyBadge, {backgroundColor: getDifficultyColor(savedRecipe.recipe.difficulty) + '20'}]}>
-                          <Text style={[styles.difficultyText, {color: getDifficultyColor(savedRecipe.recipe.difficulty)}]}>
+                        <View
+                          style={[
+                            styles.difficultyBadge,
+                            {
+                              backgroundColor:
+                                getDifficultyColor(
+                                  savedRecipe.recipe.difficulty,
+                                ) + '20',
+                            },
+                          ]}>
+                          <Text
+                            style={[
+                              styles.difficultyText,
+                              {
+                                color: getDifficultyColor(
+                                  savedRecipe.recipe.difficulty,
+                                ),
+                              },
+                            ]}>
                             {savedRecipe.recipe.difficulty}
                           </Text>
                         </View>
@@ -374,14 +475,22 @@ const FavoritesScreen = ({navigation}: {navigation: any}) => {
                 </TouchableOpacity>
               ))
             )}
-            
+
             {/* Milestone Progress - moved to bottom */}
-            <Animated.View style={[styles.milestoneCard, {transform: [{scale: milestoneScale}]}]}>
+            <Animated.View
+              style={[
+                styles.milestoneCard,
+                {transform: [{scale: milestoneScale}]},
+              ]}>
               <View style={styles.milestoneHeader}>
-                <Text style={styles.milestoneTitle}>Next Milestone: {currentMilestone.reward}</Text>
+                <Text style={styles.milestoneTitle}>
+                  Next Milestone: {currentMilestone.reward}
+                </Text>
                 <View style={styles.milestoneReward}>
                   <Star size={14} color="#FFB800" />
-                  <Text style={styles.milestoneXP}>+{currentMilestone.xp} XP</Text>
+                  <Text style={styles.milestoneXP}>
+                    +{currentMilestone.xp} XP
+                  </Text>
                 </View>
               </View>
               <View style={styles.progressBar}>
@@ -715,4 +824,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default FavoritesScreen; 
+export default FavoritesScreen;

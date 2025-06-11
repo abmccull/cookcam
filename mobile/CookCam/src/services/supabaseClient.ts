@@ -1,9 +1,25 @@
-import { createClient } from '@supabase/supabase-js';
+import {createClient} from '@supabase/supabase-js';
+import getEnvVars from '../config/env';
 
-// Hardcoded Supabase configuration to avoid env import issues
-const SUPABASE_URL = 'https://prpvrnxtpvilxakxzajm.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBycHZybnh0cHZpbHhha3h6YWptIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg1NDI3OTMsImV4cCI6MjA2NDExODc5M30.Yy-sEHdASoSnjjoi0DjeICSvnWj0g5svYS5Crok8J8k';
+// Get Supabase configuration from environment variables
+const envVars = getEnvVars();
 
-export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+if (!envVars.SUPABASE_URL || envVars.SUPABASE_URL === 'YOUR_SUPABASE_URL') {
+  throw new Error('SUPABASE_URL is required. Please check your .env file.');
+}
 
-export default supabase; 
+if (
+  !envVars.SUPABASE_ANON_KEY ||
+  envVars.SUPABASE_ANON_KEY === 'YOUR_SUPABASE_ANON_KEY'
+) {
+  throw new Error(
+    'SUPABASE_ANON_KEY is required. Please check your .env file.',
+  );
+}
+
+export const supabase = createClient(
+  envVars.SUPABASE_URL,
+  envVars.SUPABASE_ANON_KEY,
+);
+
+export default supabase;

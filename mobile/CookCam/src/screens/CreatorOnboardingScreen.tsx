@@ -52,7 +52,10 @@ interface OnboardingStep {
   requirement?: string;
 }
 
-const CreatorOnboardingScreen: React.FC<CreatorOnboardingScreenProps> = ({navigation, route}) => {
+const CreatorOnboardingScreen: React.FC<CreatorOnboardingScreenProps> = ({
+  navigation,
+  route,
+}) => {
   const {user, updateUser} = useAuth();
   const {addXP, unlockBadge} = useGamification();
   const [currentStep, setCurrentStep] = useState(0);
@@ -61,7 +64,7 @@ const CreatorOnboardingScreen: React.FC<CreatorOnboardingScreenProps> = ({naviga
   const [specialty, setSpecialty] = useState('');
   const [loading, setLoading] = useState(false);
   const [completed, setCompleted] = useState(false);
-  
+
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
@@ -73,7 +76,8 @@ const CreatorOnboardingScreen: React.FC<CreatorOnboardingScreenProps> = ({naviga
       id: 0,
       title: 'Welcome to Creator Program! 🎉',
       subtitle: 'Your culinary journey starts here',
-      description: 'Join thousands of creators sharing recipes and earning revenue through CookCam',
+      description:
+        'Join thousands of creators sharing recipes and earning revenue through CookCam',
       icon: ChefHat,
       color: '#FF6B35',
     },
@@ -81,7 +85,8 @@ const CreatorOnboardingScreen: React.FC<CreatorOnboardingScreenProps> = ({naviga
       id: 1,
       title: 'Build Your Audience 👥',
       subtitle: 'Share recipes that inspire',
-      description: 'Create engaging content that brings people together around food and cooking',
+      description:
+        'Create engaging content that brings people together around food and cooking',
       icon: Users,
       color: '#66BB6A',
     },
@@ -89,7 +94,8 @@ const CreatorOnboardingScreen: React.FC<CreatorOnboardingScreenProps> = ({naviga
       id: 2,
       title: 'Earn Real Money 💰',
       subtitle: 'Get paid for your passion',
-      description: 'Earn up to 30% commission on subscribers you bring to CookCam',
+      description:
+        'Earn up to 30% commission on subscribers you bring to CookCam',
       icon: DollarSign,
       color: '#2196F3',
     },
@@ -97,7 +103,8 @@ const CreatorOnboardingScreen: React.FC<CreatorOnboardingScreenProps> = ({naviga
       id: 3,
       title: 'Setup Your Profile 📝',
       subtitle: 'Tell your story',
-      description: 'Let people know who you are and what makes your cooking special',
+      description:
+        'Let people know who you are and what makes your cooking special',
       icon: Star,
       color: '#9C27B0',
     },
@@ -105,16 +112,23 @@ const CreatorOnboardingScreen: React.FC<CreatorOnboardingScreenProps> = ({naviga
       id: 4,
       title: "You're All Set! 🚀",
       subtitle: 'Ready to create amazing content',
-      description: 'Your creator account is now active. Start sharing recipes and building your community!',
+      description:
+        'Your creator account is now active. Start sharing recipes and building your community!',
       icon: Trophy,
       color: '#FFB800',
     },
   ];
 
   const specialties = [
-    'International Cuisine', 'Healthy Cooking', 'Desserts & Baking',
-    'Quick & Easy Meals', 'Vegan Cooking', 'Traditional Family Recipes',
-    'Gourmet Cooking', 'Comfort Food', 'Diet-Specific Cooking'
+    'International Cuisine',
+    'Healthy Cooking',
+    'Desserts & Baking',
+    'Quick & Easy Meals',
+    'Vegan Cooking',
+    'Traditional Family Recipes',
+    'Gourmet Cooking',
+    'Comfort Food',
+    'Diet-Specific Cooking',
   ];
 
   useEffect(() => {
@@ -126,7 +140,7 @@ const CreatorOnboardingScreen: React.FC<CreatorOnboardingScreenProps> = ({naviga
     fadeAnim.setValue(0);
     slideAnim.setValue(50);
     scaleAnim.setValue(0.8);
-    
+
     // Start entrance animations
     Animated.parallel([
       Animated.timing(fadeAnim, {
@@ -147,7 +161,7 @@ const CreatorOnboardingScreen: React.FC<CreatorOnboardingScreenProps> = ({naviga
         useNativeDriver: true,
       }),
     ]).start();
-    
+
     // Update progress bar
     Animated.timing(progressAnim, {
       toValue: ((currentStep + 1) / onboardingSteps.length) * 100,
@@ -158,7 +172,7 @@ const CreatorOnboardingScreen: React.FC<CreatorOnboardingScreenProps> = ({naviga
 
   const handleNext = async () => {
     ReactNativeHapticFeedback.trigger('impactMedium');
-    
+
     if (currentStep < onboardingSteps.length - 1) {
       setCurrentStep(currentStep + 1);
     } else {
@@ -178,22 +192,24 @@ const CreatorOnboardingScreen: React.FC<CreatorOnboardingScreenProps> = ({naviga
 
   const completeOnboarding = async () => {
     setLoading(true);
-    
+
     try {
       ReactNativeHapticFeedback.trigger('notificationSuccess');
-      
+
       // Update user to creator status
       const updateData = {
         is_creator: true,
-        creator_bio: creatorBio || `Passionate cook specializing in ${specialty || 'delicious recipes'}`,
+        creator_bio:
+          creatorBio ||
+          `Passionate cook specializing in ${specialty || 'delicious recipes'}`,
         creator_specialty: specialty || 'General Cooking',
         creator_tier: 1, // Start at Sous Chef level
         onboarding_completed: true,
       };
-      
+
       // Call API to update user
       const response = await authService.updateProfile(updateData);
-      
+
       if (response.success) {
         // Update local user state
         await updateUser({
@@ -201,15 +217,15 @@ const CreatorOnboardingScreen: React.FC<CreatorOnboardingScreenProps> = ({naviga
           isCreator: true,
           creatorTier: 1,
         });
-        
+
         // Award massive XP for becoming a creator
         await addXP(XP_VALUES.BECOME_CREATOR || 500, 'BECOME_CREATOR');
-        
+
         // Unlock creator badge
         await unlockBadge('creator_activated');
-        
+
         setCompleted(true);
-        
+
         // Show success and navigate
         setTimeout(() => {
           Alert.alert(
@@ -222,38 +238,39 @@ const CreatorOnboardingScreen: React.FC<CreatorOnboardingScreenProps> = ({naviga
                   const returnTab = route.params?.returnToTab || 'Creator';
                   navigation.navigate('Main', {
                     screen: returnTab,
-                    params: { newCreator: true }
+                    params: {newCreator: true},
                   });
                 },
               },
-            ]
+            ],
           );
         }, 1500);
-        
       } else {
         // Check if this is a development environment issue
-        const isDevelopmentError = response.error && (
-          response.error.includes('subscription') ||
-          response.error.includes('billing') ||
-          response.error.includes('payment')
-        );
-        
+        const isDevelopmentError =
+          response.error &&
+          (response.error.includes('subscription') ||
+            response.error.includes('billing') ||
+            response.error.includes('payment'));
+
         if (isDevelopmentError) {
-          console.log('🧪 Development Mode: Bypassing subscription requirement for creator activation');
-          
+          console.log(
+            '🧪 Development Mode: Bypassing subscription requirement for creator activation',
+          );
+
           // In development, proceed with local-only creator activation
           await updateUser({
             ...user,
             isCreator: true,
             creatorTier: 1,
           });
-          
+
           // Award XP locally
           await addXP(XP_VALUES.BECOME_CREATOR || 500, 'BECOME_CREATOR');
           await unlockBadge('creator_activated');
-          
+
           setCompleted(true);
-          
+
           // Show development success message
           setTimeout(() => {
             Alert.alert(
@@ -266,32 +283,32 @@ const CreatorOnboardingScreen: React.FC<CreatorOnboardingScreenProps> = ({naviga
                     const returnTab = route.params?.returnToTab || 'Creator';
                     navigation.navigate('Main', {
                       screen: returnTab,
-                      params: { newCreator: true }
+                      params: {newCreator: true},
                     });
                   },
                 },
-              ]
+              ],
             );
           }, 1500);
         } else {
           throw new Error('Failed to activate creator account');
         }
       }
-      
     } catch (error) {
       console.error('Creator onboarding error:', error);
-      
+
       // Enhanced error handling for development vs production
       const errorMessage = error.message || 'Unknown error';
-      const isDevelopmentContext = __DEV__ || errorMessage.includes('subscription');
-      
+      const isDevelopmentContext =
+        __DEV__ || errorMessage.includes('subscription');
+
       if (isDevelopmentContext) {
         Alert.alert(
           'Development Mode Notice',
           'Creator activation requires subscription setup. In production, this will be handled by Apple IAP. For development, you can continue with limited creator features.',
           [
-            { 
-              text: 'Continue in Dev Mode', 
+            {
+              text: 'Continue in Dev Mode',
               onPress: async () => {
                 // Local-only activation for development
                 await updateUser({
@@ -302,21 +319,21 @@ const CreatorOnboardingScreen: React.FC<CreatorOnboardingScreenProps> = ({naviga
                 setCompleted(true);
                 navigation.navigate('Main', {
                   screen: 'Creator',
-                  params: { newCreator: true, devMode: true }
+                  params: {newCreator: true, devMode: true},
                 });
-              }
+              },
             },
-            { text: 'Go Back', onPress: () => navigation.goBack() },
-          ]
+            {text: 'Go Back', onPress: () => navigation.goBack()},
+          ],
         );
       } else {
         Alert.alert(
           'Setup Error',
           'There was a problem activating your creator account. Please try again.',
           [
-            { text: 'Retry', onPress: () => setLoading(false) },
-            { text: 'Skip for Now', onPress: () => navigation.goBack() },
-          ]
+            {text: 'Retry', onPress: () => setLoading(false)},
+            {text: 'Skip for Now', onPress: () => navigation.goBack()},
+          ],
         );
       }
     }
@@ -346,8 +363,10 @@ const CreatorOnboardingScreen: React.FC<CreatorOnboardingScreenProps> = ({naviga
 
   const renderProfileSetup = () => (
     <View style={styles.profileSetupContainer}>
-      <Text style={styles.profileSetupTitle}>Complete Your Creator Profile</Text>
-      
+      <Text style={styles.profileSetupTitle}>
+        Complete Your Creator Profile
+      </Text>
+
       <View style={styles.inputContainer}>
         <Text style={styles.inputLabel}>Creator Name</Text>
         <TextInput
@@ -358,7 +377,7 @@ const CreatorOnboardingScreen: React.FC<CreatorOnboardingScreenProps> = ({naviga
           placeholderTextColor="#8E8E93"
         />
       </View>
-      
+
       <View style={styles.inputContainer}>
         <Text style={styles.inputLabel}>Bio (Optional)</Text>
         <TextInput
@@ -371,10 +390,13 @@ const CreatorOnboardingScreen: React.FC<CreatorOnboardingScreenProps> = ({naviga
           numberOfLines={3}
         />
       </View>
-      
+
       <View style={styles.inputContainer}>
         <Text style={styles.inputLabel}>Specialty</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.specialtyScroll}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.specialtyScroll}>
           {specialties.map((item, index) => (
             <TouchableOpacity
               key={index}
@@ -385,14 +407,12 @@ const CreatorOnboardingScreen: React.FC<CreatorOnboardingScreenProps> = ({naviga
               onPress={() => {
                 ReactNativeHapticFeedback.trigger('selection');
                 setSpecialty(item);
-              }}
-            >
+              }}>
               <Text
                 style={[
                   styles.specialtyChipText,
                   specialty === item && styles.specialtyChipTextSelected,
-                ]}
-              >
+                ]}>
                 {item}
               </Text>
             </TouchableOpacity>
@@ -408,10 +428,13 @@ const CreatorOnboardingScreen: React.FC<CreatorOnboardingScreenProps> = ({naviga
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.completedContainer}>
-          <Animated.View style={[styles.completedIcon, {transform: [{scale: scaleAnim}]}]}>
+          <Animated.View
+            style={[styles.completedIcon, {transform: [{scale: scaleAnim}]}]}>
             <CheckCircle size={80} color="#66BB6A" />
           </Animated.View>
-          <Text style={styles.completedTitle}>Creator Account Activated! 🎉</Text>
+          <Text style={styles.completedTitle}>
+            Creator Account Activated! 🎉
+          </Text>
           <Text style={styles.completedSubtitle}>
             You're now part of the CookCam Creator community!
           </Text>
@@ -437,7 +460,7 @@ const CreatorOnboardingScreen: React.FC<CreatorOnboardingScreenProps> = ({naviga
   return (
     <SafeAreaView style={styles.container}>
       {renderProgressBar()}
-      
+
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <Animated.View
           style={[
@@ -446,21 +469,26 @@ const CreatorOnboardingScreen: React.FC<CreatorOnboardingScreenProps> = ({naviga
               opacity: fadeAnim,
               transform: [{translateY: slideAnim}, {scale: scaleAnim}],
             },
-          ]}
-        >
+          ]}>
           {/* Icon */}
-          <View style={[styles.iconContainer, {backgroundColor: currentStepData.color + '20'}]}>
+          <View
+            style={[
+              styles.iconContainer,
+              {backgroundColor: currentStepData.color + '20'},
+            ]}>
             <currentStepData.icon size={64} color={currentStepData.color} />
           </View>
-          
+
           {/* Content */}
           <Text style={styles.stepTitle}>{currentStepData.title}</Text>
           <Text style={styles.stepSubtitle}>{currentStepData.subtitle}</Text>
-          <Text style={styles.stepDescription}>{currentStepData.description}</Text>
-          
+          <Text style={styles.stepDescription}>
+            {currentStepData.description}
+          </Text>
+
           {/* Profile setup form for step 3 */}
           {currentStep === 3 && renderProfileSetup()}
-          
+
           {/* Features showcase for relevant steps */}
           {currentStep === 1 && (
             <View style={styles.featuresContainer}>
@@ -478,19 +506,21 @@ const CreatorOnboardingScreen: React.FC<CreatorOnboardingScreenProps> = ({naviga
               </View>
             </View>
           )}
-          
+
           {currentStep === 2 && (
             <View style={styles.earningsContainer}>
               <View style={styles.tierShowcase}>
                 <Text style={styles.tierTitle}>Sous Chef (Tier 1)</Text>
                 <Text style={styles.tierRevenue}>10% Revenue Share</Text>
-                <Text style={styles.tierDescription}>Your starting tier - grow to unlock higher rates!</Text>
+                <Text style={styles.tierDescription}>
+                  Your starting tier - grow to unlock higher rates!
+                </Text>
               </View>
             </View>
           )}
         </Animated.View>
       </ScrollView>
-      
+
       {/* Bottom Navigation */}
       <View style={styles.bottomNavigation}>
         {currentStep > 0 && currentStep < onboardingSteps.length - 1 && (
@@ -498,7 +528,7 @@ const CreatorOnboardingScreen: React.FC<CreatorOnboardingScreenProps> = ({naviga
             <Text style={styles.skipButtonText}>Skip</Text>
           </TouchableOpacity>
         )}
-        
+
         <TouchableOpacity
           style={[
             styles.nextButton,
@@ -506,10 +536,11 @@ const CreatorOnboardingScreen: React.FC<CreatorOnboardingScreenProps> = ({naviga
             loading && styles.disabledButton,
           ]}
           onPress={handleNext}
-          disabled={loading}
-        >
+          disabled={loading}>
           <Text style={styles.nextButtonText}>
-            {currentStep === onboardingSteps.length - 1 ? 'Activate Account' : 'Continue'}
+            {currentStep === onboardingSteps.length - 1
+              ? 'Activate Account'
+              : 'Continue'}
           </Text>
           {currentStep < onboardingSteps.length - 1 && (
             <ArrowRight size={20} color="#FFFFFF" />
@@ -759,4 +790,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default CreatorOnboardingScreen; 
+export default CreatorOnboardingScreen;

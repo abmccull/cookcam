@@ -13,6 +13,8 @@ import {
   Modal,
   TextInput,
   ActivityIndicator,
+  SafeAreaView,
+  FlatList,
 } from 'react-native';
 import {
   User,
@@ -37,10 +39,20 @@ import {
   Trash2,
   AlertTriangle,
   X,
+  ChefHat,
+  Crown,
+  Calendar,
+  Gift,
 } from 'lucide-react-native';
 import {useAuth} from '../context/AuthContext';
 import {useGamification} from '../context/GamificationContext';
-import {scale, verticalScale, moderateScale, responsive, isSmallScreen} from '../utils/responsive';
+import {
+  scale,
+  verticalScale,
+  moderateScale,
+  responsive,
+  isSmallScreen,
+} from '../utils/responsive';
 import ChefBadge from '../components/ChefBadge';
 import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
 import StreakCalendar from '../components/StreakCalendar';
@@ -60,7 +72,7 @@ const ProfileScreen = ({navigation}: {navigation: any}) => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [showBadgeModal, setShowBadgeModal] = useState(false);
   const [selectedBadge, setSelectedBadge] = useState<any | null>(null);
-  
+
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
@@ -70,7 +82,7 @@ const ProfileScreen = ({navigation}: {navigation: any}) => {
   // Mock creator data - in real app would come from user object
   const isCreator = user?.isCreator || false;
   const creatorTier = 2; // This would come from API based on subscriber count
-  
+
   // Calculate XP progress to next level
   const currentLevelXP = (level - 1) * 100;
   const nextLevelXP = level * 100;
@@ -88,13 +100,13 @@ const ProfileScreen = ({navigation}: {navigation: any}) => {
         tokenLength: token?.length,
         tokenPrefix: token?.substring(0, 30),
         userState: user,
-        isAuthenticated: user
+        isAuthenticated: user,
       });
 
       // Test the Supabase function directly
       const response = await gamificationService.addXP(1, 'TEST_DEBUG');
       console.log('🧪 Test Supabase function response:', response);
-      
+
       if (!response.success) {
         Alert.alert('API Test Failed', `Error: ${response.error}`);
       } else {
@@ -127,7 +139,7 @@ const ProfileScreen = ({navigation}: {navigation: any}) => {
         useNativeDriver: true,
       }),
     ]).start();
-    
+
     // Delayed achievement animation
     setTimeout(() => {
       Animated.spring(achievementScale, {
@@ -140,19 +152,15 @@ const ProfileScreen = ({navigation}: {navigation: any}) => {
   }, []);
 
   const handleLogout = () => {
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
-      [
-        {text: 'Cancel', style: 'cancel'},
-        {text: 'Logout', style: 'destructive', onPress: logout},
-      ],
-    );
+    Alert.alert('Logout', 'Are you sure you want to logout?', [
+      {text: 'Cancel', style: 'cancel'},
+      {text: 'Logout', style: 'destructive', onPress: () => logout(navigation)},
+    ]);
   };
-  
+
   const handleShareStats = async () => {
     ReactNativeHapticFeedback.trigger('impactMedium');
-    
+
     try {
       await Share.share({
         message: `🎉 My CookCam Stats!\n\n🔥 Level ${level} Chef\n⚡ ${xp} XP Earned\n🔥 ${streak} Day Streak\n🏆 ${badges.length} Badges Unlocked\n\nJoin me on CookCam and start your cooking journey! 🍳`,
@@ -162,31 +170,31 @@ const ProfileScreen = ({navigation}: {navigation: any}) => {
       console.error(error);
     }
   };
-  
+
   const handleBadgePress = (badge: any) => {
     ReactNativeHapticFeedback.trigger('impactLight');
-    
-    const unlockedText = badge.unlockedAt 
+
+    const unlockedText = badge.unlockedAt
       ? `Unlocked on: ${badge.unlockedAt.toLocaleDateString()}`
       : 'Badge earned!';
-      
-    Alert.alert(
-      badge.name,
-      `${badge.description}\n\n${unlockedText}`,
-      [{text: 'OK'}]
-    );
+
+    Alert.alert(badge.name, `${badge.description}\n\n${unlockedText}`, [
+      {text: 'OK'},
+    ]);
   };
 
   const handleDeleteAccount = async () => {
     if (!deletePassword.trim()) {
-      Alert.alert('Error', 'Please enter your password to confirm account deletion.');
+      Alert.alert(
+        'Error',
+        'Please enter your password to confirm account deletion.',
+      );
       return;
     }
 
     try {
       setIsDeleting(true);
       await cookCamApi.deleteAccount(deletePassword);
-      
       Alert.alert(
         'Account Deleted',
         'Your account and all associated data have been permanently deleted.',
@@ -195,19 +203,14 @@ const ProfileScreen = ({navigation}: {navigation: any}) => {
             text: 'OK',
             onPress: () => {
               setShowDeleteModal(false);
-              logout();
-            }
-          }
-        ]
+              logout(navigation);
+            },
+          },
+        ],
       );
-    } catch (error: any) {
-      console.error('Error deleting account:', error);
-      Alert.alert(
-        'Error',
-        error.response?.data?.error || 'Failed to delete account. Please try again.'
-      );
-    } finally {
+    } catch (error) {
       setIsDeleting(false);
+      Alert.alert('Error', 'Failed to delete account. Please try again.');
     }
   };
 
@@ -218,14 +221,14 @@ const ProfileScreen = ({navigation}: {navigation: any}) => {
       [
         {
           text: 'Cancel',
-          style: 'cancel'
+          style: 'cancel',
         },
         {
           text: 'Continue',
           style: 'destructive',
-          onPress: () => setShowDeleteModal(true)
-        }
-      ]
+          onPress: () => setShowDeleteModal(true),
+        },
+      ],
     );
   };
 
@@ -236,7 +239,9 @@ const ProfileScreen = ({navigation}: {navigation: any}) => {
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Your Profile 👤</Text>
           <View style={styles.headerActions}>
-            <TouchableOpacity style={styles.shareButton} onPress={handleShareStats}>
+            <TouchableOpacity
+              style={styles.shareButton}
+              onPress={handleShareStats}>
               <Share2 size={20} color="#FF6B35" />
             </TouchableOpacity>
             <TouchableOpacity style={styles.settingsButton}>
@@ -246,7 +251,11 @@ const ProfileScreen = ({navigation}: {navigation: any}) => {
         </View>
 
         {/* Profile Card */}
-        <Animated.View style={[styles.profileCard, {opacity: fadeAnim, transform: [{translateY: slideAnim}]}]}>
+        <Animated.View
+          style={[
+            styles.profileCard,
+            {opacity: fadeAnim, transform: [{translateY: slideAnim}]},
+          ]}>
           <TouchableOpacity style={styles.avatarContainer}>
             <View style={styles.avatar}>
               <Text style={styles.avatarText}>
@@ -263,23 +272,29 @@ const ProfileScreen = ({navigation}: {navigation: any}) => {
 
           {isCreator && (
             <View style={styles.creatorSection}>
-              <ChefBadge tier={creatorTier as 1 | 2 | 3 | 4 | 5} size="medium" showLabel={true} />
-              <TouchableOpacity 
+              <ChefBadge
+                tier={creatorTier as 1 | 2 | 3 | 4 | 5}
+                size="medium"
+                showLabel={true}
+              />
+              <TouchableOpacity
                 style={styles.creatorDashboardButton}
                 onPress={() => navigation.navigate('Creator')}>
-                <Text style={styles.creatorDashboardText}>View Creator Dashboard</Text>
+                <Text style={styles.creatorDashboardText}>
+                  View Creator Dashboard
+                </Text>
               </TouchableOpacity>
             </View>
           )}
         </Animated.View>
 
         {/* Stats Overview */}
-        <Animated.View style={[styles.statsContainer, {transform: [{scale: statScale}]}]}>
-          <TouchableOpacity 
+        <Animated.View
+          style={[styles.statsContainer, {transform: [{scale: statScale}]}]}>
+          <TouchableOpacity
             style={styles.statBox}
             onPress={() => setShowAnalytics(!showAnalytics)}
-            activeOpacity={0.8}
-          >
+            activeOpacity={0.8}>
             <Zap size={24} color="#FF6B35" />
             <Text style={styles.statValue}>{xp}</Text>
             <Text style={styles.statLabel}>Total XP</Text>
@@ -297,10 +312,9 @@ const ProfileScreen = ({navigation}: {navigation: any}) => {
         </Animated.View>
 
         {/* Debug Test Button */}
-        <TouchableOpacity 
-          style={styles.debugButton} 
-          onPress={testGamificationAPI}
-        >
+        <TouchableOpacity
+          style={styles.debugButton}
+          onPress={testGamificationAPI}>
           <Text style={styles.debugButtonText}>🧪 Test Gamification API</Text>
         </TouchableOpacity>
 
@@ -308,10 +322,11 @@ const ProfileScreen = ({navigation}: {navigation: any}) => {
         <View style={styles.streakCalendarContainer}>
           <StreakCalendar />
         </View>
-        
+
         {/* Comparative Analytics */}
         {showAnalytics && (
-          <Animated.View style={[styles.analyticsContainer, {opacity: fadeAnim}]}>
+          <Animated.View
+            style={[styles.analyticsContainer, {opacity: fadeAnim}]}>
             <View style={styles.analyticsHeader}>
               <BarChart3 size={20} color="#2D1B69" />
               <Text style={styles.analyticsTitle}>How You Compare</Text>
@@ -329,14 +344,14 @@ const ProfileScreen = ({navigation}: {navigation: any}) => {
             </Text>
           </View>
           <View style={styles.progressBar}>
-            <Animated.View 
+            <Animated.View
               style={[
-                styles.progressFill, 
+                styles.progressFill,
                 {
                   width: `${progressPercentage}%`,
-                  transform: [{scaleX: fadeAnim}]
-                }
-              ]} 
+                  transform: [{scaleX: fadeAnim}],
+                },
+              ]}
             />
           </View>
           <Text style={styles.nextLevelText}>
@@ -352,7 +367,7 @@ const ProfileScreen = ({navigation}: {navigation: any}) => {
           </View>
           <View style={styles.badgesGrid}>
             {badges.map((badge, index) => (
-              <Animated.View 
+              <Animated.View
                 key={badge.id}
                 style={[
                   {transform: [{scale: achievementScale}]},
@@ -360,21 +375,15 @@ const ProfileScreen = ({navigation}: {navigation: any}) => {
                     opacity: achievementScale.interpolate({
                       inputRange: [0, 1],
                       outputRange: [0, 1],
-                    })
-                  }
-                ]}
-              >
+                    }),
+                  },
+                ]}>
                 <TouchableOpacity
                   style={styles.badgeCard}
                   onPress={() => handleBadgePress(badge)}
-                  activeOpacity={0.8}
-                >
-                  <Text style={styles.badgeIcon}>
-                    {badge.icon}
-                  </Text>
-                  <Text style={styles.badgeName}>
-                    {badge.name}
-                  </Text>
+                  activeOpacity={0.8}>
+                  <Text style={styles.badgeIcon}>{badge.icon}</Text>
+                  <Text style={styles.badgeName}>{badge.name}</Text>
                   {badge.unlockedAt && (
                     <Text style={styles.badgeUnlockedText}>
                       Unlocked: {badge.unlockedAt.toLocaleDateString()}
@@ -415,9 +424,11 @@ const ProfileScreen = ({navigation}: {navigation: any}) => {
               </TouchableOpacity>
             );
           })} */}
-          
+
           {/* Basic settings options */}
-          <TouchableOpacity style={styles.settingItem} onPress={() => navigation.navigate('Privacy')}>
+          <TouchableOpacity
+            style={styles.settingItem}
+            onPress={() => navigation.navigate('Privacy')}>
             <View style={styles.settingLeft}>
               <View style={styles.settingIconContainer}>
                 <Shield size={20} color="#666" />
@@ -426,8 +437,10 @@ const ProfileScreen = ({navigation}: {navigation: any}) => {
             </View>
             <ChevronRight size={20} color="#8E8E93" />
           </TouchableOpacity>
-          
-          <TouchableOpacity style={styles.settingItem} onPress={() => navigation.navigate('Support')}>
+
+          <TouchableOpacity
+            style={styles.settingItem}
+            onPress={() => navigation.navigate('Support')}>
             <View style={styles.settingLeft}>
               <View style={styles.settingIconContainer}>
                 <HelpCircle size={20} color="#666" />
@@ -438,12 +451,20 @@ const ProfileScreen = ({navigation}: {navigation: any}) => {
           </TouchableOpacity>
 
           {/* Account Deletion */}
-          <TouchableOpacity style={[styles.settingItem, styles.dangerItem]} onPress={confirmDeleteAccount}>
+          <TouchableOpacity
+            style={[styles.settingItem, styles.dangerItem]}
+            onPress={confirmDeleteAccount}>
             <View style={styles.settingLeft}>
-              <View style={[styles.settingIconContainer, styles.dangerIconContainer]}>
+              <View
+                style={[
+                  styles.settingIconContainer,
+                  styles.dangerIconContainer,
+                ]}>
                 <Trash2 size={20} color="#FF3B30" />
               </View>
-              <Text style={[styles.settingLabel, styles.dangerLabel]}>Delete Account</Text>
+              <Text style={[styles.settingLabel, styles.dangerLabel]}>
+                Delete Account
+              </Text>
             </View>
             <ChevronRight size={20} color="#FF3B30" />
           </TouchableOpacity>
@@ -463,8 +484,7 @@ const ProfileScreen = ({navigation}: {navigation: any}) => {
           visible={showDeleteModal}
           transparent={true}
           animationType="fade"
-          onRequestClose={() => !isDeleting && setShowDeleteModal(false)}
-        >
+          onRequestClose={() => !isDeleting && setShowDeleteModal(false)}>
           <View style={styles.modalContainer}>
             <View style={styles.modalContent}>
               <View style={styles.modalHeader}>
@@ -473,33 +493,44 @@ const ProfileScreen = ({navigation}: {navigation: any}) => {
                   <Text style={styles.modalTitle}>Delete Account</Text>
                 </View>
                 {!isDeleting && (
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={styles.closeButton}
-                    onPress={() => setShowDeleteModal(false)}
-                  >
+                    onPress={() => setShowDeleteModal(false)}>
                     <X size={20} color="#666" />
                   </TouchableOpacity>
                 )}
               </View>
-              
+
               <Text style={styles.modalMessage}>
                 This will permanently delete your account and all your data:
               </Text>
-              
+
               <View style={styles.deletionList}>
-                <Text style={styles.deletionItem}>• All your recipes and favorites</Text>
-                <Text style={styles.deletionItem}>• Scan history and ingredient data</Text>
-                <Text style={styles.deletionItem}>• XP, achievements, and badges</Text>
-                <Text style={styles.deletionItem}>• Subscription and payment history</Text>
-                <Text style={styles.deletionItem}>• Creator earnings and analytics</Text>
+                <Text style={styles.deletionItem}>
+                  • All your recipes and favorites
+                </Text>
+                <Text style={styles.deletionItem}>
+                  • Scan history and ingredient data
+                </Text>
+                <Text style={styles.deletionItem}>
+                  • XP, achievements, and badges
+                </Text>
+                <Text style={styles.deletionItem}>
+                  • Subscription and payment history
+                </Text>
+                <Text style={styles.deletionItem}>
+                  • Creator earnings and analytics
+                </Text>
               </View>
-              
+
               <Text style={styles.warningText}>
                 This action cannot be undone.
               </Text>
-              
+
               <View style={styles.passwordContainer}>
-                <Text style={styles.passwordLabel}>Enter your password to confirm:</Text>
+                <Text style={styles.passwordLabel}>
+                  Enter your password to confirm:
+                </Text>
                 <TextInput
                   style={styles.passwordInput}
                   placeholder="Your password"
@@ -510,20 +541,24 @@ const ProfileScreen = ({navigation}: {navigation: any}) => {
                   autoCapitalize="none"
                 />
               </View>
-              
+
               <View style={styles.modalButtons}>
                 <TouchableOpacity
-                  style={[styles.cancelButton, isDeleting && styles.disabledButton]}
+                  style={[
+                    styles.cancelButton,
+                    isDeleting && styles.disabledButton,
+                  ]}
                   onPress={() => setShowDeleteModal(false)}
-                  disabled={isDeleting}
-                >
+                  disabled={isDeleting}>
                   <Text style={styles.cancelButtonText}>Cancel</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.deleteButton, isDeleting && styles.disabledButton]}
+                  style={[
+                    styles.deleteButton,
+                    isDeleting && styles.disabledButton,
+                  ]}
                   onPress={handleDeleteAccount}
-                  disabled={isDeleting}
-                >
+                  disabled={isDeleting}>
                   {isDeleting ? (
                     <ActivityIndicator color="#FFFFFF" size="small" />
                   ) : (
@@ -1038,4 +1073,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ProfileScreen; 
+export default ProfileScreen;

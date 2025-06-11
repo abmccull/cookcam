@@ -16,9 +16,14 @@ interface CreatorRecipesTabProps {
   userTier?: number;
 }
 
-const CreatorRecipesTab: React.FC<CreatorRecipesTabProps> = ({userId, userTier}) => {
+const CreatorRecipesTab: React.FC<CreatorRecipesTabProps> = ({
+  userId,
+  userTier,
+}) => {
   const [refreshing, setRefreshing] = useState(false);
-  const [selectedFilter, setSelectedFilter] = useState<'all' | 'trending' | 'popular'>('all');
+  const [selectedFilter, setSelectedFilter] = useState<
+    'all' | 'trending' | 'popular'
+  >('all');
 
   // Mock data - in real app would fetch from API
   const mockRecipes: ClaimedRecipe[] = [
@@ -72,11 +77,16 @@ const CreatorRecipesTab: React.FC<CreatorRecipesTabProps> = ({userId, userTier})
     },
   ];
 
-  const totalViews = mockRecipes.reduce((sum, recipe) => sum + recipe.viewCount, 0);
-  const totalRatings = mockRecipes.reduce((sum, recipe) => sum + recipe.ratingCount, 0);
-  const averageRating = mockRecipes.length > 0
-    ? mockRecipes.reduce((sum, recipe) => sum + recipe.averageRating, 0) / mockRecipes.length
-    : 0;
+  // Compute aggregated stats
+  const totalViews = mockRecipes.reduce(
+    (sum, recipe) => sum + recipe.viewCount,
+    0,
+  );
+  const avgRating =
+    mockRecipes.length > 0
+      ? mockRecipes.reduce((sum, recipe) => sum + recipe.averageRating, 0) /
+        mockRecipes.length
+      : 0;
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -92,8 +102,12 @@ const CreatorRecipesTab: React.FC<CreatorRecipesTabProps> = ({userId, userTier})
   ];
 
   const filteredRecipes = mockRecipes.filter(recipe => {
-    if (selectedFilter === 'trending') return recipe.trending;
-    if (selectedFilter === 'popular') return recipe.viewCount > 10000;
+    if (selectedFilter === 'trending') {
+      return recipe.trending;
+    }
+    if (selectedFilter === 'popular') {
+      return recipe.viewCount > 10000;
+    }
     return true;
   });
 
@@ -117,7 +131,7 @@ const CreatorRecipesTab: React.FC<CreatorRecipesTabProps> = ({userId, userTier})
         </View>
         <View style={styles.statCard}>
           <Star size={24} color="#FFB800" />
-          <Text style={styles.statNumber}>{averageRating.toFixed(1)}</Text>
+          <Text style={styles.statNumber}>{avgRating.toFixed(1)}</Text>
           <Text style={styles.statLabel}>Avg Rating</Text>
         </View>
         <View style={styles.statCard}>
@@ -134,11 +148,11 @@ const CreatorRecipesTab: React.FC<CreatorRecipesTabProps> = ({userId, userTier})
           <Text style={styles.limitCount}>{mockRecipes.length}/120</Text>
         </View>
         <View style={styles.limitBar}>
-          <View 
+          <View
             style={[
-              styles.limitProgress, 
-              {width: `${(mockRecipes.length / 120) * 100}%`}
-            ]} 
+              styles.limitProgress,
+              {width: `${(mockRecipes.length / 120) * 100}%`},
+            ]}
           />
         </View>
         <Text style={styles.limitHint}>
@@ -147,8 +161,8 @@ const CreatorRecipesTab: React.FC<CreatorRecipesTabProps> = ({userId, userTier})
       </View>
 
       {/* Filter Tabs */}
-      <ScrollView 
-        horizontal 
+      <ScrollView
+        horizontal
         showsHorizontalScrollIndicator={false}
         style={styles.filterContainer}
         contentContainerStyle={styles.filterContent}>
@@ -160,9 +174,9 @@ const CreatorRecipesTab: React.FC<CreatorRecipesTabProps> = ({userId, userTier})
               selectedFilter === filter.key && styles.filterButtonActive,
             ]}
             onPress={() => setSelectedFilter(filter.key as any)}>
-            <filter.icon 
-              size={16} 
-              color={selectedFilter === filter.key ? '#FFFFFF' : '#8E8E93'} 
+            <filter.icon
+              size={16}
+              color={selectedFilter === filter.key ? '#FFFFFF' : '#8E8E93'}
             />
             <Text
               style={[
@@ -351,4 +365,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default CreatorRecipesTab; 
+export default CreatorRecipesTab;

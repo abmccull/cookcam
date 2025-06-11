@@ -9,7 +9,15 @@ import {
   Dimensions,
   ScrollView,
 } from 'react-native';
-import {Check, ChevronRight, ChevronLeft, SkipForward, Star, Trophy, Globe} from 'lucide-react-native';
+import {
+  Check,
+  ChevronRight,
+  ChevronLeft,
+  SkipForward,
+  Star,
+  Trophy,
+  Globe,
+} from 'lucide-react-native';
 import {useGamification, XP_VALUES} from '../context/GamificationContext';
 import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
 
@@ -26,7 +34,7 @@ const PreferencesScreen: React.FC<PreferencesScreenProps> = ({
 }) => {
   const {ingredients, imageUri} = route.params || {};
   const {addXP, unlockBadge} = useGamification();
-  
+
   const [currentStep, setCurrentStep] = useState(0);
   const [selectedDietary, setSelectedDietary] = useState<string[]>([]);
   const [selectedCuisine, setSelectedCuisine] = useState<string[]>([]);
@@ -35,7 +43,7 @@ const PreferencesScreen: React.FC<PreferencesScreenProps> = ({
   const [hasCompletedPreferences, setHasCompletedPreferences] = useState(false);
   const [showXPReward, setShowXPReward] = useState(false);
   const [showBadgeUnlock, setShowBadgeUnlock] = useState(false);
-  
+
   const slideAnim = useRef(new Animated.Value(0)).current;
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const progressAnim = useRef(new Animated.Value(0)).current;
@@ -90,24 +98,40 @@ const PreferencesScreen: React.FC<PreferencesScreenProps> = ({
     {
       id: 'time',
       title: 'How much time do you have?',
-      subtitle: 'We\'ll find recipes that fit',
+      subtitle: "We'll find recipes that fit",
       type: 'single',
       options: [
-        {label: '⚡ Quick & Easy', subtitle: 'Under 20 minutes', value: 'quick'},
+        {
+          label: '⚡ Quick & Easy',
+          subtitle: 'Under 20 minutes',
+          value: 'quick',
+        },
         {label: '⏱️ Medium', subtitle: '20-45 minutes', value: 'medium'},
-        {label: '🍖 Worth the Wait', subtitle: 'Over 45 minutes', value: 'long'},
+        {
+          label: '🍖 Worth the Wait',
+          subtitle: 'Over 45 minutes',
+          value: 'long',
+        },
         {label: '🤷 Flexible', subtitle: 'Any cooking time', value: 'any'},
       ],
     },
     {
       id: 'difficulty',
-      title: 'What\'s your skill level?',
-      subtitle: 'Be honest, we won\'t judge!',
+      title: "What's your skill level?",
+      subtitle: "Be honest, we won't judge!",
       type: 'single',
       options: [
         {label: '👶 Beginner', subtitle: 'Simple recipes only', value: 'easy'},
-        {label: '👨‍🍳 Home Cook', subtitle: 'Some experience needed', value: 'medium'},
-        {label: '👨‍🍳 Chef Mode', subtitle: 'Bring on the challenge!', value: 'hard'},
+        {
+          label: '👨‍🍳 Home Cook',
+          subtitle: 'Some experience needed',
+          value: 'medium',
+        },
+        {
+          label: '👨‍🍳 Chef Mode',
+          subtitle: 'Bring on the challenge!',
+          value: 'hard',
+        },
         {label: '🎲 Surprise Me', subtitle: 'Any difficulty', value: 'any'},
       ],
     },
@@ -127,7 +151,7 @@ const PreferencesScreen: React.FC<PreferencesScreenProps> = ({
       }),
     ]).start(() => {
       slideAnim.setValue(direction === 'next' ? 50 : -50);
-      
+
       Animated.parallel([
         Animated.timing(fadeAnim, {
           toValue: 1,
@@ -163,7 +187,7 @@ const PreferencesScreen: React.FC<PreferencesScreenProps> = ({
         setHasCompletedPreferences(true);
         showCompletionReward();
       }
-      
+
       // Submit preferences
       const preferences = {
         dietary: selectedDietary,
@@ -171,7 +195,7 @@ const PreferencesScreen: React.FC<PreferencesScreenProps> = ({
         cookingTime: selectedCookingTime || 'any',
         difficulty: selectedDifficulty || 'any',
       };
-      
+
       // Check for badge unlocks
       checkForBadges();
 
@@ -199,10 +223,10 @@ const PreferencesScreen: React.FC<PreferencesScreenProps> = ({
 
   const toggleOption = (option: string) => {
     const step = steps[currentStep];
-    
+
     // Haptic feedback
     ReactNativeHapticFeedback.trigger('impactLight');
-    
+
     if (step.id === 'dietary') {
       setSelectedDietary(prev =>
         prev.includes(option)
@@ -212,9 +236,7 @@ const PreferencesScreen: React.FC<PreferencesScreenProps> = ({
     } else if (step.id === 'cuisine') {
       // Handle "Surprise Me!" option
       if (option === '🎲 Surprise Me!') {
-        setSelectedCuisine(prev => 
-          prev.includes(option) ? [] : [option]
-        );
+        setSelectedCuisine(prev => (prev.includes(option) ? [] : [option]));
       } else {
         // If selecting a specific cuisine, remove "Surprise Me!" if it was selected
         setSelectedCuisine(prev => {
@@ -229,23 +251,23 @@ const PreferencesScreen: React.FC<PreferencesScreenProps> = ({
 
   const selectSingleOption = (value: string) => {
     const step = steps[currentStep];
-    
+
     // Haptic feedback
     ReactNativeHapticFeedback.trigger('impactMedium');
-    
+
     if (step.id === 'time') {
       setSelectedCookingTime(value);
     } else if (step.id === 'difficulty') {
       setSelectedDifficulty(value);
     }
-    
+
     // Auto-advance after selecting single option
     setTimeout(() => handleNext(), 300);
   };
 
   const isOptionSelected = (option: any): boolean => {
     const step = steps[currentStep];
-    
+
     if (step.id === 'dietary') {
       return selectedDietary.includes(option);
     } else if (step.id === 'cuisine') {
@@ -255,24 +277,28 @@ const PreferencesScreen: React.FC<PreferencesScreenProps> = ({
     } else if (step.id === 'difficulty') {
       return selectedDifficulty === option.value;
     }
-    
+
     return false;
   };
 
   const canProceed = (): boolean => {
     const step = steps[currentStep];
-    
+
     if (step.type === 'multi') {
-      if (step.id === 'dietary') return true; // Optional
-      if (step.id === 'cuisine') return selectedCuisine.length > 0;
+      if (step.id === 'dietary') {
+        return true;
+      } // Optional
+      if (step.id === 'cuisine') {
+        return selectedCuisine.length > 0;
+      }
     }
-    
+
     return true; // Single choice steps can always proceed (has default)
   };
 
   const renderMultiChoice = () => {
     const step = steps[currentStep];
-    
+
     return (
       <View style={styles.optionsGrid}>
         {step.options.map((option, index) => (
@@ -301,7 +327,7 @@ const PreferencesScreen: React.FC<PreferencesScreenProps> = ({
 
   const renderSingleChoice = () => {
     const step = steps[currentStep];
-    
+
     return (
       <View style={styles.singleChoiceContainer}>
         {step.options.map((option: any, index: number) => (
@@ -313,26 +339,27 @@ const PreferencesScreen: React.FC<PreferencesScreenProps> = ({
             ]}
             onPress={() => selectSingleOption(option.value)}>
             <View style={styles.optionContent}>
-              <Text style={[
-                styles.optionLabel,
-                isOptionSelected(option) && styles.selectedOptionLabel,
-              ]}>
+              <Text
+                style={[
+                  styles.optionLabel,
+                  isOptionSelected(option) && styles.selectedOptionLabel,
+                ]}>
                 {option.label}
               </Text>
-              <Text style={[
-                styles.optionSubtitle,
-                isOptionSelected(option) && styles.selectedOptionSubtitle,
-              ]}>
+              <Text
+                style={[
+                  styles.optionSubtitle,
+                  isOptionSelected(option) && styles.selectedOptionSubtitle,
+                ]}>
                 {option.subtitle}
               </Text>
             </View>
-            <View style={[
-              styles.radioCircle,
-              isOptionSelected(option) && styles.selectedRadioCircle,
-            ]}>
-              {isOptionSelected(option) && (
-                <View style={styles.radioInner} />
-              )}
+            <View
+              style={[
+                styles.radioCircle,
+                isOptionSelected(option) && styles.selectedRadioCircle,
+              ]}>
+              {isOptionSelected(option) && <View style={styles.radioInner} />}
             </View>
           </TouchableOpacity>
         ))}
@@ -342,10 +369,10 @@ const PreferencesScreen: React.FC<PreferencesScreenProps> = ({
 
   const showCompletionReward = async () => {
     setShowXPReward(true);
-    
+
     // Haptic feedback
     ReactNativeHapticFeedback.trigger('notificationSuccess');
-    
+
     // Animate XP reward
     Animated.sequence([
       Animated.spring(xpRewardScale, {
@@ -360,20 +387,20 @@ const PreferencesScreen: React.FC<PreferencesScreenProps> = ({
         useNativeDriver: true,
       }),
     ]).start();
-    
+
     // Award XP
     await addXP(XP_VALUES.COMPLETE_PREFERENCES, 'COMPLETE_PREFERENCES');
   };
-  
+
   const checkForBadges = async () => {
     // Check if user is trying exotic cuisines
     const exoticCuisines = ['Vietnamese', 'Middle Eastern', 'Korean', 'Thai'];
     const hasExotic = selectedCuisine.some(c => exoticCuisines.includes(c));
-    
+
     if (hasExotic) {
       await unlockBadge('cuisine_explorer');
       setShowBadgeUnlock(true);
-      
+
       // Animate badge
       Animated.spring(badgeScale, {
         toValue: 1,
@@ -382,7 +409,7 @@ const PreferencesScreen: React.FC<PreferencesScreenProps> = ({
         useNativeDriver: true,
       }).start();
     }
-    
+
     // Check for adventurous eater (selected 5+ cuisines)
     if (selectedCuisine.length >= 5) {
       await unlockBadge('world_traveler');
@@ -390,7 +417,9 @@ const PreferencesScreen: React.FC<PreferencesScreenProps> = ({
   };
 
   const currentStepData = steps[currentStep];
-  const completionPercentage = Math.round(((currentStep + 1) / steps.length) * 100);
+  const completionPercentage = Math.round(
+    ((currentStep + 1) / steps.length) * 100,
+  );
 
   return (
     <SafeAreaView style={styles.container}>
@@ -401,7 +430,7 @@ const PreferencesScreen: React.FC<PreferencesScreenProps> = ({
           <Text style={styles.progressPercentage}>{completionPercentage}%</Text>
         </View>
         <View style={styles.progressBar}>
-          <Animated.View 
+          <Animated.View
             style={[
               styles.progressFill,
               {
@@ -409,8 +438,8 @@ const PreferencesScreen: React.FC<PreferencesScreenProps> = ({
                   inputRange: [0, 1],
                   outputRange: ['0%', '100%'],
                 }),
-              }
-            ]} 
+              },
+            ]}
           />
         </View>
         <Text style={styles.progressText}>
@@ -420,51 +449,46 @@ const PreferencesScreen: React.FC<PreferencesScreenProps> = ({
 
       {/* Main Content */}
       <View style={styles.content}>
-        <Animated.View 
+        <Animated.View
           style={[
             styles.questionContainer,
             {
               opacity: fadeAnim,
               transform: [{translateX: slideAnim}],
-            }
+            },
           ]}>
           <Text style={styles.title}>{currentStepData.title}</Text>
-          
-          {currentStepData.type === 'multi' 
-            ? renderMultiChoice() 
-            : renderSingleChoice()
-          }
-          
+
+          {currentStepData.type === 'multi'
+            ? renderMultiChoice()
+            : renderSingleChoice()}
+
           {/* Show badge hint for cuisine selection */}
           {currentStep === 1 && selectedCuisine.length >= 3 && (
             <Animated.View style={[styles.badgeHint, {opacity: fadeAnim}]}>
               <Globe size={16} color="#FFB800" />
-              <Text style={styles.badgeHintText}>Explorer badge unlocked for trying exotic cuisines!</Text>
+              <Text style={styles.badgeHintText}>
+                Explorer badge unlocked for trying exotic cuisines!
+              </Text>
             </Animated.View>
           )}
         </Animated.View>
-        
+
         {/* XP Reward Animation */}
         {showXPReward && (
-          <Animated.View 
-            style={[
-              styles.xpReward,
-              {transform: [{scale: xpRewardScale}]}
-            ]}
-          >
-                            <Star size={24} color="#FFB800" />
-            <Text style={styles.xpRewardText}>+{XP_VALUES.COMPLETE_PREFERENCES} XP</Text>
+          <Animated.View
+            style={[styles.xpReward, {transform: [{scale: xpRewardScale}]}]}>
+            <Star size={24} color="#FFB800" />
+            <Text style={styles.xpRewardText}>
+              +{XP_VALUES.COMPLETE_PREFERENCES} XP
+            </Text>
           </Animated.View>
         )}
-        
+
         {/* Badge Unlock Animation */}
         {showBadgeUnlock && (
-          <Animated.View 
-            style={[
-              styles.badgeUnlock,
-              {transform: [{scale: badgeScale}]}
-            ]}
-          >
+          <Animated.View
+            style={[styles.badgeUnlock, {transform: [{scale: badgeScale}]}]}>
             <Trophy size={32} color="#FFB800" />
             <Text style={styles.badgeUnlockText}>Cuisine Explorer!</Text>
           </Animated.View>
@@ -474,16 +498,17 @@ const PreferencesScreen: React.FC<PreferencesScreenProps> = ({
       {/* Navigation */}
       <View style={styles.navigation}>
         <TouchableOpacity
-          style={[styles.navButton, currentStep === 0 && styles.invisibleButton]}
+          style={[
+            styles.navButton,
+            currentStep === 0 && styles.invisibleButton,
+          ]}
           onPress={handlePrev}
           disabled={currentStep === 0}>
           <ChevronLeft size={24} color="#2D1B69" />
           <Text style={styles.navButtonText}>Back</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.skipButton}
-          onPress={handleSkip}>
+        <TouchableOpacity style={styles.skipButton} onPress={handleSkip}>
           <Text style={styles.skipButtonText}>Skip</Text>
           <SkipForward size={18} color="#8E8E93" />
         </TouchableOpacity>
@@ -807,4 +832,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default PreferencesScreen; 
+export default PreferencesScreen;

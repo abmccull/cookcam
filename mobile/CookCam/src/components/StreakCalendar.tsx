@@ -30,25 +30,43 @@ interface StreakReward {
 const StreakCalendar: React.FC = () => {
   const {streak, freezeTokens, useFreeze, addXP} = useGamification();
   const [streakDays, setStreakDays] = useState<StreakDay[]>([]);
-  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [currentMonth, _setCurrentMonth] = useState(new Date());
   const [showRewards, setShowRewards] = useState(false);
-  
+
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const shieldScale = useRef(new Animated.Value(1)).current;
-  
+
   const streakRewards: StreakReward[] = [
-    {days: 7, title: 'Week Warrior', reward: '50 XP + Shield', icon: '🔥', earned: streak >= 7},
-    {days: 30, title: 'Monthly Master', reward: 'Exclusive Recipes', icon: '💎', earned: streak >= 30},
-    {days: 100, title: 'Century Chef', reward: 'Creator Features', icon: '👑', earned: streak >= 100},
+    {
+      days: 7,
+      title: 'Week Warrior',
+      reward: '50 XP + Shield',
+      icon: '🔥',
+      earned: streak >= 7,
+    },
+    {
+      days: 30,
+      title: 'Monthly Master',
+      reward: 'Exclusive Recipes',
+      icon: '💎',
+      earned: streak >= 30,
+    },
+    {
+      days: 100,
+      title: 'Century Chef',
+      reward: 'Creator Features',
+      icon: '👑',
+      earned: streak >= 100,
+    },
   ];
-  
+
   useEffect(() => {
     loadStreakData();
     startAnimations();
   }, []);
-  
+
   const startAnimations = () => {
     // Fade in animation
     Animated.timing(fadeAnim, {
@@ -56,7 +74,7 @@ const StreakCalendar: React.FC = () => {
       duration: 800,
       useNativeDriver: true,
     }).start();
-    
+
     // Pulse animation for active streak
     Animated.loop(
       Animated.sequence([
@@ -73,7 +91,7 @@ const StreakCalendar: React.FC = () => {
       ]),
     ).start();
   };
-  
+
   const loadStreakData = async () => {
     try {
       const data = await AsyncStorage.getItem('streakData');
@@ -88,16 +106,16 @@ const StreakCalendar: React.FC = () => {
       generateMockStreakData();
     }
   };
-  
+
   const generateMockStreakData = () => {
     const days: StreakDay[] = [];
     const today = new Date();
-    
+
     // Generate last 30 days
     for (let i = 29; i >= 0; i--) {
       const date = new Date();
       date.setDate(today.getDate() - i);
-      
+
       // Mock data: random cooking pattern with current streak
       const cooked = i < streak || (Math.random() > 0.3 && i >= streak + 3);
       days.push({
@@ -106,19 +124,24 @@ const StreakCalendar: React.FC = () => {
         shieldUsed: !cooked && Math.random() > 0.8,
       });
     }
-    
+
     setStreakDays(days);
   };
-  
+
   const handleUseShield = async () => {
     if (freezeTokens <= 0) {
-      Alert.alert('No Shields Available', 'Earn shields by maintaining 7-day streaks!');
+      Alert.alert(
+        'No Shields Available',
+        'Earn shields by maintaining 7-day streaks!',
+      );
       return;
     }
-    
+
     Alert.alert(
       'Use Streak Shield? 🛡️',
-      `You have ${freezeTokens} shield${freezeTokens > 1 ? 's' : ''} available. Use one to protect your streak?`,
+      `You have ${freezeTokens} shield${
+        freezeTokens > 1 ? 's' : ''
+      } available. Use one to protect your streak?`,
       [
         {text: 'Cancel', style: 'cancel'},
         {
@@ -140,15 +163,18 @@ const StreakCalendar: React.FC = () => {
                   useNativeDriver: true,
                 }),
               ]).start();
-              
-              Alert.alert('Shield Applied! 🛡️', 'Your streak is protected for today!');
+
+              Alert.alert(
+                'Shield Applied! 🛡️',
+                'Your streak is protected for today!',
+              );
             }
           },
         },
       ],
     );
   };
-  
+
   const handleRecoverStreak = async () => {
     Alert.alert(
       'Recover Streak? 🔥',
@@ -161,39 +187,45 @@ const StreakCalendar: React.FC = () => {
             ReactNativeHapticFeedback.trigger('impactMedium');
             // In real app, check if user has enough XP and deduct it
             await addXP(-25, 'STREAK_RECOVERY');
-            Alert.alert('Streak Recovered! 🎉', 'Your streak has been restored!');
+            Alert.alert(
+              'Streak Recovered! 🎉',
+              'Your streak has been restored!',
+            );
           },
         },
       ],
     );
   };
-  
+
   const renderCalendarGrid = () => {
     const daysInMonth = new Date(
       currentMonth.getFullYear(),
       currentMonth.getMonth() + 1,
-      0
+      0,
     ).getDate();
-    
+
     const firstDayOfMonth = new Date(
       currentMonth.getFullYear(),
       currentMonth.getMonth(),
-      1
+      1,
     ).getDay();
-    
+
     const days = [];
-    
+
     // Empty cells for days before month starts
     for (let i = 0; i < firstDayOfMonth; i++) {
       days.push(<View key={`empty-${i}`} style={styles.calendarDay} />);
     }
-    
+
     // Days of the month
     for (let day = 1; day <= daysInMonth; day++) {
-      const dateStr = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      const dateStr = `${currentMonth.getFullYear()}-${String(
+        currentMonth.getMonth() + 1,
+      ).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
       const streakDay = streakDays.find(d => d.date === dateStr);
-      const isToday = new Date().toDateString() === new Date(dateStr).toDateString();
-      
+      const isToday =
+        new Date().toDateString() === new Date(dateStr).toDateString();
+
       days.push(
         <TouchableOpacity
           key={day}
@@ -203,86 +235,98 @@ const StreakCalendar: React.FC = () => {
             streakDay?.shieldUsed && styles.shieldedDay,
             isToday && styles.todayDay,
           ]}
-          activeOpacity={0.8}
-        >
-          <Text style={[
-            styles.dayText,
-            streakDay?.cooked && styles.cookedDayText,
-          ]}>
+          activeOpacity={0.8}>
+          <Text
+            style={[styles.dayText, streakDay?.cooked && styles.cookedDayText]}>
             {day}
           </Text>
           {streakDay?.cooked && (
-            <Flame size={12} color="#FF6B35" fill="#FF6B35" style={styles.dayIcon} />
+            <Flame
+              size={12}
+              color="#FF6B35"
+              fill="#FF6B35"
+              style={styles.dayIcon}
+            />
           )}
           {streakDay?.shieldUsed && (
-            <Shield size={12} color="#4CAF50" fill="#4CAF50" style={styles.dayIcon} />
+            <Shield
+              size={12}
+              color="#4CAF50"
+              fill="#4CAF50"
+              style={styles.dayIcon}
+            />
           )}
-        </TouchableOpacity>
+        </TouchableOpacity>,
       );
     }
-    
+
     return days;
   };
-  
+
   return (
     <Animated.View style={[styles.container, {opacity: fadeAnim}]}>
       {/* Streak Header */}
       <View style={styles.header}>
-        <Animated.View style={[styles.streakBadge, {transform: [{scale: pulseAnim}]}]}>
+        <Animated.View
+          style={[styles.streakBadge, {transform: [{scale: pulseAnim}]}]}>
           <Flame size={32} color="#FF6B35" fill="#FF6B35" />
           <Text style={styles.streakNumber}>{streak}</Text>
           <Text style={styles.streakLabel}>Day Streak</Text>
         </Animated.View>
-        
+
         <View style={styles.shieldInfo}>
-          <Animated.View style={[styles.shieldBadge, {transform: [{scale: shieldScale}]}]}>
+          <Animated.View
+            style={[styles.shieldBadge, {transform: [{scale: shieldScale}]}]}>
             <Shield size={24} color="#4CAF50" />
             <Text style={styles.shieldCount}>{freezeTokens}</Text>
           </Animated.View>
-          <TouchableOpacity style={styles.useShieldButton} onPress={handleUseShield}>
+          <TouchableOpacity
+            style={styles.useShieldButton}
+            onPress={handleUseShield}>
             <Text style={styles.useShieldText}>Use Shield</Text>
           </TouchableOpacity>
         </View>
       </View>
-      
+
       {/* Calendar View */}
       <View style={styles.calendar}>
         <View style={styles.calendarHeader}>
           <Text style={styles.monthText}>
-            {currentMonth.toLocaleDateString('en-US', {month: 'long', year: 'numeric'})}
+            {currentMonth.toLocaleDateString('en-US', {
+              month: 'long',
+              year: 'numeric',
+            })}
           </Text>
         </View>
-        
+
         <View style={styles.weekDays}>
           {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, index) => (
-            <Text key={index} style={styles.weekDayText}>{day}</Text>
+            <Text key={index} style={styles.weekDayText}>
+              {day}
+            </Text>
           ))}
         </View>
-        
-        <View style={styles.calendarGrid}>
-          {renderCalendarGrid()}
-        </View>
+
+        <View style={styles.calendarGrid}>{renderCalendarGrid()}</View>
       </View>
-      
+
       {/* Streak Rewards */}
-      <TouchableOpacity 
+      <TouchableOpacity
         style={styles.rewardsToggle}
-        onPress={() => setShowRewards(!showRewards)}
-      >
+        onPress={() => setShowRewards(!showRewards)}>
         <Gift size={20} color="#FFB800" />
         <Text style={styles.rewardsToggleText}>Streak Rewards</Text>
       </TouchableOpacity>
-      
+
       {showRewards && (
         <View style={styles.rewardsContainer}>
           {streakRewards.map((reward, index) => (
-            <View 
-              key={index} 
+            <View
+              key={index}
               style={[
                 styles.rewardCard,
                 reward.earned && styles.rewardCardEarned,
-              ]}
-            >
+              ]}>
               <Text style={styles.rewardIcon}>{reward.icon}</Text>
               <View style={styles.rewardInfo}>
                 <Text style={styles.rewardTitle}>{reward.title}</Text>
@@ -300,10 +344,12 @@ const StreakCalendar: React.FC = () => {
           ))}
         </View>
       )}
-      
+
       {/* Streak Recovery */}
       {streak === 0 && (
-        <TouchableOpacity style={styles.recoveryButton} onPress={handleRecoverStreak}>
+        <TouchableOpacity
+          style={styles.recoveryButton}
+          onPress={handleRecoverStreak}>
           <Text style={styles.recoveryText}>Recover Streak (25 XP)</Text>
         </TouchableOpacity>
       )}
@@ -494,4 +540,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default StreakCalendar; 
+export default StreakCalendar;

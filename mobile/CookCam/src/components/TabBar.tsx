@@ -1,8 +1,8 @@
 import React from 'react';
 import {View, Text, TouchableOpacity, StyleSheet} from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
-import {Home, Heart, Trophy, Search, Plus, User} from 'lucide-react-native';
-import {scale, verticalScale, moderateScale, responsive, isSmallDevice} from '../utils/responsive';
+import {Home, Heart, Trophy, Search, User, Plus} from 'lucide-react-native';
+import {verticalScale, moderateScale, responsive} from '../utils/responsive';
 
 interface TabBarProps {
   state: any;
@@ -34,7 +34,11 @@ const TabBar: React.FC<TabBarProps> = ({state, descriptors, navigation}) => {
   const iconSize = moderateScale(24);
 
   return (
-    <View style={[styles.container, {paddingBottom: insets.bottom || verticalScale(10)}]}>
+    <View
+      style={[
+        styles.container,
+        {paddingBottom: insets.bottom || verticalScale(10)},
+      ]}>
       {state.routes.map((route: any, index: number) => {
         const {options} = descriptors[route.key];
         const label = options.tabBarLabel || route.name;
@@ -135,4 +139,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default TabBar; 
+export default TabBar;

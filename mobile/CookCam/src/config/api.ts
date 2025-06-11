@@ -1,4 +1,3 @@
-import Config from 'react-native-config';
 import getEnvVars from './env';
 
 const envVars = getEnvVars();
@@ -7,16 +6,16 @@ const envVars = getEnvVars();
 export const API_CONFIG = {
   // Base URL - will use environment variable or fallback to environment-specific URL
   baseURL: envVars.API_BASE_URL,
-  
+
   // Timeout settings
   timeout: 15000, // 15 seconds
   retryAttempts: 3,
   retryDelay: 1000, // 1 second
-  
+
   // Headers
   headers: {
     'Content-Type': 'application/json',
-    'Accept': 'application/json',
+    Accept: 'application/json',
   },
 };
 
@@ -32,23 +31,23 @@ export const API_ENDPOINTS = {
     profile: '/api/v1/auth/profile',
     deleteAccount: '/api/v1/auth/account',
   },
-  
+
   // Ingredient scanning - UPDATED TO MATCH BACKEND
   scan: {
     upload: '/api/v1/scan/ingredients', // Backend uses /ingredients not /upload
-    detect: '/api/v1/scan/analyze',     // Backend uses /analyze not /detect
+    detect: '/api/v1/scan/analyze', // Backend uses /analyze not /detect
     history: '/api/v1/scan/history',
     get: (scanId: string) => `/api/v1/scan/${scanId}`,
     updateIngredients: (scanId: string) => `/api/v1/scan/${scanId}/ingredients`,
   },
-  
-  // Recipes - UPDATED TO MATCH BACKEND  
+
+  // Recipes - UPDATED TO MATCH BACKEND
   recipes: {
     generate: '/api/v1/recipes/generate',
-    generateFull: '/api/v1/recipes/generate-full',  // Backend has this endpoint
-    suggestions: '/api/v1/recipes/suggestions',     // Backend has this endpoint
+    generateFull: '/api/v1/recipes/generate-full', // Backend has this endpoint
+    suggestions: '/api/v1/recipes/suggestions', // Backend has this endpoint
     save: '/api/v1/recipes/save',
-    list: '/api/v1/recipes',                        // Backend uses / for list
+    list: '/api/v1/recipes', // Backend uses / for list
     get: (id: string) => `/api/v1/recipes/${id}`,
     delete: (id: string) => `/api/v1/recipes/${id}`,
     favorite: (id: string) => `/api/v1/recipes/${id}/favorite`,
@@ -57,32 +56,32 @@ export const API_ENDPOINTS = {
     variations: (id: string) => `/api/v1/recipes/${id}/variations`,
     tip: (id: string) => `/api/v1/recipe/${id}/tip`,
   },
-  
+
   // Ingredients - UPDATED TO MATCH BACKEND
   ingredients: {
     search: '/api/v1/ingredients/search',
-    usdaSearch: '/api/v1/ingredients/usda/search',  // Backend has this
-    list: '/api/v1/ingredients',                    // Backend uses / for list
+    usdaSearch: '/api/v1/ingredients/usda/search', // Backend has this
+    list: '/api/v1/ingredients', // Backend uses / for list
     details: (id: string) => `/api/v1/ingredients/${id}`,
     syncUsda: (id: string) => `/api/v1/ingredients/${id}/sync-usda`,
-    categories: '/api/v1/ingredients/categories',   // Keep for compatibility
+    categories: '/api/v1/ingredients/categories', // Keep for compatibility
   },
-  
+
   // Gamification - UPDATED TO MATCH BACKEND
   gamification: {
     xp: '/api/v1/gamification/add-xp',
-    profile: '/api/v1/gamification/progress',       // Backend uses /progress not /profile
+    profile: '/api/v1/gamification/progress', // Backend uses /progress not /profile
     leaderboard: '/api/v1/gamification/leaderboard',
     checkStreak: '/api/v1/gamification/check-streak', // Backend has this
     achievements: '/api/v1/gamification/achievements', // Keep for compatibility
   },
-  
+
   // Subscription endpoints - UPDATED TO MATCH BACKEND
   subscription: {
     tiers: '/api/v1/subscription/tiers',
     status: '/api/v1/subscription/status',
     checkout: '/api/v1/subscription/create-checkout', // Backend uses create-checkout
-    changeTier: '/api/v1/subscription/change-tier',   // Backend has this
+    changeTier: '/api/v1/subscription/change-tier', // Backend has this
     cancel: '/api/v1/subscription/cancel',
     webhook: '/api/v1/subscription/webhook/stripe',
     feature: (feature: string) => `/api/v1/subscription/feature/${feature}`, // Keep for compatibility
@@ -98,17 +97,18 @@ export const API_ENDPOINTS = {
     affiliate: {
       generate: '/api/v1/subscription/affiliate/generate',
       links: '/api/v1/subscription/affiliate/links',
-      track: (linkCode: string) => `/api/v1/subscription/affiliate/track/${linkCode}`,
+      track: (linkCode: string) =>
+        `/api/v1/subscription/affiliate/track/${linkCode}`,
     },
   },
-  
+
   // Analytics endpoints - ✅ IMPLEMENTED
   analytics: {
-    track: '/api/v1/analytics/track',         // ✅ Uses existing user_progress table
+    track: '/api/v1/analytics/track', // ✅ Uses existing user_progress table
     dashboard: '/api/v1/analytics/dashboard', // ✅ Comprehensive user analytics
-    global: '/api/v1/analytics/global',       // ✅ Admin-only global analytics
+    global: '/api/v1/analytics/global', // ✅ Admin-only global analytics
   },
-  
+
   // User management - UPDATED TO MATCH BACKEND
   users: {
     profile: '/api/v1/users/profile',
@@ -120,20 +120,20 @@ export const API_ENDPOINTS = {
     followers: (userId: string) => `/api/v1/users/${userId}/followers`,
     following: (userId: string) => `/api/v1/users/${userId}/following`,
   },
-  
+
   // Mystery Box - NEW BACKEND FEATURE
   mysteryBox: {
     open: '/api/v1/mysteryBox/open',
     history: (userId: string) => `/api/v1/mysteryBox/history/${userId}`,
     stats: '/api/v1/mysteryBox/stats',
   },
-  
+
   // Debug endpoints (development only)
   debug: {
     env: '/api/v1/debug/env',
     testOpenAI: '/api/v1/debug/test-openai',
   },
-  
+
   // Health check (correct path based on backend)
   health: '/health',
 };
@@ -176,7 +176,7 @@ export const CACHE_CONFIG = {
   shortTerm: 5 * 60 * 1000, // 5 minutes
   mediumTerm: 30 * 60 * 1000, // 30 minutes
   longTerm: 24 * 60 * 60 * 1000, // 24 hours
-  
+
   // Cache keys
   keys: {
     user: 'user_profile',
@@ -195,4 +195,4 @@ export const FEATURE_FLAGS = {
   enableBetaFeatures: IS_DEVELOPMENT,
 };
 
-export default API_CONFIG; 
+export default API_CONFIG;

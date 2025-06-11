@@ -11,7 +11,18 @@ import {
   Animated,
   Alert,
 } from 'react-native';
-import {Trophy, Crown, Medal, Award, TrendingUp, Clock, Users, Target, Info, Zap} from 'lucide-react-native';
+import {
+  Trophy,
+  Crown,
+  Medal,
+  Award,
+  TrendingUp,
+  Clock,
+  Users,
+  Target,
+  Info,
+  Zap,
+} from 'lucide-react-native';
 import {useAuth} from '../context/AuthContext';
 import {gamificationService} from '../services/api';
 import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
@@ -33,12 +44,13 @@ type LeaderboardType = 'global' | 'friends';
 const LeaderboardScreen: React.FC = () => {
   const {user} = useAuth();
   const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>('weekly');
-  const [leaderboardType, setLeaderboardType] = useState<LeaderboardType>('global');
+  const [leaderboardType, setLeaderboardType] =
+    useState<LeaderboardType>('global');
   const [loading, setLoading] = useState(false);
   const [leaderboard, setLeaderboard] = useState<LeaderboardUser[]>([]);
   const [userRank, setUserRank] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
-  
+
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -67,7 +79,7 @@ const LeaderboardScreen: React.FC = () => {
         useNativeDriver: true,
       }),
     ]).start();
-    
+
     // Pulse animation for challenges
     Animated.loop(
       Animated.sequence([
@@ -86,43 +98,65 @@ const LeaderboardScreen: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    loadLeaderboard();
+    loadLeaderboard().catch(error => {
+      console.error(
+        '❌ Unhandled promise rejection in loadLeaderboard:',
+        error?.message || String(error),
+      );
+      setError('Failed to load leaderboard. Please try again.');
+    });
   }, [selectedPeriod, leaderboardType]);
 
   const loadLeaderboard = async () => {
     setLoading(true);
     setError(null);
-    
+
     try {
-      console.log(`📊 Loading leaderboard: ${leaderboardType} - ${selectedPeriod}`);
-      
+      console.log(
+        '📊 Loading leaderboard:',
+        String(leaderboardType),
+        '-',
+        String(selectedPeriod),
+      );
+
       // Call actual API endpoint
-      const response = await gamificationService.getLeaderboard(leaderboardType, selectedPeriod);
-      
+      const response = await gamificationService.getLeaderboard(
+        leaderboardType,
+        selectedPeriod,
+      );
+
       if (response.success && response.data) {
-        console.log('✅ Leaderboard data received:', response.data);
-        
+        try {
+          console.log(
+            '✅ Leaderboard data received:',
+            JSON.stringify(response.data, null, 2),
+          );
+        } catch (logError) {
+          console.log('✅ Leaderboard data received: [Object data]');
+        }
+
         // Transform API response to our format
         const leaderboardData = response.data.leaderboard || [];
-        
+
         if (leaderboardData.length === 0) {
           setError('No leaderboard data found. Be the first to start cooking!');
           return;
         }
-        
-        const transformedData: LeaderboardUser[] = leaderboardData.map((entry: any, index: number) => ({
-          id: entry.users?.id || `user-${index}`,
-          name: entry.users?.name || `User ${index + 1}`,
-          avatarUrl: entry.users?.avatar_url,
-          xp: entry.xp_total || 0,
-          level: entry.users?.level || 1,
-          rank: entry.rank || (index + 1),
-          xpGained: entry.xp_gained || 0,
-          recipesCooked: entry.recipes_cooked || 0,
-        }));
-        
+
+        const transformedData: LeaderboardUser[] = leaderboardData.map(
+          (entry: any, index: number) => ({
+            id: String(entry.users?.id || `user-${index}`),
+            name: String(entry.users?.name || `User ${index + 1}`),
+            avatarUrl: entry.users?.avatar_url || undefined,
+            xp: Number(entry.xp_total) || 0,
+            level: Number(entry.users?.level) || 1,
+            rank: Number(entry.rank) || index + 1,
+            xpGained: Number(entry.xp_gained) || 0,
+            recipesCooked: Number(entry.recipes_cooked) || 0,
+          }),
+        );
+
         setLeaderboard(transformedData);
-        
         // Check if current user is in the response
         if (user) {
           const userEntry = transformedData.find(entry => entry.id === user.id);
@@ -134,30 +168,46 @@ const LeaderboardScreen: React.FC = () => {
           }
         }
       } else {
-        console.error('❌ Failed to load leaderboard:', response.error);
-        setError(response.error || 'Failed to load leaderboard. Please try again.');
+        console.error('❌ Failed to load leaderboard:', String(response.error));
+        const errorMessage =
+          typeof response.error === 'string'
+            ? response.error
+            : 'Failed to load leaderboard. Please try again.';
+        setError(errorMessage);
       }
     } catch (error) {
-      console.error('❌ Error loading leaderboard:', error);
-      setError('Network error. Please check your connection and try again.');
+      console.error(
+        '❌ Error loading leaderboard:',
+        error?.message || String(error),
+      );
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : 'Network error. Please check your connection and try again.';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
   };
 
   const showErrorAlert = () => {
-    Alert.alert(
-      'Error',
-      error || 'Failed to load leaderboard',
-      [
-        { text: 'Try Again', onPress: loadLeaderboard },
-        { text: 'Cancel', style: 'cancel' }
-      ]
-    );
+    const errorMessage =
+      typeof error === 'string' ? error : 'Failed to load leaderboard';
+    Alert.alert('Error', errorMessage, [
+      {
+        text: 'Try Again',
+        onPress: () =>
+          loadLeaderboard().catch(err =>
+            console.error('Retry failed:', err?.message || String(err)),
+          ),
+      },
+      {text: 'Cancel', style: 'cancel'},
+    ]);
   };
 
   const getRankIcon = (rank: number) => {
-    switch (rank) {
+    const safeRank = Number(rank) || 1;
+    switch (safeRank) {
       case 1:
         return <Crown size={24} color="#FFD700" />;
       case 2:
@@ -165,61 +215,96 @@ const LeaderboardScreen: React.FC = () => {
       case 3:
         return <Award size={24} color="#CD7F32" />;
       default:
-        return <Text style={styles.rankText}>#{rank}</Text>;
+        return <Text style={styles.rankText}>#{safeRank}</Text>;
     }
   };
 
   const renderUserCard = (leaderboardUser: LeaderboardUser, index: number) => {
-    const isCurrentUser = leaderboardUser.id === user?.id || leaderboardUser.id === `current-user-${user?.id}`;
-    const isTopThree = leaderboardUser.rank <= 3;
-    
+    // Ensure all values are safe to render
+    const safeUser = {
+      ...leaderboardUser,
+      name: String(leaderboardUser.name || 'Unknown User'),
+      xp: Number(leaderboardUser.xp) || 0,
+      level: Number(leaderboardUser.level) || 1,
+      rank: Number(leaderboardUser.rank) || 1,
+      xpGained: Number(leaderboardUser.xpGained) || 0,
+    };
+
+    const isCurrentUser =
+      safeUser.id === user?.id || safeUser.id === `current-user-${user?.id}`;
+    const isTopThree = safeUser.rank <= 3;
+
     return (
       <Animated.View
-        key={leaderboardUser.id}
+        key={safeUser.id}
         style={[
           styles.userCard,
-          isCurrentUser && styles.currentUserCard,
-          isTopThree && styles.topThreeCard,
-          index > 9 && styles.separatedCard,
+          isCurrentUser === true ? styles.currentUserCard : null,
+          isTopThree === true ? styles.topThreeCard : null,
+          index > 9 ? styles.separatedCard : null,
           {
             opacity: fadeAnim,
             transform: [{translateX: slideAnim}],
-          }
+          },
         ]}>
-        <View style={styles.rankContainer}>
-          {getRankIcon(leaderboardUser.rank)}
-        </View>
-        
+        <View style={styles.rankContainer}>{getRankIcon(safeUser.rank)}</View>
+
         <View style={styles.userInfo}>
           <View style={styles.avatar}>
-            {leaderboardUser.avatarUrl ? (
-              <Image source={{uri: leaderboardUser.avatarUrl}} style={styles.avatarImage} />
+            {safeUser.avatarUrl != null && safeUser.avatarUrl !== '' ? (
+              <Image
+                source={{uri: safeUser.avatarUrl}}
+                style={styles.avatarImage}
+              />
             ) : (
               <Text style={styles.avatarText}>
-                {leaderboardUser.name.charAt(0).toUpperCase()}
+                {String(safeUser.name || 'U')
+                  .charAt(0)
+                  .toUpperCase()}
               </Text>
             )}
           </View>
-          
+
           <View style={styles.nameContainer}>
             <View style={styles.nameRow}>
-              <Text style={[styles.userName, isCurrentUser && styles.currentUserName]}>
-                {leaderboardUser.name}
+              <Text
+                style={[
+                  styles.userName,
+                  isCurrentUser === true ? styles.currentUserName : null,
+                ]}>
+                {String(safeUser.name || 'Unknown User')}
               </Text>
-              {isCurrentUser && <Text style={styles.youText}> (You)</Text>}
+              {isCurrentUser === true ? (
+                <Text style={styles.youText}> (You)</Text>
+              ) : null}
             </View>
-            <Text style={styles.userLevel}>Level {leaderboardUser.level}</Text>
+            <Text style={styles.userLevel}>
+              Level {String(safeUser.level || 1)}
+            </Text>
           </View>
         </View>
-        
+
         <View style={styles.xpContainer}>
-          <Text style={[styles.xpText, isTopThree && styles.topThreeXP]}>
-            {leaderboardUser.xp.toLocaleString()}
+          <Text
+            style={[
+              styles.xpText,
+              isTopThree === true ? styles.topThreeXP : null,
+            ]}>
+            {String(Number(safeUser.xp || 0).toLocaleString())}
           </Text>
           <Text style={styles.xpLabel}>XP</Text>
-          {leaderboardUser.xpGained && (
-            <Text style={styles.xpGained}>+{leaderboardUser.xpGained} this week</Text>
-          )}
+          {safeUser.xpGained != null && safeUser.xpGained > 0 ? (
+            <Text style={styles.xpGained}>
+              +{String(safeUser.xpGained || 0)} this{' '}
+              {String(
+                selectedPeriod === 'allTime'
+                  ? 'total'
+                  : selectedPeriod === 'daily'
+                  ? 'today'
+                  : selectedPeriod,
+              )}
+            </Text>
+          ) : null}
         </View>
       </Animated.View>
     );
@@ -232,113 +317,175 @@ const LeaderboardScreen: React.FC = () => {
         <View style={styles.headerTop}>
           <View style={styles.headerLeft}>
             <Text style={styles.headerTitle}>Compete & Win! 🏆</Text>
-            <Text style={styles.headerSubtitle}>See who's cooking up a storm</Text>
-            
+            <Text style={styles.headerSubtitle}>
+              See who's cooking up a storm
+            </Text>
+
             {/* Compact User Rank - Integrated into header */}
-            {userRank && userRank > 10 && (
+            {userRank != null && Number(userRank) > 10 ? (
               <View style={styles.compactRankBadge}>
                 <TrendingUp size={14} color="#66BB6A" />
                 <Text style={styles.compactRankText}>
-                  #{userRank} this {selectedPeriod === 'allTime' ? 'all time' : selectedPeriod}
+                  #{String(Number(userRank) || 0)} this{' '}
+                  {String(
+                    selectedPeriod === 'allTime' ? 'all time' : selectedPeriod,
+                  )}
                 </Text>
               </View>
-            )}
+            ) : null}
           </View>
         </View>
-        
+
         {/* Leaderboard Type Selector */}
         <View style={styles.typeSelector}>
           <TouchableOpacity
-            style={[styles.typeButton, leaderboardType === 'global' && styles.typeButtonActive]}
+            style={[
+              styles.typeButton,
+              leaderboardType === 'global' ? styles.typeButtonActive : null,
+            ]}
             onPress={() => {
               ReactNativeHapticFeedback.trigger('selection');
               setLeaderboardType('global');
-            }}
-          >
-            <Trophy size={16} color={leaderboardType === 'global' ? '#F8F8FF' : '#8E8E93'} />
-            <Text style={[styles.typeText, leaderboardType === 'global' && styles.typeTextActive]}>
+            }}>
+            <Trophy
+              size={16}
+              color={leaderboardType === 'global' ? '#F8F8FF' : '#8E8E93'}
+            />
+            <Text
+              style={[
+                styles.typeText,
+                leaderboardType === 'global' ? styles.typeTextActive : null,
+              ]}>
               Global
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.typeButton, leaderboardType === 'friends' && styles.typeButtonActive]}
+            style={[
+              styles.typeButton,
+              leaderboardType === 'friends' ? styles.typeButtonActive : null,
+            ]}
             onPress={() => {
               ReactNativeHapticFeedback.trigger('selection');
               setLeaderboardType('friends');
-            }}
-          >
-            <Users size={16} color={leaderboardType === 'friends' ? '#F8F8FF' : '#8E8E93'} />
-            <Text style={[styles.typeText, leaderboardType === 'friends' && styles.typeTextActive]}>
+            }}>
+            <Users
+              size={16}
+              color={leaderboardType === 'friends' ? '#F8F8FF' : '#8E8E93'}
+            />
+            <Text
+              style={[
+                styles.typeText,
+                leaderboardType === 'friends' ? styles.typeTextActive : null,
+              ]}>
               Friends
             </Text>
           </TouchableOpacity>
         </View>
       </View>
-      
+
       {/* Period Selector */}
       <View style={styles.periodSelector}>
         <TouchableOpacity
-          style={[styles.periodButton, selectedPeriod === 'daily' && styles.periodButtonActive]}
+          style={[
+            styles.periodButton,
+            selectedPeriod === 'daily' ? styles.periodButtonActive : null,
+          ]}
           onPress={() => {
             ReactNativeHapticFeedback.trigger('selection');
             setSelectedPeriod('daily');
           }}>
-          <Clock size={16} color={selectedPeriod === 'daily' ? '#F8F8FF' : '#666'} />
-          <Text style={[styles.periodText, selectedPeriod === 'daily' && styles.periodTextActive]}>
+          <Clock
+            size={16}
+            color={selectedPeriod === 'daily' ? '#F8F8FF' : '#666'}
+          />
+          <Text
+            style={[
+              styles.periodText,
+              selectedPeriod === 'daily' ? styles.periodTextActive : null,
+            ]}>
             Daily
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.periodButton, selectedPeriod === 'weekly' && styles.periodButtonActive]}
+          style={[
+            styles.periodButton,
+            selectedPeriod === 'weekly' ? styles.periodButtonActive : null,
+          ]}
           onPress={() => {
             ReactNativeHapticFeedback.trigger('selection');
             setSelectedPeriod('weekly');
           }}>
-          <TrendingUp size={16} color={selectedPeriod === 'weekly' ? '#F8F8FF' : '#666'} />
-          <Text style={[styles.periodText, selectedPeriod === 'weekly' && styles.periodTextActive]}>
+          <TrendingUp
+            size={16}
+            color={selectedPeriod === 'weekly' ? '#F8F8FF' : '#666'}
+          />
+          <Text
+            style={[
+              styles.periodText,
+              selectedPeriod === 'weekly' ? styles.periodTextActive : null,
+            ]}>
             Weekly
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.periodButton, selectedPeriod === 'allTime' && styles.periodButtonActive]}
+          style={[
+            styles.periodButton,
+            selectedPeriod === 'allTime' ? styles.periodButtonActive : null,
+          ]}
           onPress={() => {
             ReactNativeHapticFeedback.trigger('selection');
             setSelectedPeriod('allTime');
           }}>
-          <Trophy size={16} color={selectedPeriod === 'allTime' ? '#F8F8FF' : '#666'} />
-          <Text style={[styles.periodText, selectedPeriod === 'allTime' && styles.periodTextActive]}>
+          <Trophy
+            size={16}
+            color={selectedPeriod === 'allTime' ? '#F8F8FF' : '#666'}
+          />
+          <Text
+            style={[
+              styles.periodText,
+              selectedPeriod === 'allTime' ? styles.periodTextActive : null,
+            ]}>
             All Time
           </Text>
         </TouchableOpacity>
       </View>
 
-      {/* Error Display */}
-      {error && (
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={loadLeaderboard}>
-            <Text style={styles.retryButtonText}>Retry</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {/* Leaderboard List */}
-      {loading ? (
+      {/* Leaderboard List and Error Handling */}
+      {loading === true ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#FF6B35" />
           <Text style={styles.loadingText}>Loading leaderboard...</Text>
         </View>
-      ) : error ? (
-        <TouchableOpacity style={styles.errorRetryContainer} onPress={showErrorAlert}>
-          <Text style={styles.errorRetryText}>Tap to retry loading leaderboard</Text>
-        </TouchableOpacity>
+      ) : error != null ? (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>
+            {String(error || 'An error occurred')}
+          </Text>
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={() =>
+              loadLeaderboard().catch(err =>
+                console.error('Retry failed:', err?.message || String(err)),
+              )
+            }>
+            <Text style={styles.retryButtonText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
       ) : (
         <ScrollView
           style={styles.leaderboardList}
           contentContainerStyle={styles.leaderboardContent}
           showsVerticalScrollIndicator={false}>
-          {leaderboard.map((leaderboardUser, index) => 
-            renderUserCard(leaderboardUser, index)
+          {Array.isArray(leaderboard) && leaderboard.length > 0 ? (
+            leaderboard.map((leaderboardUser, index) =>
+              renderUserCard(leaderboardUser, index),
+            )
+          ) : (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>
+                No leaderboard data available
+              </Text>
+            </View>
           )}
         </ScrollView>
       )}
@@ -571,23 +718,21 @@ const styles = StyleSheet.create({
     color: '#66BB6A',
   },
   errorContainer: {
-    flexDirection: 'row',
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
-    justifyContent: 'space-between',
     padding: 16,
-    backgroundColor: '#FFF9F7',
-    borderRadius: 12,
-    marginBottom: 12,
   },
   errorText: {
     fontSize: 16,
     color: '#FF6B35',
     fontWeight: '600',
+    marginBottom: 12,
   },
   retryButton: {
     padding: 12,
+    borderRadius: 12,
     backgroundColor: '#FF6B35',
-    borderRadius: 20,
   },
   retryButtonText: {
     fontSize: 16,
@@ -599,17 +744,17 @@ const styles = StyleSheet.create({
     color: '#8E8E93',
     marginTop: 12,
   },
-  errorRetryContainer: {
+  emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 16,
+    padding: 32,
   },
-  errorRetryText: {
+  emptyText: {
     fontSize: 16,
-    color: '#FF6B35',
-    fontWeight: '600',
+    color: '#8E8E93',
+    textAlign: 'center',
   },
 });
 
-export default LeaderboardScreen; 
+export default LeaderboardScreen;

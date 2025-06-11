@@ -4,6 +4,9 @@
 [![Tech Stack](https://img.shields.io/badge/Stack-React%20Native%20%2B%20Supabase-blue.svg)](#technology-stack)
 [![Revenue Model](https://img.shields.io/badge/Revenue-%243.99%2Fmonth-purple.svg)](./docs/setup/subscription-setup-guide.md)
 
+#coderabbit Badge
+![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/abmccull/cookcam?utm_source=oss&utm_medium=github&utm_campaign=abmccull%2Fcookcam&labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews)
+
 > Transform cooking into an engaging, gamified experience with AI-powered ingredient scanning and recipe generation.
 
 ## 🚀 **Quick Start**

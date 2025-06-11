@@ -4,19 +4,27 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  ScrollView,
   Animated,
   Alert,
-  Image,
 } from 'react-native';
-import {Camera, Check, Calendar, Star, ChefHat, Upload} from 'lucide-react-native';
+import {
+  Camera,
+  Check,
+  Calendar,
+  Star,
+  ChefHat,
+  Upload,
+} from 'lucide-react-native';
 import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useGamification} from '../context/GamificationContext';
 // import {launchImageLibrary} from 'react-native-image-picker';
 
 // Mock image picker for now
-const launchImageLibrary = (options: any, callback: (response: any) => void) => {
+const launchImageLibrary = (
+  options: any,
+  callback: (response: any) => void,
+) => {
   // Simulate image selection
   setTimeout(() => {
     callback({
@@ -38,18 +46,18 @@ const DailyCheckIn: React.FC = () => {
   const [weeklyProgress, setWeeklyProgress] = useState<CheckInDay[]>([]);
   const [showSuggestion, setShowSuggestion] = useState(false);
   const [suggestedRecipe, setSuggestedRecipe] = useState<string>('');
-  
+
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.95)).current;
   const checkmarkScale = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
-  
+
   useEffect(() => {
     loadCheckInData();
     startAnimations();
   }, []);
-  
+
   const startAnimations = () => {
     // Fade in
     Animated.timing(fadeAnim, {
@@ -57,7 +65,7 @@ const DailyCheckIn: React.FC = () => {
       duration: 800,
       useNativeDriver: true,
     }).start();
-    
+
     // Scale animation
     Animated.spring(scaleAnim, {
       toValue: 1,
@@ -65,7 +73,7 @@ const DailyCheckIn: React.FC = () => {
       friction: 7,
       useNativeDriver: true,
     }).start();
-    
+
     // Pulse animation for button
     if (!hasCheckedInToday) {
       Animated.loop(
@@ -84,16 +92,16 @@ const DailyCheckIn: React.FC = () => {
       ).start();
     }
   };
-  
+
   const loadCheckInData = async () => {
     try {
       const today = new Date().toDateString();
       const lastCheckIn = await AsyncStorage.getItem('lastCheckIn');
-      
+
       if (lastCheckIn === today) {
         setHasCheckedInToday(true);
       }
-      
+
       // Load weekly progress
       const weekData = await AsyncStorage.getItem('weeklyCheckIns');
       if (weekData) {
@@ -105,61 +113,69 @@ const DailyCheckIn: React.FC = () => {
       console.error('Error loading check-in data:', error);
     }
   };
-  
+
   const generateWeeklyProgress = () => {
     const days: CheckInDay[] = [];
     const today = new Date();
-    
+
     for (let i = 6; i >= 0; i--) {
       const date = new Date();
       date.setDate(today.getDate() - i);
-      
+
       days.push({
         date: date.toDateString(),
         completed: false,
       });
     }
-    
+
     setWeeklyProgress(days);
   };
-  
+
   const handleCheckIn = async () => {
     if (hasCheckedInToday) {
-      Alert.alert('Already Checked In!', 'You\'ve already completed today\'s check-in!');
+      Alert.alert(
+        'Already Checked In!',
+        "You've already completed today's check-in!",
+      );
       return;
     }
-    
+
     ReactNativeHapticFeedback.trigger('impactMedium');
-    
+
     // Launch camera/gallery
     launchImageLibrary(
       {
         mediaType: 'photo',
         quality: 0.7,
       },
-      async (response) => {
+      async response => {
         if (response.didCancel || response.errorMessage) {
           return;
         }
-        
+
         const photoUri = response.assets?.[0]?.uri;
-        if (!photoUri) return;
-        
+        if (!photoUri) {
+          return;
+        }
+
         // Mark as checked in
         setHasCheckedInToday(true);
         const today = new Date().toDateString();
         await AsyncStorage.setItem('lastCheckIn', today);
-        
+
         // Update weekly progress
-        const updatedProgress = weeklyProgress.map(day => 
-          day.date === today ? {...day, completed: true, photoUri} : day
+        const updatedProgress = weeklyProgress.map(day =>
+          day.date === today ? {...day, completed: true, photoUri} : day,
         );
         setWeeklyProgress(updatedProgress);
-        await AsyncStorage.setItem('weeklyCheckIns', JSON.stringify(updatedProgress));
-        
+        await AsyncStorage.setItem(
+          'weeklyCheckIns',
+          JSON.stringify(updatedProgress),
+        );
+
         // Award XP
         await addXP(5, 'DAILY_CHECK_IN');
-        
+
         // Animate checkmark
         Animated.spring(checkmarkScale, {
           toValue: 1,
@@ -167,17 +183,17 @@ const DailyCheckIn: React.FC = () => {
           friction: 5,
           useNativeDriver: true,
         }).start();
-        
+
         // Generate AI suggestion (mock for now)
         generateRecipeSuggestion(photoUri);
-        
+
         // Check for weekly bonus
         checkWeeklyBonus(updatedProgress);
-      }
+      },
     );
   };
-  
-  const generateRecipeSuggestion = (photoUri: string) => {
+
+  const generateRecipeSuggestion = (_photoUri: string) => {
     // In real app, use AI to analyze photo and suggest recipe
     const suggestions = [
       'Creamy Tomato Pasta',
@@ -186,37 +202,37 @@ const DailyCheckIn: React.FC = () => {
       'Homemade Pizza',
       'Veggie Wrap',
     ];
-    
-    const randomSuggestion = suggestions[Math.floor(Math.random() * suggestions.length)];
+
+    const randomSuggestion =
+      suggestions[Math.floor(Math.random() * suggestions.length)];
     setSuggestedRecipe(randomSuggestion);
     setShowSuggestion(true);
-    
+
     ReactNativeHapticFeedback.trigger('notificationSuccess');
   };
-  
+
   const checkWeeklyBonus = async (progress: CheckInDay[]) => {
     const completedDays = progress.filter(day => day.completed).length;
-    
+
     if (completedDays === 7) {
       await addXP(50, 'WEEKLY_CHECK_IN_BONUS');
       Alert.alert(
         'Weekly Bonus! 🎉',
         'You checked in every day this week! +50 XP bonus awarded!',
-        [{text: 'Awesome!'}]
+        [{text: 'Awesome!'}],
       );
     }
   };
-  
+
   const renderWeeklyCalendar = () => {
     const days = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
-    const today = new Date().getDay();
-    
+
     return (
       <View style={styles.weeklyCalendar}>
         {weeklyProgress.map((day, index) => {
           const isToday = day.date === new Date().toDateString();
           const dayOfWeek = new Date(day.date).getDay();
-          
+
           return (
             <View key={index} style={styles.dayContainer}>
               <Text style={[styles.dayLabel, isToday && styles.todayLabel]}>
@@ -228,8 +244,7 @@ const DailyCheckIn: React.FC = () => {
                   day.completed && styles.dayCompleted,
                   isToday && styles.todayCircle,
                 ]}
-                activeOpacity={0.8}
-              >
+                activeOpacity={0.8}>
                 {day.completed ? (
                   <Check size={16} color="#FFFFFF" />
                 ) : (
@@ -244,9 +259,13 @@ const DailyCheckIn: React.FC = () => {
       </View>
     );
   };
-  
+
   return (
-    <Animated.View style={[styles.container, {opacity: fadeAnim, transform: [{scale: scaleAnim}]}]}>
+    <Animated.View
+      style={[
+        styles.container,
+        {opacity: fadeAnim, transform: [{scale: scaleAnim}]},
+      ]}>
       <View style={styles.header}>
         <View style={styles.titleRow}>
           <Camera size={24} color="#FF6B35" />
@@ -254,18 +273,17 @@ const DailyCheckIn: React.FC = () => {
         </View>
         <Text style={styles.subtitle}>What's in your fridge today?</Text>
       </View>
-      
+
       {/* Weekly Progress */}
       {renderWeeklyCalendar()}
-      
+
       {/* Check-In Button */}
       {!hasCheckedInToday ? (
         <Animated.View style={{transform: [{scale: pulseAnim}]}}>
           <TouchableOpacity
             style={styles.checkInButton}
             onPress={handleCheckIn}
-            activeOpacity={0.8}
-          >
+            activeOpacity={0.8}>
             <Upload size={24} color="#FFFFFF" />
             <Text style={styles.checkInButtonText}>Upload Fridge Photo</Text>
             <View style={styles.xpBadge}>
@@ -275,13 +293,14 @@ const DailyCheckIn: React.FC = () => {
         </Animated.View>
       ) : (
         <View style={styles.completedContainer}>
-          <Animated.View style={[styles.checkmark, {transform: [{scale: checkmarkScale}]}]}>
+          <Animated.View
+            style={[styles.checkmark, {transform: [{scale: checkmarkScale}]}]}>
             <Check size={32} color="#4CAF50" />
           </Animated.View>
           <Text style={styles.completedText}>Today's check-in completed!</Text>
         </View>
       )}
-      
+
       {/* Recipe Suggestion */}
       {showSuggestion && (
         <Animated.View style={[styles.suggestionCard, {opacity: fadeAnim}]}>
@@ -295,16 +314,17 @@ const DailyCheckIn: React.FC = () => {
           <Text style={styles.recipeName}>{suggestedRecipe}</Text>
           <TouchableOpacity style={styles.viewRecipeButton}>
             <Text style={styles.viewRecipeText}>View Recipe</Text>
-                            <Star size={16} color="#FF6B35" />
+            <Star size={16} color="#FF6B35" />
           </TouchableOpacity>
         </Animated.View>
       )}
-      
+
       {/* Weekly Bonus Indicator */}
       <View style={styles.bonusIndicator}>
         <Calendar size={16} color="#FFB800" />
         <Text style={styles.bonusText}>
-          {weeklyProgress.filter(d => d.completed).length}/7 days • Complete all for 50 XP bonus!
+          {weeklyProgress.filter(d => d.completed).length}/7 days • Complete all
+          for 50 XP bonus!
         </Text>
       </View>
     </Animated.View>
@@ -491,4 +511,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default DailyCheckIn; 
+export default DailyCheckIn;

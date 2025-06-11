@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, {useState, useEffect} from 'react';
 import {
   View,
   Text,
@@ -9,18 +9,37 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
-import { Crown, Star, TrendingUp, DollarSign, Shield, Zap } from 'lucide-react-native';
-import { useSubscription } from '../context/SubscriptionContext';
-import { useAuth } from '../context/AuthContext';
-import { subscriptionService, SubscriptionProduct } from '../services/subscriptionService';
+import {
+  Crown,
+  Star,
+  TrendingUp,
+  DollarSign,
+  Shield,
+  Zap,
+} from 'lucide-react-native';
+import {useSubscription} from '../context/SubscriptionContext';
+import {useAuth} from '../context/AuthContext';
+import {
+  SubscriptionProduct,
+  SubscriptionStatus,
+} from '../services/subscriptionService';
+import SubscriptionService from '../services/subscriptionService';
 
 interface SubscriptionScreenProps {
   navigation: any;
 }
 
-const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ navigation }) => {
-  const { state, purchaseSubscription, autoSubscribeCreator, isCreator, restorePurchases } = useSubscription();
-  const { user } = useAuth();
+const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({
+  navigation,
+}) => {
+  const {
+    state,
+    purchaseSubscription,
+    autoSubscribeCreator,
+    isCreator,
+    restorePurchases,
+  } = useSubscription();
+  const {user} = useAuth();
   const [products, setProducts] = useState<SubscriptionProduct[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<string | null>(null);
@@ -31,7 +50,9 @@ const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ navigation }) =
 
   const loadProducts = async () => {
     try {
-      const availableProducts = await subscriptionService.getAvailableProducts();
+      const subscriptionService = SubscriptionService.getInstance();
+      const availableProducts =
+        await subscriptionService.getAvailableProducts();
       setProducts(availableProducts);
     } catch (error) {
       console.error('Failed to load products:', error);
@@ -39,31 +60,33 @@ const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ navigation }) =
   };
 
   const handlePurchase = async (productId: string) => {
-    if (loading) return;
+    if (loading) {
+      return;
+    }
 
     setLoading(true);
     setSelectedProduct(productId);
 
     try {
       await purchaseSubscription(productId);
-      
+
       Alert.alert(
-        'Success!', 
+        'Success!',
         'Your subscription has been activated. Welcome to CookCam Premium!',
-        [{ text: 'OK', onPress: () => navigation.goBack() }]
+        [{text: 'OK', onPress: () => navigation.goBack()}],
       );
     } catch (error: any) {
       console.error('Purchase failed:', error);
-      
+
       if (error.message?.includes('cancelled')) {
         // User cancelled, no need to show error
         return;
       }
-      
+
       Alert.alert(
         'Purchase Failed',
         'Unable to complete your purchase. Please try again.',
-        [{ text: 'OK' }]
+        [{text: 'OK'}],
       );
     } finally {
       setLoading(false);
@@ -72,58 +95,65 @@ const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ navigation }) =
   };
 
   const handleCreatorAutoSubscribe = async () => {
-    if (!user?.id || loading) return;
+    if (!user?.id || loading) {
+      return;
+    }
 
     setLoading(true);
-    
+
     try {
       const success = await autoSubscribeCreator(user.id);
-      
+
       if (success) {
         Alert.alert(
           'Creator Subscription Activated!',
           'Welcome to CookCam Creator! You now have access to monetization tools with earnings from referrals (30%), tips (100%), and collections (70%).',
-          [{ text: 'Get Started', onPress: () => navigation.navigate('Creator') }]
+          [
+            {
+              text: 'Get Started',
+              onPress: () => navigation.navigate('Creator'),
+            },
+          ],
         );
       } else {
         Alert.alert(
           'Auto-Subscribe Failed',
           'Unable to activate Creator subscription. Please try manually subscribing.',
-          [{ text: 'OK' }]
+          [{text: 'OK'}],
         );
       }
     } catch (error) {
       console.error('Auto-subscribe failed:', error);
-      Alert.alert(
-        'Error',
-        'Something went wrong. Please try again.',
-        [{ text: 'OK' }]
-      );
+      Alert.alert('Error', 'Something went wrong. Please try again.', [
+        {text: 'OK'},
+      ]);
     } finally {
       setLoading(false);
     }
   };
 
   const handleRestore = async () => {
-    if (loading) return;
-    
+    if (loading) {
+      return;
+    }
+
     setLoading(true);
-    
+
     try {
       const restored = await restorePurchases();
-      
+
       // restorePurchases returns void, so we'll just show success
       Alert.alert(
         'Restore Attempted',
         'Restore purchases has been initiated. Check your subscription status.',
-        [{ text: 'OK' }]
+        [{text: 'OK'}],
       );
     } catch (error) {
       console.error('Restore failed:', error);
       Alert.alert(
         'Restore Failed',
         'Unable to restore purchases. Please try again.',
-        [{ text: 'OK' }]
+        [{text: 'OK'}],
       );
     } finally {
       setLoading(false);
@@ -149,17 +179,18 @@ const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ navigation }) =
         key={product.productId}
         style={[
           styles.productCard,
-          { borderColor: color },
+          {borderColor: color},
           isCurrentTier && styles.currentTier,
         ]}
         onPress={() => handlePurchase(product.productId)}
-        disabled={loading || isCurrentTier}
-      >
+        disabled={loading || isCurrentTier}>
         <View style={styles.productHeader}>
           <Icon size={32} color={color} />
           <View style={styles.productTitleContainer}>
-            <Text style={[styles.productTitle, { color }]}>{product.title}</Text>
-            <Text style={styles.productPrice}>{product.localizedPrice}/month</Text>
+            <Text style={[styles.productTitle, {color}]}>{product.title}</Text>
+            <Text style={styles.productPrice}>
+              {product.localizedPrice}/month
+            </Text>
           </View>
           {product.tier === 'creator' && (
             <View style={styles.popularBadge}>
@@ -172,23 +203,29 @@ const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ navigation }) =
 
         <View style={styles.trialInfo}>
           <Shield size={16} color="#4CAF50" />
-          <Text style={styles.trialText}>{product.freeTrialPeriod} free trial</Text>
+          <Text style={styles.trialText}>
+            {product.freeTrialPeriod} free trial
+          </Text>
         </View>
 
         {product.tier === 'creator' && (
           <View style={styles.revenueShare}>
             <DollarSign size={16} color="#4CAF50" />
-            <Text style={styles.revenueText}>Creator earnings: 30% referrals, 100% tips, 70% collections</Text>
+            <Text style={styles.revenueText}>
+              Creator earnings: 30% referrals, 100% tips, 70% collections
+            </Text>
           </View>
         )}
 
         <View style={styles.productFeatures}>
-          {['Premium recipes', 'Unlimited scans', 'Ad-free experience'].map((feature, index) => (
-            <View key={index} style={styles.featureItem}>
-              <Zap size={14} color="#4CAF50" />
-              <Text style={styles.featureText}>{feature}</Text>
-            </View>
-          ))}
+          {['Premium recipes', 'Unlimited scans', 'Ad-free experience'].map(
+            (feature, index) => (
+              <View key={index} style={styles.featureItem}>
+                <Zap size={14} color="#4CAF50" />
+                <Text style={styles.featureText}>{feature}</Text>
+              </View>
+            ),
+          )}
           {product.tier === 'creator' && (
             <>
               <View style={styles.featureItem}>
@@ -208,7 +245,7 @@ const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ navigation }) =
             <Text style={styles.currentButtonText}>Current Plan</Text>
           </View>
         ) : (
-          <View style={[styles.subscribeButton, { backgroundColor: color }]}>
+          <View style={[styles.subscribeButton, {backgroundColor: color}]}>
             {isSelected && loading ? (
               <ActivityIndicator color="white" />
             ) : (
@@ -224,7 +261,9 @@ const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ navigation }) =
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <Text style={styles.title}>Choose Your Plan</Text>
           <Text style={styles.subtitle}>
@@ -237,8 +276,7 @@ const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ navigation }) =
           <TouchableOpacity
             style={styles.autoSubscribeButton}
             onPress={handleCreatorAutoSubscribe}
-            disabled={loading}
-          >
+            disabled={loading}>
             <Crown size={20} color="#FFD700" />
             <Text style={styles.autoSubscribeText}>
               Auto-Subscribe to Creator Tier
@@ -255,16 +293,14 @@ const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ navigation }) =
         <TouchableOpacity
           style={styles.restoreButton}
           onPress={handleRestore}
-          disabled={loading}
-        >
+          disabled={loading}>
           <Text style={styles.restoreButtonText}>Restore Purchases</Text>
         </TouchableOpacity>
 
         <View style={styles.footer}>
           <Text style={styles.footerText}>
-            • Cancel anytime{'\n'}
-            • No commitment{'\n'}
-            • Secure payments via App Store/Google Play
+            • Cancel anytime{'\n'}• No commitment{'\n'}• Secure payments via App
+            Store/Google Play
           </Text>
         </View>
       </ScrollView>
@@ -324,7 +360,7 @@ const styles = StyleSheet.create({
     padding: 20,
     borderWidth: 2,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 4,
@@ -445,4 +481,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default SubscriptionScreen; 
+export default SubscriptionScreen;

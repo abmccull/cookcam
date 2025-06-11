@@ -13,7 +13,17 @@ import {
   ScrollView,
   Switch,
 } from 'react-native';
-import {Mail, Lock, Eye, EyeOff, User, ChevronLeft, DollarSign, Check, X} from 'lucide-react-native';
+import {
+  Mail,
+  Lock,
+  Eye,
+  EyeOff,
+  User,
+  ChevronLeft,
+  DollarSign,
+  Check,
+  X,
+} from 'lucide-react-native';
 import {useAuth} from '../context/AuthContext';
 
 interface SignupScreenProps {
@@ -38,14 +48,15 @@ const SignupScreen: React.FC<SignupScreenProps> = ({navigation}) => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isCreator, setIsCreator] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [passwordValidation, setPasswordValidation] = useState<PasswordValidation>({
-    hasLowercase: false,
-    hasUppercase: false,
-    hasNumber: false,
-    hasSpecialChar: false,
-    minLength: false,
-    isValid: false,
-  });
+  const [passwordValidation, setPasswordValidation] =
+    useState<PasswordValidation>({
+      hasLowercase: false,
+      hasUppercase: false,
+      hasNumber: false,
+      hasSpecialChar: false,
+      minLength: false,
+      isValid: false,
+    });
   const {signup} = useAuth();
 
   // Password validation function that matches Supabase requirements
@@ -56,9 +67,10 @@ const SignupScreen: React.FC<SignupScreenProps> = ({navigation}) => {
     // Special characters allowed by Supabase
     const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|<>?,./`~]/.test(pwd);
     const minLength = pwd.length >= 8;
-    
-    const isValid = hasLowercase && hasUppercase && hasNumber && hasSpecialChar && minLength;
-    
+
+    const isValid =
+      hasLowercase && hasUppercase && hasNumber && hasSpecialChar && minLength;
+
     return {
       hasLowercase,
       hasUppercase,
@@ -79,26 +91,29 @@ const SignupScreen: React.FC<SignupScreenProps> = ({navigation}) => {
       Alert.alert('Error', 'Please fill in all fields');
       return;
     }
-    
+
     if (!passwordValidation.isValid) {
-      Alert.alert('Error', 'Please ensure your password meets all requirements');
+      Alert.alert(
+        'Error',
+        'Please ensure your password meets all requirements',
+      );
       return;
     }
-    
+
     if (password !== confirmPassword) {
       Alert.alert('Error', 'Passwords do not match');
       return;
     }
-    
+
     // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       Alert.alert('Error', 'Please enter a valid email address');
       return;
     }
-    
+
     setLoading(true);
-    
+
     try {
       await signup(email, password, name, isCreator);
       // Navigation will be handled by auth state change
@@ -114,14 +129,24 @@ const SignupScreen: React.FC<SignupScreenProps> = ({navigation}) => {
     navigation.goBack();
   };
 
-  const PasswordRequirement = ({ isValid, text }: { isValid: boolean; text: string }) => (
+  const PasswordRequirement = ({
+    isValid,
+    text,
+  }: {
+    isValid: boolean;
+    text: string;
+  }) => (
     <View style={styles.passwordRequirement}>
       {isValid ? (
         <Check size={16} color="#66BB6A" />
       ) : (
         <X size={16} color="#FF5252" />
       )}
-      <Text style={[styles.requirementText, { color: isValid ? '#66BB6A' : '#FF5252' }]}>
+      <Text
+        style={[
+          styles.requirementText,
+          {color: isValid ? '#66BB6A' : '#FF5252'},
+        ]}>
         {text}
       </Text>
     </View>
@@ -132,7 +157,6 @@ const SignupScreen: React.FC<SignupScreenProps> = ({navigation}) => {
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}>
-        
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={handleBack} style={styles.backButton}>
@@ -141,8 +165,10 @@ const SignupScreen: React.FC<SignupScreenProps> = ({navigation}) => {
           <Text style={styles.title}>Create Account</Text>
           <View style={styles.placeholder} />
         </View>
-        
-        <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollView}>
+
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          style={styles.scrollView}>
           {/* Sign Up Form */}
           <View style={styles.form}>
             {/* Name Input */}
@@ -200,26 +226,28 @@ const SignupScreen: React.FC<SignupScreenProps> = ({navigation}) => {
             {/* Password Requirements - Only show when user starts typing */}
             {password.length > 0 && (
               <View style={styles.passwordRequirementsContainer}>
-                <Text style={styles.requirementsTitle}>Password Requirements:</Text>
-                <PasswordRequirement 
-                  isValid={passwordValidation.minLength} 
-                  text="At least 8 characters" 
+                <Text style={styles.requirementsTitle}>
+                  Password Requirements:
+                </Text>
+                <PasswordRequirement
+                  isValid={passwordValidation.minLength}
+                  text="At least 8 characters"
                 />
-                <PasswordRequirement 
-                  isValid={passwordValidation.hasLowercase} 
-                  text="One lowercase letter (a-z)" 
+                <PasswordRequirement
+                  isValid={passwordValidation.hasLowercase}
+                  text="One lowercase letter (a-z)"
                 />
-                <PasswordRequirement 
-                  isValid={passwordValidation.hasUppercase} 
-                  text="One uppercase letter (A-Z)" 
+                <PasswordRequirement
+                  isValid={passwordValidation.hasUppercase}
+                  text="One uppercase letter (A-Z)"
                 />
-                <PasswordRequirement 
-                  isValid={passwordValidation.hasNumber} 
-                  text="One number (0-9)" 
+                <PasswordRequirement
+                  isValid={passwordValidation.hasNumber}
+                  text="One number (0-9)"
                 />
-                <PasswordRequirement 
-                  isValid={passwordValidation.hasSpecialChar} 
-                  text="One special character (!@#$%^&*)" 
+                <PasswordRequirement
+                  isValid={passwordValidation.hasSpecialChar}
+                  text="One special character (!@#$%^&*)"
                 />
               </View>
             )}
@@ -255,9 +283,14 @@ const SignupScreen: React.FC<SignupScreenProps> = ({navigation}) => {
                 ) : (
                   <X size={16} color="#FF5252" />
                 )}
-                <Text style={[styles.requirementText, { 
-                  color: password === confirmPassword ? '#66BB6A' : '#FF5252' 
-                }]}>
+                <Text
+                  style={[
+                    styles.requirementText,
+                    {
+                      color:
+                        password === confirmPassword ? '#66BB6A' : '#FF5252',
+                    },
+                  ]}>
                   Passwords match
                 </Text>
               </View>
@@ -285,11 +318,18 @@ const SignupScreen: React.FC<SignupScreenProps> = ({navigation}) => {
             {/* Sign Up Button */}
             <TouchableOpacity
               style={[
-                styles.signupButton, 
-                (loading || !passwordValidation.isValid || password !== confirmPassword) && styles.disabledButton
+                styles.signupButton,
+                (loading ||
+                  !passwordValidation.isValid ||
+                  password !== confirmPassword) &&
+                  styles.disabledButton,
               ]}
               onPress={handleSignup}
-              disabled={loading || !passwordValidation.isValid || password !== confirmPassword}>
+              disabled={
+                loading ||
+                !passwordValidation.isValid ||
+                password !== confirmPassword
+              }>
               {loading ? (
                 <ActivityIndicator color="#F8F8FF" />
               ) : (
@@ -312,7 +352,9 @@ const SignupScreen: React.FC<SignupScreenProps> = ({navigation}) => {
             </View>
 
             {/* Login Link */}
-            <TouchableOpacity onPress={handleBack} style={styles.loginContainer}>
+            <TouchableOpacity
+              onPress={handleBack}
+              style={styles.loginContainer}>
               <Text style={styles.loginText}>
                 Already have an account?{' '}
                 <Text style={styles.loginLink}>Log In</Text>
@@ -490,4 +532,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default SignupScreen; 
+export default SignupScreen;

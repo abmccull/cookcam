@@ -1,440 +1,343 @@
-import { Platform } from 'react-native';
-import { cookCamApi } from './cookCamApi';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-
-// Import react-native-iap
+import {Platform} from 'react-native';
 import {
   initConnection,
-  endConnection,
-  getSubscriptions,
-  requestSubscription,
-  finishTransaction,
-  acknowledgePurchaseAndroid,
   purchaseUpdatedListener,
   purchaseErrorListener,
-  getAvailablePurchases,
+  type ProductPurchase,
+  type SubscriptionPurchase,
+  type Product,
+  type Subscription,
+  getProducts,
+  getSubscriptions,
+  requestPurchase,
+  requestSubscription,
+  finishTransaction,
+  clearTransactionIOS,
+  validateReceiptIos,
+  validateReceiptAndroid,
+  acknowledgePurchaseAndroid,
   PurchaseError,
-  Subscription,
-  SubscriptionPurchase,
 } from 'react-native-iap';
 
+import {TempDataState} from '../context/TempDataContext';
+
 // Types for App Store/Google Play subscriptions
-interface SubscriptionProduct {
+export interface SubscriptionProduct {
   productId: string;
+  name: string;
   price: string;
-  localizedPrice: string;
   currency: string;
-  title: string;
-  description: string;
+  localizedPrice: string;
   introductoryPrice?: string;
-  freeTrialPeriod?: string;
-  tier: 'regular' | 'creator';
+  introductoryPriceNumberOfPeriods?: number;
+  introductoryPriceSubscriptionPeriod?: string;
 }
 
-interface PurchaseResult {
-  productId: string;
-  transactionId: string;
-  transactionDate: number;
-  transactionReceipt: string;
-  purchaseToken?: string; // Android only
-}
-
-interface SubscriptionStatus {
+export interface SubscriptionStatus {
   isActive: boolean;
-  productId?: string;
-  tier?: 'regular' | 'creator';
-  expiryDate?: Date;
-  isTrialPeriod?: boolean;
-  autoRenewing?: boolean;
+  productId: string | null;
+  expirationDate: Date | null;
+  isTrialPeriod: boolean;
+  originalTransactionId: string | null;
 }
 
-// Product IDs for both platforms - Updated with two tiers
-const SUBSCRIPTION_PRODUCTS = {
-  regular: Platform.select({
-    ios: 'com.cookcam.regular',
-    android: 'com.cookcam.regular',
-  }),
-  creator: Platform.select({
-    ios: 'com.cookcam.creator',
-    android: 'com.cookcam.creator',
-  }),
+// Product IDs for different subscription tiers
+const PRODUCT_IDS = {
+  consumer:
+    Platform.OS === 'ios' ? 'com.cookcam.consumer.monthly' : 'consumer_monthly',
+  creator:
+    Platform.OS === 'ios' ? 'com.cookcam.creator.monthly' : 'creator_monthly',
 };
 
-class AppStoreSubscriptionService {
-  private isInitialized = false;
-  private products: SubscriptionProduct[] = [];
+class SubscriptionService {
+  private static instance: SubscriptionService;
   private purchaseUpdateSubscription: any;
   private purchaseErrorSubscription: any;
-  
-  // Initialize In-App Purchase connection
+  private isInitialized = false;
+
+  private constructor() {}
+
+  public static getInstance(): SubscriptionService {
+    if (!SubscriptionService.instance) {
+      SubscriptionService.instance = new SubscriptionService();
+    }
+    return SubscriptionService.instance;
+  }
+
   async initialize(): Promise<void> {
+    if (this.isInitialized) {
+      return;
+    }
+
     try {
-      if (this.isInitialized) return;
-      
-      // DISABLED FOR DEVELOPMENT - Skip IAP initialization
-      console.log('⚠️ IAP disabled for development');
+      await initConnection();
       this.isInitialized = true;
-      
-      // Load mock products only
-      await this.loadProducts();
-      
-      // Skip processing pending purchases and listeners
-      
+      console.log('✅ IAP Connection initialized');
+
+      // Set up purchase listeners
+      this.purchaseUpdateSubscription = purchaseUpdatedListener(
+        async (purchase: SubscriptionPurchase | ProductPurchase) => {
+          console.log('🔄 Purchase update:', purchase.productId);
+          await this.handlePurchaseUpdate(purchase);
+        },
+      );
+
+      this.purchaseErrorSubscription = purchaseErrorListener(
+        (error: PurchaseError) => {
+          console.error('❌ Purchase error:', error);
+          this.handlePurchaseError(error);
+        },
+      );
     } catch (error) {
       console.error('❌ Failed to initialize IAP:', error);
-      throw error;
+      throw new Error('Failed to initialize subscription service');
     }
   }
-  
-  // Load available subscription products
-  private async loadProducts(): Promise<void> {
-    try {
-      const productIds = Object.values(SUBSCRIPTION_PRODUCTS).filter(Boolean) as string[];
-      const products = await getSubscriptions({ skus: productIds });
-      
-      this.products = products.map((product: Subscription) => ({
-        productId: product.productId,
-        price: (product as any).price || '0',
-        localizedPrice: (product as any).localizedPrice || '$0',
-        currency: (product as any).currency || 'USD',
-        title: (product as any).title || product.productId,
-        description: (product as any).description || '',
-        introductoryPrice: (product as any).introductoryPrice,
-        freeTrialPeriod: (product as any).freeTrialPeriod,
-        tier: this.getProductTier(product.productId),
-      }));
-      
-      console.log(`📦 Loaded ${this.products.length} subscription products`);
-    } catch (error) {
-      console.error('❌ Failed to load products:', error);
-      
-      // Fallback to mock products for development
-      this.products = [
-        {
-          productId: 'com.cookcam.regular',
-          price: '3.99',
-          localizedPrice: '$3.99',
-          currency: 'USD',
-          title: 'CookCam Premium',
-          description: 'Unlimited scans, premium recipes, and ad-free experience',
-          freeTrialPeriod: '3 days',
-          tier: 'regular',
-        },
-        {
-          productId: 'com.cookcam.creator',
-          price: '9.99',
-          localizedPrice: '$9.99',
-          currency: 'USD',
-          title: 'CookCam Creator',
-          description: 'Everything in Premium plus creator tools with 30% referrals, 100% tips, 70% collections',
-          freeTrialPeriod: '3 days',
-          tier: 'creator',
-        }
-      ];
-    }
-  }
-  
-  private getProductTier(productId: string): 'regular' | 'creator' {
-    if (productId.includes('creator')) return 'creator';
-    return 'regular';
-  }
-  
-  // Get available subscription products
+
   async getAvailableProducts(): Promise<SubscriptionProduct[]> {
-    if (!this.isInitialized) {
-      await this.initialize();
-    }
-    return this.products;
-  }
-  
-  // Purchase a subscription
-  async purchaseSubscription(productId: string): Promise<boolean> {
     try {
-      if (!this.isInitialized) {
-        await this.initialize();
-      }
-      
-      console.log(`🛒 Simulating purchase for development: ${productId}`);
-      
-      // DISABLED FOR DEVELOPMENT - Return mock success
-      console.log('⚠️ IAP purchase disabled for development - returning mock success');
-      return true;
-      
-    } catch (error: any) {
-      console.error('❌ Purchase failed (development mode):', error);
-      return false;
-    }
-  }
-  
-  // Process completed purchase with server validation
-  private async processPurchase(purchase: SubscriptionPurchase): Promise<boolean> {
-    try {
-      console.log('🔄 Processing purchase with server validation...');
-      
-      // Prepare validation data based on platform
-      const validationData = Platform.select({
-        ios: {
-          platform: 'ios' as const,
-          receipt: purchase.transactionReceipt,
-          transactionId: purchase.transactionId,
-          productId: purchase.productId,
-        },
-        android: {
-          platform: 'android' as const,
-          purchaseToken: purchase.purchaseToken,
-          productId: purchase.productId,
-        },
+      const products = await getSubscriptions({
+        skus: Object.values(PRODUCT_IDS),
       });
-      
-      // Send to server for validation
-      const response = await cookCamApi.validateSubscriptionPurchase(validationData!);
-      
-      if (response.success) {
-        console.log('✅ Server validation successful');
-        
-        // Finish the transaction
-        await this.finishTransaction(purchase);
-        
-        // Update local subscription status
-        await this.refreshSubscriptionStatus();
-        
-        // If this is a creator subscription, trigger creator onboarding
-        if (purchase.productId.includes('creator')) {
-          await this.handleCreatorSubscription(purchase);
+
+      return products.map(product => ({
+        productId: product.productId,
+        name: product.title || product.productId,
+        price: this.getProductPrice(product),
+        currency: this.getProductCurrency(product),
+        localizedPrice: this.getProductLocalizedPrice(product),
+        introductoryPrice: this.getProductIntroductoryPrice(product),
+        introductoryPriceNumberOfPeriods:
+          this.getProductIntroductoryPriceNumberOfPeriods(product),
+        introductoryPriceSubscriptionPeriod:
+          this.getProductIntroductoryPriceSubscriptionPeriod(product),
+      }));
+    } catch (error) {
+      console.error('❌ Failed to get products:', error);
+      throw new Error('Failed to load subscription options');
+    }
+  }
+
+  // Helper methods to safely access product properties
+  private getProductPrice(product: Subscription): string {
+    if (Platform.OS === 'ios') {
+      return (product as any).price || '0';
+    } else {
+      // Android
+      return (product as any).price_amount_micros
+        ? ((product as any).price_amount_micros / 1000000).toString()
+        : '0';
+    }
+  }
+
+  private getProductCurrency(product: Subscription): string {
+    if (Platform.OS === 'ios') {
+      return (product as any).currency || 'USD';
+    } else {
+      // Android
+      return (product as any).price_currency_code || 'USD';
+    }
+  }
+
+  private getProductLocalizedPrice(product: Subscription): string {
+    if (Platform.OS === 'ios') {
+      return (product as any).localizedPrice || '$0.00';
+    } else {
+      // Android
+      return (product as any).price || '$0.00';
+    }
+  }
+
+  private getProductIntroductoryPrice(
+    product: Subscription,
+  ): string | undefined {
+    if (Platform.OS === 'ios') {
+      return (product as any).introductoryPrice;
+    } else {
+      // Android - check for free trial or intro pricing
+      const skuDetails = (product as any).subscriptionOfferDetails?.[0];
+      return skuDetails?.pricingPhases?.pricingPhaseList?.[0]?.formattedPrice;
+    }
+  }
+
+  private getProductIntroductoryPriceNumberOfPeriods(
+    product: Subscription,
+  ): number | undefined {
+    if (Platform.OS === 'ios') {
+      return (product as any).introductoryPriceNumberOfPeriodsIOS;
+    } else {
+      // Android
+      const skuDetails = (product as any).subscriptionOfferDetails?.[0];
+      return skuDetails?.pricingPhases?.pricingPhaseList?.[0]
+        ?.billingCycleCount;
+    }
+  }
+
+  private getProductIntroductoryPriceSubscriptionPeriod(
+    product: Subscription,
+  ): string | undefined {
+    if (Platform.OS === 'ios') {
+      return (product as any).introductoryPriceSubscriptionPeriodIOS;
+    } else {
+      // Android
+      const skuDetails = (product as any).subscriptionOfferDetails?.[0];
+      return skuDetails?.pricingPhases?.pricingPhaseList?.[0]?.billingPeriod;
+    }
+  }
+
+  async startSubscriptionTrial(
+    plan: 'consumer' | 'creator',
+    tempData: TempDataState,
+  ): Promise<{success: boolean; transactionId?: string}> {
+    try {
+      const productId = PRODUCT_IDS[plan];
+      console.log(
+        `🚀 Starting ${plan} subscription trial for product:`,
+        productId,
+      );
+
+      // Store temp data reference for later merging
+      const serializedTempData = JSON.stringify(tempData);
+      console.log('📊 Temp data to be merged:', serializedTempData);
+
+      // Request subscription purchase
+      await requestSubscription({
+        sku: productId,
+        ...(Platform.OS === 'android' && {
+          purchaseTokenAndroid: undefined,
+          prorationModeAndroid: undefined,
+        }),
+      });
+
+      // The actual purchase will be handled by the purchaseUpdatedListener
+      return {success: true};
+    } catch (error) {
+      console.error(`❌ Failed to start ${plan} subscription:`, error);
+      throw new Error(`Failed to start ${plan} subscription trial`);
+    }
+  }
+
+  private async handlePurchaseUpdate(
+    purchase: SubscriptionPurchase | ProductPurchase,
+  ) {
+    try {
+      console.log('🔄 Processing purchase:', purchase.productId);
+
+      // Verify purchase on your backend
+      const isValid = await this.verifyPurchaseOnBackend(purchase);
+
+      if (isValid) {
+        // Acknowledge the purchase (Android requirement)
+        if (Platform.OS === 'android') {
+          await acknowledgePurchaseAndroid({
+            token: purchase.purchaseToken!,
+            developerPayload: purchase.developerPayloadAndroid,
+          });
         }
-        
-        return true;
-      } else {
-        console.error('❌ Server validation failed');
-        return false;
-      }
-      
-    } catch (error) {
-      console.error('❌ Failed to process purchase:', error);
-      return false;
-    }
-  }
-  
-  // Handle creator subscription activation
-  private async handleCreatorSubscription(purchase: SubscriptionPurchase): Promise<void> {
-    try {
-      console.log('🎨 Setting up creator subscription...');
-      
-      // Notify server to upgrade user to creator status
-      await cookCamApi.updateProfile({
-        is_creator: true,
-        creator_tier: 1, // Set initial creator tier
-      });
-      
-      // Track creator conversion
-      await cookCamApi.trackEvent('creator_subscription_started', {
-        productId: purchase.productId,
-        tier: 'creator',
-        revenueShareEnabled: true
-      });
-      
-      console.log('✅ Creator subscription activated');
-    } catch (error) {
-      console.error('❌ Failed to handle creator subscription:', error);
-    }
-  }
-  
-  // Auto-subscribe creators to their tier
-  async autoSubscribeCreator(userId: string): Promise<boolean> {
-    try {
-      console.log('🔄 Auto-subscribing creator...');
-      
-      const creatorProductId = SUBSCRIPTION_PRODUCTS.creator;
-      if (!creatorProductId) {
-        throw new Error('Creator product ID not found');
-      }
-      
-      const success = await this.purchaseSubscription(creatorProductId);
-      
-      if (success) {
-        console.log('✅ Creator auto-subscribed successfully');
-        
-        // Track auto-subscription
-        await cookCamApi.trackEvent('creator_auto_subscribed', {
-          userId,
-          productId: creatorProductId,
-          tier: 'creator'
+
+        // Finish the transaction
+        await finishTransaction({
+          purchase,
+          isConsumable: false,
         });
-      }
-      
-      return success;
-    } catch (error) {
-      console.error('❌ Failed to auto-subscribe creator:', error);
-      return false;
-    }
-  }
-  
-  // Finish transaction (iOS) or acknowledge purchase (Android)
-  private async finishTransaction(purchase: SubscriptionPurchase): Promise<void> {
-    try {
-      if (Platform.OS === 'ios') {
-        await finishTransaction({ purchase: purchase as any, isConsumable: false });
-        console.log('✅ iOS transaction finished');
+
+        console.log('✅ Purchase completed successfully');
+
+        // You can emit an event here for the UI to handle
+        // EventEmitter.emit('subscriptionActivated', purchase);
       } else {
-        await acknowledgePurchaseAndroid({ token: purchase.purchaseToken!, developerPayload: undefined });
-        console.log('✅ Android purchase acknowledged');
+        console.error('❌ Purchase verification failed');
+        throw new Error('Purchase verification failed');
       }
     } catch (error) {
-      console.error('❌ Failed to finish transaction:', error);
+      console.error('❌ Failed to handle purchase update:', error);
     }
   }
-  
-  // Restore previous purchases
-  async restorePurchases(): Promise<boolean> {
+
+  private async verifyPurchaseOnBackend(
+    purchase: SubscriptionPurchase | ProductPurchase,
+  ): Promise<boolean> {
     try {
-      if (!this.isInitialized) {
-        await this.initialize();
-      }
-      
-      console.log('🔄 Restoring purchases...');
-      
-      const purchases = await getAvailablePurchases();
-      
-      for (const purchase of purchases) {
-        await this.processPurchase(purchase as SubscriptionPurchase);
-      }
-      
-      console.log(`✅ Restored ${purchases.length} purchases`);
-      return purchases.length > 0;
-      
+      // TODO: Implement backend verification
+      // This should send the purchase receipt to your backend for verification
+      // with Apple/Google servers
+
+      const response = await fetch('YOUR_BACKEND_URL/verify-purchase', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          platform: Platform.OS,
+          productId: purchase.productId,
+          transactionId: purchase.transactionId,
+          purchaseToken: purchase.purchaseToken,
+          receipt: purchase.transactionReceipt,
+        }),
+      });
+
+      const result = await response.json();
+      return result.isValid === true;
     } catch (error) {
-      console.error('❌ Failed to restore purchases:', error);
-      return false;
+      console.error('❌ Backend verification failed:', error);
+      // For development, return true. In production, this should return false
+      return __DEV__ ? true : false;
     }
   }
-  
-  // Check current subscription status
-  async getSubscriptionStatus(): Promise<SubscriptionStatus> {
+
+  private handlePurchaseError(error: PurchaseError) {
+    console.error('❌ Purchase error details:', {
+      code: error.code,
+      message: error.message,
+      debugMessage: error.debugMessage,
+    });
+
+    // You can emit an event here for the UI to handle
+    // EventEmitter.emit('subscriptionError', error);
+  }
+
+  async getCurrentSubscriptionStatus(): Promise<SubscriptionStatus> {
     try {
-      // Get status from server (which checks JWT claims and database)
-      const response = await cookCamApi.getSubscriptionStatus();
-      
-      if (response.success && response.data) {
-        const subscription = response.data;
-        
-        return {
-          isActive: subscription.status === 'active' || subscription.status === 'trial',
-          productId: subscription.tier_slug,
-          tier: subscription.tier_slug as 'regular' | 'creator',
-          expiryDate: subscription.current_period_end ? new Date(subscription.current_period_end) : undefined,
-          isTrialPeriod: subscription.status === 'trial',
-          autoRenewing: !subscription.cancel_at_period_end,
-        };
-      }
-      
-      return { isActive: false };
-      
+      // TODO: Implement actual subscription status check
+      // This should check with your backend or the platform stores
+
+      return {
+        isActive: false,
+        productId: null,
+        expirationDate: null,
+        isTrialPeriod: false,
+        originalTransactionId: null,
+      };
     } catch (error) {
       console.error('❌ Failed to get subscription status:', error);
-      return { isActive: false };
+      throw new Error('Failed to get subscription status');
     }
   }
-  
-  // Refresh subscription status from server
-  async refreshSubscriptionStatus(): Promise<void> {
+
+  async cancelSubscription(): Promise<boolean> {
     try {
-      // This will trigger a re-check of the user's subscription status
-      await this.getSubscriptionStatus();
-      console.log('✅ Subscription status refreshed');
+      // Note: Actual cancellation happens in device settings for iOS
+      // and Google Play Store for Android. This is just for tracking.
+      console.log('ℹ️ Subscription cancellation initiated');
+
+      // You might want to call your backend to mark the subscription
+      // as cancelled in your system
+      return true;
     } catch (error) {
-      console.error('❌ Failed to refresh subscription status:', error);
+      console.error('❌ Failed to cancel subscription:', error);
+      return false;
     }
   }
-  
-  // Process any pending purchases on app start
-  private async processPendingPurchases(): Promise<void> {
-    try {
-      // DISABLED FOR DEVELOPMENT - Skip processing pending purchases
-      console.log('⚠️ Pending purchase processing disabled for development');
-      return;
-      
-      const purchases = await getAvailablePurchases();
-      
-      for (const purchase of purchases) {
-        // Only process unacknowledged purchases (platform-specific check)
-        const needsProcessing = Platform.OS === 'ios' 
-          ? !(purchase as any).isAcknowledgedIOS
-          : !(purchase as any).isAcknowledgedAndroid;
-          
-        if (needsProcessing) {
-          await this.processPurchase(purchase as SubscriptionPurchase);
-        }
-      }
-      
-      console.log('✅ Pending purchases processed');
-    } catch (error) {
-      console.error('❌ Failed to process pending purchases:', error);
+
+  destroy() {
+    if (this.purchaseUpdateSubscription) {
+      this.purchaseUpdateSubscription.remove();
     }
-  }
-  
-  // Set up purchase update listener
-  private setupPurchaseListener(): void {
-    this.purchaseUpdateSubscription = purchaseUpdatedListener(
-      async (purchase: SubscriptionPurchase) => {
-        console.log('🔄 Purchase update received:', purchase);
-        
-        const receipt = purchase.transactionReceipt;
-        if (receipt) {
-          await this.processPurchase(purchase);
-        }
-      }
-    );
-    
-    this.purchaseErrorSubscription = purchaseErrorListener(
-      (error: PurchaseError) => {
-        console.warn('❌ Purchase error:', error);
-      }
-    );
-  }
-  
-  // Navigate to subscription management
-  async openSubscriptionManagement(): Promise<void> {
-    try {
-      if (Platform.OS === 'ios') {
-        // Open iOS subscription management
-        const url = 'itms-apps://apps.apple.com/account/subscriptions';
-        const { Linking } = require('react-native');
-        await Linking.openURL(url);
-        console.log('📱 Opening iOS subscription management');
-      } else {
-        // Open Google Play subscription management
-        const url = 'https://play.google.com/store/account/subscriptions';
-        const { Linking } = require('react-native');
-        await Linking.openURL(url);
-        console.log('📱 Opening Google Play subscription management');
-      }
-    } catch (error) {
-      console.error('❌ Failed to open subscription management:', error);
+    if (this.purchaseErrorSubscription) {
+      this.purchaseErrorSubscription.remove();
     }
-  }
-  
-  // Clean up connections
-  async cleanup(): Promise<void> {
-    try {
-      if (this.purchaseUpdateSubscription) {
-        this.purchaseUpdateSubscription.remove();
-      }
-      if (this.purchaseErrorSubscription) {
-        this.purchaseErrorSubscription.remove();
-      }
-      
-      await endConnection();
-      
-      this.isInitialized = false;
-      console.log('✅ IAP service cleaned up');
-    } catch (error) {
-      console.error('❌ Failed to cleanup IAP service:', error);
-    }
+    this.isInitialized = false;
   }
 }
 
-// Export singleton instance
-export const subscriptionService = new AppStoreSubscriptionService();
-
-// Export types
-export type { SubscriptionProduct, PurchaseResult, SubscriptionStatus }; 
+export default SubscriptionService;

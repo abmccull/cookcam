@@ -1,17 +1,18 @@
 import React, {useState, useEffect, useRef} from 'react';
 import {
   View,
-  StyleSheet,
   Text,
   TouchableOpacity,
-  SafeAreaView,
+  StyleSheet,
   ScrollView,
-  Alert,
-  Animated,
+  SafeAreaView,
   Dimensions,
+  Alert,
   Modal,
+  Animated,
 } from 'react-native';
 import {
+  ArrowLeft,
   Play,
   Pause,
   SkipForward,
@@ -20,11 +21,11 @@ import {
   Clock,
   Volume2,
   VolumeX,
-  Star,
-  Trophy,
   ChevronLeft,
   ChevronRight,
   X,
+  Star,
+  Trophy,
 } from 'lucide-react-native';
 import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
 import {useGamification, XP_VALUES} from '../context/GamificationContext';
@@ -49,118 +50,297 @@ const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
 
 // Comprehensive Cooking Tips Collection
 const COOKING_TIPS = [
-  { emoji: '🔪', tip: 'Keep your knives sharp - a dull knife is more dangerous than a sharp one.' },
-  { emoji: '🧂', tip: 'Salt your pasta water until it tastes like seawater for perfectly seasoned pasta.' },
-  { emoji: '🍳', tip: 'Let your pan heat up before adding oil to prevent sticking.' },
-  { emoji: '🥘', tip: 'Mise en place: prep all ingredients before you start cooking.' },
-  { emoji: '🌡️', tip: 'Use a meat thermometer for perfectly cooked proteins every time.' },
-  { emoji: '⏱️', tip: 'Set timers for everything - even experienced chefs use them.' },
-  { emoji: '🍅', tip: 'To peel tomatoes easily, score an X and blanch in boiling water for 30 seconds.' },
-  { emoji: '🧄', tip: 'Smash garlic with the flat side of your knife to make peeling easier.' },
-  { emoji: '🥕', tip: 'Cut vegetables into uniform sizes for even cooking.' },
-  { emoji: '🧈', tip: 'Room temperature butter creams better than cold butter.' },
-  { emoji: '🍋', tip: 'Roll citrus fruits before juicing to get more juice out.' },
-  { emoji: '🥩', tip: 'Let meat rest after cooking to redistribute juices.' },
-  { emoji: '🔥', tip: 'High heat for searing, medium for cooking through.' },
-  { emoji: '🍄', tip: 'Don\'t overcrowd mushrooms in the pan - they\'ll steam instead of browning.' },
-  { emoji: '🥚', tip: 'Crack eggs on a flat surface, not the edge of a bowl.' },
-  { emoji: '🧅', tip: 'Keep the root end of onions intact to reduce tears while chopping.' },
-  { emoji: '🍝', tip: 'Save pasta water - the starch helps bind sauces.' },
-  { emoji: '🥄', tip: 'Taste as you go and adjust seasoning accordingly.' },
-  { emoji: '🌿', tip: 'Add delicate herbs at the end to preserve their flavor.' },
-  { emoji: '🍯', tip: 'Honey never spoils - it\'s one of nature\'s preservatives.' },
-  { emoji: '🥖', tip: 'Store bread cut-side down to keep it fresh longer.' },
-  { emoji: '🧊', tip: 'Ice baths stop cooking instantly and preserve color in vegetables.' },
-  { emoji: '🍷', tip: 'Cook with wine you\'d actually drink - quality matters.' },
-  { emoji: '🧀', tip: 'Grate cheese when it\'s cold for cleaner, neater results.' },
-  { emoji: '🥑', tip: 'Add a pit to guacamole to keep it from browning.' },
-  { emoji: '🍞', tip: 'Toast spices in a dry pan to intensify their flavors.' },
-  { emoji: '🥒', tip: 'Salt cucumber slices and let them drain to remove excess water.' },
-  { emoji: '🍎', tip: 'Store apples separately - they release ethylene gas that ripens other fruits.' },
-  { emoji: '🥦', tip: 'Steam broccoli for 3-4 minutes to keep it bright green and crisp.' },
-  { emoji: '🍗', tip: 'Brine poultry for juicier, more flavorful meat.' },
-  { emoji: '🥞', tip: 'Don\'t overmix pancake batter - lumps are perfectly fine.' },
-  { emoji: '🍲', tip: 'Layer flavors by building your dish in stages.' },
-  { emoji: '🧄', tip: 'Remove the green germ from garlic cloves to avoid bitterness.' },
-  { emoji: '🔪', tip: 'Use a rocking motion with your knife for efficient chopping.' },
-  { emoji: '🍳', tip: 'Test oil temperature with a drop of batter - it should sizzle immediately.' },
-  { emoji: '🌶️', tip: 'Remove seeds and membranes from peppers to reduce heat.' },
-  { emoji: '🥓', tip: 'Start bacon in a cold pan for even cooking and less splatter.' },
-  { emoji: '🍵', tip: 'Don\'t boil delicate herbs - steep them in hot water instead.' },
-  { emoji: '🥔', tip: 'Soak cut potatoes in cold water to remove excess starch.' },
-  { emoji: '🍯', tip: 'Warm honey flows easier and measures more accurately.' },
-  { emoji: '🥕', tip: 'Carrots get sweeter when cooked - the heat breaks down cellulose.' },
-  { emoji: '🍳', tip: 'The pan is ready when water droplets dance across the surface.' },
-  { emoji: '🧂', tip: 'Season in layers throughout cooking, not just at the end.' },
-  { emoji: '🍋', tip: 'Zest citrus before juicing - it\'s much easier on whole fruit.' },
-  { emoji: '🥩', tip: 'Use tongs to flip meat - forks pierce and release juices.' },
-  { emoji: '🌡️', tip: 'Internal temperature matters more than cooking time.' },
-  { emoji: '🍄', tip: 'Clean mushrooms with a damp paper towel, not water.' },
-  { emoji: '🥚', tip: 'Older eggs are better for hard-boiling - they peel easier.' },
-  { emoji: '🧅', tip: 'Caramelize onions low and slow for deep, sweet flavor.' },
-  { emoji: '🍝', tip: 'Finish pasta in the sauce pan for better flavor adhesion.' },
-  { emoji: '🥄', tip: 'Wooden spoons don\'t conduct heat - safe for stirring hot foods.' },
-  { emoji: '🌿', tip: 'Bruise herbs gently to release their essential oils.' },
-  { emoji: '🍞', tip: 'Let bread cool completely before slicing for clean cuts.' },
-  { emoji: '🧊', tip: 'Cold ingredients make flakier pie crust.' },
-  { emoji: '🍷', tip: 'Reduce wine before adding other liquids to concentrate flavor.' },
-  { emoji: '🧀', tip: 'Bring cheese to room temperature before serving for best flavor.' },
-  { emoji: '🥑', tip: 'Ripe avocados yield slightly to gentle pressure.' },
-  { emoji: '🍎', tip: 'Acidic ingredients prevent enzymatic browning in fruits.' },
-  { emoji: '🥦', tip: 'Blanch vegetables before freezing to preserve color and nutrients.' },
-  { emoji: '🍗', tip: 'Skin-side down first for crispy chicken skin.' },
-  { emoji: '🥞', tip: 'Let pancake batter rest for fluffier results.' },
-  { emoji: '🍲', tip: 'Deglaze the pan to capture all those flavorful brown bits.' },
-  { emoji: '🔪', tip: 'Cut against the grain for tender meat slices.' },
-  { emoji: '🍳', tip: 'Cast iron retains heat exceptionally well - perfect for searing.' },
-  { emoji: '🌶️', tip: 'Wear gloves when handling hot peppers to protect your skin.' },
-  { emoji: '🥓', tip: 'Save bacon fat - it\'s liquid gold for cooking.' },
-  { emoji: '🍵', tip: 'Different teas have different steeping temperatures and times.' },
-  { emoji: '🥔', tip: 'Russet potatoes are best for baking and frying.' },
-  { emoji: '🍯', tip: 'Substitute honey for sugar at a 3:4 ratio in recipes.' },
-  { emoji: '🥕', tip: 'Baby carrots are just regular carrots cut and shaped.' },
-  { emoji: '🧂', tip: 'Kosher salt has larger crystals and is easier to control.' },
-  { emoji: '🍋', tip: 'Microwaving citrus for 15 seconds yields more juice.' },
-  { emoji: '🥩', tip: 'Marinate in acidic ingredients for tenderness.' },
-  { emoji: '🌡️', tip: 'Candy thermometer stages: soft ball, hard ball, hard crack.' },
-  { emoji: '🍄', tip: 'Dried mushrooms add intense umami flavor to dishes.' },
-  { emoji: '🥚', tip: 'Room temperature eggs whip to greater volume.' },
-  { emoji: '🧅', tip: 'Store onions in a cool, dry place away from potatoes.' },
-  { emoji: '🍝', tip: 'Fresh pasta cooks much faster than dried pasta.' },
-  { emoji: '🥄', tip: 'Stir clockwise for consistent mixing in round pans.' },
-  { emoji: '🌿', tip: 'Freeze herbs in olive oil in ice cube trays.' },
-  { emoji: '🍞', tip: 'Steam creates the crust on artisan breads.' },
-  { emoji: '🧊', tip: 'Never put hot food directly into the refrigerator.' },
-  { emoji: '🍷', tip: 'Open wine 30 minutes before serving to let it breathe.' },
-  { emoji: '🧀', tip: 'Wrap cheese in parchment, not plastic, for better storage.' },
-  { emoji: '🥑', tip: 'Store cut avocado with the pit to slow browning.' },
-  { emoji: '🍎', tip: 'Granny Smith apples hold their shape best when baking.' },
-  { emoji: '🥦', tip: 'Overcooking broccoli releases sulfur compounds - keep it bright!' },
-  { emoji: '🍗', tip: 'Dark meat is more forgiving and flavorful than white meat.' },
-  { emoji: '🥞', tip: 'The first pancake is always a test - don\'t worry if it\'s imperfect.' },
-  { emoji: '🍲', tip: 'Low and slow cooking breaks down tough connective tissues.' },
-  { emoji: '🔪', tip: 'A sharp knife requires less pressure and gives you more control.' },
-  { emoji: '🍳', tip: 'Non-stick pans work best at medium heat or lower.' },
-  { emoji: '🌶️', tip: 'Capsaicin is concentrated in the seeds and white parts.' },
-  { emoji: '🥓', tip: 'Thick-cut bacon holds up better in recipes.' },
-  { emoji: '🍵', tip: 'Green tea burns at 175°F, black tea at 212°F.' },
-  { emoji: '🥔', tip: 'Waxy potatoes hold their shape better in soups and salads.' },
-  { emoji: '🍯', tip: 'Local honey may help with seasonal allergies.' },
-  { emoji: '🥕', tip: 'Purple carrots were the original color before orange was bred.' },
-  { emoji: '🧂', tip: 'Finishing salts add texture and flavor at the end of cooking.' },
-  { emoji: '🍋', tip: 'Lemon juice prevents oxidation in cut fruits and vegetables.' },
-  { emoji: '🥩', tip: 'Let steaks come to room temperature before cooking.' },
-  { emoji: '🌡️', tip: 'Calibrate your thermometer in ice water (32°F) and boiling water (212°F).' },
-  { emoji: '🍄', tip: 'Sauté mushrooms in batches to avoid overcrowding.' },
-  { emoji: '🥚', tip: 'Separate eggs when they\'re cold, whip whites when they\'re room temperature.' },
-  { emoji: '🧅', tip: 'Sweet onions have higher water content and shorter storage life.' },
-  { emoji: '🍝', tip: 'Al dente means "to the tooth" - pasta should have a slight bite.' },
-  { emoji: '🥄', tip: 'Silicone spatulas can handle high heat better than rubber ones.' },
-  { emoji: '🌿', tip: 'Hardy herbs like rosemary can be added early in cooking.' },
+  {
+    emoji: '🔪',
+    tip: 'Keep your knives sharp - a dull knife is more dangerous than a sharp one.',
+  },
+  {
+    emoji: '🧂',
+    tip: 'Salt your pasta water until it tastes like seawater for perfectly seasoned pasta.',
+  },
+  {
+    emoji: '🍳',
+    tip: 'Let your pan heat up before adding oil to prevent sticking.',
+  },
+  {
+    emoji: '🥘',
+    tip: 'Mise en place: prep all ingredients before you start cooking.',
+  },
+  {
+    emoji: '🌡️',
+    tip: 'Use a meat thermometer for perfectly cooked proteins every time.',
+  },
+  {
+    emoji: '⏱️',
+    tip: 'Set timers for everything - even experienced chefs use them.',
+  },
+  {
+    emoji: '🍅',
+    tip: 'To peel tomatoes easily, score an X and blanch in boiling water for 30 seconds.',
+  },
+  {
+    emoji: '🧄',
+    tip: 'Smash garlic with the flat side of your knife to make peeling easier.',
+  },
+  {emoji: '🥕', tip: 'Cut vegetables into uniform sizes for even cooking.'},
+  {emoji: '🧈', tip: 'Room temperature butter creams better than cold butter.'},
+  {
+    emoji: '🍋',
+    tip: 'Roll citrus fruits before juicing to get more juice out.',
+  },
+  {emoji: '🥩', tip: 'Let meat rest after cooking to redistribute juices.'},
+  {emoji: '🔥', tip: 'High heat for searing, medium for cooking through.'},
+  {
+    emoji: '🍄',
+    tip: "Don't overcrowd mushrooms in the pan - they'll steam instead of browning.",
+  },
+  {emoji: '🥚', tip: 'Crack eggs on a flat surface, not the edge of a bowl.'},
+  {
+    emoji: '🧅',
+    tip: 'Keep the root end of onions intact to reduce tears while chopping.',
+  },
+  {emoji: '🍝', tip: 'Save pasta water - the starch helps bind sauces.'},
+  {emoji: '🥄', tip: 'Taste as you go and adjust seasoning accordingly.'},
+  {emoji: '🌿', tip: 'Add delicate herbs at the end to preserve their flavor.'},
+  {
+    emoji: '🍯',
+    tip: "Honey never spoils - it's one of nature's preservatives.",
+  },
+  {emoji: '🥖', tip: 'Store bread cut-side down to keep it fresh longer.'},
+  {
+    emoji: '🧊',
+    tip: 'Ice baths stop cooking instantly and preserve color in vegetables.',
+  },
+  {emoji: '🍷', tip: "Cook with wine you'd actually drink - quality matters."},
+  {
+    emoji: '🧀',
+    tip: "Grate cheese when it's cold for cleaner, neater results.",
+  },
+  {emoji: '🥑', tip: 'Add a pit to guacamole to keep it from browning.'},
+  {emoji: '🍞', tip: 'Toast spices in a dry pan to intensify their flavors.'},
+  {
+    emoji: '🥒',
+    tip: 'Salt cucumber slices and let them drain to remove excess water.',
+  },
+  {
+    emoji: '🍎',
+    tip: 'Store apples separately - they release ethylene gas that ripens other fruits.',
+  },
+  {
+    emoji: '🥦',
+    tip: 'Steam broccoli for 3-4 minutes to keep it bright green and crisp.',
+  },
+  {emoji: '🍗', tip: 'Brine poultry for juicier, more flavorful meat.'},
+  {
+    emoji: '🥞',
+    tip: "Don't overmix pancake batter - lumps are perfectly fine.",
+  },
+  {emoji: '🍲', tip: 'Layer flavors by building your dish in stages.'},
+  {
+    emoji: '🧄',
+    tip: 'Remove the green germ from garlic cloves to avoid bitterness.',
+  },
+  {
+    emoji: '🔪',
+    tip: 'Use a rocking motion with your knife for efficient chopping.',
+  },
+  {
+    emoji: '🍳',
+    tip: 'Test oil temperature with a drop of batter - it should sizzle immediately.',
+  },
+  {emoji: '🌶️', tip: 'Remove seeds and membranes from peppers to reduce heat.'},
+  {
+    emoji: '🥓',
+    tip: 'Start bacon in a cold pan for even cooking and less splatter.',
+  },
+  {
+    emoji: '🍵',
+    tip: "Don't boil delicate herbs - steep them in hot water instead.",
+  },
+  {
+    emoji: '🥔',
+    tip: 'Soak cut potatoes in cold water to remove excess starch.',
+  },
+  {emoji: '🍯', tip: 'Warm honey flows easier and measures more accurately.'},
+  {
+    emoji: '🥕',
+    tip: 'Carrots get sweeter when cooked - the heat breaks down cellulose.',
+  },
+  {
+    emoji: '🍳',
+    tip: 'The pan is ready when water droplets dance across the surface.',
+  },
+  {
+    emoji: '🧂',
+    tip: 'Season in layers throughout cooking, not just at the end.',
+  },
+  {
+    emoji: '🍋',
+    tip: "Zest citrus before juicing - it's much easier on whole fruit.",
+  },
+  {
+    emoji: '🥩',
+    tip: 'Use tongs to flip meat - forks pierce and release juices.',
+  },
+  {emoji: '🌡️', tip: 'Internal temperature matters more than cooking time.'},
+  {emoji: '🍄', tip: 'Clean mushrooms with a damp paper towel, not water.'},
+  {
+    emoji: '🥚',
+    tip: 'Older eggs are better for hard-boiling - they peel easier.',
+  },
+  {emoji: '🧅', tip: 'Caramelize onions low and slow for deep, sweet flavor.'},
+  {
+    emoji: '🍝',
+    tip: 'Finish pasta in the sauce pan for better flavor adhesion.',
+  },
+  {
+    emoji: '🥄',
+    tip: "Wooden spoons don't conduct heat - safe for stirring hot foods.",
+  },
+  {emoji: '🌿', tip: 'Bruise herbs gently to release their essential oils.'},
+  {
+    emoji: '🍞',
+    tip: 'Let bread cool completely before slicing for clean cuts.',
+  },
+  {emoji: '🧊', tip: 'Cold ingredients make flakier pie crust.'},
+  {
+    emoji: '🍷',
+    tip: 'Reduce wine before adding other liquids to concentrate flavor.',
+  },
+  {
+    emoji: '🧀',
+    tip: 'Bring cheese to room temperature before serving for best flavor.',
+  },
+  {emoji: '🥑', tip: 'Ripe avocados yield slightly to gentle pressure.'},
+  {
+    emoji: '🍎',
+    tip: 'Acidic ingredients prevent enzymatic browning in fruits.',
+  },
+  {
+    emoji: '🥦',
+    tip: 'Blanch vegetables before freezing to preserve color and nutrients.',
+  },
+  {emoji: '🍗', tip: 'Skin-side down first for crispy chicken skin.'},
+  {emoji: '🥞', tip: 'Let pancake batter rest for fluffier results.'},
+  {
+    emoji: '🍲',
+    tip: 'Deglaze the pan to capture all those flavorful brown bits.',
+  },
+  {emoji: '🔪', tip: 'Cut against the grain for tender meat slices.'},
+  {
+    emoji: '🍳',
+    tip: 'Cast iron retains heat exceptionally well - perfect for searing.',
+  },
+  {
+    emoji: '🌶️',
+    tip: 'Wear gloves when handling hot peppers to protect your skin.',
+  },
+  {emoji: '🥓', tip: "Save bacon fat - it's liquid gold for cooking."},
+  {
+    emoji: '🍵',
+    tip: 'Different teas have different steeping temperatures and times.',
+  },
+  {emoji: '🥔', tip: 'Russet potatoes are best for baking and frying.'},
+  {emoji: '🍯', tip: 'Substitute honey for sugar at a 3:4 ratio in recipes.'},
+  {emoji: '🥕', tip: 'Baby carrots are just regular carrots cut and shaped.'},
+  {
+    emoji: '🧂',
+    tip: 'Kosher salt has larger crystals and is easier to control.',
+  },
+  {emoji: '🍋', tip: 'Microwaving citrus for 15 seconds yields more juice.'},
+  {emoji: '🥩', tip: 'Marinate in acidic ingredients for tenderness.'},
+  {
+    emoji: '🌡️',
+    tip: 'Candy thermometer stages: soft ball, hard ball, hard crack.',
+  },
+  {emoji: '🍄', tip: 'Dried mushrooms add intense umami flavor to dishes.'},
+  {emoji: '🥚', tip: 'Room temperature eggs whip to greater volume.'},
+  {emoji: '🧅', tip: 'Store onions in a cool, dry place away from potatoes.'},
+  {emoji: '🍝', tip: 'Fresh pasta cooks much faster than dried pasta.'},
+  {emoji: '🥄', tip: 'Stir clockwise for consistent mixing in round pans.'},
+  {emoji: '🌿', tip: 'Freeze herbs in olive oil in ice cube trays.'},
+  {emoji: '🍞', tip: 'Steam creates the crust on artisan breads.'},
+  {emoji: '🧊', tip: 'Never put hot food directly into the refrigerator.'},
+  {emoji: '🍷', tip: 'Open wine 30 minutes before serving to let it breathe.'},
+  {
+    emoji: '🧀',
+    tip: 'Wrap cheese in parchment, not plastic, for better storage.',
+  },
+  {emoji: '🥑', tip: 'Store cut avocado with the pit to slow browning.'},
+  {emoji: '🍎', tip: 'Granny Smith apples hold their shape best when baking.'},
+  {
+    emoji: '🥦',
+    tip: 'Overcooking broccoli releases sulfur compounds - keep it bright!',
+  },
+  {
+    emoji: '🍗',
+    tip: 'Dark meat is more forgiving and flavorful than white meat.',
+  },
+  {
+    emoji: '🥞',
+    tip: "The first pancake is always a test - don't worry if it's imperfect.",
+  },
+  {
+    emoji: '🍲',
+    tip: 'Low and slow cooking breaks down tough connective tissues.',
+  },
+  {
+    emoji: '🔪',
+    tip: 'A sharp knife requires less pressure and gives you more control.',
+  },
+  {emoji: '🍳', tip: 'Non-stick pans work best at medium heat or lower.'},
+  {emoji: '🌶️', tip: 'Capsaicin is concentrated in the seeds and white parts.'},
+  {emoji: '🥓', tip: 'Thick-cut bacon holds up better in recipes.'},
+  {emoji: '🍵', tip: 'Green tea burns at 175°F, black tea at 212°F.'},
+  {
+    emoji: '🥔',
+    tip: 'Waxy potatoes hold their shape better in soups and salads.',
+  },
+  {emoji: '🍯', tip: 'Local honey may help with seasonal allergies.'},
+  {
+    emoji: '🥕',
+    tip: 'Purple carrots were the original color before orange was bred.',
+  },
+  {
+    emoji: '🧂',
+    tip: 'Finishing salts add texture and flavor at the end of cooking.',
+  },
+  {
+    emoji: '🍋',
+    tip: 'Lemon juice prevents oxidation in cut fruits and vegetables.',
+  },
+  {emoji: '🥩', tip: 'Let steaks come to room temperature before cooking.'},
+  {
+    emoji: '🌡️',
+    tip: 'Calibrate your thermometer in ice water (32°F) and boiling water (212°F).',
+  },
+  {emoji: '🍄', tip: 'Sauté mushrooms in batches to avoid overcrowding.'},
+  {
+    emoji: '🥚',
+    tip: "Separate eggs when they're cold, whip whites when they're room temperature.",
+  },
+  {
+    emoji: '🧅',
+    tip: 'Sweet onions have higher water content and shorter storage life.',
+  },
+  {
+    emoji: '🍝',
+    tip: 'Al dente means "to the tooth" - pasta should have a slight bite.',
+  },
+  {
+    emoji: '🥄',
+    tip: 'Silicone spatulas can handle high heat better than rubber ones.',
+  },
+  {
+    emoji: '🌿',
+    tip: 'Hardy herbs like rosemary can be added early in cooking.',
+  },
 ];
 
 // Function to get unique cooking tips for each step
-const getCookingTipsForRecipe = (numSteps: number): Array<{emoji: string, tip: string}> => {
+const getCookingTipsForRecipe = (
+  numSteps: number,
+): Array<{emoji: string; tip: string}> => {
   const shuffled = [...COOKING_TIPS].sort(() => 0.5 - Math.random());
   return shuffled.slice(0, Math.min(numSteps, COOKING_TIPS.length));
 };
@@ -172,7 +352,7 @@ const CookModeScreen: React.FC<CookModeScreenProps> = ({navigation, route}) => {
   const [completedSteps, setCompletedSteps] = useState(0);
   const [stepXPAnimations, setStepXPAnimations] = useState<number[]>([]);
   const [showXPCelebration, setShowXPCelebration] = useState(false);
-  
+
   // Animation values
   const progressAnim = useRef(new Animated.Value(0)).current;
   const xpCelebrationScale = useRef(new Animated.Value(0)).current;
@@ -206,7 +386,10 @@ const CookModeScreen: React.FC<CookModeScreenProps> = ({navigation, route}) => {
   };
 
   const [steps, setSteps] = useState<CookingStep[]>(() => {
-    console.log('🧑‍🍳 Initializing recipe with instructions:', recipe?.instructions);
+    console.log(
+      '🧑‍🍳 Initializing recipe with instructions:',
+      recipe?.instructions,
+    );
     return initializeSteps(recipe?.instructions || []);
   });
 
@@ -302,10 +485,10 @@ const CookModeScreen: React.FC<CookModeScreenProps> = ({navigation, route}) => {
         index === currentStep ? {...step, completed: true} : step,
       ),
     );
-    
+
     // Increment completed steps
     setCompletedSteps(prev => prev + 1);
-    
+
     // Show mini XP celebration
     showStepXPCelebration();
 
@@ -326,27 +509,31 @@ const CookModeScreen: React.FC<CookModeScreenProps> = ({navigation, route}) => {
   const handleRecipeComplete = async () => {
     // Award XP for completing recipe
     await addXP(XP_VALUES.COMPLETE_RECIPE, 'COMPLETE_RECIPE');
-    
+
     // Check and update streak
     await checkStreak();
-    
+
     // Show rating modal first
     setShowRatingModal(true);
   };
 
   const handleRatingSubmit = async (ratingData: any) => {
     setShowRatingModal(false);
-    
+
     // Award XP for rating
     if (ratingData.review && ratingData.review.length > 50) {
       await addXP(XP_VALUES.HELPFUL_REVIEW, 'HELPFUL_REVIEW');
     }
-    
+
     // If this is a generated recipe, offer to claim it
     if (recipe?.isGenerated && !isRecipeClaimed) {
       Alert.alert(
         'Claim This Recipe! 🏆',
-        `Would you like to claim "${recipe.title || 'this recipe'}" as your own? You'll earn ${XP_VALUES.CLAIM_RECIPE} XP and get credit for all future views!`,
+        `Would you like to claim "${
+          recipe.title || 'this recipe'
+        }" as your own? You'll earn ${
+          XP_VALUES.CLAIM_RECIPE
+        } XP and get credit for all future views!`,
         [
           {
             text: 'Not Now',
@@ -371,10 +558,10 @@ const CookModeScreen: React.FC<CookModeScreenProps> = ({navigation, route}) => {
     // Award XP for claiming
     await addXP(XP_VALUES.CLAIM_RECIPE, 'CLAIM_RECIPE');
     setIsRecipeClaimed(true);
-    
+
     // TODO: API call to claim recipe
     // This would save the recipe to the database with the user as creator
-    
+
     Alert.alert(
       'Recipe Claimed! 🎉',
       `You've successfully claimed this recipe and earned ${XP_VALUES.CLAIM_RECIPE} XP!`,
@@ -383,26 +570,26 @@ const CookModeScreen: React.FC<CookModeScreenProps> = ({navigation, route}) => {
 
   const showCompletionAlert = () => {
     Alert.alert(
-      'Congratulations! 🎉', 
-      `You've earned ${XP_VALUES.COMPLETE_RECIPE} XP!`, 
+      'Congratulations! 🎉',
+      `You've earned ${XP_VALUES.COMPLETE_RECIPE} XP!`,
       [
         {
-          text: 'Share Recipe', 
-          onPress: () => handleShareRecipe()
+          text: 'Share Recipe',
+          onPress: () => handleShareRecipe(),
         },
         {
-          text: 'Finish', 
+          text: 'Finish',
           onPress: () => navigation.navigate('Camera'),
           style: 'cancel',
         },
-      ]
+      ],
     );
   };
 
   const handleShareRecipe = async () => {
     // Award XP for sharing
     await addXP(XP_VALUES.SHARE_RECIPE, 'SHARE_RECIPE');
-    
+
     // Navigate to share screen (to be implemented)
     Alert.alert('Share', 'Sharing feature coming soon!');
     navigation.navigate('Camera');
@@ -460,11 +647,13 @@ const CookModeScreen: React.FC<CookModeScreenProps> = ({navigation, route}) => {
   // Progress should reflect current step position, not just completed steps
   const progress = ((currentStep + 1) / steps.length) * 100;
   const currentStepData = steps[currentStep];
-  const potentialXP = recipe?.isGenerated ? XP_VALUES.COMPLETE_RECIPE + XP_VALUES.CLAIM_RECIPE : XP_VALUES.COMPLETE_RECIPE;
+  const potentialXP = recipe?.isGenerated
+    ? XP_VALUES.COMPLETE_RECIPE + XP_VALUES.CLAIM_RECIPE
+    : XP_VALUES.COMPLETE_RECIPE;
 
   const showStepXPCelebration = () => {
     setShowXPCelebration(true);
-    
+
     // Animate XP celebration
     Animated.sequence([
       Animated.spring(xpCelebrationScale, {
@@ -482,10 +671,10 @@ const CookModeScreen: React.FC<CookModeScreenProps> = ({navigation, route}) => {
     ]).start(() => {
       setShowXPCelebration(false);
     });
-    
+
     // Add small XP for step completion
     addXP(5, 'STEP_COMPLETE');
-    
+
     // Track which steps showed animation
     setStepXPAnimations(prev => [...prev, currentStep]);
   };
@@ -494,12 +683,12 @@ const CookModeScreen: React.FC<CookModeScreenProps> = ({navigation, route}) => {
     <SafeAreaView style={styles.container}>
       {/* CONSOLIDATED HEADER WITH BLUE BACKGROUND */}
       <View style={styles.consolidatedHeader}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.headerBackButton}
           onPress={() => navigation.goBack()}>
           <ChevronLeft size={24} color="#FFFFFF" />
         </TouchableOpacity>
-        
+
         <View style={styles.headerCenter}>
           <Text style={styles.headerTitle}>Cook Mode</Text>
           <Text style={styles.headerSubtitle} numberOfLines={1}>
@@ -512,8 +701,8 @@ const CookModeScreen: React.FC<CookModeScreenProps> = ({navigation, route}) => {
           {currentStepData?.duration && (
             <View style={styles.compactTimer}>
               <Text style={styles.timerText}>{formatTime(timeRemaining)}</Text>
-              <TouchableOpacity 
-                style={styles.playButton} 
+              <TouchableOpacity
+                style={styles.playButton}
                 onPress={handlePlayPause}>
                 {isPlaying ? (
                   <Pause size={12} color="#FFFFFF" />
@@ -523,9 +712,11 @@ const CookModeScreen: React.FC<CookModeScreenProps> = ({navigation, route}) => {
               </TouchableOpacity>
             </View>
           )}
-          
+
           {/* Voice toggle - Compact */}
-          <TouchableOpacity onPress={toggleVoice} style={styles.compactVoiceButton}>
+          <TouchableOpacity
+            onPress={toggleVoice}
+            style={styles.compactVoiceButton}>
             {voiceEnabled ? (
               <Volume2 size={18} color="#FF6B35" />
             ) : (
@@ -541,24 +732,24 @@ const CookModeScreen: React.FC<CookModeScreenProps> = ({navigation, route}) => {
           <Text style={styles.progressLabel}>Cooking Progress</Text>
           <Text style={styles.progressPercentage}>{Math.round(progress)}%</Text>
         </View>
-        
+
         <View style={styles.enhancedProgressBar}>
-          <Animated.View 
+          <Animated.View
             style={[
-              styles.progressFill, 
+              styles.progressFill,
               {
                 width: progressAnim.interpolate({
                   inputRange: [0, 1],
                   outputRange: ['0%', '100%'],
-                })
-              }
-            ]} 
+                }),
+              },
+            ]}
           />
-          
+
           {/* Progress Milestones */}
           <View style={styles.progressMilestones}>
             {Array.from({length: steps.length}, (_, i) => (
-              <View 
+              <View
                 key={i}
                 style={[
                   styles.milestone,
@@ -569,74 +760,83 @@ const CookModeScreen: React.FC<CookModeScreenProps> = ({navigation, route}) => {
             ))}
           </View>
         </View>
-
       </View>
 
       {/* HERO STEP CONTENT */}
       <View style={styles.heroStepArea}>
-        <Animated.View 
+        <Animated.View
           style={[
             styles.heroStepCard,
-            {transform: [{translateX: stepTranslateX}]}
+            {transform: [{translateX: stepTranslateX}]},
           ]}>
-          
-          {/* Step Number Badge - Moved to top-left with better spacing */}
-          <View style={styles.stepBadgeContainer}>
+          {/* Top Row: Step Badge + Quick Access Buttons */}
+          <View style={styles.stepHeaderRow}>
             <View style={styles.stepBadge}>
               <Text style={styles.stepBadgeText}>Step {currentStep + 1}</Text>
             </View>
+
+            <View style={styles.topQuickAccess}>
+              <TouchableOpacity
+                style={styles.topQuickAccessButton}
+                onPress={() => setShowIngredientsModal(true)}>
+                <Text style={styles.topQuickAccessIcon}>🥘</Text>
+                <Text style={styles.topQuickAccessText}>Ingredients</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.topQuickAccessButton}
+                onPress={() => setShowAllStepsModal(true)}>
+                <Text style={styles.topQuickAccessIcon}>📋</Text>
+                <Text style={styles.topQuickAccessText}>All Steps</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-          
-          <ScrollView 
+
+          <ScrollView
             style={styles.heroInstructionContainer}
             contentContainerStyle={styles.heroInstructionContent}
             showsVerticalScrollIndicator={false}>
-            
             {/* HERO INSTRUCTION - Large, prominent text with delight */}
-            <Animated.Text 
+            <Animated.Text
               style={[
                 styles.heroInstruction,
-                {transform: [{scale: stepTranslateX.interpolate({
-                  inputRange: [-30, 0, 30],
-                  outputRange: [0.98, 1, 0.98],
-                  extrapolate: 'clamp'
-                })}]}
+                {
+                  transform: [
+                    {
+                      scale: stepTranslateX.interpolate({
+                        inputRange: [-30, 0, 30],
+                        outputRange: [0.98, 1, 0.98],
+                        extrapolate: 'clamp',
+                      }),
+                    },
+                  ],
+                },
               ]}>
               {currentStepData?.instruction}
             </Animated.Text>
-            
-            {/* Cooking Tip - Subtle educational tip */}
-            {recipeCookingTips[currentStep] && (
-              <View style={styles.cookingTipContainer}>
-                <View style={styles.cookingTipIcon}>
-                  <Text style={styles.cookingTipEmoji}>
-                    {recipeCookingTips[currentStep].emoji}
-                  </Text>
-                </View>
-                <Text style={styles.cookingTipText}>
-                  {recipeCookingTips[currentStep].tip}
-                </Text>
-              </View>
-            )}
-            
+
             {/* Contextual Info Row - Temperature & Time */}
             {(currentStepData?.temperature || currentStepData?.time) && (
               <View style={styles.contextualInfo}>
                 {currentStepData.temperature && (
                   <View style={styles.infoChip}>
                     <Text style={styles.infoIcon}>🌡️</Text>
-                    <Text style={styles.infoText}>{currentStepData.temperature}</Text>
+                    <Text style={styles.infoText}>
+                      {currentStepData.temperature}
+                    </Text>
                   </View>
                 )}
                 {currentStepData.time && (
                   <View style={styles.infoChip}>
                     <Text style={styles.infoIcon}>⏱️</Text>
-                    <Text style={styles.infoText}>{currentStepData.time} min</Text>
+                    <Text style={styles.infoText}>
+                      {currentStepData.time} min
+                    </Text>
                   </View>
                 )}
               </View>
             )}
-            
+
             {/* Chef's Tip - More subtle but accessible */}
             {currentStepData?.tips && (
               <View style={styles.chefsTip}>
@@ -647,7 +847,7 @@ const CookModeScreen: React.FC<CookModeScreenProps> = ({navigation, route}) => {
                 <Text style={styles.tipText}>{currentStepData.tips}</Text>
               </View>
             )}
-            
+
             {/* Confidence Building - Show what's coming next */}
             {currentStep < steps.length - 1 && (
               <View style={styles.nextStepPreview}>
@@ -657,36 +857,35 @@ const CookModeScreen: React.FC<CookModeScreenProps> = ({navigation, route}) => {
                 </Text>
               </View>
             )}
-            
+
             {/* Step Completion Celebration */}
             {currentStepData?.completed && (
               <View style={styles.stepCompletedBanner}>
                 <CheckCircle size={20} color="#4CAF50" />
-                <Text style={styles.stepCompletedText}>Step Complete! Well done! 🎉</Text>
+                <Text style={styles.stepCompletedText}>
+                  Step Complete! Well done! 🎉
+                </Text>
               </View>
             )}
           </ScrollView>
         </Animated.View>
       </View>
 
-      {/* COMPACT NAVIGATION - Reduced size */}
+      {/* ENHANCED NAVIGATION WITH COOKING TIP */}
       <View style={styles.compactNavigationContainer}>
-        {/* Quick Access Strip */}
-        <View style={styles.quickAccessStrip}>
-          <TouchableOpacity
-            style={styles.quickAccessChip}
-            onPress={() => setShowIngredientsModal(true)}>
-            <Text style={styles.quickAccessIcon}>🥘</Text>
-            <Text style={styles.quickAccessText}>Ingredients</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity
-            style={styles.quickAccessChip}
-            onPress={() => setShowAllStepsModal(true)}>
-            <Text style={styles.quickAccessIcon}>📋</Text>
-            <Text style={styles.quickAccessText}>All Steps</Text>
-          </TouchableOpacity>
-        </View>
+        {/* Cooking Tip Strip - Educational content */}
+        {recipeCookingTips[currentStep] && (
+          <View style={styles.bottomCookingTip}>
+            <View style={styles.bottomTipIcon}>
+              <Text style={styles.bottomTipEmoji}>
+                {recipeCookingTips[currentStep].emoji}
+              </Text>
+            </View>
+            <Text style={styles.bottomTipText} numberOfLines={2}>
+              {recipeCookingTips[currentStep].tip}
+            </Text>
+          </View>
+        )}
 
         {/* Main Navigation Row */}
         <View style={styles.mainNavigation}>
@@ -698,11 +897,17 @@ const CookModeScreen: React.FC<CookModeScreenProps> = ({navigation, route}) => {
             ]}
             onPress={handlePreviousStep}
             disabled={currentStep === 0}>
-            <ChevronLeft size={20} color={currentStep === 0 ? '#C7C7CC' : '#2D1B69'} />
-            <Text style={[
-              styles.compactNavText,
-              currentStep === 0 && styles.navTextDisabled
-            ]}>Previous</Text>
+            <ChevronLeft
+              size={20}
+              color={currentStep === 0 ? '#C7C7CC' : '#2D1B69'}
+            />
+            <Text
+              style={[
+                styles.compactNavText,
+                currentStep === 0 && styles.navTextDisabled,
+              ]}>
+              Previous
+            </Text>
           </TouchableOpacity>
 
           {/* HERO ACTION BUTTON - Compact with proper text fitting */}
@@ -717,7 +922,9 @@ const CookModeScreen: React.FC<CookModeScreenProps> = ({navigation, route}) => {
           ) : (
             <TouchableOpacity
               style={styles.compactNextButton}
-              onPress={!currentStepData?.duration ? handleStepComplete : handleNextStep}>
+              onPress={
+                !currentStepData?.duration ? handleStepComplete : handleNextStep
+              }>
               <Text style={styles.compactButtonText}>
                 {!currentStepData?.duration ? '✓ Done' : 'Next Step'}
               </Text>
@@ -728,7 +935,10 @@ const CookModeScreen: React.FC<CookModeScreenProps> = ({navigation, route}) => {
       </View>
 
       {/* Full-Screen Ingredients Modal */}
-      <Modal visible={showIngredientsModal} animationType="slide" presentationStyle="pageSheet">
+      <Modal
+        visible={showIngredientsModal}
+        animationType="slide"
+        presentationStyle="pageSheet">
         <SafeAreaView style={styles.fullScreenModal}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Ingredients</Text>
@@ -738,15 +948,18 @@ const CookModeScreen: React.FC<CookModeScreenProps> = ({navigation, route}) => {
               <X size={24} color="#2D1B69" />
             </TouchableOpacity>
           </View>
-          <ScrollView style={styles.fullModalBody} contentContainerStyle={styles.modalContent}>
+          <ScrollView
+            style={styles.fullModalBody}
+            contentContainerStyle={styles.modalContent}>
             {recipe?.ingredients?.map((ingredient, index) => (
               <View key={index} style={styles.ingredientItem}>
                 <View style={styles.ingredientBullet} />
                 <Text style={styles.ingredientText}>
-                  {typeof ingredient === 'string' 
-                    ? ingredient 
-                    : `${ingredient.amount || ''} ${ingredient.unit || ''} ${ingredient.name || ingredient}`.trim()
-                  }
+                  {typeof ingredient === 'string'
+                    ? ingredient
+                    : `${ingredient.amount || ''} ${ingredient.unit || ''} ${
+                        ingredient.name || ingredient
+                      }`.trim()}
                 </Text>
               </View>
             ))}
@@ -755,7 +968,10 @@ const CookModeScreen: React.FC<CookModeScreenProps> = ({navigation, route}) => {
       </Modal>
 
       {/* Full-Screen All Steps Modal */}
-      <Modal visible={showAllStepsModal} animationType="slide" presentationStyle="pageSheet">
+      <Modal
+        visible={showAllStepsModal}
+        animationType="slide"
+        presentationStyle="pageSheet">
         <SafeAreaView style={styles.fullScreenModal}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>All Steps</Text>
@@ -765,7 +981,9 @@ const CookModeScreen: React.FC<CookModeScreenProps> = ({navigation, route}) => {
               <X size={24} color="#2D1B69" />
             </TouchableOpacity>
           </View>
-          <ScrollView style={styles.fullModalBody} contentContainerStyle={styles.modalContent}>
+          <ScrollView
+            style={styles.fullModalBody}
+            contentContainerStyle={styles.modalContent}>
             {steps.map((step, index) => (
               <TouchableOpacity
                 key={step.id}
@@ -784,32 +1002,41 @@ const CookModeScreen: React.FC<CookModeScreenProps> = ({navigation, route}) => {
                   {step.completed ? (
                     <CheckCircle size={20} color="#4CAF50" />
                   ) : (
-                    <View style={[
-                      styles.stepNumberCircle,
-                      index === currentStep && styles.activeStepNumberCircle
-                    ]}>
-                      <Text style={[
-                        styles.stepNumberText,
-                        index === currentStep && styles.activeStepNumber
-                      ]}>{index + 1}</Text>
+                    <View
+                      style={[
+                        styles.stepNumberCircle,
+                        index === currentStep && styles.activeStepNumberCircle,
+                      ]}>
+                      <Text
+                        style={[
+                          styles.stepNumberText,
+                          index === currentStep && styles.activeStepNumber,
+                        ]}>
+                        {index + 1}
+                      </Text>
                     </View>
                   )}
                 </View>
                 <View style={styles.stepOverviewContent}>
-                  <Text style={[
-                    styles.stepOverviewText,
-                    index === currentStep && styles.activeStepText,
-                    step.completed && styles.completedStepText,
-                  ]}>
+                  <Text
+                    style={[
+                      styles.stepOverviewText,
+                      index === currentStep && styles.activeStepText,
+                      step.completed && styles.completedStepText,
+                    ]}>
                     {step.instruction}
                   </Text>
                   {(step.temperature || step.time) && (
                     <View style={styles.stepOverviewMeta}>
                       {step.temperature && (
-                        <Text style={styles.stepMetaText}>🌡️ {step.temperature}</Text>
+                        <Text style={styles.stepMetaText}>
+                          🌡️ {step.temperature}
+                        </Text>
                       )}
                       {step.time && (
-                        <Text style={styles.stepMetaText}>⏱️ {step.time} min</Text>
+                        <Text style={styles.stepMetaText}>
+                          ⏱️ {step.time} min
+                        </Text>
                       )}
                     </View>
                   )}
@@ -822,23 +1049,31 @@ const CookModeScreen: React.FC<CookModeScreenProps> = ({navigation, route}) => {
 
       {/* XP Celebration */}
       {showXPCelebration && (
-        <Animated.View 
+        <Animated.View
           style={[
             styles.xpCelebration,
-            {transform: [{scale: xpCelebrationScale}]}
+            {transform: [{scale: xpCelebrationScale}]},
           ]}>
-                        <Star size={30} color="#FFB800" />
+          <Star size={30} color="#FFB800" />
           <Text style={styles.xpCelebrationText}>+5 XP</Text>
         </Animated.View>
       )}
 
       {/* Claim Recipe Preview */}
-      {recipe?.isGenerated && !isRecipeClaimed && completedSteps >= Math.floor(steps.length / 2) && (
-        <Animated.View style={[styles.claimPreview, {transform: [{scale: claimPreviewScale}]}]}>
-          <Trophy size={16} color="#FFB800" />
-          <Text style={styles.claimPreviewText}>Claim recipe after cooking! +{XP_VALUES.CLAIM_RECIPE} XP</Text>
-        </Animated.View>
-      )}
+      {recipe?.isGenerated &&
+        !isRecipeClaimed &&
+        completedSteps >= Math.floor(steps.length / 2) && (
+          <Animated.View
+            style={[
+              styles.claimPreview,
+              {transform: [{scale: claimPreviewScale}]},
+            ]}>
+            <Trophy size={16} color="#FFB800" />
+            <Text style={styles.claimPreviewText}>
+              Claim recipe after cooking! +{XP_VALUES.CLAIM_RECIPE} XP
+            </Text>
+          </Animated.View>
+        )}
 
       {/* Rating Modal */}
       <RecipeRatingModal
@@ -1044,17 +1279,42 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(45, 27, 105, 0.08)',
   },
-  stepBadgeContainer: {
+  stepHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingTop: 16,
-    paddingBottom: 8,
+    paddingBottom: 12,
   },
   stepBadge: {
-    alignSelf: 'flex-start',
     backgroundColor: '#2D1B69',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 12,
+  },
+  topQuickAccess: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  topQuickAccessButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#F8F8FF',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E5E7',
+  },
+  topQuickAccessIcon: {
+    fontSize: 12,
+  },
+  topQuickAccessText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#2D1B69',
   },
   stepBadgeText: {
     fontSize: 12,
@@ -1084,33 +1344,35 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 20,
   },
-  // COOKING TIP - Subtle educational tip
-  cookingTipContainer: {
-    backgroundColor: 'rgba(45, 27, 105, 0.03)',
-    padding: 12,
-    borderRadius: 16,
-    marginBottom: 16,
+  // BOTTOM COOKING TIP - Educational content in navigation area
+  bottomCookingTip: {
+    backgroundColor: 'rgba(255, 107, 53, 0.05)',
+    padding: 10,
+    borderRadius: 12,
+    marginBottom: 12,
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 10,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 107, 53, 0.1)',
   },
-  cookingTipIcon: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: 'rgba(255, 107, 53, 0.08)',
+  bottomTipIcon: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255, 107, 53, 0.15)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 2,
+    marginTop: 1,
   },
-  cookingTipEmoji: {
-    fontSize: 14,
+  bottomTipEmoji: {
+    fontSize: 12,
   },
-  cookingTipText: {
+  bottomTipText: {
     flex: 1,
-    fontSize: 13,
-    lineHeight: 18,
-    color: '#5A5A5A',
+    fontSize: 12,
+    lineHeight: 16,
+    color: '#666666',
     fontWeight: '500',
   },
   // CONTEXTUAL INFO - Temperature & Time chips
@@ -1176,32 +1438,6 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
     borderTopWidth: 1,
     borderTopColor: '#E5E5E7',
-  },
-  quickAccessStrip: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 16,
-    marginBottom: 10,
-  },
-  quickAccessChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#F8F8FF',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#E5E5E7',
-  },
-  quickAccessIcon: {
-    fontSize: 14,
-  },
-  quickAccessText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#2D1B69',
   },
   mainNavigation: {
     flexDirection: 'row',

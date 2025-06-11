@@ -40,8 +40,9 @@ const RecipeRatingModal: React.FC<RecipeRatingModalProps> = ({
   onClose,
   onSubmit,
   recipeName,
-  recipeId,
+  recipeId, // eslint-disable-line @typescript-eslint/no-unused-vars
 }) => {
+  // Future: Use recipeId for analytics tracking
   const [overallRating, setOverallRating] = useState(0);
   const [subRatings, setSubRatings] = useState({
     taste: 0,
@@ -60,7 +61,11 @@ const RecipeRatingModal: React.FC<RecipeRatingModalProps> = ({
     });
   };
 
-  const renderStars = (rating: number, onPress: (value: number) => void, size = 32) => {
+  const renderStars = (
+    rating: number,
+    onPress: (value: number) => void,
+    size = 32,
+  ) => {
     return (
       <View style={styles.starsContainer}>
         {[1, 2, 3, 4, 5].map(value => (
@@ -142,7 +147,9 @@ const RecipeRatingModal: React.FC<RecipeRatingModalProps> = ({
               <Text style={styles.ratingText}>
                 {overallRating === 0
                   ? 'Tap to rate'
-                  : ['Poor', 'Fair', 'Good', 'Very Good', 'Excellent'][overallRating - 1]}
+                  : ['Poor', 'Fair', 'Good', 'Very Good', 'Excellent'][
+                      overallRating - 1
+                    ]}
               </Text>
             </View>
 
@@ -162,7 +169,9 @@ const RecipeRatingModal: React.FC<RecipeRatingModalProps> = ({
                 {subRatingCategories.map(category => (
                   <View key={category.key} style={styles.subRatingItem}>
                     <View style={styles.subRatingLabel}>
-                      <Text style={styles.subRatingEmoji}>{category.emoji}</Text>
+                      <Text style={styles.subRatingEmoji}>
+                        {category.emoji}
+                      </Text>
                       <Text style={styles.subRatingText}>{category.label}</Text>
                     </View>
                     {renderStars(
@@ -363,4 +372,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default RecipeRatingModal; 
+export default RecipeRatingModal;

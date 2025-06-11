@@ -1,4 +1,4 @@
-import React, {useState, useRef} from 'react';
+import React, {useState, useRef, useEffect} from 'react';
 import {
   View,
   StyleSheet,
@@ -7,10 +7,18 @@ import {
   SafeAreaView,
   Dimensions,
   ScrollView,
-  Image,
+  StatusBar,
+  Animated,
   Alert,
 } from 'react-native';
-import {Camera, Utensils, Trophy, Bell, ChevronRight} from 'lucide-react-native';
+import {
+  Camera,
+  Check,
+  ChefHat,
+  Users,
+  Trophy,
+  ChevronRight,
+} from 'lucide-react-native';
 // import Animated, {
 //   useAnimatedStyle,
 //   useSharedValue,
@@ -25,7 +33,10 @@ interface OnboardingScreenProps {
 
 const {width: SCREEN_WIDTH} = Dimensions.get('window');
 
-const OnboardingScreen: React.FC<OnboardingScreenProps> = ({navigation, route}) => {
+const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
+  navigation,
+  route,
+}) => {
   const {isCreator} = route.params || {};
   const [currentPage, setCurrentPage] = useState(0);
   const scrollViewRef = useRef<ScrollView>(null);
@@ -40,7 +51,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({navigation, route}) 
       color: '#FF6B35',
     },
     {
-      icon: Utensils,
+      icon: ChefHat,
       title: 'Cook',
       subtitle: 'Get personalized recipes',
       description: 'Tailored to your preferences and skill level',
@@ -65,7 +76,10 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({navigation, route}) 
   const handleNext = () => {
     if (currentPage < onboardingData.length - 1) {
       const nextPage = currentPage + 1;
-      scrollViewRef.current?.scrollTo({x: nextPage * SCREEN_WIDTH, animated: true});
+      scrollViewRef.current?.scrollTo({
+        x: nextPage * SCREEN_WIDTH,
+        animated: true,
+      });
       setCurrentPage(nextPage);
     } else {
       handleGetStarted();
@@ -105,32 +119,32 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({navigation, route}) 
 
   const renderPage = (item: any, index: number) => {
     const Icon = item.icon;
-    
+
     // const animatedStyle = useAnimatedStyle(() => {
     //   const inputRange = [
     //     (index - 1) * SCREEN_WIDTH,
     //     index * SCREEN_WIDTH,
     //     (index + 1) * SCREEN_WIDTH,
     //   ];
-      
+
     //   const scale = interpolate(
     //     scrollX.value,
     //     inputRange,
     //     [0.8, 1, 0.8],
     //   );
-      
+
     //   const opacity = interpolate(
     //     scrollX.value,
     //     inputRange,
     //     [0.5, 1, 0.5],
     //   );
-      
+
     //   return {
     //     transform: [{scale}],
     //     opacity,
     //   };
     // });
-    
+
     return (
       <View key={index} style={styles.page}>
         <View style={styles.iconContainer}>
@@ -151,10 +165,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({navigation, route}) 
         {onboardingData.map((_, index) => (
           <View
             key={index}
-            style={[
-              styles.dot,
-              currentPage === index && styles.activeDot,
-            ]}
+            style={[styles.dot, currentPage === index && styles.activeDot]}
           />
         ))}
       </View>
@@ -183,7 +194,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({navigation, route}) 
       {/* Bottom Navigation */}
       <View style={styles.bottomContainer}>
         {renderDots()}
-        
+
         <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
           <Text style={styles.nextButtonText}>
             {currentPage === onboardingData.length - 1 ? 'Get Started' : 'Next'}
@@ -306,4 +317,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default OnboardingScreen; 
+export default OnboardingScreen;

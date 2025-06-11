@@ -6,15 +6,12 @@ import {
   Dimensions,
   TouchableOpacity,
 } from 'react-native';
-import {
-  RefreshCw,
-  RotateCcw,
-} from 'lucide-react-native';
+import {RefreshCw, RotateCcw} from 'lucide-react-native';
 import SwipeableCard from './SwipeableCard';
 import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
-import { Recipe } from '../utils/recipeTypes';
+import {Recipe} from '../utils/recipeTypes';
 
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 
 interface CardStackProps {
   recipes: Recipe[];
@@ -34,7 +31,9 @@ const CardStack: React.FC<CardStackProps> = ({
   isLoading = false,
 }) => {
   const [cardStack, setCardStack] = useState<Recipe[]>(recipes);
-  const [lastDismissedCard, setLastDismissedCard] = useState<Recipe | null>(null);
+  const [lastDismissedCard, setLastDismissedCard] = useState<Recipe | null>(
+    null,
+  );
   const [favoritedCards, setFavoritedCards] = useState<Set<string>>(new Set());
 
   useEffect(() => {
@@ -45,7 +44,7 @@ const CardStack: React.FC<CardStackProps> = ({
     // Dismiss card - remove from stack
     ReactNativeHapticFeedback.trigger('impactMedium');
     setLastDismissedCard(recipe);
-    
+
     setTimeout(() => {
       setCardStack(prev => prev.filter(r => r.id !== recipe.id));
     }, 200);
@@ -65,7 +64,7 @@ const CardStack: React.FC<CardStackProps> = ({
       newFavorited.add(recipe.id);
     }
     setFavoritedCards(newFavorited);
-    
+
     ReactNativeHapticFeedback.trigger('impactLight');
     onFavoriteRecipe(recipe);
   };
@@ -113,7 +112,7 @@ const CardStack: React.FC<CardStackProps> = ({
           <Text style={styles.emptySubtitle}>
             Swipe through all your options or generate new ones
           </Text>
-          
+
           <View style={styles.emptyActions}>
             {lastDismissedCard && (
               <TouchableOpacity style={styles.undoButton} onPress={handleUndo}>
@@ -121,8 +120,10 @@ const CardStack: React.FC<CardStackProps> = ({
                 <Text style={styles.undoText}>Undo last dismiss</Text>
               </TouchableOpacity>
             )}
-            
-            <TouchableOpacity style={styles.refreshButton} onPress={handleRefresh}>
+
+            <TouchableOpacity
+              style={styles.refreshButton}
+              onPress={handleRefresh}>
               <RefreshCw size={18} color="#FFFFFF" />
               <Text style={styles.refreshText}>Generate New Recipes</Text>
             </TouchableOpacity>
@@ -138,7 +139,8 @@ const CardStack: React.FC<CardStackProps> = ({
       <View style={styles.header}>
         <Text style={styles.title}>Recipe Suggestions</Text>
         <Text style={styles.subtitle}>
-          {cardStack.length} recipe{cardStack.length !== 1 ? 's' : ''} • Tap cards to explore
+          {cardStack.length} recipe{cardStack.length !== 1 ? 's' : ''} • Tap
+          cards to explore
         </Text>
       </View>
 
@@ -291,7 +293,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.9)',
     borderRadius: 20,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
@@ -303,4 +305,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default CardStack; 
+export default CardStack;

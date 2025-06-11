@@ -5,8 +5,12 @@ import React, {
   useEffect,
   ReactNode,
 } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { supabase } from '../services/supabaseClient';
+import {
+  secureStorage,
+  SECURE_KEYS,
+  STORAGE_KEYS,
+} from '../services/secureStorage';
+import {supabase} from '../services/supabaseClient';
 
 interface User {
   id: string;
@@ -29,15 +33,19 @@ interface AuthContextType {
   isLoading: boolean;
   isCreatingProfile: boolean;
   login: (email: string, password: string) => Promise<void>;
-  signup: (email: string, password: string, name: string, isCreator: boolean) => Promise<void>;
-  logout: () => Promise<void>;
+  signup: (
+    email: string,
+    password: string,
+    name: string,
+    isCreator: boolean,
+  ) => Promise<void>;
+  logout: (navigation?: any) => Promise<void>;
   updateUser: (updates: Partial<User>) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const TOKEN_KEY = '@cookcam_token';
-const USER_KEY = '@cookcam_user';
+const TOKEN_KEY = SECURE_KEYS.ACCESS_TOKEN;
 
 interface AuthProviderProps {
   children: ReactNode;
@@ -53,24 +61,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
     checkSession();
 
     // Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('🔐 Auth state changed:', event, session?.user?.id);
-        
-        try {
-          if (session?.user) {
-            await loadUserProfile(session.user.id, session.access_token);
-          } else {
-            setUser(null);
-            await AsyncStorage.removeItem(TOKEN_KEY).catch(console.error);
-          }
-        } catch (error) {
-          console.error('Error handling auth state change:', error);
-        } finally {
-          setIsLoading(false);
+    const {
+      data: {subscription},
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('🔐 Auth state changed:', event, session?.user?.id);
+
+      try {
+        if (session?.user) {
+          await loadUserProfile(session.user.id, session.access_token);
+        } else {
+          setUser(null);
+          await secureStorage.removeSecureItem(TOKEN_KEY).catch(console.error);
         }
+      } catch (error) {
+        console.error('Error handling auth state change:', error);
+      } finally {
+        setIsLoading(false);
       }
-    );
+    });
 
     return () => {
       subscription.unsubscribe();
@@ -79,8 +87,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
 
   const checkSession = async () => {
     try {
-      const { data: { session }, error } = await supabase.auth.getSession();
-      
+      const {
+        data: {session},
+        error,
+      } = await supabase.auth.getSession();
+
       if (error) {
         console.error('Session check error:', error);
         setIsLoading(false);
@@ -99,11 +110,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
 
   const loadUserProfile = async (userId: string, accessToken: string) => {
     try {
-      // Store the Supabase session token
-      await AsyncStorage.setItem(TOKEN_KEY, accessToken);
+      // Store the Supabase session token securely
+      await secureStorage.setSecureItem(TOKEN_KEY, accessToken);
 
       // Get user profile from our users table
-      const { data: userData, error } = await supabase
+      const {data: userData, error} = await supabase
         .from('users')
         .select('*')
         .eq('id', userId)
@@ -153,10 +164,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
     try {
       setIsCreatingProfile(true);
       console.log('🔄 Creating user profile for:', userId);
-      
+
       // Get the user's auth data first
-      const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
-      
+      const {
+        data: {user: authUser},
+        error: authError,
+      } = await supabase.auth.getUser();
+
       if (authError || !authUser) {
         console.error('Error getting auth user:', authError);
         throw new Error('Could not get user authentication data');
@@ -165,18 +179,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
       console.log('📝 Creating profile for user:', authUser.email);
 
       // Create user profile in our users table
-      const { data: newUser, error: profileError } = await supabase
+      const {data: newUser, error: profileError} = await supabase
         .from('users')
-        .insert([{
-          id: userId,
-          email: authUser.email,
-          name: authUser.user_metadata?.name || authUser.email,
-          is_creator: false,
-          level: 1,
-          xp: 0,
-          total_xp: 0,
-          streak_current: 0,
-        }])
+        .insert([
+          {
+            id: userId,
+            email: authUser.email,
+            name: authUser.user_metadata?.name || authUser.email,
+            is_creator: false,
+            level: 1,
+            xp: 0,
+            total_xp: 0,
+            streak_current: 0,
+          },
+        ])
         .select()
         .single();
 
@@ -216,11 +232,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
   const login = async (email: string, password: string) => {
     try {
       setIsLoading(true);
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const {data, error} = await supabase.auth.signInWithPassword({
         email,
         password,
       });
-      
+
       if (error) {
         throw new Error(error.message);
       }
@@ -236,19 +252,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
     }
   };
 
-  const signup = async (email: string, password: string, name: string, isCreator: boolean) => {
+  const signup = async (
+    email: string,
+    password: string,
+    name: string,
+    isCreator: boolean,
+  ) => {
     try {
       setIsLoading(true);
-      const { data, error } = await supabase.auth.signUp({
+      const {data, error} = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
-            name: name
-          }
-        }
+            name: name,
+          },
+        },
       });
-      
+
       if (error) {
         throw new Error(error.message);
       }
@@ -256,9 +277,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
       // If signup is successful and user is confirmed
       if (data.user && data.session) {
         // Create user profile in our users table
-        const { error: profileError } = await supabase
-          .from('users')
-          .insert([{
+        const {error: profileError} = await supabase.from('users').insert([
+          {
             id: data.user.id,
             email: data.user.email,
             name: name,
@@ -267,7 +287,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
             xp: 0,
             total_xp: 0,
             streak_current: 0,
-          }]);
+          },
+        ]);
 
         if (profileError) {
           console.error('Profile creation error:', profileError);
@@ -277,7 +298,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
       } else {
         console.log('User created, but email confirmation may be required');
       }
-      
     } catch (error) {
       console.error('Signup error:', error);
       throw error;
@@ -286,22 +306,42 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
     }
   };
 
-  const logout = async () => {
+  const logout = async (navigation?: any) => {
     try {
       await supabase.auth.signOut();
       setUser(null);
-      await AsyncStorage.removeItem(TOKEN_KEY);
+      // Clear sensitive data securely and non-sensitive separately
+      await secureStorage.clearAllSecureData();
+      await secureStorage.removeItem(STORAGE_KEYS.ONBOARDING_COMPLETED);
+      await secureStorage.removeItem(STORAGE_KEYS.LAST_CHECK_IN);
+
+      // Optionally reset navigation to Auth/Login screen
+      if (navigation) {
+        navigation.reset({
+          index: 0,
+          routes: [{name: 'Auth'}],
+        });
+      }
     } catch (error) {
       console.error('Logout error:', error);
-      // Even if server logout fails, clear local state
       setUser(null);
-      await AsyncStorage.removeItem(TOKEN_KEY);
+      // Ensure data is cleared even if logout fails
+      await secureStorage.clearAllSecureData();
+      await secureStorage.removeItem(STORAGE_KEYS.ONBOARDING_COMPLETED);
+      await secureStorage.removeItem(STORAGE_KEYS.LAST_CHECK_IN);
+
+      if (navigation) {
+        navigation.reset({
+          index: 0,
+          routes: [{name: 'Auth'}],
+        });
+      }
     }
   };
 
   const updateUser = (updates: Partial<User>) => {
     if (user) {
-      setUser({ ...user, ...updates });
+      setUser({...user, ...updates});
     }
   };
 

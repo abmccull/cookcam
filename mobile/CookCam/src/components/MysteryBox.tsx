@@ -7,8 +7,9 @@ import {
   Animated,
   Modal,
   Alert,
+  Dimensions,
 } from 'react-native';
-import {Gift, Star, Lock, ChefHat} from 'lucide-react-native';
+import {Gift, Star} from 'lucide-react-native';
 import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
 import {useGamification} from '../context/GamificationContext';
 
@@ -29,16 +30,18 @@ interface MysteryBoxProps {
 const MysteryBox: React.FC<MysteryBoxProps> = ({onOpen}) => {
   const [isOpening, setIsOpening] = useState(false);
   const [showReward, setShowReward] = useState(false);
-  const [currentReward, setCurrentReward] = useState<MysteryReward | null>(null);
+  const [currentReward, setCurrentReward] = useState<MysteryReward | null>(
+    null,
+  );
   const {addXP, unlockBadge} = useGamification();
-  
+
   // Animation values
   const shakeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const rotateAnim = useRef(new Animated.Value(0)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const glowAnim = useRef(new Animated.Value(0)).current;
-  
+
   // Mystery rewards pool
   const rewardPools = {
     common: [
@@ -111,7 +114,7 @@ const MysteryBox: React.FC<MysteryBoxProps> = ({onOpen}) => {
       },
     ],
   };
-  
+
   const startOpeningAnimation = () => {
     // Shake animation
     Animated.loop(
@@ -127,9 +130,9 @@ const MysteryBox: React.FC<MysteryBoxProps> = ({onOpen}) => {
           useNativeDriver: true,
         }),
       ]),
-      {iterations: 5}
+      {iterations: 5},
     ).start();
-    
+
     // Scale animation
     Animated.sequence([
       Animated.timing(scaleAnim, {
@@ -151,7 +154,7 @@ const MysteryBox: React.FC<MysteryBoxProps> = ({onOpen}) => {
         useNativeDriver: true,
       }).start();
     });
-    
+
     // Glow animation
     Animated.timing(glowAnim, {
       toValue: 1,
@@ -159,38 +162,43 @@ const MysteryBox: React.FC<MysteryBoxProps> = ({onOpen}) => {
       useNativeDriver: true,
     }).start();
   };
-  
+
   const selectRandomReward = (): MysteryReward => {
     const rand = Math.random();
     let pool: MysteryReward[];
-    
-    if (rand < 0.05) { // 5% ultra-rare
+
+    if (rand < 0.05) {
+      // 5% ultra-rare
       pool = rewardPools['ultra-rare'];
       ReactNativeHapticFeedback.trigger('notificationSuccess');
-    } else if (rand < 0.30) { // 25% rare
+    } else if (rand < 0.3) {
+      // 25% rare
       pool = rewardPools.rare;
       ReactNativeHapticFeedback.trigger('impactMedium');
-    } else { // 70% common
+    } else {
+      // 70% common
       pool = rewardPools.common;
       ReactNativeHapticFeedback.trigger('impactLight');
     }
-    
+
     return pool[Math.floor(Math.random() * pool.length)];
   };
-  
+
   const handleOpenBox = async () => {
-    if (isOpening) return;
-    
+    if (isOpening) {
+      return;
+    }
+
     setIsOpening(true);
     ReactNativeHapticFeedback.trigger('impactHeavy');
-    
+
     // Start animations
     startOpeningAnimation();
-    
+
     // Select reward
     const reward = selectRandomReward();
     setCurrentReward(reward);
-    
+
     // Wait for animation
     setTimeout(async () => {
       // Apply reward
@@ -199,17 +207,17 @@ const MysteryBox: React.FC<MysteryBoxProps> = ({onOpen}) => {
       } else if (reward.type === 'badge' && typeof reward.value === 'string') {
         await unlockBadge(reward.value);
       }
-      
+
       // Callback
       onOpen?.(reward);
     }, 1000);
   };
-  
+
   const handleCloseReward = () => {
     setShowReward(false);
     setIsOpening(false);
     setCurrentReward(null);
-    
+
     // Reset animations
     shakeAnim.setValue(0);
     scaleAnim.setValue(1);
@@ -217,33 +225,40 @@ const MysteryBox: React.FC<MysteryBoxProps> = ({onOpen}) => {
     fadeAnim.setValue(0);
     glowAnim.setValue(0);
   };
-  
+
   const getRarityColor = (rarity: string) => {
     switch (rarity) {
-      case 'common': return '#4CAF50';
-      case 'rare': return '#2196F3';
-      case 'ultra-rare': return '#FFB800';
-      default: return '#666';
+      case 'common':
+        return '#4CAF50';
+      case 'rare':
+        return '#2196F3';
+      case 'ultra-rare':
+        return '#FFB800';
+      default:
+        return '#666';
     }
   };
-  
+
   const getRarityGlow = (rarity: string) => {
     switch (rarity) {
-      case 'common': return 'rgba(76, 175, 80, 0.3)';
-      case 'rare': return 'rgba(33, 150, 243, 0.3)';
-      case 'ultra-rare': return 'rgba(255, 184, 0, 0.5)';
-      default: return 'transparent';
+      case 'common':
+        return 'rgba(76, 175, 80, 0.3)';
+      case 'rare':
+        return 'rgba(33, 150, 243, 0.3)';
+      case 'ultra-rare':
+        return 'rgba(255, 184, 0, 0.5)';
+      default:
+        return 'transparent';
     }
   };
-  
+
   return (
     <>
       <TouchableOpacity
         style={styles.container}
         onPress={handleOpenBox}
         disabled={isOpening}
-        activeOpacity={0.8}
-      >
+        activeOpacity={0.8}>
         <Animated.View
           style={[
             styles.box,
@@ -265,8 +280,7 @@ const MysteryBox: React.FC<MysteryBoxProps> = ({onOpen}) => {
               ],
               opacity: scaleAnim,
             },
-          ]}
-        >
+          ]}>
           <Animated.View
             style={[
               styles.glowEffect,
@@ -281,57 +295,58 @@ const MysteryBox: React.FC<MysteryBoxProps> = ({onOpen}) => {
           <Gift size={40} color="#FFB800" />
           <Text style={styles.boxText}>Mystery Box</Text>
           <View style={styles.sparkles}>
-                          <Star size={16} color="#FFB800" />
+            <Star size={16} color="#FFB800" />
           </View>
         </Animated.View>
-        
-        {!isOpening && (
-          <Text style={styles.tapText}>Tap to open!</Text>
-        )}
+
+        {!isOpening && <Text style={styles.tapText}>Tap to open!</Text>}
       </TouchableOpacity>
-      
+
       {/* Reward Modal */}
       <Modal
         visible={showReward}
         transparent
         animationType="fade"
-        onRequestClose={handleCloseReward}
-      >
+        onRequestClose={handleCloseReward}>
         <TouchableOpacity
           style={styles.modalOverlay}
           activeOpacity={1}
-          onPress={handleCloseReward}
-        >
+          onPress={handleCloseReward}>
           <Animated.View
             style={[
               styles.rewardContainer,
               {
                 opacity: fadeAnim,
                 transform: [{scale: fadeAnim}],
-                backgroundColor: getRarityGlow(currentReward?.rarity || 'common'),
+                backgroundColor: getRarityGlow(
+                  currentReward?.rarity || 'common',
+                ),
               },
-            ]}
-          >
+            ]}>
             <View
               style={[
                 styles.rewardCard,
-                {borderColor: getRarityColor(currentReward?.rarity || 'common')},
-              ]}
-            >
+                {
+                  borderColor: getRarityColor(
+                    currentReward?.rarity || 'common',
+                  ),
+                },
+              ]}>
               <Text style={styles.rewardRarity}>
                 {currentReward?.rarity.toUpperCase()}
               </Text>
               <Text style={styles.rewardIcon}>{currentReward?.icon}</Text>
-              <Text style={[
-                styles.rewardTitle,
-                {color: getRarityColor(currentReward?.rarity || 'common')},
-              ]}>
+              <Text
+                style={[
+                  styles.rewardTitle,
+                  {color: getRarityColor(currentReward?.rarity || 'common')},
+                ]}>
                 {currentReward?.title}
               </Text>
               <Text style={styles.rewardDescription}>
                 {currentReward?.description}
               </Text>
-              
+
               {currentReward?.rarity === 'ultra-rare' && (
                 <View style={styles.ultraRareEffects}>
                   {[...Array(5)].map((_, i) => (
@@ -352,14 +367,17 @@ const MysteryBox: React.FC<MysteryBoxProps> = ({onOpen}) => {
                   ))}
                 </View>
               )}
-              
+
               <TouchableOpacity
                 style={[
                   styles.collectButton,
-                  {backgroundColor: getRarityColor(currentReward?.rarity || 'common')},
+                  {
+                    backgroundColor: getRarityColor(
+                      currentReward?.rarity || 'common',
+                    ),
+                  },
                 ]}
-                onPress={handleCloseReward}
-              >
+                onPress={handleCloseReward}>
                 <Text style={styles.collectButtonText}>Collect!</Text>
               </TouchableOpacity>
             </View>
@@ -477,4 +495,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default MysteryBox; 
+export default MysteryBox;

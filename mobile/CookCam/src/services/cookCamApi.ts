@@ -1,5 +1,5 @@
-import apiService, { ApiResponse } from './apiService';
-import { API_ENDPOINTS } from '../config/api';
+import apiService, {ApiResponse} from './apiService';
+import {API_ENDPOINTS} from '../config/api';
 
 // Types for CookCam API responses
 export interface User {
@@ -135,14 +135,14 @@ export interface CreatorRevenue {
   total_earnings: number;
   monthly_earnings: number;
   affiliate_earnings: number; // 30% of referral subscriptions
-  tips_earnings: number;      // 100% of tips
+  tips_earnings: number; // 100% of tips
   collections_earnings: number; // 70% of collections revenue
   unpaid_balance: number;
   active_referrals: number;
   revenue_breakdown: {
-    referrals_rate: 30;    // 30% lifetime recurring
-    tips_rate: 100;        // 100% of tips  
-    collections_rate: 70;  // 70% of collections
+    referrals_rate: 30; // 30% lifetime recurring
+    tips_rate: 100; // 100% of tips
+    collections_rate: 70; // 70% of collections
   };
 }
 
@@ -159,11 +159,17 @@ export interface AffiliateLink {
 
 class CookCamApi {
   // Authentication Methods
-  async login(email: string, password: string): Promise<ApiResponse<AuthResponse>> {
-    const response = await apiService.post<AuthResponse>(API_ENDPOINTS.auth.login, {
-      email,
-      password
-    });
+  async login(
+    email: string,
+    password: string,
+  ): Promise<ApiResponse<AuthResponse>> {
+    const response = await apiService.post<AuthResponse>(
+      API_ENDPOINTS.auth.login,
+      {
+        email,
+        password,
+      },
+    );
 
     // Store auth token if login successful
     if (response.success && response.data?.access_token) {
@@ -178,7 +184,10 @@ class CookCamApi {
     password: string;
     name: string;
   }): Promise<ApiResponse<AuthResponse>> {
-    const response = await apiService.post<AuthResponse>(API_ENDPOINTS.auth.register, userData);
+    const response = await apiService.post<AuthResponse>(
+      API_ENDPOINTS.auth.register,
+      userData,
+    );
 
     // Store auth token if registration successful
     if (response.success && response.data?.access_token) {
@@ -202,15 +211,17 @@ class CookCamApi {
     return apiService.put<User>(API_ENDPOINTS.auth.profile, updates);
   }
 
-  async deleteAccount(confirmPassword: string): Promise<ApiResponse<{
-    message: string;
-    deletedAt: string;
-  }>> {
+  async deleteAccount(confirmPassword: string): Promise<
+    ApiResponse<{
+      message: string;
+      deletedAt: string;
+    }>
+  > {
     return apiService.delete<{
       message: string;
       deletedAt: string;
     }>(API_ENDPOINTS.auth.deleteAccount, {
-      confirmPassword
+      confirmPassword,
     });
   }
 
@@ -219,20 +230,28 @@ class CookCamApi {
     return apiService.uploadFile(API_ENDPOINTS.scan.detect, imageFile);
   }
 
-  async getScanHistory(limit: number = 20, offset: number = 0): Promise<ApiResponse<ScanResult[]>> {
-    return apiService.get<ScanResult[]>(`${API_ENDPOINTS.scan.history}?limit=${limit}&offset=${offset}`);
+  async getScanHistory(
+    limit: number = 20,
+    offset: number = 0,
+  ): Promise<ApiResponse<ScanResult[]>> {
+    return apiService.get<ScanResult[]>(
+      `${API_ENDPOINTS.scan.history}?limit=${limit}&offset=${offset}`,
+    );
   }
 
   // Recipe Methods
-  async generateRecipe(ingredients: string[], preferences?: {
-    cuisine?: string;
-    difficulty?: string;
-    time?: number;
-    dietary?: string[];
-  }): Promise<ApiResponse<Recipe>> {
+  async generateRecipe(
+    ingredients: string[],
+    preferences?: {
+      cuisine?: string;
+      difficulty?: string;
+      time?: number;
+      dietary?: string[];
+    },
+  ): Promise<ApiResponse<Recipe>> {
     return apiService.post<Recipe>(API_ENDPOINTS.recipes.generate, {
       ingredients,
-      preferences
+      preferences,
     });
   }
 
@@ -240,8 +259,13 @@ class CookCamApi {
     return apiService.post<Recipe>(API_ENDPOINTS.recipes.save, recipe);
   }
 
-  async getUserRecipes(limit: number = 20, offset: number = 0): Promise<ApiResponse<Recipe[]>> {
-    return apiService.get<Recipe[]>(`${API_ENDPOINTS.recipes.list}?limit=${limit}&offset=${offset}`);
+  async getUserRecipes(
+    limit: number = 20,
+    offset: number = 0,
+  ): Promise<ApiResponse<Recipe[]>> {
+    return apiService.get<Recipe[]>(
+      `${API_ENDPOINTS.recipes.list}?limit=${limit}&offset=${offset}`,
+    );
   }
 
   async getRecipe(recipeId: string): Promise<ApiResponse<Recipe>> {
@@ -256,13 +280,24 @@ class CookCamApi {
     return apiService.post(API_ENDPOINTS.recipes.favorite(recipeId));
   }
 
-  async getRecipeNutrition(recipeId: string): Promise<ApiResponse<NutritionInfo>> {
-    return apiService.get<NutritionInfo>(API_ENDPOINTS.recipes.nutrition(recipeId));
+  async getRecipeNutrition(
+    recipeId: string,
+  ): Promise<ApiResponse<NutritionInfo>> {
+    return apiService.get<NutritionInfo>(
+      API_ENDPOINTS.recipes.nutrition(recipeId),
+    );
   }
 
   // Ingredient Search Methods
-  async searchIngredients(query: string, limit: number = 20): Promise<ApiResponse<any[]>> {
-    return apiService.get(`${API_ENDPOINTS.ingredients.search}?q=${encodeURIComponent(query)}&limit=${limit}`);
+  async searchIngredients(
+    query: string,
+    limit: number = 20,
+  ): Promise<ApiResponse<any[]>> {
+    return apiService.get(
+      `${API_ENDPOINTS.ingredients.search}?q=${encodeURIComponent(
+        query,
+      )}&limit=${limit}`,
+    );
   }
 
   async getIngredientCategories(): Promise<ApiResponse<string[]>> {
@@ -274,24 +309,36 @@ class CookCamApi {
   }
 
   // Gamification Methods
-  async addXP(xpAmount: number, action: string, metadata?: any): Promise<ApiResponse> {
+  async addXP(
+    xpAmount: number,
+    action: string,
+    metadata?: any,
+  ): Promise<ApiResponse> {
     return apiService.post(API_ENDPOINTS.gamification.xp, {
       xp_amount: xpAmount,
       action,
-      metadata
+      metadata,
     });
   }
 
   async getGamificationProfile(): Promise<ApiResponse<GamificationProfile>> {
-    return apiService.get<GamificationProfile>(API_ENDPOINTS.gamification.profile);
+    return apiService.get<GamificationProfile>(
+      API_ENDPOINTS.gamification.profile,
+    );
   }
 
-  async getLeaderboard(limit: number = 50): Promise<ApiResponse<LeaderboardEntry[]>> {
-    return apiService.get<LeaderboardEntry[]>(`${API_ENDPOINTS.gamification.leaderboard}?limit=${limit}`);
+  async getLeaderboard(
+    limit: number = 50,
+  ): Promise<ApiResponse<LeaderboardEntry[]>> {
+    return apiService.get<LeaderboardEntry[]>(
+      `${API_ENDPOINTS.gamification.leaderboard}?limit=${limit}`,
+    );
   }
 
   async getAchievements(): Promise<ApiResponse<Achievement[]>> {
-    return apiService.get<Achievement[]>(API_ENDPOINTS.gamification.achievements);
+    return apiService.get<Achievement[]>(
+      API_ENDPOINTS.gamification.achievements,
+    );
   }
 
   // Subscription Methods
@@ -303,10 +350,15 @@ class CookCamApi {
     return apiService.get<UserSubscription>(API_ENDPOINTS.subscription.status);
   }
 
-  async createCheckoutSession(tierId: string): Promise<ApiResponse<{ checkoutUrl: string }>> {
-    return apiService.post<{ checkoutUrl: string }>(API_ENDPOINTS.subscription.checkout, {
-      tier_id: tierId
-    });
+  async createCheckoutSession(
+    tierId: string,
+  ): Promise<ApiResponse<{checkoutUrl: string}>> {
+    return apiService.post<{checkoutUrl: string}>(
+      API_ENDPOINTS.subscription.checkout,
+      {
+        tier_id: tierId,
+      },
+    );
   }
 
   async cancelSubscription(): Promise<ApiResponse> {
@@ -315,41 +367,66 @@ class CookCamApi {
     return apiService.post(API_ENDPOINTS.subscription.cancel);
   }
 
-  async checkFeatureAccess(feature: string): Promise<ApiResponse<{ hasAccess: boolean; usage?: any }>> {
-    return apiService.get<{ hasAccess: boolean; usage?: any }>(API_ENDPOINTS.subscription.feature(feature));
+  async checkFeatureAccess(
+    feature: string,
+  ): Promise<ApiResponse<{hasAccess: boolean; usage?: any}>> {
+    return apiService.get<{hasAccess: boolean; usage?: any}>(
+      API_ENDPOINTS.subscription.feature(feature),
+    );
   }
 
   // Creator Methods
   async getCreatorRevenue(): Promise<ApiResponse<CreatorRevenue>> {
-    return apiService.get<CreatorRevenue>(API_ENDPOINTS.subscription.creator.revenue);
+    return apiService.get<CreatorRevenue>(
+      API_ENDPOINTS.subscription.creator.revenue,
+    );
   }
 
-  async generateAffiliateLink(campaignName?: string, customSlug?: string): Promise<ApiResponse<AffiliateLink>> {
-    return apiService.post<AffiliateLink>(API_ENDPOINTS.subscription.affiliate.generate, {
-      campaign_name: campaignName,
-      custom_slug: customSlug
-    });
+  async generateAffiliateLink(
+    campaignName?: string,
+    customSlug?: string,
+  ): Promise<ApiResponse<AffiliateLink>> {
+    return apiService.post<AffiliateLink>(
+      API_ENDPOINTS.subscription.affiliate.generate,
+      {
+        campaign_name: campaignName,
+        custom_slug: customSlug,
+      },
+    );
   }
 
   async getAffiliateLinks(): Promise<ApiResponse<AffiliateLink[]>> {
-    return apiService.get<AffiliateLink[]>(API_ENDPOINTS.subscription.affiliate.links);
+    return apiService.get<AffiliateLink[]>(
+      API_ENDPOINTS.subscription.affiliate.links,
+    );
   }
 
-  async requestPayout(amount: number, method: 'stripe' | 'paypal' | 'bank_transfer' = 'stripe'): Promise<ApiResponse> {
+  async requestPayout(
+    amount: number,
+    method: 'stripe' | 'paypal' | 'bank_transfer' = 'stripe',
+  ): Promise<ApiResponse> {
     return apiService.post(API_ENDPOINTS.subscription.creator.payout, {
       amount,
-      method
+      method,
     });
   }
 
-  async getCreatorAnalytics(period: 'week' | 'month' | 'year' = 'month'): Promise<ApiResponse<any>> {
-    return apiService.get(`${API_ENDPOINTS.subscription.creator.analytics}?period=${period}`);
+  async getCreatorAnalytics(
+    period: 'week' | 'month' | 'year' = 'month',
+  ): Promise<ApiResponse<any>> {
+    return apiService.get(
+      `${API_ENDPOINTS.subscription.creator.analytics}?period=${period}`,
+    );
   }
 
-  async tipCreator(recipeId: string, amount: number, message?: string): Promise<ApiResponse> {
+  async tipCreator(
+    recipeId: string,
+    amount: number,
+    message?: string,
+  ): Promise<ApiResponse> {
     return apiService.post(API_ENDPOINTS.recipes.tip(recipeId), {
       amount,
-      message
+      message,
     });
   }
 
@@ -361,7 +438,10 @@ class CookCamApi {
     transactionId?: string;
     productId?: string;
   }): Promise<ApiResponse> {
-    return apiService.post(API_ENDPOINTS.subscription.validatePurchase, validationData);
+    return apiService.post(
+      API_ENDPOINTS.subscription.validatePurchase,
+      validationData,
+    );
   }
 
   async refreshSubscriptionStatus(): Promise<ApiResponse> {
@@ -380,56 +460,67 @@ class CookCamApi {
   }
 
   // Subscription Management (App Store based)
-  async getSubscriptionProducts(): Promise<ApiResponse<{
-    products: Array<{
-      productId: string;
-      price: string;
-      localizedPrice: string;
-      currency: string;
-      title: string;
-      description: string;
-      tier: 'regular' | 'creator';
-      revenue_share?: {
-        referrals: number;    // 30% lifetime recurring revenue for referrals
-        tips: number;         // 100% of tips
-        collections: number;  // 70% of curated recipes/collections
-      };
-    }>;
-  }>> {
+  async getSubscriptionProducts(): Promise<
+    ApiResponse<{
+      products: Array<{
+        productId: string;
+        price: string;
+        localizedPrice: string;
+        currency: string;
+        title: string;
+        description: string;
+        tier: 'regular' | 'creator';
+        revenue_share?: {
+          referrals: number; // 30% lifetime recurring revenue for referrals
+          tips: number; // 100% of tips
+          collections: number; // 70% of curated recipes/collections
+        };
+      }>;
+    }>
+  > {
     return apiService.get(API_ENDPOINTS.subscription.products);
   }
 
   // Analytics Methods
-  async trackEvent(eventName: string, properties?: Record<string, any>): Promise<ApiResponse> {
+  async trackEvent(
+    eventName: string,
+    properties?: Record<string, any>,
+  ): Promise<ApiResponse> {
     return apiService.post(API_ENDPOINTS.analytics.track, {
       event_type: eventName,
       event_data: properties || {},
       metadata: {
         timestamp: new Date().toISOString(),
-        platform: 'mobile'
-      }
+        platform: 'mobile',
+      },
     });
   }
 
-  async getAnalyticsDashboard(period: 'day' | 'week' | 'month' = 'week'): Promise<ApiResponse<{
-    totalUsers: number;
-    activeUsers: number;
-    totalScans: number;
-    totalRecipes: number;
-    revenue: number;
-    growthRate: number;
-    engagement: {
-      avgSessionDuration: number;
-      avgScansPerUser: number;
-      recipeConversionRate: number;
-    };
-    charts: {
-      userGrowth: Array<{ date: string; count: number }>;
-      scanActivity: Array<{ date: string; count: number }>;
-      revenueGrowth: Array<{ date: string; amount: number }>;
-    };
-  }>> {
-    return apiService.get(`${API_ENDPOINTS.analytics.dashboard}?period=${period}`);
+  async getAnalyticsDashboard(
+    period: 'day' | 'week' | 'month' = 'week',
+  ): Promise<
+    ApiResponse<{
+      totalUsers: number;
+      activeUsers: number;
+      totalScans: number;
+      totalRecipes: number;
+      revenue: number;
+      growthRate: number;
+      engagement: {
+        avgSessionDuration: number;
+        avgScansPerUser: number;
+        recipeConversionRate: number;
+      };
+      charts: {
+        userGrowth: Array<{date: string; count: number}>;
+        scanActivity: Array<{date: string; count: number}>;
+        revenueGrowth: Array<{date: string; amount: number}>;
+      };
+    }>
+  > {
+    return apiService.get(
+      `${API_ENDPOINTS.analytics.dashboard}?period=${period}`,
+    );
   }
 
   // Utility Methods
@@ -444,20 +535,20 @@ class CookCamApi {
     error?: string;
   }> {
     const startTime = Date.now();
-    
+
     try {
       const isHealthy = await this.healthCheck();
       const latency = Date.now() - startTime;
-      
+
       return {
         connected: isHealthy,
         latency: isHealthy ? latency : undefined,
-        error: isHealthy ? undefined : 'Health check failed'
+        error: isHealthy ? undefined : 'Health check failed',
       };
     } catch (error: any) {
       return {
         connected: false,
-        error: error.message || 'Connection failed'
+        error: error.message || 'Connection failed',
       };
     }
   }
@@ -465,4 +556,4 @@ class CookCamApi {
 
 // Export singleton instance
 export const cookCamApi = new CookCamApi();
-export default cookCamApi; 
+export default cookCamApi;

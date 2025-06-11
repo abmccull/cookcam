@@ -7,9 +7,11 @@ const guidelineBaseWidth = 390;
 const guidelineBaseHeight = 844;
 
 // Scaling functions
-export const scale = (size: number): number => (SCREEN_WIDTH / guidelineBaseWidth) * size;
-export const verticalScale = (size: number): number => (SCREEN_HEIGHT / guidelineBaseHeight) * size;
-export const moderateScale = (size: number, factor = 0.5): number => 
+export const scale = (size: number): number =>
+  (SCREEN_WIDTH / guidelineBaseWidth) * size;
+export const verticalScale = (size: number): number =>
+  (SCREEN_HEIGHT / guidelineBaseHeight) * size;
+export const moderateScale = (size: number, factor = 0.5): number =>
   size + (scale(size) - size) * factor;
 
 // Responsive design system
@@ -19,7 +21,7 @@ export const responsive = {
     width: SCREEN_WIDTH,
     height: SCREEN_HEIGHT,
   },
-  
+
   // Spacing system
   spacing: {
     xs: scale(4),
@@ -29,7 +31,7 @@ export const responsive = {
     xl: scale(32),
     xxl: scale(40),
   },
-  
+
   // Font sizes
   fontSize: {
     tiny: moderateScale(10),
@@ -41,7 +43,7 @@ export const responsive = {
     xxlarge: moderateScale(28),
     xxxlarge: moderateScale(32),
   },
-  
+
   // Border radius
   borderRadius: {
     small: scale(4),
@@ -50,7 +52,7 @@ export const responsive = {
     xlarge: scale(16),
     round: scale(50),
   },
-  
+
   // Icon sizes
   iconSize: {
     tiny: moderateScale(12),
@@ -59,7 +61,7 @@ export const responsive = {
     large: moderateScale(24),
     xlarge: moderateScale(32),
   },
-  
+
   // Button styles (matching the expected structure)
   button: {
     height: {
@@ -68,7 +70,7 @@ export const responsive = {
       large: verticalScale(56),
     },
   },
-  
+
   // Input styles
   input: {
     height: {
@@ -77,7 +79,7 @@ export const responsive = {
       large: verticalScale(52),
     },
   },
-  
+
   // Shadow depths
   shadow: {
     small: {
@@ -112,10 +114,13 @@ export const isTablet = () => {
   const pixelDensity = PixelRatio.get();
   const adjustedWidth = SCREEN_WIDTH * pixelDensity;
   const adjustedHeight = SCREEN_HEIGHT * pixelDensity;
-  
+
   if (pixelDensity < 2 && (adjustedWidth >= 1000 || adjustedHeight >= 1000)) {
     return true;
-  } else if (pixelDensity === 2 && (adjustedWidth >= 1920 || adjustedHeight >= 1920)) {
+  } else if (
+    pixelDensity === 2 &&
+    (adjustedWidth >= 1920 || adjustedHeight >= 1920)
+  ) {
     return true;
   } else {
     return false;
@@ -134,4 +139,4 @@ export const platformSpecific = {
   bottomSafeArea: require('react-native').Platform.OS === 'ios' ? 34 : 0,
 };
 
-export default responsive; 
+export default responsive;

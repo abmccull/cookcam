@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, {useState} from 'react';
 import {
   View,
   Text,
@@ -20,17 +20,11 @@ import Animated, {
   interpolate,
   Extrapolate,
 } from 'react-native-reanimated';
-import {
-  Clock,
-  Users,
-  Heart,
-  Info,
-  ChefHat,
-} from 'lucide-react-native';
+import {Clock, Users, Heart, Info, ChefHat} from 'lucide-react-native';
 import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
-import { Recipe } from '../utils/recipeTypes';
+import {Recipe} from '../utils/recipeTypes';
 
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 const SWIPE_THRESHOLD = screenWidth * 0.3;
 
 interface SwipeableCardProps {
@@ -63,8 +57,9 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
   const rotate = useSharedValue(0);
 
   // Check if recipe has a real image (not placeholder)
-  const hasRealImage = recipe.image && 
-    !recipe.image.includes('placeholder') && 
+  const hasRealImage =
+    recipe.image &&
+    !recipe.image.includes('placeholder') &&
     !recipe.image.includes('via.placeholder');
 
   // Debug cook time to identify the real issue
@@ -73,73 +68,82 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
       cookingTime: recipe.cookingTime,
       prepTime: recipe.prepTime,
       cookTime: recipe.cookTime,
-      metadata: recipe.metadata
+      metadata: recipe.metadata,
     });
-    
+
     // Use the exact data we're receiving - no fallbacks
     if (recipe.cookingTime) {
       return recipe.cookingTime;
     }
-    
+
     if (recipe.prepTime && recipe.cookTime) {
       return `${recipe.prepTime + recipe.cookTime} min`;
     }
-    
+
     if (recipe.metadata?.totalTime) {
       return `${recipe.metadata.totalTime} min`;
     }
-    
+
     // Show the actual issue instead of hiding it
     return 'No time data';
   };
 
-  const gestureHandler = useAnimatedGestureHandler<PanGestureHandlerGestureEvent>({
-    onStart: () => {
-      if (isTop) {
-        runOnJS(ReactNativeHapticFeedback.trigger)('impactLight');
-      }
-    },
-    onActive: (event) => {
-      if (!isTop) return;
-      
-      translateX.value = event.translationX;
-      translateY.value = event.translationY * 0.1;
-      rotate.value = interpolate(
-        event.translationX,
-        [-screenWidth, 0, screenWidth],
-        [-15, 0, 15],
-        Extrapolate.CLAMP
-      );
-      scale.value = interpolate(
-        Math.abs(event.translationX),
-        [0, SWIPE_THRESHOLD],
-        [1, 0.95],
-        Extrapolate.CLAMP
-      );
-    },
-    onEnd: (event) => {
-      if (!isTop) return;
-      
-      const shouldSwipeLeft = event.translationX < -SWIPE_THRESHOLD;
-      const shouldSwipeRight = event.translationX > SWIPE_THRESHOLD;
+  const gestureHandler =
+    useAnimatedGestureHandler<PanGestureHandlerGestureEvent>({
+      onStart: () => {
+        if (isTop) {
+          runOnJS(ReactNativeHapticFeedback.trigger)('impactLight');
+        }
+      },
+      onActive: event => {
+        if (!isTop) {
+          return;
+        }
 
-      if (shouldSwipeLeft) {
-        translateX.value = withSpring(-screenWidth * 1.2, { velocity: event.velocityX });
-        runOnJS(onSwipeLeft)(recipe);
-        runOnJS(ReactNativeHapticFeedback.trigger)('notificationWarning');
-      } else if (shouldSwipeRight) {
-        translateX.value = withSpring(screenWidth * 1.2, { velocity: event.velocityX });
-        runOnJS(onSwipeRight)(recipe);
-        runOnJS(ReactNativeHapticFeedback.trigger)('notificationSuccess');
-      } else {
-        // Snap back
-        translateX.value = withSpring(0);
-        translateY.value = withSpring(0);
-        rotate.value = withSpring(0);
-        scale.value = withSpring(1);
-      }
-    },
-  });
+        translateX.value = event.translationX;
+        translateY.value = event.translationY * 0.1;
+        rotate.value = interpolate(
+          event.translationX,
+          [-screenWidth, 0, screenWidth],
+          [-15, 0, 15],
+          Extrapolate.CLAMP,
+        );
+        scale.value = interpolate(
+          Math.abs(event.translationX),
+          [0, SWIPE_THRESHOLD],
+          [1, 0.95],
+          Extrapolate.CLAMP,
+        );
+      },
+      onEnd: event => {
+        if (!isTop) {
+          return;
+        }
+
+        const shouldSwipeLeft = event.translationX < -SWIPE_THRESHOLD;
+        const shouldSwipeRight = event.translationX > SWIPE_THRESHOLD;
+
+        if (shouldSwipeLeft) {
+          translateX.value = withSpring(-screenWidth * 1.2, {
+            velocity: event.velocityX,
+          });
+          runOnJS(onSwipeLeft)(recipe);
+          runOnJS(ReactNativeHapticFeedback.trigger)('notificationWarning');
+        } else if (shouldSwipeRight) {
+          translateX.value = withSpring(screenWidth * 1.2, {
+            velocity: event.velocityX,
+          });
+          runOnJS(onSwipeRight)(recipe);
+          runOnJS(ReactNativeHapticFeedback.trigger)('notificationSuccess');
+        } else {
+          // Snap back
+          translateX.value = withSpring(0);
+          translateY.value = withSpring(0);
+          rotate.value = withSpring(0);
+          scale.value = withSpring(1);
+        }
+      },
+    });
 
   const cardStyle = useAnimatedStyle(() => {
     // More visible stacking effect
@@ -155,10 +159,10 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
 
     return {
       transform: [
-        { translateX: finalTranslateX },
-        { translateY: finalTranslateY },
-        { scale: finalScale },
-        { rotateZ: `${finalRotation}deg` },
+        {translateX: finalTranslateX},
+        {translateY: finalTranslateY},
+        {scale: finalScale},
+        {rotateZ: `${finalRotation}deg`},
       ] as any,
       opacity: stackOpacity,
       zIndex: 10 - index,
@@ -166,19 +170,21 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
   });
 
   const overlayStyle = useAnimatedStyle(() => {
-    if (!isTop) return { opacity: 0 };
-    
+    if (!isTop) {
+      return {opacity: 0};
+    }
+
     const leftOpacity = interpolate(
       translateX.value,
       [-SWIPE_THRESHOLD, 0],
       [1, 0],
-      Extrapolate.CLAMP
+      Extrapolate.CLAMP,
     );
     const rightOpacity = interpolate(
       translateX.value,
       [0, SWIPE_THRESHOLD],
       [0, 1],
-      Extrapolate.CLAMP
+      Extrapolate.CLAMP,
     );
 
     return {
@@ -191,7 +197,7 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
       translateX.value,
       [-SWIPE_THRESHOLD, 0],
       [1, 0],
-      Extrapolate.CLAMP
+      Extrapolate.CLAMP,
     ),
   }));
 
@@ -200,7 +206,7 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
       translateX.value,
       [0, SWIPE_THRESHOLD],
       [0, 1],
-      Extrapolate.CLAMP
+      Extrapolate.CLAMP,
     ),
   }));
 
@@ -232,38 +238,36 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
         <TouchableOpacity
           style={styles.cardContent}
           onPress={handleCardTap}
-          activeOpacity={0.95}
-        >
+          activeOpacity={0.95}>
           {/* Conditional Image Section */}
           {hasRealImage && (
             <View style={styles.imageContainer}>
-              <Image
-                source={{ uri: recipe.image }}
-                style={styles.heroImage}
-              />
+              <Image source={{uri: recipe.image}} style={styles.heroImage} />
             </View>
           )}
 
           {/* Recipe Info */}
-          <View style={[styles.recipeInfo, !hasRealImage && styles.recipeInfoFullHeight]}>
+          <View
+            style={[
+              styles.recipeInfo,
+              !hasRealImage && styles.recipeInfoFullHeight,
+            ]}>
             {/* Action Buttons - Only on top card */}
             {isTop && (
               <View style={styles.actionButtons}>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.infoButton}
-                  onPress={handleInfoPress}
-                >
+                  onPress={handleInfoPress}>
                   <Info size={18} color="#666" />
                 </TouchableOpacity>
-                
-                <TouchableOpacity 
+
+                <TouchableOpacity
                   style={styles.favoriteButton}
-                  onPress={handleFavorite}
-                >
-                  <Heart 
-                    size={20} 
-                    color={isCardFavorited ? "#FF6B6B" : "#CCC"} 
-                    fill={isCardFavorited ? "#FF6B6B" : "none"}
+                  onPress={handleFavorite}>
+                  <Heart
+                    size={20}
+                    color={isCardFavorited ? '#FF6B6B' : '#CCC'}
+                    fill={isCardFavorited ? '#FF6B6B' : 'none'}
                     strokeWidth={2}
                   />
                 </TouchableOpacity>
@@ -274,7 +278,7 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
             <Text style={styles.recipeTitle} numberOfLines={3}>
               {recipe.title}
             </Text>
-            
+
             {/* Recipe Description */}
             <Text style={styles.recipeDescription} numberOfLines={3}>
               {recipe.description}
@@ -412,7 +416,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
@@ -425,7 +429,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
@@ -561,9 +565,9 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     letterSpacing: 3,
     textShadowColor: 'rgba(0,0,0,0.3)',
-    textShadowOffset: { width: 0, height: 2 },
+    textShadowOffset: {width: 0, height: 2},
     textShadowRadius: 4,
   },
 });
 
-export default SwipeableCard; 
+export default SwipeableCard;

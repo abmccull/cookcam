@@ -1,274 +1,460 @@
-import React, { ReactNode } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { useFeatureGate, useSubscription } from '../context/SubscriptionContext';
+import React, {useState, useEffect, useCallback} from 'react';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Modal,
+  ScrollView,
+  ActivityIndicator,
+} from 'react-native';
+import {Lock, Star, Crown, Zap} from 'lucide-react-native';
+import SubscriptionLifecycleService, {
+  FeatureAccess,
+} from '../services/SubscriptionLifecycleService';
+
+type FeatureType =
+  | 'scan'
+  | 'generate_recipes'
+  | 'cook_mode'
+  | 'favorites'
+  | 'leaderboard'
+  | 'create_recipes'
+  | 'earn_revenue';
 
 interface FeatureGateProps {
-  feature: string;
-  children: ReactNode;
-  fallback?: ReactNode;
+  children: React.ReactNode;
+  feature: FeatureType;
+  userId: string;
+  fallbackComponent?: React.ReactNode;
+  onUpgrade?: () => void;
   showUpgradePrompt?: boolean;
 }
 
-// Main feature gate component
-export function FeatureGate({ 
-  feature, 
-  children, 
-  fallback, 
-  showUpgradePrompt = true 
-}: FeatureGateProps) {
-  const { hasAccess, checkAndPrompt } = useFeatureGate(feature);
-
-  if (hasAccess) {
-    return <>{children}</>;
-  }
-
-  if (fallback) {
-    return <>{fallback}</>;
-  }
-
-  if (showUpgradePrompt) {
-    return <UpgradePrompt feature={feature} />;
-  }
-
-  return null;
-}
-
-// Usage limit component
-interface UsageLimitProps {
-  feature: string;
-  children: ReactNode;
-  warningThreshold?: number; // Show warning when this percentage of limit is reached
-}
-
-export function UsageLimit({ 
-  feature, 
-  children, 
-  warningThreshold = 0.8 
-}: UsageLimitProps) {
-  const { hasAccess, usage, remaining } = useFeatureGate(feature);
-
-  if (!hasAccess) {
-    return <UpgradePrompt feature={feature} />;
-  }
-
-  const showWarning = usage && remaining !== null && 
-    remaining / usage.limit <= (1 - warningThreshold);
-
-  return (
-    <View style={styles.usageContainer}>
-      {showWarning && (
-        <View style={styles.warningBanner}>
-          <Text style={styles.warningText}>
-            ⚠️ {remaining} {feature} remaining this month
-          </Text>
-        </View>
-      )}
-      {children}
-    </View>
+const FeatureGate: React.FC<FeatureGateProps> = ({
+  children,
+  feature,
+  userId,
+  fallbackComponent,
+  onUpgrade,
+  showUpgradePrompt = true,
+}) => {
+  const [featureAccess, setFeatureAccess] = useState<FeatureAccess | null>(
+    null,
   );
-}
+  const [isLoading, setIsLoading] = useState(true);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [usageCount, setUsageCount] = useState(0);
+  const lifecycleService = SubscriptionLifecycleService.getInstance();
 
-// Upgrade prompt component
-interface UpgradePromptProps {
-  feature: string;
-  compact?: boolean;
-}
+  const loadFeatureAccess = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const subscriptionState = await lifecycleService.getSubscriptionState(
+        userId,
+      );
+      const access = (lifecycleService as any).getFeatureAccess(
+        subscriptionState,
+      );
+      setFeatureAccess(access);
+    } catch (error) {
+      console.error('Error loading feature access:', error);
+      // Default to restricted access on error
+      setFeatureAccess(null);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [userId, lifecycleService]);
 
-function UpgradePrompt({ feature, compact = false }: UpgradePromptProps) {
-  const { showUpgradePrompt } = useSubscription();
+  useEffect(() => {
+    loadFeatureAccess();
+  }, [loadFeatureAccess]);
 
-  const handleUpgrade = () => {
-    showUpgradePrompt(feature);
+  const checkFeatureAccess = (): {hasAccess: boolean; reason?: string} => {
+    if (!featureAccess) {
+      return {hasAccess: false, reason: 'Loading...'};
+    }
+
+    switch (feature) {
+      case 'scan':
+        if (!featureAccess.canScan) {
+          return {hasAccess: false, reason: 'Scanning not available'};
+        }
+        if (
+          featureAccess.scanLimit !== null &&
+          usageCount >= featureAccess.scanLimit
+        ) {
+          return {
+            hasAccess: false,
+            reason: `Daily limit reached (${featureAccess.scanLimit} scans)`,
+          };
+        }
+        return {hasAccess: true};
+
+      case 'generate_recipes':
+        if (!featureAccess.canGenerateRecipes) {
+          return {hasAccess: false, reason: 'Recipe generation not available'};
+        }
+        if (
+          featureAccess.recipeLimit !== null &&
+          usageCount >= featureAccess.recipeLimit
+        ) {
+          return {
+            hasAccess: false,
+            reason: `Daily limit reached (${featureAccess.recipeLimit} recipes)`,
+          };
+        }
+        return {hasAccess: true};
+
+      case 'cook_mode':
+        return featureAccess.canAccessCookMode
+          ? {hasAccess: true}
+          : {hasAccess: false, reason: 'Cook Mode requires a subscription'};
+
+      case 'favorites':
+        return featureAccess.canFavoriteRecipes
+          ? {hasAccess: true}
+          : {hasAccess: false, reason: 'Favorites require a subscription'};
+
+      case 'leaderboard':
+        return featureAccess.canAccessLeaderboard
+          ? {hasAccess: true}
+          : {hasAccess: false, reason: 'Leaderboard not available'};
+
+      case 'create_recipes':
+        return featureAccess.canCreateRecipes
+          ? {hasAccess: true}
+          : {
+              hasAccess: false,
+              reason: 'Recipe creation requires Creator subscription',
+            };
+
+      case 'earn_revenue':
+        return featureAccess.canEarnRevenue
+          ? {hasAccess: true}
+          : {
+              hasAccess: false,
+              reason: 'Revenue earning requires Creator subscription',
+            };
+
+      default:
+        return {hasAccess: false, reason: 'Unknown feature'};
+    }
   };
 
-  if (compact) {
+  const handleFeatureAttempt = () => {
+    const access = checkFeatureAccess();
+
+    if (access.hasAccess) {
+      // Track usage for limited features
+      if (
+        (feature === 'scan' && featureAccess?.scanLimit !== null) ||
+        (feature === 'generate_recipes' && featureAccess?.recipeLimit !== null)
+      ) {
+        setUsageCount(prev => prev + 1);
+      }
+      return true;
+    } else {
+      if (showUpgradePrompt) {
+        setShowUpgradeModal(true);
+      }
+      return false;
+    }
+  };
+
+  const getUpgradePromptContent = () => {
+    switch (feature) {
+      case 'scan':
+      case 'generate_recipes':
+        return {
+          title: 'Unlock Unlimited Access',
+          description:
+            'Get unlimited scans and recipe generation with a CookCam subscription.',
+          icon: Zap,
+          benefits: [
+            'Unlimited ingredient scanning',
+            'Unlimited AI recipe generation',
+            'Access to Cook Mode',
+            'Recipe favorites and history',
+            'Ad-free experience',
+          ],
+        };
+
+      case 'cook_mode':
+        return {
+          title: 'Unlock Cook Mode',
+          description:
+            'Get step-by-step cooking guidance with timers and voice prompts.',
+          icon: Star,
+          benefits: [
+            'Step-by-step cooking instructions',
+            'Built-in timers and alerts',
+            'Voice guidance (optional)',
+            'Ingredient highlighting',
+            'Cooking streak tracking',
+          ],
+        };
+
+      case 'favorites':
+        return {
+          title: 'Save Your Favorites',
+          description:
+            'Keep track of your favorite recipes and build your personal cookbook.',
+          icon: Star,
+          benefits: [
+            'Save unlimited favorite recipes',
+            'Create custom recipe collections',
+            'Sync across all devices',
+            'Quick access to saved recipes',
+            'Recipe rating and notes',
+          ],
+        };
+
+      case 'create_recipes':
+      case 'earn_revenue':
+        return {
+          title: 'Become a Creator',
+          description:
+            'Share your culinary skills and earn revenue from your followers.',
+          icon: Crown,
+          benefits: [
+            'Publish premium recipes',
+            'Earn 30% revenue share',
+            'Creator analytics dashboard',
+            'Build your follower base',
+            'Professional creator tools',
+          ],
+        };
+
+      default:
+        return {
+          title: 'Upgrade Required',
+          description: 'This feature requires a CookCam subscription.',
+          icon: Lock,
+          benefits: [
+            'Access to premium features',
+            'Enhanced cooking experience',
+            'Priority customer support',
+          ],
+        };
+    }
+  };
+
+  if (isLoading) {
     return (
-      <TouchableOpacity style={styles.compactPrompt} onPress={handleUpgrade}>
-        <Text style={styles.compactPromptText}>🔒 Upgrade to unlock</Text>
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="small" color="#FF6B35" />
+      </View>
+    );
+  }
+
+  const access = checkFeatureAccess();
+  const promptContent = getUpgradePromptContent();
+  const IconComponent = promptContent.icon;
+
+  // If access is granted, render children with click handler for usage tracking
+  if (access.hasAccess) {
+    return (
+      <TouchableOpacity
+        onPress={handleFeatureAttempt}
+        activeOpacity={1}
+        style={{flex: 1}}>
+        {children}
       </TouchableOpacity>
     );
   }
 
+  // If access is denied, show fallback or upgrade prompt
   return (
-    <View style={styles.upgradePrompt}>
-      <View style={styles.lockIcon}>
-        <Text style={styles.lockEmoji}>🔒</Text>
-      </View>
-      <Text style={styles.upgradeTitle}>Premium Feature</Text>
-      <Text style={styles.upgradeMessage}>
-        Upgrade to unlock {getFeatureDisplayName(feature)} and more!
-      </Text>
-      <TouchableOpacity style={styles.upgradeButton} onPress={handleUpgrade}>
-        <Text style={styles.upgradeButtonText}>View Plans</Text>
-      </TouchableOpacity>
-    </View>
-  );
-}
+    <>
+      {fallbackComponent || (
+        <TouchableOpacity
+          style={styles.lockedFeature}
+          onPress={() => setShowUpgradeModal(true)}>
+          <Lock size={20} color="#8E8E93" />
+          <Text style={styles.lockedText}>Upgrade to unlock</Text>
+        </TouchableOpacity>
+      )}
 
-// Specific feature gates for common features
-export function UnlimitedScansGate({ children }: { children: ReactNode }) {
-  return (
-    <FeatureGate 
-      feature="unlimited_scans" 
-      fallback={
-        <View style={styles.limitReached}>
-          <Text style={styles.limitTitle}>Daily Scan Limit Reached</Text>
-          <Text style={styles.limitMessage}>
-            Upgrade to scan unlimited ingredients every day!
-          </Text>
-        </View>
-      }
-    >
-      {children}
-    </FeatureGate>
-  );
-}
+      {/* Upgrade Modal */}
+      <Modal
+        visible={showUpgradeModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowUpgradeModal(false)}>
+        <ScrollView style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <View style={styles.modalIconContainer}>
+                <IconComponent size={32} color="#FF6B35" />
+              </View>
+              <Text style={styles.modalTitle}>{promptContent.title}</Text>
+              <Text style={styles.modalDescription}>
+                {promptContent.description}
+              </Text>
+            </View>
 
-export function PremiumRecipesGate({ children }: { children: ReactNode }) {
-  return (
-    <FeatureGate 
-      feature="premium_recipes" 
-      fallback={
-        <View style={styles.limitReached}>
-          <Text style={styles.limitTitle}>Premium Recipe</Text>
-          <Text style={styles.limitMessage}>
-            This advanced recipe requires a premium subscription
-          </Text>
-        </View>
-      }
-    >
-      {children}
-    </FeatureGate>
-  );
-}
+            <View style={styles.benefitsSection}>
+              <Text style={styles.benefitsTitle}>What you'll get:</Text>
+              {promptContent.benefits.map((benefit, index) => (
+                <View key={index} style={styles.benefitItem}>
+                  <View style={styles.benefitBullet} />
+                  <Text style={styles.benefitText}>{benefit}</Text>
+                </View>
+              ))}
+            </View>
 
-export function CreatorToolsGate({ children }: { children: ReactNode }) {
-  return (
-    <FeatureGate 
-      feature="creator_tools" 
-      fallback={
-        <View style={styles.limitReached}>
-          <Text style={styles.limitTitle}>Creator Tools</Text>
-          <Text style={styles.limitMessage}>
-            Upgrade to Creator tier to access monetization tools
-          </Text>
-        </View>
-      }
-    >
-      {children}
-    </FeatureGate>
-  );
-}
+            {featureAccess?.hasAds && (
+              <View style={styles.adFreeNote}>
+                <Text style={styles.adFreeText}>
+                  Plus: Remove all ads and enjoy an uninterrupted cooking
+                  experience!
+                </Text>
+              </View>
+            )}
+          </View>
 
-// Helper function to get display names for features
-function getFeatureDisplayName(feature: string): string {
-  const displayNames: Record<string, string> = {
-    unlimited_scans: 'unlimited scanning',
-    premium_recipes: 'premium recipes',
-    ad_free_experience: 'ad-free experience',
-    advanced_nutrition: 'detailed nutrition analysis',
-    meal_planning: 'meal planning',
-    recipe_collections: 'recipe collections',
-    creator_tools: 'creator monetization',
-    priority_support: 'priority support',
-    beta_features: 'beta features',
-  };
-  
-  return displayNames[feature] || feature.replace(/_/g, ' ');
-}
+          <View style={styles.modalActions}>
+            <TouchableOpacity
+              style={styles.upgradeButton}
+              onPress={() => {
+                setShowUpgradeModal(false);
+                onUpgrade?.();
+              }}>
+              <Text style={styles.upgradeButtonText}>Upgrade Now</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.cancelButton}
+              onPress={() => setShowUpgradeModal(false)}>
+              <Text style={styles.cancelButtonText}>Maybe Later</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </Modal>
+    </>
+  );
+};
 
 const styles = StyleSheet.create({
-  usageContainer: {
-    flex: 1,
+  loadingContainer: {
+    padding: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  warningBanner: {
-    backgroundColor: '#FFF3CD',
-    padding: 8,
-    marginBottom: 8,
-    borderRadius: 4,
-    borderLeftWidth: 4,
-    borderLeftColor: '#FFC107',
+  lockedFeature: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20,
+    backgroundColor: '#F8F8F8',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderStyle: 'dashed',
   },
-  warningText: {
-    color: '#856404',
-    fontSize: 12,
+  lockedText: {
+    marginLeft: 8,
+    fontSize: 14,
+    color: '#8E8E93',
     fontWeight: '500',
   },
-  upgradePrompt: {
-    backgroundColor: '#F8F9FA',
-    padding: 24,
-    borderRadius: 12,
-    alignItems: 'center',
-    margin: 16,
-    borderWidth: 1,
-    borderColor: '#E9ECEF',
+  modalContainer: {
+    flex: 1,
+    backgroundColor: '#F8F8FF',
   },
-  lockIcon: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#6C757D',
-    justifyContent: 'center',
+  modalContent: {
+    padding: 24,
+  },
+  modalHeader: {
     alignItems: 'center',
+    marginBottom: 32,
+  },
+  modalIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#FFF3F0',
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 16,
   },
-  lockEmoji: {
+  modalTitle: {
     fontSize: 24,
-  },
-  upgradeTitle: {
-    fontSize: 18,
     fontWeight: 'bold',
-    color: '#343A40',
+    color: '#2D1B69',
     marginBottom: 8,
-  },
-  upgradeMessage: {
-    fontSize: 14,
-    color: '#6C757D',
     textAlign: 'center',
-    marginBottom: 20,
-    lineHeight: 20,
+  },
+  modalDescription: {
+    fontSize: 16,
+    color: '#8E8E93',
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  benefitsSection: {
+    marginBottom: 24,
+  },
+  benefitsTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#2D1B69',
+    marginBottom: 16,
+  },
+  benefitItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  benefitBullet: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#FF6B35',
+    marginRight: 12,
+  },
+  benefitText: {
+    fontSize: 16,
+    color: '#2D1B69',
+    flex: 1,
+    lineHeight: 22,
+  },
+  adFreeNote: {
+    backgroundColor: '#E8F5E8',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 24,
+  },
+  adFreeText: {
+    fontSize: 14,
+    color: '#66BB6A',
+    fontWeight: '500',
+    textAlign: 'center',
+  },
+  modalActions: {
+    padding: 24,
+    paddingTop: 0,
   },
   upgradeButton: {
-    backgroundColor: '#007BFF',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
+    backgroundColor: '#FF6B35',
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginBottom: 12,
   },
   upgradeButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
+    color: '#FFFFFF',
   },
-  compactPrompt: {
-    backgroundColor: '#F8F9FA',
-    padding: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#DEE2E6',
+  cancelButton: {
+    paddingVertical: 16,
     alignItems: 'center',
   },
-  compactPromptText: {
-    color: '#6C757D',
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  limitReached: {
-    backgroundColor: '#F8F9FA',
-    padding: 20,
-    borderRadius: 8,
-    alignItems: 'center',
-    margin: 8,
-  },
-  limitTitle: {
+  cancelButtonText: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#343A40',
-    marginBottom: 8,
+    color: '#8E8E93',
   },
-  limitMessage: {
-    fontSize: 14,
-    color: '#6C757D',
-    textAlign: 'center',
-    lineHeight: 18,
-  },
-}); 
+});
+
+export default FeatureGate;

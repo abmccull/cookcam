@@ -34,7 +34,9 @@ interface NotificationCategory {
   color: string;
 }
 
-const NotificationPreferencesScreen: React.FC<{navigation: any}> = ({navigation}) => {
+const NotificationPreferencesScreen: React.FC<{navigation: any}> = ({
+  navigation,
+}) => {
   const [masterEnabled, setMasterEnabled] = useState(true);
   const [categories, setCategories] = useState<NotificationCategory[]>([
     {
@@ -48,7 +50,7 @@ const NotificationPreferencesScreen: React.FC<{navigation: any}> = ({navigation}
     {
       id: 'achievements',
       title: 'Achievement Alerts',
-      description: 'Notifications when you\'re close to earning badges',
+      description: "Notifications when you're close to earning badges",
       icon: Trophy,
       enabled: true,
       color: '#FFB800',
@@ -86,17 +88,17 @@ const NotificationPreferencesScreen: React.FC<{navigation: any}> = ({navigation}
       color: '#FF9800',
     },
   ]);
-  
+
   const [quietHours, setQuietHours] = useState({
     enabled: false,
     startTime: '22:00',
     endTime: '08:00',
   });
-  
+
   useEffect(() => {
     loadPreferences();
   }, []);
-  
+
   const loadPreferences = async () => {
     try {
       const savedPrefs = await AsyncStorage.getItem('notificationPreferences');
@@ -110,7 +112,7 @@ const NotificationPreferencesScreen: React.FC<{navigation: any}> = ({navigation}
       console.error('Error loading preferences:', error);
     }
   };
-  
+
   const savePreferences = async () => {
     try {
       const prefs = {
@@ -118,30 +120,38 @@ const NotificationPreferencesScreen: React.FC<{navigation: any}> = ({navigation}
         categories,
         quietHours,
       };
-      await AsyncStorage.setItem('notificationPreferences', JSON.stringify(prefs));
-      
+      await AsyncStorage.setItem(
+        'notificationPreferences',
+        JSON.stringify(prefs),
+      );
+
       // Update notification service
-      const categoryPrefs = categories.reduce((acc, cat) => ({
-        ...acc,
-        [cat.id]: cat.enabled && masterEnabled,
-      }), {});
-      
-      await SmartNotificationService.updateNotificationPreferences(categoryPrefs);
-      
+      const categoryPrefs = categories.reduce(
+        (acc, cat) => ({
+          ...acc,
+          [cat.id]: cat.enabled && masterEnabled,
+        }),
+        {},
+      );
+
+      await SmartNotificationService.updateNotificationPreferences(
+        categoryPrefs,
+      );
+
       ReactNativeHapticFeedback.trigger('notificationSuccess');
     } catch (error) {
       console.error('Error saving preferences:', error);
     }
   };
-  
+
   const toggleMaster = async (value: boolean) => {
     setMasterEnabled(value);
     ReactNativeHapticFeedback.trigger('impactLight');
-    
+
     if (!value) {
       Alert.alert(
         'Turn Off All Notifications?',
-        'You won\'t receive any notifications from CookCam. You can turn them back on anytime.',
+        "You won't receive any notifications from CookCam. You can turn them back on anytime.",
         [
           {text: 'Cancel', style: 'cancel'},
           {
@@ -157,53 +167,59 @@ const NotificationPreferencesScreen: React.FC<{navigation: any}> = ({navigation}
       await savePreferences();
     }
   };
-  
+
   const toggleCategory = async (categoryId: string) => {
     ReactNativeHapticFeedback.trigger('selection');
-    
-    setCategories(prev => 
-      prev.map(cat => 
-        cat.id === categoryId ? {...cat, enabled: !cat.enabled} : cat
-      )
+
+    setCategories(prev =>
+      prev.map(cat =>
+        cat.id === categoryId ? {...cat, enabled: !cat.enabled} : cat,
+      ),
     );
-    
+
     // Save immediately
     setTimeout(savePreferences, 100);
   };
-  
+
   const showInfo = (category: NotificationCategory) => {
     ReactNativeHapticFeedback.trigger('impactLight');
-    
+
     const examples = {
-      streaks: 'Example: "🔥 Keep Your Streak Alive! Cook something today to maintain your 7-day streak!"',
-      achievements: 'Example: "🏆 So Close to a Badge! Just 2 more recipes for Master Chef badge!"',
+      streaks:
+        'Example: "🔥 Keep Your Streak Alive! Cook something today to maintain your 7-day streak!"',
+      achievements:
+        'Example: "🏆 So Close to a Badge! Just 2 more recipes for Master Chef badge!"',
       social: 'Example: "👥 3 friends just claimed the viral Pasta recipe!"',
-      recipes: 'Example: "🍝 Perfect for Tonight! Your favorite Creamy Pasta takes just 30 min"',
-      challenges: 'Example: "⏰ Challenge Ending Soon! Complete 2 more recipes to finish!"',
-      reminders: 'Example: "👨‍🍳 Time to Cook! You usually start cooking around this time"',
+      recipes:
+        'Example: "🍝 Perfect for Tonight! Your favorite Creamy Pasta takes just 30 min"',
+      challenges:
+        'Example: "⏰ Challenge Ending Soon! Complete 2 more recipes to finish!"',
+      reminders:
+        'Example: "👨‍🍳 Time to Cook! You usually start cooking around this time"',
     };
-    
+
     Alert.alert(
       category.title,
-      `${category.description}\n\n${examples[category.id as keyof typeof examples]}`,
-      [{text: 'Got it!'}]
+      `${category.description}\n\n${
+        examples[category.id as keyof typeof examples]
+      }`,
+      [{text: 'Got it!'}],
     );
   };
-  
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
+          onPress={() => navigation.goBack()}>
           <ChevronLeft size={24} color="#2D1B69" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Notifications</Text>
         <View style={styles.headerSpacer} />
       </View>
-      
+
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Master Toggle */}
         <View style={styles.masterToggleCard}>
@@ -212,7 +228,9 @@ const NotificationPreferencesScreen: React.FC<{navigation: any}> = ({navigation}
             <View style={styles.masterToggleText}>
               <Text style={styles.masterToggleTitle}>All Notifications</Text>
               <Text style={styles.masterToggleSubtitle}>
-                {masterEnabled ? 'Notifications are on' : 'Notifications are off'}
+                {masterEnabled
+                  ? 'Notifications are on'
+                  : 'Notifications are off'}
               </Text>
             </View>
           </View>
@@ -224,29 +242,35 @@ const NotificationPreferencesScreen: React.FC<{navigation: any}> = ({navigation}
             ios_backgroundColor="#E5E5E7"
           />
         </View>
-        
+
         {/* Categories */}
-        <View style={[styles.section, !masterEnabled && styles.sectionDisabled]}>
+        <View
+          style={[styles.section, !masterEnabled && styles.sectionDisabled]}>
           <Text style={styles.sectionTitle}>Notification Types</Text>
           {categories.map(category => {
             const Icon = category.icon;
             return (
               <View key={category.id} style={styles.categoryCard}>
                 <View style={styles.categoryLeft}>
-                  <View style={[styles.categoryIcon, {backgroundColor: category.color + '20'}]}>
+                  <View
+                    style={[
+                      styles.categoryIcon,
+                      {backgroundColor: category.color + '20'},
+                    ]}>
                     <Icon size={20} color={category.color} />
                   </View>
                   <View style={styles.categoryText}>
                     <Text style={styles.categoryTitle}>{category.title}</Text>
-                    <Text style={styles.categoryDescription}>{category.description}</Text>
+                    <Text style={styles.categoryDescription}>
+                      {category.description}
+                    </Text>
                   </View>
                 </View>
                 <View style={styles.categoryRight}>
                   <TouchableOpacity
                     style={styles.infoButton}
                     onPress={() => showInfo(category)}
-                    disabled={!masterEnabled}
-                  >
+                    disabled={!masterEnabled}>
                     <Info size={16} color="#8E8E93" />
                   </TouchableOpacity>
                   <Switch
@@ -262,9 +286,10 @@ const NotificationPreferencesScreen: React.FC<{navigation: any}> = ({navigation}
             );
           })}
         </View>
-        
+
         {/* Quiet Hours */}
-        <View style={[styles.section, !masterEnabled && styles.sectionDisabled]}>
+        <View
+          style={[styles.section, !masterEnabled && styles.sectionDisabled]}>
           <Text style={styles.sectionTitle}>Quiet Hours</Text>
           <View style={styles.quietHoursCard}>
             <View style={styles.quietHoursHeader}>
@@ -274,7 +299,7 @@ const NotificationPreferencesScreen: React.FC<{navigation: any}> = ({navigation}
               </View>
               <Switch
                 value={quietHours.enabled && masterEnabled}
-                onValueChange={(value) => {
+                onValueChange={value => {
                   ReactNativeHapticFeedback.trigger('selection');
                   setQuietHours({...quietHours, enabled: value});
                   setTimeout(savePreferences, 100);
@@ -286,11 +311,12 @@ const NotificationPreferencesScreen: React.FC<{navigation: any}> = ({navigation}
               />
             </View>
             <Text style={styles.quietHoursDescription}>
-              No notifications between {quietHours.startTime} - {quietHours.endTime}
+              No notifications between {quietHours.startTime} -{' '}
+              {quietHours.endTime}
             </Text>
           </View>
         </View>
-        
+
         {/* Tips */}
         <View style={styles.tipsSection}>
           <Text style={styles.tipsTitle}>💡 Pro Tips</Text>
@@ -480,4 +506,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default NotificationPreferencesScreen; 
+export default NotificationPreferencesScreen;

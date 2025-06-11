@@ -1,12 +1,12 @@
 // API service for CookCam backend integration
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import {secureStorage, SECURE_KEYS} from './secureStorage';
 import config from '../config/env';
 
 // Use configuration for API URL
 const API_URL = config().API_BASE_URL;
 
 // Configuration
-const TOKEN_KEY = '@cookcam_token';
+const DEPRECATED_TOKEN_KEY = '@cookcam_token';
 
 interface ApiResponse<T> {
   success: boolean;
@@ -41,7 +41,7 @@ class ApiClient {
 
   private async getAuthToken(): Promise<string | null> {
     try {
-      return await AsyncStorage.getItem(TOKEN_KEY);
+      return await secureStorage.getSecureItem(SECURE_KEYS.ACCESS_TOKEN);
     } catch (error) {
       console.error('Error getting auth token:', error);
       return null;
@@ -50,11 +50,11 @@ class ApiClient {
 
   private async makeRequest<T>(
     endpoint: string,
-    options: RequestInit = {}
+    options: RequestInit = {},
   ): Promise<ApiResponse<T>> {
     try {
       const token = await this.getAuthToken();
-      
+
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
         ...(options.headers as Record<string, string>),
@@ -65,10 +65,17 @@ class ApiClient {
       }
 
       // Set timeouts based on endpoint type
-      const isPreviewGeneration = endpoint.includes('/recipes/generate-previews');
-      const isDetailedGeneration = endpoint.includes('/recipes/generate-detailed');
-      const isLegacyGeneration = endpoint.includes('/recipes/generate') && !isPreviewGeneration && !isDetailedGeneration;
-      
+      const isPreviewGeneration = endpoint.includes(
+        '/recipes/generate-previews',
+      );
+      const isDetailedGeneration = endpoint.includes(
+        '/recipes/generate-detailed',
+      );
+      const isLegacyGeneration =
+        endpoint.includes('/recipes/generate') &&
+        !isPreviewGeneration &&
+        !isDetailedGeneration;
+
       let timeoutMs = 30000; // Default 30s
       if (isPreviewGeneration) {
         timeoutMs = 60000; // 1 minute for previews
@@ -104,15 +111,16 @@ class ApiClient {
       };
     } catch (error) {
       console.error('API request failed:', error);
-      
+
       // Handle timeout errors specifically
       if (error instanceof Error && error.name === 'AbortError') {
         return {
           success: false,
-          error: 'Request timed out. Recipe generation may take longer than usual.',
+          error:
+            'Request timed out. Recipe generation may take longer than usual.',
         };
       }
-      
+
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
@@ -126,22 +134,38 @@ class ApiClient {
   }
 
   // Authentication endpoints - Updated to match our backend
-  async signUp(email: string, password: string, name: string): Promise<ApiResponse<AuthResponse>> {
+  async signUp(
+    email: string,
+    password: string,
+    name: string,
+  ): Promise<ApiResponse<AuthResponse>> {
     return this.makeRequest('/auth/signup', {
       method: 'POST',
-      body: JSON.stringify({ email, password, name }),
+      body: JSON.stringify({email, password, name}),
     });
   }
 
-  async signIn(email: string, password: string): Promise<ApiResponse<AuthResponse>> {
+  async signIn(
+    email: string,
+    password: string,
+  ): Promise<ApiResponse<AuthResponse>> {
     const response = await this.makeRequest<AuthResponse>('/auth/signin', {
       method: 'POST',
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({email, password}),
     });
 
     // Store token if login successful
     if (response.success && response.data?.session?.access_token) {
-      await AsyncStorage.setItem(TOKEN_KEY, response.data.session.access_token);
+      await secureStorage.setSecureItem(
+        SECURE_KEYS.ACCESS_TOKEN,
+        response.data.session.access_token,
+      );
+      if (response.data.session.refresh_token) {
+        await secureStorage.setSecureItem(
+          SECURE_KEYS.REFRESH_TOKEN,
+          response.data.session.refresh_token,
+        );
+      }
     }
 
     return response;
@@ -153,8 +177,8 @@ class ApiClient {
     });
 
     // Clear stored token
-    await AsyncStorage.removeItem(TOKEN_KEY);
-    
+    await secureStorage.clearAllSecureData();
+
     return response;
   }
 
@@ -181,7 +205,9 @@ class ApiClient {
     mealPrepPortions?: number;
     selectedAppliances?: string[];
   }): Promise<ApiResponse<any>> {
-    console.warn('⚠️ generateRecipeSuggestions is deprecated. Use generatePreviews + generateDetailedRecipe instead.');
+    console.warn(
+      '⚠️ generateRecipeSuggestions is deprecated. Use generatePreviews + generateDetailedRecipe instead.',
+    );
     return this.makeRequest('/recipes/generate', {
       method: 'POST',
       body: JSON.stringify(data),
@@ -228,10 +254,13 @@ class ApiClient {
     });
   }
 
-  async generateFullRecipe(selectedTitle: string, sessionId: string): Promise<ApiResponse<any>> {
+  async generateFullRecipe(
+    selectedTitle: string,
+    sessionId: string,
+  ): Promise<ApiResponse<any>> {
     return this.makeRequest('/recipes/generate-full', {
       method: 'POST',
-      body: JSON.stringify({ selectedTitle, sessionId }),
+      body: JSON.stringify({selectedTitle, sessionId}),
     });
   }
 
@@ -250,8 +279,10 @@ class ApiClient {
         }
       });
     }
-    
-    const endpoint = `/recipes${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+
+    const endpoint = `/recipes${
+      queryParams.toString() ? `?${queryParams.toString()}` : ''
+    }`;
     return this.makeRequest(endpoint);
   }
 
@@ -277,8 +308,10 @@ class ApiClient {
         }
       });
     }
-    
-    const endpoint = `/recipes/saved/my${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+
+    const endpoint = `/recipes/saved/my${
+      queryParams.toString() ? `?${queryParams.toString()}` : ''
+    }`;
     return this.makeRequest(endpoint);
   }
 
@@ -288,23 +321,33 @@ class ApiClient {
     });
   }
 
-  async rateRecipe(recipeId: string, rating: number, review?: string): Promise<ApiResponse<any>> {
+  async rateRecipe(
+    recipeId: string,
+    rating: number,
+    review?: string,
+  ): Promise<ApiResponse<any>> {
     return this.makeRequest(`/recipes/${recipeId}/rate`, {
       method: 'POST',
-      body: JSON.stringify({ rating, review }),
+      body: JSON.stringify({rating, review}),
     });
   }
 
   // Recipe nutrition endpoints
-  async getRecipeNutrition(recipeId: string, servings?: number): Promise<ApiResponse<any>> {
+  async getRecipeNutrition(
+    recipeId: string,
+    servings?: number,
+  ): Promise<ApiResponse<any>> {
     const params = servings ? `?servings=${servings}` : '';
     return this.makeRequest(`/recipes/${recipeId}/nutrition${params}`);
   }
 
-  async saveRecipeNutrition(recipeId: string, servings?: number): Promise<ApiResponse<any>> {
+  async saveRecipeNutrition(
+    recipeId: string,
+    servings?: number,
+  ): Promise<ApiResponse<any>> {
     return this.makeRequest(`/recipes/${recipeId}/save-nutrition`, {
       method: 'POST',
-      body: JSON.stringify({ servings: servings || 1 }),
+      body: JSON.stringify({servings: servings || 1}),
     });
   }
 
@@ -315,22 +358,36 @@ class ApiClient {
   }
 
   // Recipe completion photo endpoints
-  async uploadCompletionPhoto(recipeId: string, imageData: string, description?: string): Promise<ApiResponse<any>> {
+  async uploadCompletionPhoto(
+    recipeId: string,
+    imageData: string,
+    description?: string,
+  ): Promise<ApiResponse<any>> {
     return this.makeRequest(`/recipes/${recipeId}/upload-completion-photo`, {
       method: 'POST',
-      body: JSON.stringify({ imageData, description }),
+      body: JSON.stringify({imageData, description}),
     });
   }
 
-  async getCompletionPhotos(recipeId: string, limit = 20, offset = 0): Promise<ApiResponse<any>> {
-    return this.makeRequest(`/recipes/${recipeId}/completion-photos?limit=${limit}&offset=${offset}`);
+  async getCompletionPhotos(
+    recipeId: string,
+    limit = 20,
+    offset = 0,
+  ): Promise<ApiResponse<any>> {
+    return this.makeRequest(
+      `/recipes/${recipeId}/completion-photos?limit=${limit}&offset=${offset}`,
+    );
   }
 
   // Gamification endpoints
-  async addXP(xpAmount: number, action: string, metadata?: any): Promise<ApiResponse<any>> {
+  async addXP(
+    xpAmount: number,
+    action: string,
+    metadata?: any,
+  ): Promise<ApiResponse<any>> {
     return this.makeRequest('/gamification/add-xp', {
       method: 'POST',
-      body: JSON.stringify({ xp_amount: xpAmount, action, metadata }),
+      body: JSON.stringify({xp_amount: xpAmount, action, metadata}),
     });
   }
 
@@ -344,8 +401,13 @@ class ApiClient {
     return this.makeRequest('/gamification/progress');
   }
 
-  async getLeaderboard(type = 'global', period = 'weekly'): Promise<ApiResponse<any>> {
-    return this.makeRequest(`/gamification/leaderboard?type=${type}&period=${period}`);
+  async getLeaderboard(
+    type = 'global',
+    period = 'weekly',
+  ): Promise<ApiResponse<any>> {
+    return this.makeRequest(
+      `/gamification/leaderboard?type=${type}&period=${period}`,
+    );
   }
 
   // Mystery box endpoint
@@ -392,12 +454,15 @@ class ApiClient {
   }
 
   // Scanning endpoints
-  async analyzeScan(imageData: any, detectedIngredients: string[]): Promise<ApiResponse<any>> {
+  async analyzeScan(
+    imageData: any,
+    detectedIngredients: string[],
+  ): Promise<ApiResponse<any>> {
     return this.makeRequest('/scan/analyze', {
       method: 'POST',
-      body: JSON.stringify({ 
+      body: JSON.stringify({
         image_data: imageData,
-        detected_ingredients: detectedIngredients 
+        detected_ingredients: detectedIngredients,
       }),
     });
   }
@@ -411,8 +476,13 @@ class ApiClient {
   }
 
   // Ingredients endpoints (USDA integration) - Updated paths
-  async searchIngredients(query: string, limit = 20): Promise<ApiResponse<any>> {
-    return this.makeRequest(`/ingredients/search?query=${encodeURIComponent(query)}&limit=${limit}`);
+  async searchIngredients(
+    query: string,
+    limit = 20,
+  ): Promise<ApiResponse<any>> {
+    return this.makeRequest(
+      `/ingredients/search?query=${encodeURIComponent(query)}&limit=${limit}`,
+    );
   }
 
   async getIngredients(params?: {
@@ -430,8 +500,10 @@ class ApiClient {
         }
       });
     }
-    
-    const endpoint = `/ingredients${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+
+    const endpoint = `/ingredients${
+      queryParams.toString() ? `?${queryParams.toString()}` : ''
+    }`;
     return this.makeRequest(endpoint);
   }
 
@@ -439,41 +511,72 @@ class ApiClient {
     return this.makeRequest(`/ingredients/${id}`);
   }
 
-  async getIngredientNutrition(id: string, servingSize = 100, unit = 'g'): Promise<ApiResponse<any>> {
-    return this.makeRequest(`/ingredients/${id}/nutrition?serving_size=${servingSize}&unit=${unit}`);
+  async getIngredientNutrition(
+    id: string,
+    servingSize = 100,
+    unit = 'g',
+  ): Promise<ApiResponse<any>> {
+    return this.makeRequest(
+      `/ingredients/${id}/nutrition?serving_size=${servingSize}&unit=${unit}`,
+    );
   }
 
-  async syncIngredientWithUSDA(ingredientName: string): Promise<ApiResponse<any>> {
+  async syncIngredientWithUSDA(
+    ingredientName: string,
+  ): Promise<ApiResponse<any>> {
     return this.makeRequest('/ingredients/sync-usda', {
       method: 'POST',
-      body: JSON.stringify({ ingredientName }),
+      body: JSON.stringify({ingredientName}),
     });
   }
 
-  async batchSyncIngredientsWithUSDA(ingredientNames: string[]): Promise<ApiResponse<any>> {
+  async batchSyncIngredientsWithUSDA(
+    ingredientNames: string[],
+  ): Promise<ApiResponse<any>> {
     return this.makeRequest('/ingredients/batch-sync-usda', {
       method: 'POST',
-      body: JSON.stringify({ ingredientNames }),
+      body: JSON.stringify({ingredientNames}),
     });
   }
 
-  async searchUSDADirect(query: string, dataType = 'Foundation', pageSize = 25): Promise<ApiResponse<any>> {
-    return this.makeRequest(`/ingredients/usda/search?query=${encodeURIComponent(query)}&dataType=${dataType}&pageSize=${pageSize}`);
+  async searchUSDADirect(
+    query: string,
+    dataType = 'Foundation',
+    pageSize = 25,
+  ): Promise<ApiResponse<any>> {
+    return this.makeRequest(
+      `/ingredients/usda/search?query=${encodeURIComponent(
+        query,
+      )}&dataType=${dataType}&pageSize=${pageSize}`,
+    );
   }
 
   async getIngredientCategories(): Promise<ApiResponse<any>> {
     return this.makeRequest('/ingredients/meta/categories');
   }
 
-  async getIngredientSuggestions(query: string, limit = 10): Promise<ApiResponse<any>> {
-    return this.makeRequest(`/ingredients/suggestions?query=${encodeURIComponent(query)}&limit=${limit}`);
+  async getIngredientSuggestions(
+    query: string,
+    limit = 10,
+  ): Promise<ApiResponse<any>> {
+    return this.makeRequest(
+      `/ingredients/suggestions?query=${encodeURIComponent(
+        query,
+      )}&limit=${limit}`,
+    );
   }
 
   async batchSearchIngredients(queries: string[]): Promise<ApiResponse<any>> {
     return this.makeRequest('/ingredients/batch-search', {
       method: 'POST',
-      body: JSON.stringify({ queries }),
+      body: JSON.stringify({queries}),
     });
+  }
+
+  async refreshToken(): Promise<string | null> {
+    // Implementation of refreshToken method
+    // This method should return a new access token or null if refresh fails
+    return null; // Placeholder return, actual implementation needed
   }
 }
 
@@ -493,11 +596,11 @@ export const recipeService = {
   // 🚀 NEW: Two-step recipe generation (recommended)
   generatePreviews: apiClient.generateRecipePreviews.bind(apiClient),
   generateDetailedRecipe: apiClient.generateDetailedRecipe.bind(apiClient),
-  
+
   // 📜 Legacy: Single-step generation (deprecated, kept for compatibility)
   generateSuggestions: apiClient.generateRecipeSuggestions.bind(apiClient),
   generateFullRecipe: apiClient.generateFullRecipe.bind(apiClient),
-  
+
   // 📚 Recipe management
   getRecipes: apiClient.getRecipes.bind(apiClient),
   getRecipe: apiClient.getRecipe.bind(apiClient),
@@ -540,11 +643,12 @@ export const ingredientService = {
   getIngredient: apiClient.getIngredient.bind(apiClient),
   getIngredientNutrition: apiClient.getIngredientNutrition.bind(apiClient),
   syncIngredientWithUSDA: apiClient.syncIngredientWithUSDA.bind(apiClient),
-  batchSyncIngredientsWithUSDA: apiClient.batchSyncIngredientsWithUSDA.bind(apiClient),
+  batchSyncIngredientsWithUSDA:
+    apiClient.batchSyncIngredientsWithUSDA.bind(apiClient),
   searchUSDADirect: apiClient.searchUSDADirect.bind(apiClient),
   getIngredientCategories: apiClient.getIngredientCategories.bind(apiClient),
   getIngredientSuggestions: apiClient.getIngredientSuggestions.bind(apiClient),
   batchSearchIngredients: apiClient.batchSearchIngredients.bind(apiClient),
 };
 
-export default apiClient; 
+export default apiClient;

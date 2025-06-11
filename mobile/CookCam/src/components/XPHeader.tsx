@@ -1,13 +1,5 @@
 import React, {useEffect, useRef} from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Animated,
-  Dimensions,
-  Platform,
-} from 'react-native';
+import {View, Text, StyleSheet, TouchableOpacity, Animated} from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {User, Star} from 'lucide-react-native';
 import {useAuth} from '../context/AuthContext';
@@ -15,15 +7,15 @@ import {useGamification} from '../context/GamificationContext';
 import {useNavigation} from '@react-navigation/native';
 import ChefBadge from './ChefBadge';
 
-const {width: screenWidth} = Dimensions.get('window');
+// Remove unused screenWidth variable
 
 const XPHeader: React.FC = () => {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const {user} = useAuth();
   const {xp, level, levelProgress, nextLevelXP} = useGamification();
-  
-  const progressAnim = useRef(new Animated.Value(levelProgress)).current;
+
+  const progressAnim = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
@@ -55,13 +47,23 @@ const XPHeader: React.FC = () => {
   };
 
   const getCreatorTier = () => {
-    if (!user?.isCreator) return 0;
+    if (!user?.isCreator) {
+      return 0;
+    }
     // Mock tier calculation based on subscriber count
     const subscribers = user.subscriberCount || 0;
-    if (subscribers >= 100000) return 5;
-    if (subscribers >= 10000) return 4;
-    if (subscribers >= 1000) return 3;
-    if (subscribers >= 100) return 2;
+    if (subscribers >= 100000) {
+      return 5;
+    }
+    if (subscribers >= 10000) {
+      return 4;
+    }
+    if (subscribers >= 1000) {
+      return 3;
+    }
+    if (subscribers >= 100) {
+      return 2;
+    }
     return 1;
   };
 
@@ -70,24 +72,27 @@ const XPHeader: React.FC = () => {
   return (
     <View style={[styles.wrapper, {paddingTop: insets.top}]}>
       <View style={styles.container}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.profileSection}
           onPress={navigateToProfile}
           activeOpacity={0.7}>
           <View style={styles.avatarContainer}>
             <User size={22} color="#2D1B69" />
           </View>
-          
+
           <View style={styles.userInfo}>
             <View style={styles.nameRow}>
               <Text style={styles.userName} numberOfLines={1}>
                 {user?.name || 'Guest'}
               </Text>
               {user?.isCreator && creatorTier > 0 && creatorTier <= 5 && (
-                <ChefBadge tier={creatorTier as 1 | 2 | 3 | 4 | 5} size="small" />
+                <ChefBadge
+                  tier={creatorTier as 1 | 2 | 3 | 4 | 5}
+                  size="small"
+                />
               )}
             </View>
-            
+
             <View style={styles.levelContainer}>
               <Star size={14} color="#FFB800" />
               <Text style={styles.levelText}>Level {level}</Text>
@@ -96,13 +101,10 @@ const XPHeader: React.FC = () => {
         </TouchableOpacity>
 
         <View style={styles.xpSection}>
-          <Animated.View 
-            style={[
-              styles.xpBarContainer,
-              {transform: [{scale: pulseAnim}]}
-            ]}>
+          <Animated.View
+            style={[styles.xpBarContainer, {transform: [{scale: pulseAnim}]}]}>
             <View style={styles.xpBarBg}>
-              <Animated.View 
+              <Animated.View
                 style={[
                   styles.xpBarFill,
                   {
@@ -115,12 +117,12 @@ const XPHeader: React.FC = () => {
               />
               <View style={styles.xpBarShine} />
             </View>
-            
+
             <Text style={styles.xpText}>
               {xp}/{nextLevelXP} XP
             </Text>
           </Animated.View>
-          
+
           <Text style={styles.xpToNext}>
             {nextLevelXP - xp} to level {level + 1}
           </Text>
@@ -246,4 +248,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default XPHeader; 
+export default XPHeader;

@@ -1,14 +1,14 @@
 import React from 'react';
-import { View, StyleSheet, Image } from 'react-native';
+import {View, StyleSheet, Image} from 'react-native';
 
 interface AIChefIconProps {
   size?: number;
   variant?: 'default' | 'analyzing' | 'cooking';
 }
 
-const AIChefIcon: React.FC<AIChefIconProps> = ({ 
-  size = 48, 
-  variant = 'default' 
+const AIChefIcon: React.FC<AIChefIconProps> = ({
+  size = 48,
+  variant = 'default',
 }) => {
   // For now, we'll use the same mascot image for all variants
   // You can add different effects like opacity changes for different states
@@ -17,23 +17,23 @@ const AIChefIcon: React.FC<AIChefIconProps> = ({
       case 'analyzing':
         return {
           opacity: 0.8,
-          transform: [{ scale: 1.1 }],
+          transform: [{scale: 1.1}],
         };
       case 'cooking':
         return {
           opacity: 1,
-          transform: [{ scale: 1 }],
+          transform: [{scale: 1}],
         };
       default:
         return {
           opacity: 1,
-          transform: [{ scale: 1 }],
+          transform: [{scale: 1}],
         };
     }
   };
 
   return (
-    <View style={[styles.container, { width: size, height: size }]}>
+    <View style={[styles.container, {width: size, height: size}]}>
       <Image
         source={require('../../assets/robot-chef-holding-spatula-spoon-mascot-illustration-288841450.png')}
         style={[
@@ -56,4 +56,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default AIChefIcon; 
+export default AIChefIcon;

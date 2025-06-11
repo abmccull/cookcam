@@ -9,7 +9,11 @@ interface ChefBadgeProps {
   showLabel?: boolean;
 }
 
-const ChefBadge: React.FC<ChefBadgeProps> = ({tier, size = 'medium', showLabel = false}) => {
+const ChefBadge: React.FC<ChefBadgeProps> = ({
+  tier,
+  size = 'medium',
+  showLabel = false,
+}) => {
   const tiers = {
     1: {
       title: 'Sous Chef',
@@ -112,7 +116,11 @@ const ChefBadge: React.FC<ChefBadgeProps> = ({tier, size = 'medium', showLabel =
         )}
 
         {/* Main Icon */}
-        <Icon size={currentSize.icon} color={currentTier.color} strokeWidth={2.5} />
+        <Icon
+          size={currentSize.icon}
+          color={currentTier.color}
+          strokeWidth={2.5}
+        />
 
         {/* Star indicator at bottom */}
         <View style={styles.starContainer}>
@@ -129,11 +137,7 @@ const ChefBadge: React.FC<ChefBadgeProps> = ({tier, size = 'medium', showLabel =
 
         {/* Flame effect for Master Chef */}
         {tier === 5 && (
-          <Flame
-            size={currentSize.star}
-            color="#FF6B35"
-            style={styles.flame}
-          />
+          <Flame size={currentSize.star} color="#FF6B35" style={styles.flame} />
         )}
       </View>
 
@@ -207,4 +211,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ChefBadge; 
+export default ChefBadge;

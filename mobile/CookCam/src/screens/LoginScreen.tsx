@@ -31,10 +31,10 @@ const LoginScreen: React.FC<LoginScreenProps> = ({navigation}) => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const {login} = useAuth();
-  
+
   // Animation for the chef hat - TEMPORARILY DISABLED
   // const rotation = useSharedValue(0);
-  
+
   // React.useEffect(() => {
   //   rotation.value = withRepeat(
   //     withSequence(
@@ -46,7 +46,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({navigation}) => {
   //     true
   //   );
   // }, []);
-  
+
   // const animatedStyle = useAnimatedStyle(() => {
   //   return {
   //     transform: [{rotate: `${rotation.value}deg`}],
@@ -58,14 +58,17 @@ const LoginScreen: React.FC<LoginScreenProps> = ({navigation}) => {
       Alert.alert('Error', 'Please fill in all fields');
       return;
     }
-    
+
     setLoading(true);
-    
+
     try {
       await login(email, password);
       // Navigation will be handled by the auth state change in App.tsx
     } catch (error) {
-      Alert.alert('Error', 'Login failed. Please check your credentials and try again.');
+      Alert.alert(
+        'Error',
+        'Login failed. Please check your credentials and try again.',
+      );
     } finally {
       setLoading(false);
     }
@@ -77,8 +80,8 @@ const LoginScreen: React.FC<LoginScreenProps> = ({navigation}) => {
 
   const handleForgotPassword = () => {
     Alert.alert(
-      'Forgot Password', 
-      'Password reset functionality will be available soon. Please contact support if you need help accessing your account.'
+      'Forgot Password',
+      'Password reset functionality will be available soon. Please contact support if you need help accessing your account.',
     );
   };
 
@@ -87,19 +90,19 @@ const LoginScreen: React.FC<LoginScreenProps> = ({navigation}) => {
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}>
-        
         {/* Logo and Title */}
         <View style={styles.header}>
           <View style={styles.logoContainer}>
             <ChefHat size={60} color="#FF6B35" />
           </View>
           <Text style={styles.title}>CookCam</Text>
-          <Text style={styles.subtitle}>Turn ingredients into delicious meals</Text>
+          <Text style={styles.subtitle}>
+            Turn ingredients into delicious meals
+          </Text>
         </View>
 
         {/* Login Form */}
         <View style={styles.form}>
-
           {/* Email Input */}
           <View style={styles.inputContainer}>
             <Mail size={20} color="#8E8E93" style={styles.inputIcon} />
@@ -139,7 +142,9 @@ const LoginScreen: React.FC<LoginScreenProps> = ({navigation}) => {
           </View>
 
           {/* Forgot Password */}
-          <TouchableOpacity onPress={handleForgotPassword} style={styles.forgotPassword}>
+          <TouchableOpacity
+            onPress={handleForgotPassword}
+            style={styles.forgotPassword}>
             <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
           </TouchableOpacity>
 
@@ -163,7 +168,9 @@ const LoginScreen: React.FC<LoginScreenProps> = ({navigation}) => {
           </View>
 
           {/* Sign Up Link */}
-          <TouchableOpacity onPress={handleSignup} style={styles.signupContainer}>
+          <TouchableOpacity
+            onPress={handleSignup}
+            style={styles.signupContainer}>
             <Text style={styles.signupText}>
               Don't have an account?{' '}
               <Text style={styles.signupLink}>Sign Up</Text>
@@ -278,4 +285,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default LoginScreen; 
+export default LoginScreen;

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, {useState} from 'react';
 import {
   View,
   Text,
@@ -7,55 +7,57 @@ import {
   ScrollView,
   Alert,
 } from 'react-native';
-import { 
-  FeatureGate, 
-  UnlimitedScansGate, 
-  PremiumRecipesGate, 
+import {
+  FeatureGate,
+  UnlimitedScansGate,
+  PremiumRecipesGate,
   CreatorToolsGate,
-  UsageLimit 
+  UsageLimit,
 } from '../components/FeatureGate';
-import { AnalyticsDashboard } from '../components/AnalyticsDashboard';
-import { useSubscription, useFeatureGate } from '../context/SubscriptionContext';
-import { useAnalytics, useScreenTracking } from '../services/analyticsService';
+import {AnalyticsDashboard} from '../components/AnalyticsDashboard';
+import {useSubscription, useFeatureGate} from '../context/SubscriptionContext';
+import {useAnalytics, useScreenTracking} from '../services/analyticsService';
 
 // Example of integrating feature gates into an existing screen
 export default function ExampleFeatureGateScreen() {
   const [scanCount, setScanCount] = useState(0);
-  const { 
-    state, 
-    isSubscribed, 
+  const {
+    state,
+    isSubscribed,
     hasActiveTrial,
     canUseFeature,
-    getRemainingUsage 
+    getRemainingUsage,
   } = useSubscription();
-  
-  const { hasAccess: canScanUnlimited } = useFeatureGate('unlimited_scans');
+
+  const {hasAccess: canScanUnlimited} = useFeatureGate('unlimited_scans');
   const analytics = useAnalytics();
-  
+
   // Track screen view
-  useScreenTracking('feature_gate_example', { 
-    subscription_tier: state.currentSubscription?.tier_slug || 'free' 
+  useScreenTracking('feature_gate_example', {
+    subscription_tier: state.currentSubscription?.tier_slug || 'free',
   });
 
   // Example: Scanning with feature gate
   const handleScan = () => {
     analytics.trackUserAction('scan_attempted');
-    
+
     if (!canScanUnlimited && scanCount >= 5) {
       // Show upgrade prompt for unlimited scans
       Alert.alert(
         'Daily Scan Limit Reached',
         'Upgrade to scan unlimited ingredients every day!',
         [
-          { text: 'Maybe Later', style: 'cancel' },
-          { 
-            text: 'Upgrade Now', 
+          {text: 'Maybe Later', style: 'cancel'},
+          {
+            text: 'Upgrade Now',
             onPress: () => {
-              analytics.trackSubscriptionEvent('upgrade_clicked', { trigger: 'scan_limit' });
+              analytics.trackSubscriptionEvent('upgrade_clicked', {
+                trigger: 'scan_limit',
+              });
               // Navigate to subscription screen
-            }
-          }
-        ]
+            },
+          },
+        ],
       );
       return;
     }
@@ -72,21 +74,25 @@ export default function ExampleFeatureGateScreen() {
   // Example: Premium recipe generation
   const handlePremiumRecipe = () => {
     analytics.trackUserAction('premium_recipe_attempted');
-    
+
     if (!canUseFeature('premium_recipes')) {
-      analytics.trackSubscriptionEvent('upgrade_prompt_shown', { feature: 'premium_recipes' });
+      analytics.trackSubscriptionEvent('upgrade_prompt_shown', {
+        feature: 'premium_recipes',
+      });
       Alert.alert(
         'Premium Feature',
         'This advanced recipe requires a premium subscription',
         [
-          { text: 'Cancel', style: 'cancel' },
-          { 
-            text: 'Upgrade', 
+          {text: 'Cancel', style: 'cancel'},
+          {
+            text: 'Upgrade',
             onPress: () => {
-              analytics.trackSubscriptionEvent('upgrade_clicked', { feature: 'premium_recipes' });
-            }
-          }
-        ]
+              analytics.trackSubscriptionEvent('upgrade_clicked', {
+                feature: 'premium_recipes',
+              });
+            },
+          },
+        ],
       );
       return;
     }
@@ -115,14 +121,14 @@ export default function ExampleFeatureGateScreen() {
       {/* Example 1: Basic scan with usage tracking */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>📸 Ingredient Scanning</Text>
-        
+
         <UsageLimit feature="daily_scans" warningThreshold={0.8}>
           <TouchableOpacity style={styles.actionButton} onPress={handleScan}>
             <Text style={styles.actionButtonText}>
               Scan Ingredients ({scanCount}/5 today)
             </Text>
           </TouchableOpacity>
-          
+
           {remainingScans !== null && (
             <Text style={styles.usageText}>
               {remainingScans} scans remaining today
@@ -134,7 +140,7 @@ export default function ExampleFeatureGateScreen() {
       {/* Example 2: Feature gate with fallback */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>🍳 Recipe Generation</Text>
-        
+
         {/* Basic recipes (always available) */}
         <TouchableOpacity style={styles.actionButton}>
           <Text style={styles.actionButtonText}>Generate Basic Recipe</Text>
@@ -142,10 +148,9 @@ export default function ExampleFeatureGateScreen() {
 
         {/* Premium recipes (feature gated) */}
         <PremiumRecipesGate>
-          <TouchableOpacity 
-            style={[styles.actionButton, styles.premiumButton]} 
-            onPress={handlePremiumRecipe}
-          >
+          <TouchableOpacity
+            style={[styles.actionButton, styles.premiumButton]}
+            onPress={handlePremiumRecipe}>
             <Text style={[styles.actionButtonText, styles.premiumButtonText]}>
               ✨ Generate Premium Recipe
             </Text>
@@ -156,14 +161,18 @@ export default function ExampleFeatureGateScreen() {
       {/* Example 3: Creator tools */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>💼 Creator Tools</Text>
-        
+
         <CreatorToolsGate>
           <View style={styles.creatorTools}>
             <TouchableOpacity style={styles.creatorButton}>
-              <Text style={styles.creatorButtonText}>📊 Analytics Dashboard</Text>
+              <Text style={styles.creatorButtonText}>
+                📊 Analytics Dashboard
+              </Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.creatorButton}>
-              <Text style={styles.creatorButtonText}>🔗 Generate Affiliate Link</Text>
+              <Text style={styles.creatorButtonText}>
+                🔗 Generate Affiliate Link
+              </Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.creatorButton}>
               <Text style={styles.creatorButtonText}>💰 Request Payout</Text>
@@ -175,32 +184,32 @@ export default function ExampleFeatureGateScreen() {
       {/* Example 4: Multiple features with different access levels */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>🎯 Feature Access Summary</Text>
-        
+
         <View style={styles.featuresList}>
-          <FeatureItem 
-            feature="unlimited_scans" 
-            name="Unlimited Scans" 
-            icon="📸" 
+          <FeatureItem
+            feature="unlimited_scans"
+            name="Unlimited Scans"
+            icon="📸"
           />
-          <FeatureItem 
-            feature="premium_recipes" 
-            name="Premium Recipes" 
-            icon="✨" 
+          <FeatureItem
+            feature="premium_recipes"
+            name="Premium Recipes"
+            icon="✨"
           />
-          <FeatureItem 
-            feature="ad_free_experience" 
-            name="Ad-Free Experience" 
-            icon="🚫" 
+          <FeatureItem
+            feature="ad_free_experience"
+            name="Ad-Free Experience"
+            icon="🚫"
           />
-          <FeatureItem 
-            feature="advanced_nutrition" 
-            name="Detailed Nutrition" 
-            icon="📊" 
+          <FeatureItem
+            feature="advanced_nutrition"
+            name="Detailed Nutrition"
+            icon="📊"
           />
-          <FeatureItem 
-            feature="creator_tools" 
-            name="Creator Monetization" 
-            icon="💼" 
+          <FeatureItem
+            feature="creator_tools"
+            name="Creator Monetization"
+            icon="💼"
           />
         </View>
       </View>
@@ -208,8 +217,8 @@ export default function ExampleFeatureGateScreen() {
       {/* Example 5: Analytics Dashboard (Premium feature) */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>📊 Analytics Dashboard</Text>
-        
-        <FeatureGate 
+
+        <FeatureGate
           feature="analytics_dashboard"
           fallback={
             <View style={styles.analyticsPlaceholder}>
@@ -217,8 +226,7 @@ export default function ExampleFeatureGateScreen() {
                 📊 Analytics dashboard is available with premium subscription
               </Text>
             </View>
-          }
-        >
+          }>
           <AnalyticsDashboard />
         </FeatureGate>
       </View>
@@ -226,12 +234,12 @@ export default function ExampleFeatureGateScreen() {
       {/* Example 6: Subscription management */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>⚙️ Subscription Management</Text>
-        
+
         <View style={styles.subscriptionInfo}>
           <Text style={styles.subscriptionText}>
             Current Plan: {state.currentSubscription?.tier_slug || 'Free'}
           </Text>
-          
+
           {state.currentSubscription && (
             <Text style={styles.subscriptionText}>
               Status: {state.currentSubscription.status}
@@ -239,13 +247,14 @@ export default function ExampleFeatureGateScreen() {
           )}
 
           {!isSubscribed() && (
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.upgradeButton}
               onPress={() => {
-                analytics.trackSubscriptionEvent('upgrade_clicked', { source: 'settings' });
+                analytics.trackSubscriptionEvent('upgrade_clicked', {
+                  source: 'settings',
+                });
                 // Navigate to subscription screen
-              }}
-            >
+              }}>
               <Text style={styles.upgradeButtonText}>Upgrade to Premium</Text>
             </TouchableOpacity>
           )}
@@ -256,14 +265,23 @@ export default function ExampleFeatureGateScreen() {
 }
 
 // Helper component for feature list
-function FeatureItem({ feature, name, icon }: { feature: string; name: string; icon: string }) {
-  const { hasAccess } = useFeatureGate(feature);
-  
+function FeatureItem({
+  feature,
+  name,
+  icon,
+}: {
+  feature: string;
+  name: string;
+  icon: string;
+}) {
+  const {hasAccess} = useFeatureGate(feature);
+
   return (
     <View style={styles.featureItem}>
       <Text style={styles.featureIcon}>{icon}</Text>
       <Text style={styles.featureName}>{name}</Text>
-      <Text style={[styles.featureStatus, hasAccess && styles.featureStatusActive]}>
+      <Text
+        style={[styles.featureStatus, hasAccess && styles.featureStatusActive]}>
         {hasAccess ? '✅' : '🔒'}
       </Text>
     </View>
@@ -297,7 +315,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
@@ -402,4 +420,4 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-}); 
+});

@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { cookCamApi } from './cookCamApi';
-import { apiService } from './apiService';
+import {cookCamApi} from './cookCamApi';
+import {apiService} from './apiService';
+import {secureStorage, SECURE_KEYS} from './secureStorage';
 
 // Event types
 interface AnalyticsEvent {
@@ -45,56 +46,89 @@ class AnalyticsService {
       const storedSession = await AsyncStorage.getItem('analytics_session');
       if (storedSession) {
         const session: SessionData = JSON.parse(storedSession);
-        
+
         // Check if session is still valid (not timed out)
         const lastActivity = new Date(session.lastActivity);
         const now = new Date();
         const timeSinceLastActivity = now.getTime() - lastActivity.getTime();
-        
+
         if (timeSinceLastActivity < ANALYTICS_CONFIG.sessionTimeout) {
           // Resume existing session
           this.currentSession = {
             ...session,
             startTime: new Date(session.startTime), // Convert back to Date object
             lastActivity: now,
-            events: [] // Don't load old events, they should have been flushed
+            events: [], // Don't load old events, they should have been flushed
           };
-          
+
           this.track('session_resumed', {
             previousDuration: timeSinceLastActivity,
-            totalEvents: session.events.length
+            totalEvents: session.events.length,
           });
-          
+
           return;
         }
       }
-      
+
       // Create new session
+      const sessionId = this.generateSessionId();
+      if (!sessionId) {
+        throw new Error('Failed to generate session ID');
+      }
+
       this.currentSession = {
-        sessionId: this.generateSessionId(),
+        sessionId,
         startTime: new Date(),
         lastActivity: new Date(),
-        events: []
+        events: [],
       };
-      
+
       await this.saveSession();
-      this.track('session_started');
-      
+
+      // Track session started with a separate call to avoid infinite recursion
+      setTimeout(() => {
+        this.track('session_started').catch(console.error);
+      }, 100);
     } catch (error) {
       console.error('Failed to initialize analytics session:', error);
+      // Create a minimal fallback session to prevent null errors
+      this.currentSession = {
+        sessionId: `fallback_${Date.now()}`,
+        startTime: new Date(),
+        lastActivity: new Date(),
+        events: [],
+      };
     }
   }
 
   // Generate unique session ID
   private generateSessionId(): string {
-    return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    try {
+      const timestamp = Date.now();
+      const randomPart = Math.random().toString(36).substr(2, 9);
+      const sessionId = `session_${timestamp}_${randomPart}`;
+
+      // Validate session ID
+      if (!sessionId || sessionId.length < 10) {
+        throw new Error('Generated session ID is invalid');
+      }
+
+      return sessionId;
+    } catch (error) {
+      console.error('Failed to generate session ID:', error);
+      // Fallback session ID
+      return `session_fallback_${Date.now()}`;
+    }
   }
 
   // Save current session
   private async saveSession() {
     if (this.currentSession) {
       try {
-        await AsyncStorage.setItem('analytics_session', JSON.stringify(this.currentSession));
+        await AsyncStorage.setItem(
+          'analytics_session',
+          JSON.stringify(this.currentSession),
+        );
       } catch (error) {
         console.error('Failed to save analytics session:', error);
       }
@@ -106,7 +140,9 @@ class AnalyticsService {
     try {
       // Limit memory usage - if queue is too large, skip tracking
       if (this.eventQueue.length > 100) {
-        console.warn('⚠️ Analytics queue too large, skipping event to prevent memory issues');
+        console.warn(
+          '⚠️ Analytics queue too large, skipping event to prevent memory issues',
+        );
         return;
       }
 
@@ -117,6 +153,12 @@ class AnalyticsService {
       // Double-check session exists after initialization
       if (!this.currentSession) {
         console.error('❌ Failed to initialize analytics session');
+        return;
+      }
+
+      // Final safety check for sessionId
+      if (!this.currentSession.sessionId) {
+        console.error('❌ Session exists but missing sessionId');
         return;
       }
 
@@ -134,10 +176,14 @@ class AnalyticsService {
       try {
         userId = await Promise.race([
           this.getUserId(),
-          new Promise<undefined>((resolve) => setTimeout(() => resolve(undefined), 1000)) // 1 second timeout
+          new Promise<undefined>(resolve =>
+            setTimeout(() => resolve(undefined), 1000),
+          ), // 1 second timeout
         ]);
       } catch (error) {
-        console.warn('⚠️ Failed to get user ID for analytics, continuing without it');
+        console.warn(
+          '⚠️ Failed to get user ID for analytics, continuing without it',
+        );
         userId = undefined;
       }
 
@@ -149,14 +195,18 @@ class AnalyticsService {
           timestamp: new Date().toISOString(),
         },
         timestamp: new Date(),
-        sessionId: this.currentSession.sessionId,
+        sessionId: this.currentSession?.sessionId || `emergency_${Date.now()}`,
         userId: userId,
       };
 
       // Add to queue and session
       this.eventQueue.push(event);
-      this.currentSession.events.push(event);
-      this.currentSession.lastActivity = new Date();
+      if (this.currentSession?.events) {
+        this.currentSession.events.push(event);
+      }
+      if (this.currentSession) {
+        this.currentSession.lastActivity = new Date();
+      }
 
       // Save session periodically
       await this.saveSession();
@@ -211,10 +261,10 @@ class AnalyticsService {
       console.log(`📤 Flushed ${eventsToSend.length} analytics events`);
     } catch (error) {
       console.error('Failed to flush analytics events:', error);
-      
+
       // Re-add events to queue for retry (at the beginning)
       this.eventQueue.unshift(...eventsToSend);
-      
+
       // Limit queue size to prevent memory issues
       if (this.eventQueue.length > 100) {
         this.eventQueue = this.eventQueue.slice(0, 100);
@@ -225,7 +275,7 @@ class AnalyticsService {
   // Check if user is authenticated
   private async checkAuthentication(): Promise<boolean> {
     try {
-      const token = await AsyncStorage.getItem('@cookcam_token');
+      const token = await secureStorage.getSecureItem(SECURE_KEYS.ACCESS_TOKEN);
       return !!token;
     } catch (error) {
       console.error('Failed to check authentication status:', error);
@@ -244,7 +294,7 @@ class AnalyticsService {
   trackScreenView(screenName: string, properties?: Record<string, any>) {
     this.track('screen_view', {
       screen_name: screenName,
-      ...properties
+      ...properties,
     }).catch(error => {
       console.error('Failed to track screen view:', error);
     });
@@ -254,7 +304,7 @@ class AnalyticsService {
   trackUserAction(action: string, properties?: Record<string, any>) {
     this.track('user_action', {
       action,
-      ...properties
+      ...properties,
     }).catch(error => {
       console.error('Failed to track user action:', error);
     });
@@ -262,10 +312,10 @@ class AnalyticsService {
 
   // Track app lifecycle events
   trackAppStateChange(state: 'active' | 'background' | 'inactive') {
-    this.track('app_state_change', { state }).catch(error => {
+    this.track('app_state_change', {state}).catch(error => {
       console.error('Failed to track app state change:', error);
     });
-    
+
     if (state === 'background') {
       this.flush(); // Flush immediately when app goes to background
     }
@@ -306,10 +356,17 @@ class AnalyticsService {
   }
 
   // Track subscription events
-  trackSubscriptionEvent(event: 'upgrade_prompt_shown' | 'upgrade_clicked' | 'subscription_started' | 'subscription_cancelled', properties?: Record<string, any>) {
+  trackSubscriptionEvent(
+    event:
+      | 'upgrade_prompt_shown'
+      | 'upgrade_clicked'
+      | 'subscription_started'
+      | 'subscription_cancelled',
+    properties?: Record<string, any>,
+  ) {
     this.track('subscription_event', {
       subscription_event: event,
-      ...properties
+      ...properties,
     });
   }
 
@@ -317,7 +374,7 @@ class AnalyticsService {
   trackFeatureUsage(feature: string, properties?: Record<string, any>) {
     this.track('feature_usage', {
       feature_name: feature,
-      ...properties
+      ...properties,
     });
   }
 
@@ -327,7 +384,7 @@ class AnalyticsService {
       error_message: error.message,
       error_stack: error.stack,
       error_name: error.name,
-      ...context
+      ...context,
     });
   }
 
@@ -336,27 +393,33 @@ class AnalyticsService {
     this.track('performance', {
       metric_name: metric,
       value,
-      unit
+      unit,
     });
   }
 
   // Track engagement
-  trackEngagement(action: 'recipe_saved' | 'recipe_shared' | 'tip_sent' | 'review_left', properties?: Record<string, any>) {
+  trackEngagement(
+    action: 'recipe_saved' | 'recipe_shared' | 'tip_sent' | 'review_left',
+    properties?: Record<string, any>,
+  ) {
     this.track('engagement', {
       engagement_action: action,
-      ...properties
+      ...properties,
     });
   }
 
   // Get session duration
   getSessionDuration(): number {
-    if (!this.currentSession || !this.currentSession.startTime) return 0;
-    
+    if (!this.currentSession || !this.currentSession.startTime) {
+      return 0;
+    }
+
     // Ensure startTime is a Date object
-    const startTime = this.currentSession.startTime instanceof Date 
-      ? this.currentSession.startTime 
-      : new Date(this.currentSession.startTime);
-    
+    const startTime =
+      this.currentSession.startTime instanceof Date
+        ? this.currentSession.startTime
+        : new Date(this.currentSession.startTime);
+
     return Date.now() - startTime.getTime();
   }
 
@@ -364,15 +427,15 @@ class AnalyticsService {
   async endSession() {
     if (this.currentSession) {
       const duration = this.getSessionDuration();
-      
+
       this.track('session_ended', {
         session_duration_ms: duration,
-        total_events: this.currentSession.events.length
+        total_events: this.currentSession.events.length,
       });
-      
+
       // Flush remaining events
       await this.flush();
-      
+
       // Clear session
       this.currentSession = null;
       await AsyncStorage.removeItem('analytics_session');
@@ -382,7 +445,7 @@ class AnalyticsService {
   // Set online/offline status
   setOnlineStatus(isOnline: boolean) {
     this.isOnline = isOnline;
-    
+
     if (isOnline && this.eventQueue.length > 0) {
       // Flush queued events when coming back online
       this.flush();
@@ -402,7 +465,7 @@ class AnalyticsService {
 export const analyticsService = new AnalyticsService();
 
 // Analytics context hook (for React components)
-import { useEffect } from 'react';
+import {useEffect} from 'react';
 
 export function useAnalytics() {
   useEffect(() => {
@@ -416,10 +479,14 @@ export function useAnalytics() {
     track: analyticsService.track.bind(analyticsService),
     trackScreenView: analyticsService.trackScreenView.bind(analyticsService),
     trackUserAction: analyticsService.trackUserAction.bind(analyticsService),
-    trackIngredientScan: analyticsService.trackIngredientScan.bind(analyticsService),
-    trackRecipeGeneration: analyticsService.trackRecipeGeneration.bind(analyticsService),
-    trackSubscriptionEvent: analyticsService.trackSubscriptionEvent.bind(analyticsService),
-    trackFeatureUsage: analyticsService.trackFeatureUsage.bind(analyticsService),
+    trackIngredientScan:
+      analyticsService.trackIngredientScan.bind(analyticsService),
+    trackRecipeGeneration:
+      analyticsService.trackRecipeGeneration.bind(analyticsService),
+    trackSubscriptionEvent:
+      analyticsService.trackSubscriptionEvent.bind(analyticsService),
+    trackFeatureUsage:
+      analyticsService.trackFeatureUsage.bind(analyticsService),
     trackError: analyticsService.trackError.bind(analyticsService),
     trackPerformance: analyticsService.trackPerformance.bind(analyticsService),
     trackEngagement: analyticsService.trackEngagement.bind(analyticsService),
@@ -427,8 +494,11 @@ export function useAnalytics() {
 }
 
 // Screen tracking hook
-export function useScreenTracking(screenName: string, properties?: Record<string, any>) {
+export function useScreenTracking(
+  screenName: string,
+  properties?: Record<string, any>,
+) {
   useEffect(() => {
     analyticsService.trackScreenView(screenName, properties);
   }, [screenName]);
-} 
+}

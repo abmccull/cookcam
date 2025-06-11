@@ -11,8 +11,22 @@ import {
   Animated,
   Modal,
 } from 'react-native';
-import {Check, X, Plus, Star, Camera, ChefHat, TrendingUp, Trophy} from 'lucide-react-native';
-import {scale, verticalScale, moderateScale, responsive} from '../utils/responsive';
+import {
+  Check,
+  X,
+  Plus,
+  Star,
+  Camera,
+  ChefHat,
+  TrendingUp,
+  Trophy,
+} from 'lucide-react-native';
+import {
+  scale,
+  verticalScale,
+  moderateScale,
+  responsive,
+} from '../utils/responsive';
 import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
 import {useGamification, XP_VALUES} from '../context/GamificationContext';
 import {useAuth} from '../context/AuthContext';
@@ -73,16 +87,16 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
       return [];
     }
   });
-  
+
   // Animation values
   const addAnimScale = useRef(new Animated.Value(1)).current;
   const [showConfetti, setShowConfetti] = useState(false);
 
-
-
   // Track if image analysis has been completed for this imageUri
   const [hasAnalyzedImage, setHasAnalyzedImage] = useState(false);
-  const [lastAnalyzedImageUri, setLastAnalyzedImageUri] = useState<string | null>(null);
+  const [lastAnalyzedImageUri, setLastAnalyzedImageUri] = useState<
+    string | null
+  >(null);
 
   // Reset analysis flag when imageUri changes
   useEffect(() => {
@@ -99,7 +113,7 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
       if (!user) {
         console.log('🔐 Not authenticated, redirecting to login...');
         // Redirect to login screen instead of using demo
-        navigation.navigate('Auth', { screen: 'SignIn' });
+        navigation.navigate('Auth', {screen: 'SignIn'});
         return;
       } else {
         setHasAnalyzedImage(true); // Prevent re-analysis of same image
@@ -114,25 +128,25 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
       console.log('🔍 Analyzing image for ingredients...');
       console.log('📍 Current imageUri:', imageUri);
       console.log('📍 Is simulator:', isSimulator);
-      
+
       if (!imageUri) {
         console.log('⚠️ No valid image URI, using fallback ingredients');
-        
+
         // Fallback to searching some common ingredients in USDA database
         const simulatedDetectedNames = ['tomato', 'onion', 'garlic', 'cheese'];
         const foundIngredients: Ingredient[] = [];
-        
+
         for (let i = 0; i < simulatedDetectedNames.length; i++) {
           const name = simulatedDetectedNames[i];
           try {
             const response = await ingredientService.searchIngredients(name, 1);
-            
+
             if (response.success && response.data && response.data.length > 0) {
               const ingredient = response.data[0];
               foundIngredients.push({
                 id: ingredient.id || `detected-${i}`,
                 name: ingredient.name || name,
-                confidence: 0.9 - (i * 0.1),
+                confidence: 0.9 - i * 0.1,
                 emoji: getEmojiForIngredient(ingredient.name || name),
               });
             }
@@ -140,7 +154,7 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
             console.log(`Failed to find ingredient ${name}:`, error);
           }
         }
-        
+
         setIngredients(foundIngredients);
         return;
       }
@@ -151,19 +165,22 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
         console.log('📸 Converting image to base64...');
         console.log('📸 Image URI type:', typeof imageUri);
         console.log('📸 Image URI starts with:', imageUri.substring(0, 50));
-        
+
         // For file:// URIs, we need to read the file
         if (imageUri.startsWith('file://')) {
           console.log('📸 Processing file:// URI...');
           const response = await fetch(imageUri);
           const blob = await response.blob();
-          
+
           // Convert blob to base64
           const reader = new FileReader();
           base64Image = await new Promise((resolve, reject) => {
             reader.onload = () => {
               const result = reader.result as string;
-              console.log('📸 Base64 conversion successful, length:', result.length);
+              console.log(
+                '📸 Base64 conversion successful, length:',
+                result.length,
+              );
               resolve(result);
             };
             reader.onerror = reject;
@@ -174,12 +191,15 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
           // For URL images, fetch and convert
           const response = await fetch(imageUri);
           const blob = await response.blob();
-          
+
           const reader = new FileReader();
           base64Image = await new Promise((resolve, reject) => {
             reader.onload = () => {
               const result = reader.result as string;
-              console.log('📸 Base64 conversion successful, length:', result.length);
+              console.log(
+                '📸 Base64 conversion successful, length:',
+                result.length,
+              );
               resolve(result);
             };
             reader.onerror = reject;
@@ -194,30 +214,45 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
 
         // Send image to backend for analysis
         const response = await scanService.analyzeScan(base64Image, []);
-        
+
         console.log('📥 Backend response received:', response);
-        
+
         if (response.success && response.data && response.data.ingredients) {
-          console.log('🎯 Backend analysis successful:', response.data.ingredients);
-          
+          console.log(
+            '🎯 Backend analysis successful:',
+            response.data.ingredients,
+          );
+
           // Convert backend response to our ingredient format and search USDA
           const foundIngredients: Ingredient[] = [];
-          
+
           for (let i = 0; i < response.data.ingredients.length; i++) {
             const detectedIng = response.data.ingredients[i];
-            console.log(`🔍 Processing detected ingredient ${i + 1}:`, detectedIng);
-            
+            console.log(
+              `🔍 Processing detected ingredient ${i + 1}:`,
+              detectedIng,
+            );
+
             try {
               // Search for this ingredient in our USDA database
-              const searchResponse = await ingredientService.searchIngredients(detectedIng.name, 1);
-              
-              if (searchResponse.success && searchResponse.data && searchResponse.data.length > 0) {
+              const searchResponse = await ingredientService.searchIngredients(
+                detectedIng.name,
+                1,
+              );
+
+              if (
+                searchResponse.success &&
+                searchResponse.data &&
+                searchResponse.data.length > 0
+              ) {
                 const ingredient = searchResponse.data[0];
                 foundIngredients.push({
                   id: ingredient.id || `detected-${i}`,
                   name: ingredient.name || detectedIng.name,
                   confidence: detectedIng.confidence || 0.8,
-                  emoji: getEmojiForIngredient(ingredient.name || detectedIng.name),
+                  emoji: getEmojiForIngredient(
+                    ingredient.name || detectedIng.name,
+                  ),
                   quantity: detectedIng.quantity || '',
                   unit: detectedIng.unit || '',
                   variety: detectedIng.variety || '',
@@ -239,8 +274,11 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
                 console.log(`➕ Added as custom: ${detectedIng.name}`);
               }
             } catch (error) {
-              console.log(`Failed to search for ingredient ${detectedIng.name}:`, error);
-              
+              console.log(
+                `Failed to search for ingredient ${detectedIng.name}:`,
+                error,
+              );
+
               // Add anyway as fallback
               foundIngredients.push({
                 id: `detected-${i}`,
@@ -254,41 +292,41 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
               });
             }
           }
-          
+
           if (foundIngredients.length > 0) {
             setIngredients(foundIngredients);
-            console.log(`✅ Successfully analyzed image: ${foundIngredients.length} ingredients found`);
-            
+            console.log(
+              `✅ Successfully analyzed image: ${foundIngredients.length} ingredients found`,
+            );
+
             // Award bonus XP for successful real analysis
             await addXP(10, 'SUCCESSFUL_IMAGE_ANALYSIS');
           } else {
             throw new Error('No ingredients detected in image');
           }
-          
         } else {
           console.log('❌ Backend analysis failed:', response.error);
           throw new Error(response.error || 'Backend analysis failed');
         }
-        
       } catch (imageError) {
         console.error('❌ Image processing/analysis error:', imageError);
-        
+
         // Fallback to common ingredients if image analysis fails
         console.log('🔄 Falling back to common ingredients...');
         const simulatedDetectedNames = ['tomato', 'onion', 'garlic', 'cheese'];
         const foundIngredients: Ingredient[] = [];
-        
+
         for (let i = 0; i < simulatedDetectedNames.length; i++) {
           const name = simulatedDetectedNames[i];
           try {
             const response = await ingredientService.searchIngredients(name, 1);
-            
+
             if (response.success && response.data && response.data.length > 0) {
               const ingredient = response.data[0];
               foundIngredients.push({
                 id: ingredient.id || `detected-${i}`,
                 name: ingredient.name || name,
-                confidence: 0.9 - (i * 0.1),
+                confidence: 0.9 - i * 0.1,
                 emoji: getEmojiForIngredient(ingredient.name || name),
               });
             }
@@ -296,24 +334,40 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
             console.log(`Failed to find fallback ingredient ${name}:`, error);
           }
         }
-        
+
         if (foundIngredients.length > 0) {
           setIngredients(foundIngredients);
-          console.log(`✅ Fallback successful: ${foundIngredients.length} ingredients found`);
+          console.log(
+            `✅ Fallback successful: ${foundIngredients.length} ingredients found`,
+          );
         } else {
           // Ultimate fallback
           setIngredients([
-            {id: '1', name: 'Detected Ingredient 1', confidence: 0.85, emoji: '🥘'},
-            {id: '2', name: 'Detected Ingredient 2', confidence: 0.75, emoji: '🍽️'},
+            {
+              id: '1',
+              name: 'Detected Ingredient 1',
+              confidence: 0.85,
+              emoji: '🥘',
+            },
+            {
+              id: '2',
+              name: 'Detected Ingredient 2',
+              confidence: 0.75,
+              emoji: '🍽️',
+            },
           ]);
         }
       }
-      
     } catch (error) {
       console.error('❌ Image analysis error:', error);
       // Fallback to manual mode
       setIngredients([
-        {id: 'manual', name: 'Add ingredients manually', confidence: 1.0, emoji: '✋'},
+        {
+          id: 'manual',
+          name: 'Add ingredients manually',
+          confidence: 1.0,
+          emoji: '✋',
+        },
       ]);
     } finally {
       setLoading(false);
@@ -322,97 +376,161 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
 
   const getEmojiForIngredient = (name: string): string => {
     const emojiMap: {[key: string]: string} = {
-      tomato: '🍅', tomatoes: '🍅',
-      onion: '🧅', onions: '🧅', 
+      tomato: '🍅',
+      tomatoes: '🍅',
+      onion: '🧅',
+      onions: '🧅',
       garlic: '🧄',
-      cheese: '🧀', mozzarella: '🧀', cheddar: '🧀',
-      basil: '🌿', herbs: '🌿',
-      olive: '🫒', 'olive oil': '🫒',
-      pepper: '🌶️', peppers: '🌶️',
-      carrot: '🥕', carrots: '🥕',
-      potato: '🥔', potatoes: '🥔',
-      chicken: '🐔', beef: '🥩', fish: '🐟',
-      rice: '🍚', pasta: '🍝', bread: '🍞',
-      milk: '🥛', egg: '🥚', eggs: '🥚',
-      apple: '🍎', banana: '🍌', orange: '🍊',
+      cheese: '🧀',
+      mozzarella: '🧀',
+      cheddar: '🧀',
+      basil: '🌿',
+      herbs: '🌿',
+      olive: '🫒',
+      'olive oil': '🫒',
+      pepper: '🌶️',
+      peppers: '🌶️',
+      carrot: '🥕',
+      carrots: '🥕',
+      potato: '🥔',
+      potatoes: '🥔',
+      chicken: '🐔',
+      beef: '🥩',
+      fish: '🐟',
+      rice: '🍚',
+      pasta: '🍝',
+      bread: '🍞',
+      milk: '🥛',
+      egg: '🥚',
+      eggs: '🥚',
+      apple: '🍎',
+      banana: '🍌',
+      orange: '🍊',
     };
-    
+
     const lowerName = name.toLowerCase();
     return emojiMap[lowerName] || '🥘';
   };
 
   const getConfidenceColor = (confidence: number): string => {
-    if (confidence >= 0.85) return '#4CAF50'; // Green for 85%+
-    if (confidence >= 0.70) return '#FFB800'; // Yellow for 70-85%
+    if (confidence >= 0.85) {
+      return '#4CAF50';
+    } // Green for 85%+
+    if (confidence >= 0.7) {
+      return '#FFB800';
+    } // Yellow for 70-85%
     return '#FF3B30'; // Red for <70%
   };
 
-  const getSmartIncrement = (ingredient: Ingredient): { increment: number; minValue: number } => {
+  const getSmartIncrement = (
+    ingredient: Ingredient,
+  ): {increment: number; minValue: number} => {
     const name = ingredient.name.toLowerCase();
     const unit = (ingredient.unit || '').toLowerCase();
-    
+
     // Whole items that can't be fractioned
-    if (name.includes('egg') || name.includes('avocado') || name.includes('onion') || 
-        name.includes('potato') || name.includes('apple') || name.includes('banana') ||
-        unit.includes('piece') || unit.includes('whole') || unit.includes('head')) {
-      return { increment: 1, minValue: 1 };
+    if (
+      name.includes('egg') ||
+      name.includes('avocado') ||
+      name.includes('onion') ||
+      name.includes('potato') ||
+      name.includes('apple') ||
+      name.includes('banana') ||
+      unit.includes('piece') ||
+      unit.includes('whole') ||
+      unit.includes('head')
+    ) {
+      return {increment: 1, minValue: 1};
     }
-    
+
     // Meat and protein (smaller increments for precision)
-    if (name.includes('beef') || name.includes('chicken') || name.includes('pork') || 
-        name.includes('fish') || name.includes('turkey') || name.includes('lamb') ||
-        unit.includes('lb') || unit.includes('oz') || unit.includes('pound')) {
-      return { increment: 0.25, minValue: 0.25 };
+    if (
+      name.includes('beef') ||
+      name.includes('chicken') ||
+      name.includes('pork') ||
+      name.includes('fish') ||
+      name.includes('turkey') ||
+      name.includes('lamb') ||
+      unit.includes('lb') ||
+      unit.includes('oz') ||
+      unit.includes('pound')
+    ) {
+      return {increment: 0.25, minValue: 0.25};
     }
-    
+
     // Spices and small quantities (teaspoons, tablespoons)
-    if (unit.includes('tsp') || unit.includes('tbsp') || unit.includes('teaspoon') || 
-        unit.includes('tablespoon') || name.includes('salt') || name.includes('pepper') ||
-        name.includes('garlic powder') || name.includes('oregano') || name.includes('basil')) {
-      return { increment: 0.25, minValue: 0.25 };
+    if (
+      unit.includes('tsp') ||
+      unit.includes('tbsp') ||
+      unit.includes('teaspoon') ||
+      unit.includes('tablespoon') ||
+      name.includes('salt') ||
+      name.includes('pepper') ||
+      name.includes('garlic powder') ||
+      name.includes('oregano') ||
+      name.includes('basil')
+    ) {
+      return {increment: 0.25, minValue: 0.25};
     }
-    
+
     // Liquids (cups, ml, liters)
-    if (unit.includes('cup') || unit.includes('ml') || unit.includes('liter') || 
-        unit.includes('fluid') || name.includes('milk') || name.includes('water') ||
-        name.includes('oil') || name.includes('juice')) {
-      return { increment: 0.25, minValue: 0.25 };
+    if (
+      unit.includes('cup') ||
+      unit.includes('ml') ||
+      unit.includes('liter') ||
+      unit.includes('fluid') ||
+      name.includes('milk') ||
+      name.includes('water') ||
+      name.includes('oil') ||
+      name.includes('juice')
+    ) {
+      return {increment: 0.25, minValue: 0.25};
     }
-    
+
     // Cheese and dairy (smaller portions)
-    if (name.includes('cheese') || name.includes('butter') || name.includes('cream') ||
-        name.includes('yogurt') || unit.includes('slice')) {
-      return { increment: 0.5, minValue: 0.5 };
+    if (
+      name.includes('cheese') ||
+      name.includes('butter') ||
+      name.includes('cream') ||
+      name.includes('yogurt') ||
+      unit.includes('slice')
+    ) {
+      return {increment: 0.5, minValue: 0.5};
     }
-    
+
     // Default for unknown items
-    return { increment: 0.5, minValue: 0.5 };
+    return {increment: 0.5, minValue: 0.5};
   };
 
-  const handleQuantityChange = (ingredientId: string, action: 'increase' | 'decrease') => {
-    setIngredients(ingredients.map(ing => {
-      if (ing.id === ingredientId) {
-        const currentQty = parseFloat(ing.quantity || '1');
-        const { increment, minValue } = getSmartIncrement(ing);
-        let newQty;
-        
-        if (action === 'increase') {
-          newQty = currentQty + increment;
-        } else {
-          newQty = Math.max(minValue, currentQty - increment);
+  const handleQuantityChange = (
+    ingredientId: string,
+    action: 'increase' | 'decrease',
+  ) => {
+    setIngredients(
+      ingredients.map(ing => {
+        if (ing.id === ingredientId) {
+          const currentQty = parseFloat(ing.quantity || '1');
+          const {increment, minValue} = getSmartIncrement(ing);
+          let newQty;
+
+          if (action === 'increase') {
+            newQty = currentQty + increment;
+          } else {
+            newQty = Math.max(minValue, currentQty - increment);
+          }
+
+          // Round to avoid floating point precision issues
+          newQty = Math.round(newQty * 100) / 100;
+
+          return {
+            ...ing,
+            quantity: newQty.toString(),
+          };
         }
-        
-        // Round to avoid floating point precision issues
-        newQty = Math.round(newQty * 100) / 100;
-        
-        return {
-          ...ing,
-          quantity: newQty.toString()
-        };
-      }
-      return ing;
-    }));
-    
+        return ing;
+      }),
+    );
+
     // Haptic feedback
     ReactNativeHapticFeedback.trigger('impactLight');
   };
@@ -420,7 +538,7 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
   const handleRemoveIngredient = (id: string) => {
     // Haptic feedback
     ReactNativeHapticFeedback.trigger('impactLight');
-    
+
     setIngredients(ingredients.filter(item => item.id !== id));
   };
 
@@ -428,7 +546,7 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
     Alert.prompt(
       'Add Ingredient',
       'What ingredient would you like to add?',
-      async (text) => {
+      async text => {
         if (text) {
           try {
             // Animate add button
@@ -444,33 +562,35 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
                 useNativeDriver: true,
               }),
             ]).start();
-            
+
             // Haptic feedback
             ReactNativeHapticFeedback.trigger('impactMedium');
-            
+
             console.log(`🔍 Searching for ingredient: ${text}`);
-            
+
             // Search for the ingredient in USDA database
             const response = await ingredientService.searchIngredients(text, 1);
-            
+
             let newIngredient: Ingredient;
-            
+
             if (response.success && response.data && response.data.length > 0) {
               const foundIngredient = response.data[0];
               console.log('✅ Found ingredient in database:', foundIngredient);
-              
+
               newIngredient = {
                 id: foundIngredient.id || Date.now().toString(),
                 name: foundIngredient.name || text,
                 confidence: 1.0, // User-added = 100% confidence
                 emoji: getEmojiForIngredient(foundIngredient.name || text),
               };
-              
+
               // Award XP for finding real ingredient
               await addXP(5, 'ADD_REAL_INGREDIENT');
             } else {
-              console.log('⚠️ Ingredient not found in database, adding as custom');
-              
+              console.log(
+                '⚠️ Ingredient not found in database, adding as custom',
+              );
+
               newIngredient = {
                 id: Date.now().toString(),
                 name: text,
@@ -478,18 +598,17 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
                 emoji: getEmojiForIngredient(text),
               };
             }
-            
+
             setIngredients([...ingredients, newIngredient]);
-            
+
             // Show confetti for 5+ ingredients
             if (ingredients.length >= 4) {
               setShowConfetti(true);
               setTimeout(() => setShowConfetti(false), 2000);
             }
-            
           } catch (error) {
             console.error('❌ Error adding ingredient:', error);
-            
+
             // Fallback to basic add
             const newIngredient: Ingredient = {
               id: Date.now().toString(),
@@ -506,12 +625,15 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
 
   const handleContinue = () => {
     if (ingredients.length === 0) {
-      Alert.alert('No Ingredients', 'Please add at least one ingredient to continue.');
+      Alert.alert(
+        'No Ingredients',
+        'Please add at least one ingredient to continue.',
+      );
       return;
     }
-    
+
     ReactNativeHapticFeedback.trigger('impactMedium');
-    
+
     navigation.navigate('Preferences', {
       ingredients,
       imageUri,
@@ -521,42 +643,121 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
   // Mystery reward system with proper probabilities
   const getRandomReward = () => {
     const random = Math.random();
-    
+
     // Ultra rare rewards (0.01% chance = 1 in 10,000)
     if (random < 0.0001) {
       const ultraRare = [
-        { type: 'subscription', value: '30_days', title: 'LEGENDARY!', description: 'Free month of premium features!', icon: '👑', color: '#FFD700' },
-        { type: 'xp', value: 1000, title: 'MEGA JACKPOT!', description: '1000 XP bonus!', icon: '🌟', color: '#FFD700' },
+        {
+          type: 'subscription',
+          value: '30_days',
+          title: 'LEGENDARY!',
+          description: 'Free month of premium features!',
+          icon: '👑',
+          color: '#FFD700',
+        },
+        {
+          type: 'xp',
+          value: 1000,
+          title: 'MEGA JACKPOT!',
+          description: '1000 XP bonus!',
+          icon: '🌟',
+          color: '#FFD700',
+        },
       ];
-      return { ...ultraRare[Math.floor(Math.random() * ultraRare.length)], rarity: 'legendary' };
+      return {
+        ...ultraRare[Math.floor(Math.random() * ultraRare.length)],
+        rarity: 'legendary',
+      };
     }
-    
+
     // Rare rewards (0.9% chance)
     if (random < 0.01) {
       const rare = [
-        { type: 'subscription', value: '7_days', title: 'Amazing Find!', description: 'Free week of premium features!', icon: '💎', color: '#9C27B0' },
-        { type: 'xp', value: 200, title: 'XP Bonanza!', description: '200 XP bonus!', icon: '✨', color: '#9C27B0' },
-        { type: 'badge', value: 'mystery_hunter', title: 'Mystery Hunter!', description: 'Rare badge unlocked!', icon: '🎖️', color: '#9C27B0' },
+        {
+          type: 'subscription',
+          value: '7_days',
+          title: 'Amazing Find!',
+          description: 'Free week of premium features!',
+          icon: '💎',
+          color: '#9C27B0',
+        },
+        {
+          type: 'xp',
+          value: 200,
+          title: 'XP Bonanza!',
+          description: '200 XP bonus!',
+          icon: '✨',
+          color: '#9C27B0',
+        },
+        {
+          type: 'badge',
+          value: 'mystery_hunter',
+          title: 'Mystery Hunter!',
+          description: 'Rare badge unlocked!',
+          icon: '🎖️',
+          color: '#9C27B0',
+        },
       ];
-      return { ...rare[Math.floor(Math.random() * rare.length)], rarity: 'rare' };
+      return {...rare[Math.floor(Math.random() * rare.length)], rarity: 'rare'};
     }
-    
+
     // Uncommon rewards (9% chance)
     if (random < 0.1) {
       const uncommon = [
-        { type: 'xp', value: 50, title: 'Nice Find!', description: '50 XP bonus!', icon: '⚡', color: '#2196F3' },
-        { type: 'recipe_unlock', value: 'premium_recipe', title: 'Recipe Unlocked!', description: 'Exclusive recipe revealed!', icon: '📜', color: '#2196F3' },
+        {
+          type: 'xp',
+          value: 50,
+          title: 'Nice Find!',
+          description: '50 XP bonus!',
+          icon: '⚡',
+          color: '#2196F3',
+        },
+        {
+          type: 'recipe_unlock',
+          value: 'premium_recipe',
+          title: 'Recipe Unlocked!',
+          description: 'Exclusive recipe revealed!',
+          icon: '📜',
+          color: '#2196F3',
+        },
       ];
-      return { ...uncommon[Math.floor(Math.random() * uncommon.length)], rarity: 'uncommon' };
+      return {
+        ...uncommon[Math.floor(Math.random() * uncommon.length)],
+        rarity: 'uncommon',
+      };
     }
-    
+
     // Common rewards (90% chance)
     const common = [
-      { type: 'xp', value: 10, title: 'Bonus XP!', description: '10 XP added!', icon: '🎯', color: '#4CAF50' },
-      { type: 'xp', value: 15, title: 'Small Bonus!', description: '15 XP reward!', icon: '🍀', color: '#4CAF50' },
-      { type: 'tip', value: 'cooking_tip', title: 'Pro Tip!', description: 'Cooking tip unlocked!', icon: '💡', color: '#4CAF50' },
+      {
+        type: 'xp',
+        value: 10,
+        title: 'Bonus XP!',
+        description: '10 XP added!',
+        icon: '🎯',
+        color: '#4CAF50',
+      },
+      {
+        type: 'xp',
+        value: 15,
+        title: 'Small Bonus!',
+        description: '15 XP reward!',
+        icon: '🍀',
+        color: '#4CAF50',
+      },
+      {
+        type: 'tip',
+        value: 'cooking_tip',
+        title: 'Pro Tip!',
+        description: 'Cooking tip unlocked!',
+        icon: '💡',
+        color: '#4CAF50',
+      },
     ];
-    return { ...common[Math.floor(Math.random() * common.length)], rarity: 'common' };
+    return {
+      ...common[Math.floor(Math.random() * common.length)],
+      rarity: 'common',
+    };
   };
 
   const handleMysteryBoxOpen = async () => {
@@ -564,14 +765,14 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
     setMysteryReward(reward);
     setShowMysteryBox(false);
     setShowRewardModal(true);
-    
+
     // Apply reward
     if (reward.type === 'xp' && typeof reward.value === 'number') {
       await addXP(reward.value, 'MYSTERY_BOX');
     } else if (reward.type === 'badge' && typeof reward.value === 'string') {
       await unlockBadge(reward.value);
     }
-    
+
     // Enhanced haptic feedback based on rarity
     if (reward.rarity === 'legendary') {
       ReactNativeHapticFeedback.trigger('notificationSuccess');
@@ -602,18 +803,20 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
         <View style={styles.statsRow}>
           <View style={styles.statItem}>
             <Star size={moderateScale(20)} color="#4CAF50" />
-            <Text style={styles.statValue}>{ingredients.filter(ing => ing.confidence >= 0.85).length}</Text>
+            <Text style={styles.statValue}>
+              {ingredients.filter(ing => ing.confidence >= 0.85).length}
+            </Text>
             <Text style={styles.statLabel}>High Confidence</Text>
           </View>
-          
+
           <View style={styles.statDivider} />
-          
+
           <View style={styles.statItem}>
             <Camera size={moderateScale(20)} color="#FFB800" />
             <Text style={styles.statValue}>{ingredients.length}</Text>
             <Text style={styles.statLabel}>Detected</Text>
           </View>
-          
+
           {/* Mystery box - only shows 25% of the time */}
           {showMysteryBox && (
             <View style={styles.statItem}>
@@ -628,67 +831,90 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
         </View>
 
         {/* Ingredients List - Now the main focus */}
-        <ScrollView 
+        <ScrollView
           style={styles.ingredientsScrollView}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.ingredientsContent}>
-          
           {ingredients.map((ingredient, index) => (
-            <Animated.View 
-              key={ingredient.id} 
+            <Animated.View
+              key={ingredient.id}
               style={[
                 styles.ingredientCard,
                 {
                   opacity: new Animated.Value(1),
-                  transform: [{
-                    translateX: new Animated.Value(0),
-                  }],
+                  transform: [
+                    {
+                      translateX: new Animated.Value(0),
+                    },
+                  ],
                 },
-              ]}
-            >
+              ]}>
               <View style={styles.ingredientLeft}>
-                <Animated.Text style={[styles.ingredientEmoji, {
-                  transform: [{scale: index === ingredients.length - 1 ? addAnimScale : 1}]
-                }]}>
+                <Animated.Text
+                  style={[
+                    styles.ingredientEmoji,
+                    {
+                      transform: [
+                        {
+                          scale:
+                            index === ingredients.length - 1 ? addAnimScale : 1,
+                        },
+                      ],
+                    },
+                  ]}>
                   {ingredient.emoji}
                 </Animated.Text>
                 <View style={styles.ingredientInfo}>
                   <View style={styles.ingredientNameRow}>
                     <Text style={styles.ingredientName}>{ingredient.name}</Text>
                     {ingredient.variety && (
-                      <Text style={styles.ingredientVariety}>({ingredient.variety})</Text>
+                      <Text style={styles.ingredientVariety}>
+                        ({ingredient.variety})
+                      </Text>
                     )}
                   </View>
-                  
+
                   {/* Quantity Row with editing */}
                   <View style={styles.quantityRow}>
-                    <TouchableOpacity 
+                    <TouchableOpacity
                       style={styles.quantityButton}
-                      onPress={() => handleQuantityChange(ingredient.id, 'decrease')}>
+                      onPress={() =>
+                        handleQuantityChange(ingredient.id, 'decrease')
+                      }>
                       <Text style={styles.quantityButtonText}>−</Text>
                     </TouchableOpacity>
                     <Text style={styles.quantityText}>
                       {ingredient.quantity || '1'} {ingredient.unit || 'unit'}
                     </Text>
-                    <TouchableOpacity 
+                    <TouchableOpacity
                       style={styles.quantityButton}
-                      onPress={() => handleQuantityChange(ingredient.id, 'increase')}>
+                      onPress={() =>
+                        handleQuantityChange(ingredient.id, 'increase')
+                      }>
                       <Text style={styles.quantityButtonText}>+</Text>
                     </TouchableOpacity>
                   </View>
-                  
+
                   {/* Individual Confidence Bar with Color */}
                   <View style={styles.confidenceContainer}>
                     <View style={styles.confidenceBar}>
-                      <View style={[
-                        styles.confidenceFill, 
-                        {
-                          width: `${ingredient.confidence * 100}%`,
-                          backgroundColor: getConfidenceColor(ingredient.confidence)
-                        }
-                      ]} />
+                      <View
+                        style={[
+                          styles.confidenceFill,
+                          {
+                            width: `${ingredient.confidence * 100}%`,
+                            backgroundColor: getConfidenceColor(
+                              ingredient.confidence,
+                            ),
+                          },
+                        ]}
+                      />
                     </View>
-                    <Text style={[styles.confidenceText, {color: getConfidenceColor(ingredient.confidence)}]}>
+                    <Text
+                      style={[
+                        styles.confidenceText,
+                        {color: getConfidenceColor(ingredient.confidence)},
+                      ]}>
                       {Math.round(ingredient.confidence * 100)}%
                     </Text>
                   </View>
@@ -704,36 +930,42 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
 
           {/* Add Ingredient Button */}
           <Animated.View style={{transform: [{scale: addAnimScale}]}}>
-            <TouchableOpacity style={styles.addButton} onPress={handleAddIngredient}>
+            <TouchableOpacity
+              style={styles.addButton}
+              onPress={handleAddIngredient}>
               <Plus size={moderateScale(20)} color="#4CAF50" />
               <Text style={styles.addButtonText}>Add Ingredient</Text>
             </TouchableOpacity>
           </Animated.View>
-          
+
           {/* Fun tip */}
           {ingredients.length < 3 && (
             <View style={styles.tipContainer}>
-              <Text style={styles.tipText}>💡 Add at least 3 ingredients for best results!</Text>
+              <Text style={styles.tipText}>
+                💡 Add at least 3 ingredients for best results!
+              </Text>
             </View>
           )}
         </ScrollView>
 
         {/* Continue Button */}
         <View style={styles.bottomContainer}>
-          <TouchableOpacity style={styles.continueButton} onPress={handleContinue}>
+          <TouchableOpacity
+            style={styles.continueButton}
+            onPress={handleContinue}>
             <Text style={styles.continueButtonText}>Generate Recipes</Text>
             <Star size={moderateScale(18)} color="#F8F8FF" />
           </TouchableOpacity>
         </View>
       </View>
-      
+
       {/* Confetti effect placeholder */}
       {showConfetti && (
         <View style={styles.confettiOverlay}>
           <Text style={styles.confettiText}>🎉 Great variety! 🎉</Text>
         </View>
       )}
-      
+
       {/* AI Analysis Loading Animation */}
       <LoadingAnimation visible={loading} variant="scanning" />
 
@@ -744,20 +976,37 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
         animationType="fade"
         onRequestClose={() => setShowRewardModal(false)}>
         <View style={styles.modalOverlay}>
-          <View style={[styles.rewardModal, { borderColor: mysteryReward?.color || '#4CAF50' }]}>
-            <View style={[styles.rewardHeader, { backgroundColor: mysteryReward?.color || '#4CAF50' }]}>
-              <Text style={styles.rewardRarity}>{mysteryReward?.rarity?.toUpperCase()}</Text>
+          <View
+            style={[
+              styles.rewardModal,
+              {borderColor: mysteryReward?.color || '#4CAF50'},
+            ]}>
+            <View
+              style={[
+                styles.rewardHeader,
+                {backgroundColor: mysteryReward?.color || '#4CAF50'},
+              ]}>
+              <Text style={styles.rewardRarity}>
+                {mysteryReward?.rarity?.toUpperCase()}
+              </Text>
               <Text style={styles.rewardIcon}>{mysteryReward?.icon}</Text>
             </View>
             <View style={styles.rewardContent}>
-              <Text style={[styles.rewardTitle, { color: mysteryReward?.color || '#4CAF50' }]}>
+              <Text
+                style={[
+                  styles.rewardTitle,
+                  {color: mysteryReward?.color || '#4CAF50'},
+                ]}>
                 {mysteryReward?.title}
               </Text>
               <Text style={styles.rewardDescription}>
                 {mysteryReward?.description}
               </Text>
               <TouchableOpacity
-                style={[styles.collectButton, { backgroundColor: mysteryReward?.color || '#4CAF50' }]}
+                style={[
+                  styles.collectButton,
+                  {backgroundColor: mysteryReward?.color || '#4CAF50'},
+                ]}
                 onPress={() => setShowRewardModal(false)}>
                 <Text style={styles.collectButtonText}>Collect!</Text>
                 <Star size={16} color="#FFFFFF" />

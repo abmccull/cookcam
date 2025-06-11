@@ -31,7 +31,13 @@ import {
   Clock,
 } from 'lucide-react-native';
 import {useAuth} from '../context/AuthContext';
-import {scale, verticalScale, moderateScale, responsive, isSmallScreen} from '../utils/responsive';
+import {
+  scale,
+  verticalScale,
+  moderateScale,
+  responsive,
+  isSmallScreen,
+} from '../utils/responsive';
 import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
 import ChefBadge from '../components/ChefBadge';
 import {useGamification, XP_VALUES} from '../context/GamificationContext';
@@ -70,24 +76,25 @@ const CreatorScreen = ({navigation}: {navigation: any}) => {
     totalClicks: 1250,
     signUps: 89,
     paidSubscribers: 45,
-    monthlyRevenue: 225.50,
+    monthlyRevenue: 225.5,
     currentTier: 1,
     totalSubscribers: 45,
   });
-  
+
   // Recipe performance predictions
   const [recipePredictions] = useState([
     {title: 'Viral Pasta Recipe', predictedViews: '10K-15K', confidence: 92},
     {title: 'Quick Breakfast Bowl', predictedViews: '5K-8K', confidence: 87},
     {title: 'Healthy Smoothie', predictedViews: '3K-5K', confidence: 81},
   ]);
-  
+
   // Creator tips
   const creatorTips: CreatorTip[] = [
     {
       id: '1',
       title: 'Post at Peak Times',
-      description: 'Share recipes between 6-8 PM when most users are planning dinner',
+      description:
+        'Share recipes between 6-8 PM when most users are planning dinner',
       icon: Clock,
       category: 'growth',
     },
@@ -168,13 +175,15 @@ const CreatorScreen = ({navigation}: {navigation: any}) => {
     },
   ];
 
-  const currentTierData = tiers.find(t => t.id === creatorStats.currentTier) || tiers[0];
+  const currentTierData =
+    tiers.find(t => t.id === creatorStats.currentTier) || tiers[0];
   const nextTier = tiers.find(t => t.id === creatorStats.currentTier + 1);
-  
+
   // Calculate progress to next tier
-  const progressToNext = nextTier 
-    ? ((creatorStats.totalSubscribers - currentTierData.minSubscribers) / 
-       (nextTier.minSubscribers - currentTierData.minSubscribers)) * 100
+  const progressToNext = nextTier
+    ? ((creatorStats.totalSubscribers - currentTierData.minSubscribers) /
+        (nextTier.minSubscribers - currentTierData.minSubscribers)) *
+      100
     : 100;
 
   useEffect(() => {
@@ -192,7 +201,7 @@ const CreatorScreen = ({navigation}: {navigation: any}) => {
         useNativeDriver: true,
       }),
     ]).start();
-    
+
     // Pulse animation
     Animated.loop(
       Animated.sequence([
@@ -208,7 +217,7 @@ const CreatorScreen = ({navigation}: {navigation: any}) => {
         }),
       ]),
     ).start();
-    
+
     // Animate progress bar
     Animated.timing(progressAnim, {
       toValue: progressToNext,
@@ -236,24 +245,31 @@ const CreatorScreen = ({navigation}: {navigation: any}) => {
       console.error(error);
     }
   };
-  
+
   const handleBecomeCreator = async () => {
     ReactNativeHapticFeedback.trigger('impactMedium');
-    
+
     // Navigate to proper creator onboarding flow
     navigation.navigate('CreatorOnboarding', {
-      returnToTab: 'Creator'
+      returnToTab: 'Creator',
     });
   };
 
   const calculateConversionRate = () => {
-    if (creatorStats.totalClicks === 0) return '0';
+    if (creatorStats.totalClicks === 0) {
+      return '0';
+    }
     return ((creatorStats.signUps / creatorStats.totalClicks) * 100).toFixed(1);
   };
 
   const calculatePaidRate = () => {
-    if (creatorStats.signUps === 0) return '0';
-    return ((creatorStats.paidSubscribers / creatorStats.signUps) * 100).toFixed(1);
+    if (creatorStats.signUps === 0) {
+      return '0';
+    }
+    return (
+      (creatorStats.paidSubscribers / creatorStats.signUps) *
+      100
+    ).toFixed(1);
   };
 
   // If not a creator, show the journey start
@@ -261,7 +277,8 @@ const CreatorScreen = ({navigation}: {navigation: any}) => {
     return (
       <View style={styles.container}>
         <ScrollView showsVerticalScrollIndicator={false}>
-          <Animated.View style={{opacity: fadeAnim, transform: [{translateY: slideAnim}]}}>
+          <Animated.View
+            style={{opacity: fadeAnim, transform: [{translateY: slideAnim}]}}>
             {/* Header */}
             <View style={styles.header}>
               <Text style={styles.headerTitle}>Become a Creator 🚀</Text>
@@ -269,20 +286,24 @@ const CreatorScreen = ({navigation}: {navigation: any}) => {
                 Turn your recipes into revenue
               </Text>
             </View>
-            
+
             {/* Hero Card */}
-            <Animated.View style={[styles.heroCard, {transform: [{scale: pulseAnim}]}]}>
+            <Animated.View
+              style={[styles.heroCard, {transform: [{scale: pulseAnim}]}]}>
               <ChefHat size={moderateScale(64)} color="#FF6B35" />
               <Text style={styles.heroTitle}>Start Your Creator Journey</Text>
               <Text style={styles.heroSubtitle}>
-                Share your culinary creativity and earn money doing what you love!
+                Share your culinary creativity and earn money doing what you
+                love!
               </Text>
-              <TouchableOpacity style={styles.startButton} onPress={handleBecomeCreator}>
+              <TouchableOpacity
+                style={styles.startButton}
+                onPress={handleBecomeCreator}>
                 <Play size={moderateScale(20)} color="#F8F8FF" />
                 <Text style={styles.startButtonText}>Become a Creator</Text>
               </TouchableOpacity>
             </Animated.View>
-            
+
             {/* Benefits */}
             <View style={styles.benefitsSection}>
               <Text style={styles.sectionTitle}>Creator Benefits ✨</Text>
@@ -299,7 +320,9 @@ const CreatorScreen = ({navigation}: {navigation: any}) => {
                 <View style={styles.benefitItem}>
                   <Target size={moderateScale(24)} color="#FF6B35" />
                   <View style={styles.benefitText}>
-                    <Text style={styles.benefitTitle}>Performance Insights</Text>
+                    <Text style={styles.benefitTitle}>
+                      Performance Insights
+                    </Text>
                     <Text style={styles.benefitDescription}>
                       AI-powered predictions for your recipes
                     </Text>
@@ -325,10 +348,12 @@ const CreatorScreen = ({navigation}: {navigation: any}) => {
                 </View>
               </View>
             </View>
-            
+
             {/* Success Stories */}
             <View style={styles.successSection}>
-              <Text style={styles.sectionTitle}>Creator Success Stories 🌟</Text>
+              <Text style={styles.sectionTitle}>
+                Creator Success Stories 🌟
+              </Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                 <View style={styles.successCard}>
                   <Text style={styles.successQuote}>
@@ -359,26 +384,34 @@ const CreatorScreen = ({navigation}: {navigation: any}) => {
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Creator Dashboard 💚</Text>
-          <Text style={styles.headerSubtitle}>
-            Welcome back, Creator!
-          </Text>
+          <Text style={styles.headerSubtitle}>Welcome back, Creator!</Text>
         </View>
 
         {/* Current Tier Card */}
-        <Animated.View style={[styles.tierCard, {borderColor: currentTierData.color, opacity: fadeAnim}]}>
+        <Animated.View
+          style={[
+            styles.tierCard,
+            {borderColor: currentTierData.color, opacity: fadeAnim},
+          ]}>
           <View style={styles.tierHeader}>
             <View style={styles.tierInfo}>
-              <ChefBadge tier={creatorStats.currentTier as 1 | 2 | 3 | 4 | 5} size="large" />
+              <ChefBadge
+                tier={creatorStats.currentTier as 1 | 2 | 3 | 4 | 5}
+                size="large"
+              />
               <View style={styles.tierTextInfo}>
                 <Text style={styles.tierTitle}>{currentTierData.title}</Text>
-                <Text style={[styles.tierRevenue, {color: currentTierData.color}]}>
+                <Text
+                  style={[styles.tierRevenue, {color: currentTierData.color}]}>
                   {currentTierData.revenueShare}% Revenue Share
                 </Text>
               </View>
             </View>
             <View style={styles.subscriberBadge}>
               <Users size={moderateScale(16)} color="#666" />
-              <Text style={styles.subscriberCount}>{creatorStats.totalSubscribers}</Text>
+              <Text style={styles.subscriberCount}>
+                {creatorStats.totalSubscribers}
+              </Text>
             </View>
           </View>
 
@@ -386,13 +419,15 @@ const CreatorScreen = ({navigation}: {navigation: any}) => {
           {nextTier && (
             <View style={styles.progressSection}>
               <View style={styles.progressHeader}>
-                <Text style={styles.progressLabel}>Progress to {nextTier.title}</Text>
+                <Text style={styles.progressLabel}>
+                  Progress to {nextTier.title}
+                </Text>
                 <Text style={styles.progressText}>
                   {creatorStats.totalSubscribers} / {nextTier.minSubscribers}
                 </Text>
               </View>
               <View style={styles.progressBar}>
-                <Animated.View 
+                <Animated.View
                   style={[
                     styles.progressFill,
                     {
@@ -401,17 +436,18 @@ const CreatorScreen = ({navigation}: {navigation: any}) => {
                         outputRange: ['0%', '100%'],
                       }),
                       backgroundColor: nextTier.color,
-                    }
-                  ]} 
+                    },
+                  ]}
                 />
               </View>
               <Text style={styles.progressHint}>
-                {nextTier.minSubscribers - creatorStats.totalSubscribers} more subscribers to unlock {nextTier.revenueShare}% revenue share!
+                {nextTier.minSubscribers - creatorStats.totalSubscribers} more
+                subscribers to unlock {nextTier.revenueShare}% revenue share!
               </Text>
             </View>
           )}
         </Animated.View>
-        
+
         {/* Recipe Performance Predictions */}
         <View style={styles.predictionsSection}>
           <Text style={styles.sectionTitle}>Recipe Predictions 🔮</Text>
@@ -422,11 +458,15 @@ const CreatorScreen = ({navigation}: {navigation: any}) => {
                   <Text style={styles.predictionTitle}>{prediction.title}</Text>
                   <View style={styles.predictionStats}>
                     <TrendingUp size={moderateScale(14)} color="#FF6B35" />
-                    <Text style={styles.predictionViews}>{prediction.predictedViews} views</Text>
+                    <Text style={styles.predictionViews}>
+                      {prediction.predictedViews} views
+                    </Text>
                   </View>
                 </View>
                 <View style={styles.predictionConfidence}>
-                  <Text style={styles.confidenceValue}>{prediction.confidence}%</Text>
+                  <Text style={styles.confidenceValue}>
+                    {prediction.confidence}%
+                  </Text>
                   <Text style={styles.confidenceLabel}>confidence</Text>
                 </View>
               </View>
@@ -438,10 +478,14 @@ const CreatorScreen = ({navigation}: {navigation: any}) => {
         <View style={styles.codeSection}>
           <Text style={styles.sectionTitle}>Your Creator Link 🔗</Text>
           <View style={styles.codeCard}>
-            <Text style={styles.codeLabel}>Share this code with your audience:</Text>
+            <Text style={styles.codeLabel}>
+              Share this code with your audience:
+            </Text>
             <View style={styles.codeContainer}>
               <Text style={styles.codeText}>{creatorStats.creatorCode}</Text>
-              <TouchableOpacity style={styles.copyButton} onPress={handleCopyCode}>
+              <TouchableOpacity
+                style={styles.copyButton}
+                onPress={handleCopyCode}>
                 <Copy size={moderateScale(18)} color="#4CAF50" />
               </TouchableOpacity>
             </View>
@@ -461,27 +505,32 @@ const CreatorScreen = ({navigation}: {navigation: any}) => {
                 <TrendingUp size={moderateScale(20)} color="#FF6B35" />
                 <Text style={styles.statLabel}>Total Clicks</Text>
               </View>
-              <Text style={styles.statValue}>{creatorStats.totalClicks.toLocaleString()}</Text>
+              <Text style={styles.statValue}>
+                {creatorStats.totalClicks.toLocaleString()}
+              </Text>
             </View>
-            
             <View style={styles.statCard}>
               <View style={styles.statHeader}>
                 <Users size={moderateScale(20)} color="#9C27B0" />
                 <Text style={styles.statLabel}>Sign-ups</Text>
               </View>
               <Text style={styles.statValue}>{creatorStats.signUps}</Text>
-              <Text style={styles.statSubtext}>{calculateConversionRate()}% conversion</Text>
+              <Text style={styles.statSubtext}>
+                {calculateConversionRate()}% conversion
+              </Text>
             </View>
-            
             <View style={styles.statCard}>
               <View style={styles.statHeader}>
                 <Award size={moderateScale(20)} color="#4CAF50" />
                 <Text style={styles.statLabel}>Paid Subs</Text>
               </View>
-              <Text style={styles.statValue}>{creatorStats.paidSubscribers}</Text>
-              <Text style={styles.statSubtext}>{calculatePaidRate()}% paid</Text>
+              <Text style={styles.statValue}>
+                {creatorStats.paidSubscribers}
+              </Text>
+              <Text style={styles.statSubtext}>
+                {calculatePaidRate()}% paid
+              </Text>
             </View>
-            
             <View style={[styles.statCard, styles.revenueCard]}>
               <View style={styles.statHeader}>
                 <DollarSign size={moderateScale(20)} color="#FFB800" />
@@ -499,26 +548,35 @@ const CreatorScreen = ({navigation}: {navigation: any}) => {
         <View style={styles.tiersSection}>
           <View style={styles.tiersHeader}>
             <Text style={styles.sectionTitle}>Chef Tiers 👨‍🍳</Text>
-            <TouchableOpacity onPress={() => Alert.alert('Revenue Share Program', 'Earn commission on every subscriber you bring to CookCam! The more subscribers you bring, the higher your revenue share percentage.')}>
+            <TouchableOpacity
+              onPress={() =>
+                Alert.alert(
+                  'Revenue Share Program',
+                  'Earn commission on every subscriber you bring to CookCam! The more subscribers you bring, the higher your revenue share percentage.',
+                )
+              }>
               <Info size={moderateScale(20)} color="#8E8E93" />
             </TouchableOpacity>
           </View>
-          
+
           {tiers.map((tier, index) => (
-            <View 
-              key={tier.id} 
+            <View
+              key={tier.id}
               style={[
                 styles.tierItem,
                 tier.id === currentTierData.id && styles.currentTierItem,
                 !tier.unlocked && styles.lockedTierItem,
-              ]}
-            >
+              ]}>
               <View style={styles.tierItemLeft}>
                 <ChefBadge tier={tier.id as 1 | 2 | 3 | 4 | 5} size="small" />
                 <View style={styles.tierItemInfo}>
                   <Text style={styles.tierItemTitle}>{tier.title}</Text>
                   <Text style={styles.tierItemRange}>
-                    {tier.minSubscribers.toLocaleString()}{tier.maxSubscribers ? `-${tier.maxSubscribers.toLocaleString()}` : '+'} subscribers
+                    {tier.minSubscribers.toLocaleString()}
+                    {tier.maxSubscribers
+                      ? `-${tier.maxSubscribers.toLocaleString()}`
+                      : '+'}{' '}
+                    subscribers
                   </Text>
                 </View>
               </View>
@@ -538,7 +596,9 @@ const CreatorScreen = ({navigation}: {navigation: any}) => {
 
         {/* Creator Tips Section */}
         <View style={styles.tipsSection}>
-          <Text style={styles.sectionTitle}>Creator Tips & Best Practices 💡</Text>
+          <Text style={styles.sectionTitle}>
+            Creator Tips & Best Practices 💡
+          </Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             {creatorTips.map(tip => (
               <View key={tip.id} style={styles.tipCard}>
@@ -1024,4 +1084,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default CreatorScreen; 
+export default CreatorScreen;

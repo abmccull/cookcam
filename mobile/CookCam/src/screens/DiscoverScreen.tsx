@@ -10,7 +10,17 @@ import {
   Animated,
   Alert,
 } from 'react-native';
-import {Search, TrendingUp, Clock, ChefHat, Flame, Globe, Star, Gift, Brain} from 'lucide-react-native';
+import {
+  Search,
+  TrendingUp,
+  Clock,
+  ChefHat,
+  Flame,
+  Globe,
+  Star,
+  Gift,
+  Brain,
+} from 'lucide-react-native';
 import {useGamification, XP_VALUES} from '../context/GamificationContext';
 import {recipeService, ingredientService} from '../services/api';
 import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
@@ -35,7 +45,7 @@ const DiscoverScreen = ({navigation}: {navigation: any}) => {
   const [loading, setLoading] = useState(true);
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
-  
+
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -63,7 +73,7 @@ const DiscoverScreen = ({navigation}: {navigation: any}) => {
         useNativeDriver: true,
       }),
     ]).start();
-    
+
     // Pulse animation for trending
     Animated.loop(
       Animated.sequence([
@@ -79,7 +89,7 @@ const DiscoverScreen = ({navigation}: {navigation: any}) => {
         }),
       ]),
     ).start();
-    
+
     // Daily bonus pulse
     Animated.loop(
       Animated.sequence([
@@ -95,7 +105,7 @@ const DiscoverScreen = ({navigation}: {navigation: any}) => {
         }),
       ]),
     ).start();
-    
+
     // Check if daily bonus available
     checkDailyBonus();
   };
@@ -105,39 +115,37 @@ const DiscoverScreen = ({navigation}: {navigation: any}) => {
       console.log('🔥 Loading trending recipes...');
       setLoading(true);
       setError(null);
-      
+
       // Fetch trending/popular recipes from API
       const response = await recipeService.getRecipes({
         limit: 10,
-        search: 'trending'
+        search: 'trending',
       });
-      
+
       if (response.success && response.data) {
         console.log('✅ Trending recipes loaded:', response.data);
-        
+
         // Transform API data to our format
-        const recipes = response.data.recipes || [];
-        
-        if (recipes.length === 0) {
-          setError('No trending recipes found. Please check your connection and try again.');
-          return;
-        }
-        
-        const transformedRecipes: TrendingRecipe[] = recipes.map((recipe: any, index: number) => ({
-          id: recipe.id || `recipe-${index}`,
-          title: recipe.title || `Recipe ${index + 1}`,
-          creator: recipe.creator_name || `Chef ${index + 1}`,
-          views: recipe.view_count || 0,
-          prepTime: recipe.prep_time || 0,
-          trending: recipe.is_trending || false,
-          cuisine: recipe.cuisine || 'International',
-          difficulty: recipe.difficulty || 'Easy',
-        }));
-        
+        const transformedRecipes = response.data.map(
+          (recipe: any, index: number) => ({
+            id: recipe.id || `recipe-${index}`,
+            title: recipe.title || `Recipe ${index + 1}`,
+            creator: recipe.creator_name || `Chef ${index + 1}`,
+            views: recipe.view_count || 0,
+            prepTime: recipe.prep_time || 0,
+            trending: recipe.is_trending || false,
+            cuisine: recipe.cuisine || 'International',
+            difficulty: recipe.difficulty || 'Easy',
+          }),
+        );
+
         setTrendingRecipes(transformedRecipes);
       } else {
         console.error('❌ Failed to load trending recipes:', response.error);
-        setError(response.error || 'Failed to load trending recipes. Please try again.');
+        setError(
+          response.error ||
+            'Failed to load trending recipes. Please try again.',
+        );
       }
     } catch (error) {
       console.error('❌ Error loading trending recipes:', error);
@@ -148,66 +156,82 @@ const DiscoverScreen = ({navigation}: {navigation: any}) => {
   };
 
   const handleSearch = async () => {
-    if (!searchQuery.trim()) return;
-    
+    if (!searchQuery.trim()) {
+      return;
+    }
+
     try {
       console.log(`🔍 Searching for: ${searchQuery}`);
       setError(null);
-      
+
       // Search both recipes and ingredients
       const [recipeResponse, ingredientResponse] = await Promise.all([
         recipeService.getRecipes({search: searchQuery, limit: 5}),
-        ingredientService.searchIngredients(searchQuery, 5)
+        ingredientService.searchIngredients(searchQuery, 5),
       ]);
-      
+
       const results = [];
-      
+
       if (recipeResponse.success && recipeResponse.data?.recipes) {
-        results.push(...recipeResponse.data.recipes.map((r: any) => ({...r, type: 'recipe'})));
+        results.push(
+          ...recipeResponse.data.recipes.map((r: any) => ({
+            ...r,
+            type: 'recipe',
+          })),
+        );
       }
-      
+
       if (ingredientResponse.success && ingredientResponse.data) {
-        results.push(...ingredientResponse.data.map((i: any) => ({...i, type: 'ingredient'})));
+        results.push(
+          ...ingredientResponse.data.map((i: any) => ({
+            ...i,
+            type: 'ingredient',
+          })),
+        );
       }
-      
+
       if (results.length === 0) {
-        setError(`No results found for "${searchQuery}". Try different keywords.`);
+        setError(
+          `No results found for "${searchQuery}". Try different keywords.`,
+        );
       }
-      
+
       setSearchResults(results);
       console.log(`✅ Search found ${results.length} results`);
-      
     } catch (error) {
       console.error('❌ Search error:', error);
       setError('Search failed. Please try again.');
     }
   };
-  
+
   const checkDailyBonus = () => {
     // Check AsyncStorage for last claim date
     // For now, we'll just show it as available
     setDailyBonusClaimed(false);
   };
-  
+
   const claimDailyBonus = async () => {
     if (!dailyBonusClaimed) {
       ReactNativeHapticFeedback.trigger('notificationSuccess');
-      await addXP(XP_VALUES.DAILY_DISCOVERY_BONUS || 25, 'DAILY_DISCOVERY_BONUS');
+      await addXP(
+        XP_VALUES.DAILY_DISCOVERY_BONUS || 25,
+        'DAILY_DISCOVERY_BONUS',
+      );
       setDailyBonusClaimed(true);
-      
+
       // Save claim date to AsyncStorage
     }
   };
-  
+
   const handleTrendingRecipePress = async (recipe: TrendingRecipe) => {
     ReactNativeHapticFeedback.trigger('impactMedium');
-    
+
     // Award discovery XP if it's a new cuisine
     if (recipe.cuisine && recipe.cuisine !== selectedCuisine) {
       await addXP(10, 'DISCOVER_NEW_CUISINE');
       setSelectedCuisine(recipe.cuisine);
     }
-    
+
     // Navigate to recipe
     navigation.navigate('Home', {
       screen: 'CookMode',
@@ -216,14 +240,10 @@ const DiscoverScreen = ({navigation}: {navigation: any}) => {
   };
 
   const showErrorAlert = () => {
-    Alert.alert(
-      'Error',
-      error || 'Something went wrong',
-      [
-        { text: 'Try Again', onPress: loadTrendingRecipes },
-        { text: 'Cancel', style: 'cancel' }
-      ]
-    );
+    Alert.alert('Error', error || 'Something went wrong', [
+      {text: 'Try Again', onPress: loadTrendingRecipes},
+      {text: 'Cancel', style: 'cancel'},
+    ]);
   };
 
   return (
@@ -231,24 +251,33 @@ const DiscoverScreen = ({navigation}: {navigation: any}) => {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Discover 🌍</Text>
-        <Text style={styles.headerSubtitle}>Explore new cuisines and recipes</Text>
+        <Text style={styles.headerSubtitle}>
+          Explore new cuisines and recipes
+        </Text>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Daily Discovery Bonus */}
         {!dailyBonusClaimed && (
-          <Animated.View style={[styles.dailyBonusCard, {transform: [{scale: dailyBonusScale}]}]}>
-            <TouchableOpacity 
-              style={styles.dailyBonusContent} 
+          <Animated.View
+            style={[
+              styles.dailyBonusCard,
+              {transform: [{scale: dailyBonusScale}]},
+            ]}>
+            <TouchableOpacity
+              style={styles.dailyBonusContent}
               onPress={claimDailyBonus}
-              activeOpacity={0.8}
-            >
+              activeOpacity={0.8}>
               <Gift size={24} color="#FFB800" />
               <View style={styles.dailyBonusText}>
-                <Text style={styles.dailyBonusTitle}>Daily Discovery Bonus!</Text>
-                <Text style={styles.dailyBonusSubtitle}>Try a new recipe today for +25 XP</Text>
+                <Text style={styles.dailyBonusTitle}>
+                  Daily Discovery Bonus!
+                </Text>
+                <Text style={styles.dailyBonusSubtitle}>
+                  Try a new recipe today for +25 XP
+                </Text>
               </View>
-                              <Star size={20} color="#FFB800" />
+              <Star size={20} color="#FFB800" />
             </TouchableOpacity>
           </Animated.View>
         )}
@@ -271,7 +300,9 @@ const DiscoverScreen = ({navigation}: {navigation: any}) => {
         {error && (
           <View style={styles.errorContainer}>
             <Text style={styles.errorText}>{error}</Text>
-            <TouchableOpacity style={styles.retryButton} onPress={loadTrendingRecipes}>
+            <TouchableOpacity
+              style={styles.retryButton}
+              onPress={loadTrendingRecipes}>
               <Text style={styles.retryButtonText}>Retry</Text>
             </TouchableOpacity>
           </View>
@@ -284,7 +315,9 @@ const DiscoverScreen = ({navigation}: {navigation: any}) => {
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               {searchResults.map((result, index) => (
                 <TouchableOpacity key={index} style={styles.searchResultCard}>
-                  <Text style={styles.searchResultTitle}>{result.title || result.description}</Text>
+                  <Text style={styles.searchResultTitle}>
+                    {result.title || result.description}
+                  </Text>
                   <Text style={styles.searchResultType}>{result.type}</Text>
                 </TouchableOpacity>
               ))}
@@ -300,14 +333,20 @@ const DiscoverScreen = ({navigation}: {navigation: any}) => {
               <Text style={styles.seeAllText}>Refresh</Text>
             </TouchableOpacity>
           </View>
-          
+
           {loading ? (
             <View style={styles.loadingContainer}>
-              <Text style={styles.loadingText}>Loading trending recipes...</Text>
+              <Text style={styles.loadingText}>
+                Loading trending recipes...
+              </Text>
             </View>
           ) : error ? (
-            <TouchableOpacity style={styles.errorRetryContainer} onPress={showErrorAlert}>
-              <Text style={styles.errorRetryText}>Tap to retry loading recipes</Text>
+            <TouchableOpacity
+              style={styles.errorRetryContainer}
+              onPress={showErrorAlert}>
+              <Text style={styles.errorRetryText}>
+                Tap to retry loading recipes
+              </Text>
             </TouchableOpacity>
           ) : (
             <ScrollView
@@ -323,24 +362,34 @@ const DiscoverScreen = ({navigation}: {navigation: any}) => {
                   <View style={styles.trendingImagePlaceholder}>
                     <ChefHat size={32} color="#E5E5E7" />
                     {recipe.trending && (
-                      <Animated.View style={[styles.trendingBadge, {transform: [{scale: pulseAnim}]}]}>
+                      <Animated.View
+                        style={[
+                          styles.trendingBadge,
+                          {transform: [{scale: pulseAnim}]},
+                        ]}>
                         <Flame size={12} color="#FF6B35" fill="#FF6B35" />
                         <Text style={styles.trendingBadgeText}>HOT</Text>
                       </Animated.View>
                     )}
                     <View style={styles.cuisineBadge}>
-                      <Text style={styles.cuisineBadgeText}>{recipe.cuisine}</Text>
+                      <Text style={styles.cuisineBadgeText}>
+                        {recipe.cuisine}
+                      </Text>
                     </View>
                   </View>
                   <View style={styles.trendingInfo}>
                     <Text style={styles.trendingTitle} numberOfLines={2}>
                       {recipe.title}
                     </Text>
-                    <Text style={styles.trendingCreator}>by {recipe.creator}</Text>
+                    <Text style={styles.trendingCreator}>
+                      by {recipe.creator}
+                    </Text>
                     <View style={styles.trendingStats}>
                       <View style={styles.stat}>
                         <TrendingUp size={12} color="#666" />
-                        <Text style={styles.statText}>{recipe.views.toLocaleString()}</Text>
+                        <Text style={styles.statText}>
+                          {recipe.views.toLocaleString()}
+                        </Text>
                       </View>
                       <View style={styles.stat}>
                         <Clock size={12} color="#666" />
@@ -601,4 +650,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default DiscoverScreen; 
+export default DiscoverScreen;

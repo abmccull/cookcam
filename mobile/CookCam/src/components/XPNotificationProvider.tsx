@@ -7,7 +7,9 @@ interface XPNotificationProviderProps {
   children: React.ReactNode;
 }
 
-const XPNotificationProvider: React.FC<XPNotificationProviderProps> = ({children}) => {
+const XPNotificationProvider: React.FC<XPNotificationProviderProps> = ({
+  children,
+}) => {
   const {
     xp,
     level,
@@ -35,4 +37,4 @@ const XPNotificationProvider: React.FC<XPNotificationProviderProps> = ({children
   );
 };
 
-export default XPNotificationProvider; 
+export default XPNotificationProvider;

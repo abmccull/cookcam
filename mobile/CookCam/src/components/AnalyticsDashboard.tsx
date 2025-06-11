@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, {useState, useEffect, useCallback} from 'react';
 import {
   View,
   Text,
@@ -9,11 +9,11 @@ import {
   RefreshControl,
   ActivityIndicator,
 } from 'react-native';
-import { cookCamApi } from '../services/cookCamApi';
-import { useSubscription } from '../context/SubscriptionContext';
-import { FeatureGate } from './FeatureGate';
+import {cookCamApi} from '../services/cookCamApi';
+import {useSubscription} from '../context/SubscriptionContext';
+import {FeatureGate} from './FeatureGate';
 
-const { width: screenWidth } = Dimensions.get('window');
+const {width: screenWidth} = Dimensions.get('window');
 
 // Types for dashboard data
 interface DashboardData {
@@ -29,9 +29,9 @@ interface DashboardData {
     recipeConversionRate: number;
   };
   charts: {
-    userGrowth: Array<{ date: string; count: number }>;
-    scanActivity: Array<{ date: string; count: number }>;
-    revenueGrowth: Array<{ date: string; amount: number }>;
+    userGrowth: Array<{date: string; count: number}>;
+    scanActivity: Array<{date: string; count: number}>;
+    revenueGrowth: Array<{date: string; amount: number}>;
   };
 }
 
@@ -45,21 +45,30 @@ interface MetricCardProps {
 }
 
 // Metric Card Component
-function MetricCard({ title, value, subtitle, trend, icon, color = '#007BFF' }: MetricCardProps) {
-  const trendColor = trend && trend > 0 ? '#28A745' : trend && trend < 0 ? '#DC3545' : '#6C757D';
-  const trendIcon = trend && trend > 0 ? '↗️' : trend && trend < 0 ? '↘️' : '➡️';
+function MetricCard({
+  title,
+  value,
+  subtitle,
+  trend,
+  icon,
+  color = '#007BFF',
+}: MetricCardProps) {
+  const trendColor =
+    trend && trend > 0 ? '#28A745' : trend && trend < 0 ? '#DC3545' : '#6C757D';
+  const trendIcon =
+    trend && trend > 0 ? '↗️' : trend && trend < 0 ? '↘️' : '➡️';
 
   return (
-    <View style={[styles.metricCard, { borderLeftColor: color }]}>
+    <View style={[styles.metricCard, {borderLeftColor: color}]}>
       <View style={styles.metricHeader}>
         <Text style={styles.metricTitle}>{title}</Text>
         {icon && <Text style={styles.metricIcon}>{icon}</Text>}
       </View>
-      <Text style={[styles.metricValue, { color }]}>{value}</Text>
+      <Text style={[styles.metricValue, {color}]}>{value}</Text>
       {subtitle && <Text style={styles.metricSubtitle}>{subtitle}</Text>}
       {trend !== undefined && (
         <View style={styles.trendContainer}>
-          <Text style={[styles.trendText, { color: trendColor }]}>
+          <Text style={[styles.trendText, {color: trendColor}]}>
             {trendIcon} {Math.abs(trend).toFixed(1)}%
           </Text>
         </View>
@@ -70,13 +79,18 @@ function MetricCard({ title, value, subtitle, trend, icon, color = '#007BFF' }: 
 
 // Simple Chart Component (you could replace with a proper charting library)
 interface SimpleChartProps {
-  data: Array<{ date: string; count?: number; amount?: number }>;
+  data: Array<{date: string; count?: number; amount?: number}>;
   title: string;
   color?: string;
   valueKey: 'count' | 'amount';
 }
 
-function SimpleChart({ data, title, color = '#007BFF', valueKey }: SimpleChartProps) {
+function SimpleChart({
+  data,
+  title,
+  color = '#007BFF',
+  valueKey,
+}: SimpleChartProps) {
   if (!data || data.length === 0) {
     return (
       <View style={styles.chartContainer}>
@@ -96,11 +110,14 @@ function SimpleChart({ data, title, color = '#007BFF', valueKey }: SimpleChartPr
     <View style={styles.chartContainer}>
       <Text style={styles.chartTitle}>{title}</Text>
       <View style={styles.chartArea}>
-        <View style={[styles.chart, { width: chartWidth, height: chartHeight }]}>
+        <View style={[styles.chart, {width: chartWidth, height: chartHeight}]}>
           {data.map((item, index) => {
-            const barHeight = maxValue > 0 ? ((item[valueKey] || 0) / maxValue) * chartHeight : 0;
+            const barHeight =
+              maxValue > 0
+                ? ((item[valueKey] || 0) / maxValue) * chartHeight
+                : 0;
             const barWidth = (chartWidth - 20) / data.length;
-            
+
             return (
               <View
                 key={index}
@@ -121,7 +138,10 @@ function SimpleChart({ data, title, color = '#007BFF', valueKey }: SimpleChartPr
         <View style={styles.chartLabels}>
           {data.slice(0, 5).map((item, index) => (
             <Text key={index} style={styles.chartLabel}>
-              {new Date(item.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+              {new Date(item.date).toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+              })}
             </Text>
           ))}
         </View>
@@ -138,13 +158,13 @@ export function AnalyticsDashboard() {
   const [period, setPeriod] = useState<'day' | 'week' | 'month'>('week');
   const [refreshing, setRefreshing] = useState(false);
 
-  const { isSubscribed } = useSubscription();
+  const {isSubscribed} = useSubscription();
 
   const loadDashboardData = useCallback(async () => {
     try {
       setError(null);
       const response = await cookCamApi.getAnalyticsDashboard(period);
-      
+
       if (response.success && response.data) {
         setData(response.data);
       } else {
@@ -169,8 +189,12 @@ export function AnalyticsDashboard() {
   }, [loadDashboardData]);
 
   const formatNumber = (num: number): string => {
-    if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
-    if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
+    if (num >= 1000000) {
+      return `${(num / 1000000).toFixed(1)}M`;
+    }
+    if (num >= 1000) {
+      return `${(num / 1000).toFixed(1)}K`;
+    }
     return num.toString();
   };
 
@@ -212,7 +236,9 @@ export function AnalyticsDashboard() {
       <View style={styles.container}>
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>❌ {error}</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={loadDashboardData}>
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={loadDashboardData}>
             <Text style={styles.retryButtonText}>Retry</Text>
           </TouchableOpacity>
         </View>
@@ -223,29 +249,28 @@ export function AnalyticsDashboard() {
   return (
     <ScrollView
       style={styles.container}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-    >
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+      }>
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>📊 Analytics Dashboard</Text>
-        
+
         {/* Period Selector */}
         <View style={styles.periodSelector}>
-          {['day', 'week', 'month'].map((p) => (
+          {['day', 'week', 'month'].map(p => (
             <TouchableOpacity
               key={p}
               style={[
                 styles.periodButton,
                 period === p && styles.periodButtonActive,
               ]}
-              onPress={() => setPeriod(p as 'day' | 'week' | 'month')}
-            >
+              onPress={() => setPeriod(p as 'day' | 'week' | 'month')}>
               <Text
                 style={[
                   styles.periodButtonText,
                   period === p && styles.periodButtonTextActive,
-                ]}
-              >
+                ]}>
                 {p.charAt(0).toUpperCase() + p.slice(1)}
               </Text>
             </TouchableOpacity>
@@ -269,7 +294,9 @@ export function AnalyticsDashboard() {
               value={formatNumber(data.activeUsers)}
               icon="🟢"
               color="#28A745"
-              subtitle={`${((data.activeUsers / data.totalUsers) * 100).toFixed(1)}% of total`}
+              subtitle={`${((data.activeUsers / data.totalUsers) * 100).toFixed(
+                1,
+              )}% of total`}
             />
             <MetricCard
               title="Total Scans"
@@ -319,21 +346,21 @@ export function AnalyticsDashboard() {
           {/* Charts */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>📊 Trends</Text>
-            
+
             <SimpleChart
               data={data.charts.userGrowth}
               title="User Growth"
               color="#007BFF"
               valueKey="count"
             />
-            
+
             <SimpleChart
               data={data.charts.scanActivity}
               title="Scan Activity"
               color="#FFC107"
               valueKey="count"
             />
-            
+
             <SimpleChart
               data={data.charts.revenueGrowth}
               title="Revenue Growth"
@@ -347,16 +374,37 @@ export function AnalyticsDashboard() {
             <Text style={styles.sectionTitle}>📋 Summary</Text>
             <View style={styles.summaryContainer}>
               <Text style={styles.summaryText}>
-                🎯 Your app has <Text style={styles.highlight}>{formatNumber(data.totalUsers)}</Text> total users
-                with <Text style={styles.highlight}>{formatNumber(data.activeUsers)}</Text> active this {period}.
+                🎯 Your app has{' '}
+                <Text style={styles.highlight}>
+                  {formatNumber(data.totalUsers)}
+                </Text>{' '}
+                total users with{' '}
+                <Text style={styles.highlight}>
+                  {formatNumber(data.activeUsers)}
+                </Text>{' '}
+                active this {period}.
               </Text>
               <Text style={styles.summaryText}>
-                📸 Users have completed <Text style={styles.highlight}>{formatNumber(data.totalScans)}</Text> ingredient scans,
-                generating <Text style={styles.highlight}>{formatNumber(data.totalRecipes)}</Text> recipes.
+                📸 Users have completed{' '}
+                <Text style={styles.highlight}>
+                  {formatNumber(data.totalScans)}
+                </Text>{' '}
+                ingredient scans, generating{' '}
+                <Text style={styles.highlight}>
+                  {formatNumber(data.totalRecipes)}
+                </Text>{' '}
+                recipes.
               </Text>
               <Text style={styles.summaryText}>
-                💵 Total revenue is <Text style={styles.highlight}>{formatCurrency(data.revenue)}</Text> with a 
-                growth rate of <Text style={styles.highlight}>{data.growthRate.toFixed(1)}%</Text>.
+                💵 Total revenue is{' '}
+                <Text style={styles.highlight}>
+                  {formatCurrency(data.revenue)}
+                </Text>{' '}
+                with a growth rate of{' '}
+                <Text style={styles.highlight}>
+                  {data.growthRate.toFixed(1)}%
+                </Text>
+                .
               </Text>
             </View>
           </View>
@@ -453,7 +501,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderLeftWidth: 4,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
@@ -510,7 +558,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
@@ -532,7 +580,7 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
@@ -580,7 +628,7 @@ const styles = StyleSheet.create({
     padding: 20,
     borderRadius: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
@@ -595,4 +643,4 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#007BFF',
   },
-}); 
+});

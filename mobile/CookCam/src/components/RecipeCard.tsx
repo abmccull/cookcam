@@ -1,10 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import {View, Text, StyleSheet, TouchableOpacity, Image} from 'react-native';
+import React, {useState, useEffect} from 'react';
+import {View, Text, TouchableOpacity, StyleSheet} from 'react-native';
 import {Heart, Clock, Flame, MessageCircle, Share2} from 'lucide-react-native';
-import {scale, verticalScale, moderateScale, responsive} from '../utils/responsive';
+import {
+  scale,
+  verticalScale,
+  moderateScale,
+  responsive,
+} from '../utils/responsive';
 import ChefBadge from './ChefBadge';
 import NutritionBadge from './NutritionBadge';
-import { recipeService } from '../services/api';
+import {recipeService} from '../services/api';
 
 interface NutritionData {
   calories: number;
@@ -65,8 +70,11 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
   const fetchNutritionData = async () => {
     try {
       setNutritionLoading(true);
-      const response = await recipeService.getRecipeNutrition(recipe.id, recipe.servings);
-      
+      const response = await recipeService.getRecipeNutrition(
+        recipe.id,
+        recipe.servings,
+      );
+
       if (response.success && response.data?.data?.per_serving) {
         setNutrition(response.data.data.per_serving);
       }
@@ -79,13 +87,16 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
   };
 
   return (
-    <TouchableOpacity style={styles.container} onPress={onPress} activeOpacity={0.9}>
+    <TouchableOpacity
+      style={styles.container}
+      onPress={onPress}
+      activeOpacity={0.9}>
       {/* Recipe Image */}
       <View style={styles.imageContainer}>
         <View style={styles.imagePlaceholder}>
           <Flame size={moderateScale(48)} color="#FF6B35" />
         </View>
-        
+
         {/* Creator info overlay */}
         <View style={styles.creatorOverlay}>
           <View style={styles.creatorInfo}>
@@ -105,37 +116,56 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
             <Clock size={moderateScale(14)} color="#F8F8FF" />
             <Text style={styles.timeText}>{recipe.cookTime} min</Text>
           </View>
-          <View style={[styles.difficultyBadge, {backgroundColor: difficultyColors[recipe.difficulty as keyof typeof difficultyColors]}]}>
+          <View
+            style={[
+              styles.difficultyBadge,
+              {
+                backgroundColor:
+                  difficultyColors[
+                    recipe.difficulty as keyof typeof difficultyColors
+                  ],
+              },
+            ]}>
             <Text style={styles.difficultyText}>{recipe.difficulty}</Text>
           </View>
           {/* Nutrition badge */}
           {showNutrition && nutrition && !nutritionLoading && (
-            <NutritionBadge nutrition={nutrition} servings={1} variant="compact" />
+            <NutritionBadge
+              nutrition={nutrition}
+              servings={1}
+              variant="compact"
+            />
           )}
         </View>
       </View>
 
       {/* Recipe Details */}
       <View style={styles.detailsContainer}>
-        <Text style={styles.recipeTitle} numberOfLines={2}>{recipe.title}</Text>
-        
+        <Text style={styles.recipeTitle} numberOfLines={2}>
+          {recipe.title}
+        </Text>
+
         {/* Detailed nutrition info */}
         {showNutrition && nutrition && !nutritionLoading && (
-          <NutritionBadge nutrition={nutrition} servings={1} variant="detailed" />
+          <NutritionBadge
+            nutrition={nutrition}
+            servings={1}
+            variant="detailed"
+          />
         )}
-        
+
         {/* Action buttons */}
         <View style={styles.actionsContainer}>
           <TouchableOpacity style={styles.actionButton} onPress={onLike}>
             <Heart size={moderateScale(20)} color="#E91E63" />
             <Text style={styles.actionText}>{recipe.likes}</Text>
           </TouchableOpacity>
-          
+
           <TouchableOpacity style={styles.actionButton} onPress={onComment}>
             <MessageCircle size={moderateScale(20)} color="#666" />
             <Text style={styles.actionText}>{recipe.comments}</Text>
           </TouchableOpacity>
-          
+
           <TouchableOpacity style={styles.actionButton} onPress={onShare}>
             <Share2 size={moderateScale(20)} color="#666" />
             <Text style={styles.actionText}>Share</Text>
@@ -269,4 +299,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default RecipeCard; 
+export default RecipeCard;

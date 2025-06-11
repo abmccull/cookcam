@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, {useState, useRef} from 'react';
 import {
   View,
   Text,
@@ -10,18 +10,24 @@ import {
   ActivityIndicator,
   Modal,
   Dimensions,
-  Platform,
   Share,
   Linking,
 } from 'react-native';
-import { Camera, X, Star, Trophy, Instagram, Facebook, Twitter, Share2, Copy, MessageCircle } from 'lucide-react-native';
+import {
+  Camera,
+  X,
+  Star,
+  Instagram,
+  MessageCircle,
+  Trophy,
+} from 'lucide-react-native';
 import {
   Camera as VisionCamera,
   useCameraPermission,
   useCameraDevice,
 } from 'react-native-vision-camera';
-import { recipeService } from '../services/api';
-import { useGamification, XP_VALUES } from '../context/GamificationContext';
+import {recipeService} from '../services/api';
+import {useGamification, XP_VALUES} from '../context/GamificationContext';
 import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
 
 interface RecipeCompletionPhotoProps {
@@ -32,7 +38,7 @@ interface RecipeCompletionPhotoProps {
   photoType?: 'completion' | 'process' | 'ingredients'; // Different photo types
 }
 
-const { width: screenWidth } = Dimensions.get('window');
+const {width: screenWidth} = Dimensions.get('window');
 
 // Social platforms configuration
 const SOCIAL_PLATFORMS = [
@@ -47,7 +53,7 @@ const SOCIAL_PLATFORMS = [
   {
     id: 'facebook',
     name: 'Facebook',
-    icon: Facebook,
+    icon: Instagram,
     color: '#1877F2',
     xp: XP_VALUES.SOCIAL_SHARE_FACEBOOK,
     action: 'facebook',
@@ -55,7 +61,7 @@ const SOCIAL_PLATFORMS = [
   {
     id: 'twitter',
     name: 'Twitter',
-    icon: Twitter,
+    icon: Instagram,
     color: '#1DA1F2',
     xp: XP_VALUES.SOCIAL_SHARE_TWITTER,
     action: 'twitter',
@@ -71,7 +77,7 @@ const SOCIAL_PLATFORMS = [
   {
     id: 'copy',
     name: 'Copy Link',
-    icon: Copy,
+    icon: Instagram,
     color: '#666',
     xp: XP_VALUES.SOCIAL_SHARE_COPY_LINK,
     action: 'copy',
@@ -85,10 +91,10 @@ const RecipeCompletionPhoto: React.FC<RecipeCompletionPhotoProps> = ({
   onClose,
   photoType = 'completion',
 }) => {
-  const { hasPermission, requestPermission } = useCameraPermission();
+  const {hasPermission, requestPermission} = useCameraPermission();
   const device = useCameraDevice('back');
   const camera = useRef<VisionCamera>(null);
-  const { addXP } = useGamification();
+  const {addXP} = useGamification();
 
   const [isVisible, setIsVisible] = useState(false);
   const [photoUri, setPhotoUri] = useState<string | null>(null);
@@ -131,7 +137,7 @@ const RecipeCompletionPhoto: React.FC<RecipeCompletionPhotoProps> = ({
       if (!granted) {
         Alert.alert(
           'Camera Permission',
-          'Camera access is needed to take photos of your recipe!'
+          'Camera access is needed to take photos of your recipe!',
         );
         return;
       }
@@ -148,7 +154,7 @@ const RecipeCompletionPhoto: React.FC<RecipeCompletionPhotoProps> = ({
 
     try {
       ReactNativeHapticFeedback.trigger('impactMedium');
-      
+
       const photo = await camera.current.takePhoto({
         qualityPrioritization: 'quality',
         flash: 'auto',
@@ -156,7 +162,7 @@ const RecipeCompletionPhoto: React.FC<RecipeCompletionPhotoProps> = ({
 
       setPhotoUri(`file://${photo.path}`);
       setShowCamera(false);
-      
+
       ReactNativeHapticFeedback.trigger('notificationSuccess');
     } catch (error) {
       console.error('Failed to take photo:', error);
@@ -179,15 +185,15 @@ const RecipeCompletionPhoto: React.FC<RecipeCompletionPhotoProps> = ({
       const response = await recipeService.uploadCompletionPhoto(
         recipeId,
         imageData,
-        description.trim() || undefined
+        description.trim() || undefined,
       );
 
       if (response.success) {
         ReactNativeHapticFeedback.trigger('notificationSuccess');
-        
+
         // Award XP based on photo type
         await addXP(config.xp, `${photoType.toUpperCase()}_PHOTO`);
-        
+
         setUploadedPhotoUrl(response.data?.photoUrl || photoUri);
         setShowSocialShare(true); // Show social sharing options
 
@@ -203,10 +209,12 @@ const RecipeCompletionPhoto: React.FC<RecipeCompletionPhotoProps> = ({
               text: 'Done',
               onPress: () => {
                 onPhotoUploaded?.(response.data?.photoUrl || photoUri);
-                if (!showSocialShare) handleClose();
+                if (!showSocialShare) {
+                  handleClose();
+                }
               },
             },
-          ]
+          ],
         );
       } else {
         throw new Error(response.error || 'Upload failed');
@@ -219,11 +227,13 @@ const RecipeCompletionPhoto: React.FC<RecipeCompletionPhotoProps> = ({
     }
   };
 
-  const handleSocialShare = async (platform: typeof SOCIAL_PLATFORMS[0]) => {
+  const handleSocialShare = async (platform: (typeof SOCIAL_PLATFORMS)[0]) => {
     try {
       const shareContent = {
         title: `Check out my ${recipeName}!`,
-        message: `Just made this amazing ${recipeName} using CookCam! ${description || '🍽️✨'}`,
+        message: `Just made this amazing ${recipeName} using CookCam! ${
+          description || '🍽️✨'
+        }`,
         url: uploadedPhotoUrl || `https://cookcam.app/recipe/${recipeId}`,
       };
 
@@ -232,7 +242,7 @@ const RecipeCompletionPhoto: React.FC<RecipeCompletionPhotoProps> = ({
       switch (platform.action) {
         case 'instagram-stories':
           // Open Instagram if available
-          const instagramUrl = `instagram://story-camera`;
+          const instagramUrl = 'instagram://story-camera';
           const canOpenInstagram = await Linking.canOpenURL(instagramUrl);
           if (canOpenInstagram) {
             await Linking.openURL(instagramUrl);
@@ -249,7 +259,9 @@ const RecipeCompletionPhoto: React.FC<RecipeCompletionPhotoProps> = ({
           break;
 
         case 'twitter':
-          const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareContent.message)}&url=${encodeURIComponent(shareContent.url)}`;
+          const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(
+            shareContent.message,
+          )}&url=${encodeURIComponent(shareContent.url)}`;
           const canOpenTwitter = await Linking.canOpenURL(twitterUrl);
           if (canOpenTwitter) {
             await Linking.openURL(twitterUrl);
@@ -261,7 +273,9 @@ const RecipeCompletionPhoto: React.FC<RecipeCompletionPhotoProps> = ({
           break;
 
         case 'whatsapp':
-          const whatsappUrl = `whatsapp://send?text=${encodeURIComponent(shareContent.message)}`;
+          const whatsappUrl = `whatsapp://send?text=${encodeURIComponent(
+            shareContent.message,
+          )}`;
           const canOpenWhatsApp = await Linking.canOpenURL(whatsappUrl);
           if (canOpenWhatsApp) {
             await Linking.openURL(whatsappUrl);
@@ -285,14 +299,14 @@ const RecipeCompletionPhoto: React.FC<RecipeCompletionPhotoProps> = ({
 
       if (success) {
         ReactNativeHapticFeedback.trigger('notificationSuccess');
-        
+
         // Award XP for social sharing
         await addXP(platform.xp, `SOCIAL_SHARE_${platform.id.toUpperCase()}`);
-        
+
         Alert.alert(
           '🎉 Shared Successfully!',
           `Thanks for sharing! +${platform.xp} XP earned`,
-          [{ text: 'Awesome!' }]
+          [{text: 'Awesome!'}],
         );
       }
     } catch (error) {
@@ -331,8 +345,7 @@ const RecipeCompletionPhoto: React.FC<RecipeCompletionPhotoProps> = ({
     <Modal
       visible={isVisible || showCamera || showSocialShare}
       animationType="slide"
-      presentationStyle="pageSheet"
-    >
+      presentationStyle="pageSheet">
       <View style={styles.container}>
         {showSocialShare ? (
           // Social sharing modal
@@ -350,7 +363,10 @@ const RecipeCompletionPhoto: React.FC<RecipeCompletionPhotoProps> = ({
             <View style={styles.socialShareContent}>
               <View style={styles.photoPreviewSmall}>
                 {uploadedPhotoUrl && (
-                  <Image source={{ uri: uploadedPhotoUrl }} style={styles.socialPreviewImage} />
+                  <Image
+                    source={{uri: uploadedPhotoUrl}}
+                    style={styles.socialPreviewImage}
+                  />
                 )}
               </View>
 
@@ -359,25 +375,32 @@ const RecipeCompletionPhoto: React.FC<RecipeCompletionPhotoProps> = ({
               </Text>
 
               <View style={styles.socialPlatforms}>
-                {SOCIAL_PLATFORMS.map((platform) => (
+                {SOCIAL_PLATFORMS.map(platform => (
                   <TouchableOpacity
                     key={platform.id}
-                    style={[styles.socialPlatformButton, { borderColor: platform.color }]}
-                    onPress={() => handleSocialShare(platform)}
-                  >
+                    style={[
+                      styles.socialPlatformButton,
+                      {borderColor: platform.color},
+                    ]}
+                    onPress={() => handleSocialShare(platform)}>
                     <platform.icon size={24} color={platform.color} />
-                    <Text style={styles.socialPlatformName}>{platform.name}</Text>
-                    <Text style={[styles.socialPlatformXP, { color: platform.color }]}>
+                    <Text style={styles.socialPlatformName}>
+                      {platform.name}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.socialPlatformXP,
+                        {color: platform.color},
+                      ]}>
                       +{platform.xp} XP
                     </Text>
                   </TouchableOpacity>
                 ))}
               </View>
 
-              <TouchableOpacity 
-                style={styles.skipSocialButton} 
-                onPress={() => setShowSocialShare(false)}
-              >
+              <TouchableOpacity
+                style={styles.skipSocialButton}
+                onPress={() => setShowSocialShare(false)}>
                 <Text style={styles.skipSocialText}>Skip for now</Text>
               </TouchableOpacity>
             </View>
@@ -392,10 +415,14 @@ const RecipeCompletionPhoto: React.FC<RecipeCompletionPhotoProps> = ({
               photo={true}
             />
             <View style={styles.cameraControls}>
-              <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={handleClose}>
                 <X size={24} color="#FFFFFF" />
               </TouchableOpacity>
-              <TouchableOpacity style={styles.captureButton} onPress={handleTakePhoto}>
+              <TouchableOpacity
+                style={styles.captureButton}
+                onPress={handleTakePhoto}>
                 <View style={styles.captureButtonInner} />
               </TouchableOpacity>
               <View style={styles.placeholder} />
@@ -414,21 +441,25 @@ const RecipeCompletionPhoto: React.FC<RecipeCompletionPhotoProps> = ({
             {!photoUri ? (
               <View style={styles.photoSelectContainer}>
                 <Text style={styles.subtitle}>{config.subtitle}</Text>
-                
-                <TouchableOpacity style={styles.cameraButton} onPress={handleOpenCamera}>
+
+                <TouchableOpacity
+                  style={styles.cameraButton}
+                  onPress={handleOpenCamera}>
                   <Camera size={32} color="#FFFFFF" />
                   <Text style={styles.buttonText}>{config.buttonText}</Text>
                 </TouchableOpacity>
 
                 <View style={styles.xpRewardBanner}>
                   <Star size={20} color="#FFB800" />
-                  <Text style={styles.xpRewardText}>Earn {config.xp} XP + social bonuses!</Text>
+                  <Text style={styles.xpRewardText}>
+                    Earn {config.xp} XP + social bonuses!
+                  </Text>
                 </View>
               </View>
             ) : (
               <View style={styles.photoPreviewContainer}>
-                <Image source={{ uri: photoUri }} style={styles.photoPreview} />
-                
+                <Image source={{uri: photoUri}} style={styles.photoPreview} />
+
                 <TextInput
                   style={styles.descriptionInput}
                   placeholder="Describe your creation... (optional)"
@@ -440,24 +471,27 @@ const RecipeCompletionPhoto: React.FC<RecipeCompletionPhotoProps> = ({
                 />
 
                 <View style={styles.uploadButtonContainer}>
-                  <TouchableOpacity 
-                    style={styles.retakeButton} 
-                    onPress={() => setPhotoUri(null)}
-                  >
+                  <TouchableOpacity
+                    style={styles.retakeButton}
+                    onPress={() => setPhotoUri(null)}>
                     <Text style={styles.retakeButtonText}>Retake</Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity
-                    style={[styles.uploadButton, isUploading && styles.uploadButtonDisabled]}
+                    style={[
+                      styles.uploadButton,
+                      isUploading && styles.uploadButtonDisabled,
+                    ]}
                     onPress={handleUploadPhoto}
-                    disabled={isUploading}
-                  >
+                    disabled={isUploading}>
                     {isUploading ? (
                       <ActivityIndicator color="#FFFFFF" />
                     ) : (
                       <>
                         <Trophy size={20} color="#FFFFFF" />
-                        <Text style={styles.uploadButtonText}>{config.buttonText}</Text>
+                        <Text style={styles.uploadButtonText}>
+                          {config.buttonText}
+                        </Text>
                       </>
                     )}
                   </TouchableOpacity>
@@ -773,21 +807,21 @@ export const RecipeClaimButton: React.FC<{
   recipeId: string;
   recipeName: string;
   onRecipeClaimed?: () => void;
-}> = ({ recipeId, recipeName, onRecipeClaimed }) => {
-  const { addXP } = useGamification();
+}> = ({recipeId, recipeName, onRecipeClaimed}) => {
+  const {addXP} = useGamification();
   const [isClaiming, setIsClaiming] = useState(false);
 
   const handleClaimRecipe = async () => {
     setIsClaiming(true);
-    
+
     try {
       ReactNativeHapticFeedback.trigger('impactHeavy');
-      
+
       // Award significant XP for claiming a recipe
       await addXP(XP_VALUES.CLAIM_RECIPE, 'CLAIM_RECIPE');
-      
+
       ReactNativeHapticFeedback.trigger('notificationSuccess');
-      
+
       Alert.alert(
         '🏆 Recipe Claimed!',
         `🎉 You've claimed "${recipeName}"! This recipe is now yours to customize and share. +${XP_VALUES.CLAIM_RECIPE} XP earned!`,
@@ -796,7 +830,7 @@ export const RecipeClaimButton: React.FC<{
             text: 'Awesome!',
             onPress: () => onRecipeClaimed?.(),
           },
-        ]
+        ],
       );
     } catch (error) {
       console.error('Recipe claim error:', error);
@@ -811,15 +845,16 @@ export const RecipeClaimButton: React.FC<{
       <TouchableOpacity
         style={[styles.claimButton, isClaiming && styles.claimButtonDisabled]}
         onPress={handleClaimRecipe}
-        disabled={isClaiming}
-      >
+        disabled={isClaiming}>
         {isClaiming ? (
           <ActivityIndicator color="#FFFFFF" />
         ) : (
           <>
             <Trophy size={24} color="#FFFFFF" />
             <Text style={styles.claimButtonText}>Claim Recipe</Text>
-            <Text style={styles.claimXpBadge}>+{XP_VALUES.CLAIM_RECIPE} XP</Text>
+            <Text style={styles.claimXpBadge}>
+              +{XP_VALUES.CLAIM_RECIPE} XP
+            </Text>
           </>
         )}
       </TouchableOpacity>
@@ -828,4 +863,4 @@ export const RecipeClaimButton: React.FC<{
       </Text>
     </View>
   );
-}; 
+};

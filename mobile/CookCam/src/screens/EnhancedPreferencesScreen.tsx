@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, {useState, useEffect, useRef} from 'react';
 import {
   View,
   Text,
@@ -28,11 +28,17 @@ import {
   Star,
   Trophy,
   Globe,
+  Plus,
 } from 'lucide-react-native';
-import { scale, verticalScale, moderateScale, responsive } from '../utils/responsive';
+import {
+  scale,
+  verticalScale,
+  moderateScale,
+  responsive,
+} from '../utils/responsive';
 import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
-import { useAuth } from '../context/AuthContext';
-import { useGamification, XP_VALUES } from '../context/GamificationContext';
+import {useAuth} from '../context/AuthContext';
+import {useGamification, XP_VALUES} from '../context/GamificationContext';
 import KitchenApplianceIcon from '../components/KitchenApplianceIcon';
 import ServingSizeIcon from '../components/ServingSizeIcon';
 
@@ -69,58 +75,150 @@ const EnhancedPreferencesScreen: React.FC<EnhancedPreferencesScreenProps> = ({
   navigation,
   route,
 }) => {
-  const { ingredients, imageUri } = route.params;
-  const { user } = useAuth();
-  const { addXP, unlockBadge } = useGamification();
-  
+  const {ingredients, imageUri} = route.params;
+  const {user} = useAuth();
+  const {addXP, unlockBadge} = useGamification();
+
   // Quiz flow state
   const [currentStep, setCurrentStep] = useState(0);
   const [hasCompletedPreferences, setHasCompletedPreferences] = useState(false);
   const [showXPReward, setShowXPReward] = useState(false);
   const [showBadgeUnlock, setShowBadgeUnlock] = useState(false);
-  
+
   // Animation references
   const slideAnim = useRef(new Animated.Value(0)).current;
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const progressAnim = useRef(new Animated.Value(0)).current;
   const xpRewardScale = useRef(new Animated.Value(0)).current;
   const badgeScale = useRef(new Animated.Value(0)).current;
-  
+
   // Serving size options
   const [servingOptions] = useState<ServingOption[]>([
-    { id: 'myself', label: 'Just me', value: 1, icon: '👤' },
-    { id: 'couple', label: 'Two people', value: 2, icon: '👥' },
-    { id: 'small-family', label: 'Family (4)', value: 4, icon: '👪' },
-    { id: 'large-family', label: 'Large group (6)', value: 6, icon: '👨‍👩‍👧‍👧‍👦‍👧' },
-    { id: 'custom', label: 'Custom amount', value: 0, icon: '✏️', isCustom: true },
+    {id: 'myself', label: 'Just me', value: 1, icon: '👤'},
+    {id: 'couple', label: 'Two people', value: 2, icon: '👥'},
+    {id: 'small-family', label: 'Family (4)', value: 4, icon: '👪'},
+    {id: 'large-family', label: 'Large group (6)', value: 6, icon: '👨‍👩‍👧‍👧‍👦‍👧'},
+    {
+      id: 'custom',
+      label: 'Custom amount',
+      value: 0,
+      icon: '✏️',
+      isCustom: true,
+    },
   ]);
-  
+
   // State management
-  const [selectedServing, setSelectedServing] = useState<ServingOption>(servingOptions[1]);
+  const [selectedServing, setSelectedServing] = useState<ServingOption>(
+    servingOptions[1],
+  );
   const [customServingAmount, setCustomServingAmount] = useState('');
   const [showCustomInput, setShowCustomInput] = useState(false);
-  
+
   // Meal prep options
   const [mealPrepEnabled, setMealPrepEnabled] = useState(false);
   const [mealPrepPortions, setMealPrepPortions] = useState(4);
   const [showMealPrepInput, setShowMealPrepInput] = useState(false);
-  
+
   // Kitchen appliances - All 12 from database
   const [appliances, setAppliances] = useState<Appliance[]>([
-    { id: 'oven', name: 'Oven', category: 'cooking', icon: 'oven', description: 'Standard kitchen oven', selected: true },
-    { id: 'stove', name: 'Stove', category: 'cooking', icon: 'stove', description: 'Stovetop cooking', selected: true },
-    { id: 'air-fryer', name: 'Air Fryer', category: 'appliance', icon: 'air fryer', description: 'Crispy cooking', selected: false },
-    { id: 'slow-cooker', name: 'Slow Cooker', category: 'appliance', icon: 'slow cooker', description: 'Long, slow cooking', selected: false },
-    { id: 'grill', name: 'Grill', category: 'outdoor', icon: 'grill', description: 'Outdoor grilling', selected: false },
-    { id: 'smoker', name: 'BBQ Smoker', category: 'outdoor', icon: 'bbq smoker', description: 'BBQ smoking', selected: false },
-    { id: 'microwave', name: 'Microwave', category: 'appliance', icon: 'microwave', description: 'Quick heating', selected: true },
-    { id: 'instant-pot', name: 'Pressure Cooker', category: 'appliance', icon: 'pressure cooker', description: 'Pressure cooking', selected: false },
-    { id: 'food-processor', name: 'Food Processor', category: 'tool', icon: 'food processor', description: 'Chopping and mixing', selected: false },
-    { id: 'stand-mixer', name: 'Stand Mixer', category: 'tool', icon: 'stand mixer', description: 'Baking and mixing', selected: false },
-    { id: 'blender', name: 'Blender', category: 'tool', icon: 'blender', description: 'Smoothies and sauces', selected: false },
-    { id: 'toaster-oven', name: 'Toaster Oven', category: 'appliance', icon: 'toaster oven', description: 'Small countertop oven', selected: false },
+    {
+      id: 'oven',
+      name: 'Oven',
+      category: 'cooking',
+      icon: 'oven',
+      description: 'Standard kitchen oven',
+      selected: true,
+    },
+    {
+      id: 'stove',
+      name: 'Stove',
+      category: 'cooking',
+      icon: 'stove',
+      description: 'Stovetop cooking',
+      selected: true,
+    },
+    {
+      id: 'air-fryer',
+      name: 'Air Fryer',
+      category: 'appliance',
+      icon: 'air fryer',
+      description: 'Crispy cooking',
+      selected: false,
+    },
+    {
+      id: 'slow-cooker',
+      name: 'Slow Cooker',
+      category: 'appliance',
+      icon: 'slow cooker',
+      description: 'Long, slow cooking',
+      selected: false,
+    },
+    {
+      id: 'grill',
+      name: 'Grill',
+      category: 'outdoor',
+      icon: 'grill',
+      description: 'Outdoor grilling',
+      selected: false,
+    },
+    {
+      id: 'smoker',
+      name: 'BBQ Smoker',
+      category: 'outdoor',
+      icon: 'bbq smoker',
+      description: 'BBQ smoking',
+      selected: false,
+    },
+    {
+      id: 'microwave',
+      name: 'Microwave',
+      category: 'appliance',
+      icon: 'microwave',
+      description: 'Quick heating',
+      selected: true,
+    },
+    {
+      id: 'instant-pot',
+      name: 'Pressure Cooker',
+      category: 'appliance',
+      icon: 'pressure cooker',
+      description: 'Pressure cooking',
+      selected: false,
+    },
+    {
+      id: 'food-processor',
+      name: 'Food Processor',
+      category: 'tool',
+      icon: 'food processor',
+      description: 'Chopping and mixing',
+      selected: false,
+    },
+    {
+      id: 'stand-mixer',
+      name: 'Stand Mixer',
+      category: 'tool',
+      icon: 'stand mixer',
+      description: 'Baking and mixing',
+      selected: false,
+    },
+    {
+      id: 'blender',
+      name: 'Blender',
+      category: 'tool',
+      icon: 'blender',
+      description: 'Smoothies and sauces',
+      selected: false,
+    },
+    {
+      id: 'toaster-oven',
+      name: 'Toaster Oven',
+      category: 'appliance',
+      icon: 'toaster oven',
+      description: 'Small countertop oven',
+      selected: false,
+    },
   ]);
-  
+
   // Standard preferences
   const [cookingTime, setCookingTime] = useState('medium');
   const [difficulty, setDifficulty] = useState('any');
@@ -148,7 +246,7 @@ const EnhancedPreferencesScreen: React.FC<EnhancedPreferencesScreenProps> = ({
       type: 'multi',
       options: [
         'Vegetarian',
-        'Vegan', 
+        'Vegan',
         'Gluten-Free',
         'Dairy-Free',
         'Keto',
@@ -188,24 +286,40 @@ const EnhancedPreferencesScreen: React.FC<EnhancedPreferencesScreenProps> = ({
     {
       id: 'time',
       title: 'How much time do you have?',
-      subtitle: 'We\'ll generate recipes that fit your schedule',
+      subtitle: "We'll generate recipes that fit your schedule",
       type: 'single',
       options: [
-        {label: '⚡ Quick & Easy', subtitle: 'Under 20 minutes', value: 'quick'},
+        {
+          label: '⚡ Quick & Easy',
+          subtitle: 'Under 20 minutes',
+          value: 'quick',
+        },
         {label: '⏱️ Medium', subtitle: '20-45 minutes', value: 'medium'},
-        {label: '🍖 Worth the Wait', subtitle: 'Over 45 minutes', value: 'long'},
+        {
+          label: '🍖 Worth the Wait',
+          subtitle: 'Over 45 minutes',
+          value: 'long',
+        },
         {label: '🤷 Flexible', subtitle: 'Any cooking time', value: 'any'},
       ],
     },
     {
       id: 'difficulty',
-      title: 'What\'s your skill level?',
-      subtitle: 'Be honest, we won\'t judge!',
+      title: "What's your skill level?",
+      subtitle: "Be honest, we won't judge!",
       type: 'single',
       options: [
         {label: '🥄 Beginner', subtitle: 'Simple recipes only', value: 'easy'},
-        {label: '🍳 Home Cook', subtitle: 'Some experience needed', value: 'medium'},
-        {label: '👨‍🍳 Chef Mode', subtitle: 'Bring on the challenge!', value: 'hard'},
+        {
+          label: '🍳 Home Cook',
+          subtitle: 'Some experience needed',
+          value: 'medium',
+        },
+        {
+          label: '👨‍🍳 Chef Mode',
+          subtitle: 'Bring on the challenge!',
+          value: 'hard',
+        },
         {label: '🎲 Surprise Me', subtitle: 'Any difficulty', value: 'any'},
       ],
     },
@@ -231,26 +345,30 @@ const EnhancedPreferencesScreen: React.FC<EnhancedPreferencesScreenProps> = ({
     if (user) {
       // Load saved preferences from user profile using optional chaining
       const defaultServing = (user as any).default_serving_size || 2;
-      const defaultOption = servingOptions.find(opt => opt.value === defaultServing) || servingOptions[1];
+      const defaultOption =
+        servingOptions.find(opt => opt.value === defaultServing) ||
+        servingOptions[1];
       setSelectedServing(defaultOption);
-      
+
       setMealPrepEnabled((user as any).meal_prep_enabled || false);
       setMealPrepPortions((user as any).default_meal_prep_count || 4);
-      
+
       // Load kitchen appliances
       const userAppliances = (user as any).kitchen_appliances;
       if (userAppliances && Array.isArray(userAppliances)) {
-        setAppliances(prev => prev.map(appliance => ({
-          ...appliance,
-          selected: userAppliances.includes(appliance.id),
-        })));
+        setAppliances(prev =>
+          prev.map(appliance => ({
+            ...appliance,
+            selected: userAppliances.includes(appliance.id),
+          })),
+        );
       }
     }
   };
 
   const handleServingSelection = (option: ServingOption) => {
     ReactNativeHapticFeedback.trigger('impactLight');
-    
+
     if (option.isCustom) {
       setShowCustomInput(true);
     } else {
@@ -260,7 +378,7 @@ const EnhancedPreferencesScreen: React.FC<EnhancedPreferencesScreenProps> = ({
   };
 
   const handleCustomServingSubmit = () => {
-    const amount = parseInt(customServingAmount);
+    const amount = parseInt(customServingAmount, 10);
     if (amount && amount > 0 && amount <= 50) {
       setSelectedServing({
         id: 'custom',
@@ -289,11 +407,13 @@ const EnhancedPreferencesScreen: React.FC<EnhancedPreferencesScreenProps> = ({
 
   const toggleAppliance = (applianceId: string) => {
     ReactNativeHapticFeedback.trigger('impactLight');
-    setAppliances(prev => prev.map(appliance =>
-      appliance.id === applianceId
-        ? { ...appliance, selected: !appliance.selected }
-        : appliance
-    ));
+    setAppliances(prev =>
+      prev.map(appliance =>
+        appliance.id === applianceId
+          ? {...appliance, selected: !appliance.selected}
+          : appliance,
+      ),
+    );
   };
 
   // Quiz navigation functions
@@ -311,7 +431,7 @@ const EnhancedPreferencesScreen: React.FC<EnhancedPreferencesScreenProps> = ({
       }),
     ]).start(() => {
       slideAnim.setValue(direction === 'next' ? 50 : -50);
-      
+
       Animated.parallel([
         Animated.timing(fadeAnim, {
           toValue: 1,
@@ -350,9 +470,9 @@ const EnhancedPreferencesScreen: React.FC<EnhancedPreferencesScreenProps> = ({
   // Option selection handlers
   const toggleOption = (option: string) => {
     const step = steps[currentStep];
-    
+
     ReactNativeHapticFeedback.trigger('impactLight');
-    
+
     if (step.id === 'dietary') {
       setDietary(prev =>
         prev.includes(option)
@@ -361,9 +481,7 @@ const EnhancedPreferencesScreen: React.FC<EnhancedPreferencesScreenProps> = ({
       );
     } else if (step.id === 'cuisine') {
       if (option === '🎲 Surprise Me!') {
-        setCuisine(prev => 
-          prev.includes(option) ? [] : [option]
-        );
+        setCuisine(prev => (prev.includes(option) ? [] : [option]));
       } else {
         setCuisine(prev => {
           const filtered = prev.filter(item => item !== '🎲 Surprise Me!');
@@ -377,22 +495,22 @@ const EnhancedPreferencesScreen: React.FC<EnhancedPreferencesScreenProps> = ({
 
   const selectSingleOption = (value: string) => {
     const step = steps[currentStep];
-    
+
     ReactNativeHapticFeedback.trigger('impactMedium');
-    
+
     if (step.id === 'time') {
       setCookingTime(value);
     } else if (step.id === 'difficulty') {
       setDifficulty(value);
     }
-    
+
     // Auto-advance after selecting single option
     setTimeout(() => handleNext(), 300);
   };
 
   const isOptionSelected = (option: any): boolean => {
     const step = steps[currentStep];
-    
+
     if (step.id === 'dietary') {
       return dietary.includes(option);
     } else if (step.id === 'cuisine') {
@@ -402,30 +520,34 @@ const EnhancedPreferencesScreen: React.FC<EnhancedPreferencesScreenProps> = ({
     } else if (step.id === 'difficulty') {
       return difficulty === option.value;
     }
-    
+
     return false;
   };
 
   const canProceed = (): boolean => {
     const step = steps[currentStep];
-    
+
     if (step.id === 'serving') {
       return true; // Always can proceed from serving selection
     } else if (step.id === 'appliances') {
       return appliances.filter(a => a.selected).length > 0;
     } else if (step.type === 'multi') {
-      if (step.id === 'dietary') return true; // Optional
-      if (step.id === 'cuisine') return cuisine.length > 0;
+      if (step.id === 'dietary') {
+        return true;
+      } // Optional
+      if (step.id === 'cuisine') {
+        return cuisine.length > 0;
+      }
     }
-    
+
     return true; // Single choice steps can always proceed
   };
 
   const showCompletionReward = async () => {
     setShowXPReward(true);
-    
+
     ReactNativeHapticFeedback.trigger('notificationSuccess');
-    
+
     Animated.sequence([
       Animated.spring(xpRewardScale, {
         toValue: 1.2,
@@ -439,19 +561,19 @@ const EnhancedPreferencesScreen: React.FC<EnhancedPreferencesScreenProps> = ({
         useNativeDriver: true,
       }),
     ]).start();
-    
+
     await addXP(XP_VALUES.COMPLETE_PREFERENCES, 'COMPLETE_PREFERENCES');
   };
-  
+
   const checkForBadges = async () => {
     // Check if user is trying exotic cuisines
     const exoticCuisines = ['Vietnamese', 'Middle Eastern', 'Korean', 'Thai'];
     const hasExotic = cuisine.some(c => exoticCuisines.includes(c));
-    
+
     if (hasExotic) {
       await unlockBadge('cuisine_explorer');
       setShowBadgeUnlock(true);
-      
+
       Animated.spring(badgeScale, {
         toValue: 1,
         tension: 50,
@@ -459,21 +581,23 @@ const EnhancedPreferencesScreen: React.FC<EnhancedPreferencesScreenProps> = ({
         useNativeDriver: true,
       }).start();
     }
-    
+
     if (cuisine.length >= 5) {
       await unlockBadge('world_traveler');
     }
   };
 
   const handleContinue = async () => {
-    const selectedAppliances = appliances.filter(a => a.selected).map(a => a.id);
-    
+    const selectedAppliances = appliances
+      .filter(a => a.selected)
+      .map(a => a.id);
+
     // Complete preferences - show reward
     if (!hasCompletedPreferences) {
       setHasCompletedPreferences(true);
       await showCompletionReward();
     }
-    
+
     // Check for badge unlocks
     await checkForBadges();
 
@@ -489,7 +613,7 @@ const EnhancedPreferencesScreen: React.FC<EnhancedPreferencesScreenProps> = ({
     };
 
     ReactNativeHapticFeedback.trigger('notificationSuccess');
-    
+
     // Navigate after animation
     setTimeout(() => {
       navigation.navigate('RecipeCards', {
@@ -502,36 +626,37 @@ const EnhancedPreferencesScreen: React.FC<EnhancedPreferencesScreenProps> = ({
 
   const selectedApplianceCount = appliances.filter(a => a.selected).length;
   const currentStepData = steps[currentStep];
-  const completionPercentage = Math.round(((currentStep + 1) / steps.length) * 100);
+  const completionPercentage = Math.round(
+    ((currentStep + 1) / steps.length) * 100,
+  );
 
   // Render functions for different step types
   const renderServingStep = () => (
     <View>
       {/* Serving Size Section */}
       <View style={styles.servingGrid}>
-        {servingOptions.map((option) => (
+        {servingOptions.map(option => (
           <TouchableOpacity
             key={option.id}
             style={[
               styles.servingOption,
               selectedServing.id === option.id && styles.servingOptionSelected,
             ]}
-            onPress={() => handleServingSelection(option)}
-          >
+            onPress={() => handleServingSelection(option)}>
             <View style={styles.servingIconContainer}>
-              <ServingSizeIcon 
-                type={option.label} 
-                size={moderateScale(32)} 
-              />
+              <ServingSizeIcon type={option.label} size={moderateScale(32)} />
             </View>
-            <Text style={[
-              styles.servingLabel,
-              selectedServing.id === option.id && styles.servingLabelSelected,
-            ]}>
+            <Text
+              style={[
+                styles.servingLabel,
+                selectedServing.id === option.id && styles.servingLabelSelected,
+              ]}>
               {option.label}
             </Text>
             {selectedServing.id === option.id && option.isCustom && (
-              <Text style={styles.customValue}>{selectedServing.value} people</Text>
+              <Text style={styles.customValue}>
+                {selectedServing.value} people
+              </Text>
             )}
           </TouchableOpacity>
         ))}
@@ -540,39 +665,54 @@ const EnhancedPreferencesScreen: React.FC<EnhancedPreferencesScreenProps> = ({
       {/* Meal Prep Section */}
       <View style={styles.mealPrepSection}>
         <TouchableOpacity
-          style={[styles.mealPrepToggle, mealPrepEnabled && styles.mealPrepToggleActive]}
-          onPress={toggleMealPrep}
-        >
+          style={[
+            styles.mealPrepToggle,
+            mealPrepEnabled && styles.mealPrepToggleActive,
+          ]}
+          onPress={toggleMealPrep}>
           <View style={styles.mealPrepContent}>
-            <Text style={[styles.mealPrepText, mealPrepEnabled && styles.mealPrepTextActive]}>
+            <Text
+              style={[
+                styles.mealPrepText,
+                mealPrepEnabled && styles.mealPrepTextActive,
+              ]}>
               I want to meal prep
             </Text>
-            <Text style={[styles.mealPrepSubtext, mealPrepEnabled && styles.mealPrepSubtextActive]}>
+            <Text
+              style={[
+                styles.mealPrepSubtext,
+                mealPrepEnabled && styles.mealPrepSubtextActive,
+              ]}>
               Prepare multiple portions for the week
             </Text>
           </View>
-          <View style={[styles.checkbox, mealPrepEnabled && styles.checkboxActive]}>
+          <View
+            style={[styles.checkbox, mealPrepEnabled && styles.checkboxActive]}>
             {mealPrepEnabled && <Check size={16} color="#FFFFFF" />}
           </View>
         </TouchableOpacity>
 
         {mealPrepEnabled && (
           <View style={styles.mealPrepPortions}>
-            <Text style={styles.portionsLabel}>How many meal prep portions?</Text>
+            <Text style={styles.portionsLabel}>
+              How many meal prep portions?
+            </Text>
             <View style={styles.portionsRow}>
-              {[3, 4, 5, 6, 8, 10, 12, 14].map((portions) => (
+              {[3, 4, 5, 6, 8, 10, 12, 14].map(portions => (
                 <TouchableOpacity
                   key={portions}
                   style={[
                     styles.portionOption,
-                    mealPrepPortions === portions && styles.portionOptionSelected,
+                    mealPrepPortions === portions &&
+                      styles.portionOptionSelected,
                   ]}
-                  onPress={() => handleMealPrepPortions(portions)}
-                >
-                  <Text style={[
-                    styles.portionText,
-                    mealPrepPortions === portions && styles.portionTextSelected,
-                  ]}>
+                  onPress={() => handleMealPrepPortions(portions)}>
+                  <Text
+                    style={[
+                      styles.portionText,
+                      mealPrepPortions === portions &&
+                        styles.portionTextSelected,
+                    ]}>
                     {portions}
                   </Text>
                 </TouchableOpacity>
@@ -587,31 +727,32 @@ const EnhancedPreferencesScreen: React.FC<EnhancedPreferencesScreenProps> = ({
   const renderAppliancesStep = () => (
     <ScrollView style={{flex: 1}} showsVerticalScrollIndicator={false}>
       <View style={styles.applianceGrid}>
-        {appliances.map((appliance) => (
+        {appliances.map(appliance => (
           <TouchableOpacity
             key={appliance.id}
             style={[
               styles.applianceCard,
               appliance.selected && styles.applianceCardSelected,
             ]}
-            onPress={() => toggleAppliance(appliance.id)}
-          >
+            onPress={() => toggleAppliance(appliance.id)}>
             <View style={styles.applianceIconContainer}>
-              <KitchenApplianceIcon 
-                appliance={appliance.icon} 
-                size={moderateScale(40)} 
+              <KitchenApplianceIcon
+                appliance={appliance.icon}
+                size={moderateScale(40)}
               />
             </View>
-            <Text style={[
-              styles.applianceName,
-              appliance.selected && styles.applianceNameSelected,
-            ]}>
+            <Text
+              style={[
+                styles.applianceName,
+                appliance.selected && styles.applianceNameSelected,
+              ]}>
               {appliance.name}
             </Text>
-            <Text style={[
-              styles.applianceDescription,
-              appliance.selected && styles.applianceDescriptionSelected,
-            ]}>
+            <Text
+              style={[
+                styles.applianceDescription,
+                appliance.selected && styles.applianceDescriptionSelected,
+              ]}>
               {appliance.description}
             </Text>
             {appliance.selected && (
@@ -630,7 +771,7 @@ const EnhancedPreferencesScreen: React.FC<EnhancedPreferencesScreenProps> = ({
 
   const renderMultiChoice = () => {
     const step = steps[currentStep];
-    
+
     return (
       <View style={styles.optionsGrid}>
         {step.options?.map((option, index) => (
@@ -640,14 +781,12 @@ const EnhancedPreferencesScreen: React.FC<EnhancedPreferencesScreenProps> = ({
               styles.optionChip,
               isOptionSelected(option) && styles.selectedChip,
             ]}
-            onPress={() => toggleOption(option)}
-          >
+            onPress={() => toggleOption(option)}>
             <Text
               style={[
                 styles.chipText,
                 isOptionSelected(option) && styles.selectedChipText,
-              ]}
-            >
+              ]}>
               {option}
             </Text>
             {isOptionSelected(option) && (
@@ -661,7 +800,7 @@ const EnhancedPreferencesScreen: React.FC<EnhancedPreferencesScreenProps> = ({
 
   const renderSingleChoice = () => {
     const step = steps[currentStep];
-    
+
     return (
       <View style={styles.singleChoiceContainer}>
         {step.options?.map((option: any, index: number) => (
@@ -671,29 +810,29 @@ const EnhancedPreferencesScreen: React.FC<EnhancedPreferencesScreenProps> = ({
               styles.singleOption,
               isOptionSelected(option) && styles.selectedSingleOption,
             ]}
-            onPress={() => selectSingleOption(option.value)}
-          >
+            onPress={() => selectSingleOption(option.value)}>
             <View style={styles.optionContent}>
-              <Text style={[
-                styles.optionLabel,
-                isOptionSelected(option) && styles.selectedOptionLabel,
-              ]}>
+              <Text
+                style={[
+                  styles.optionLabel,
+                  isOptionSelected(option) && styles.selectedOptionLabel,
+                ]}>
                 {option.label}
               </Text>
-              <Text style={[
-                styles.optionSubtitle,
-                isOptionSelected(option) && styles.selectedOptionSubtitle,
-              ]}>
+              <Text
+                style={[
+                  styles.optionSubtitle,
+                  isOptionSelected(option) && styles.selectedOptionSubtitle,
+                ]}>
                 {option.subtitle}
               </Text>
             </View>
-            <View style={[
-              styles.radioCircle,
-              isOptionSelected(option) && styles.selectedRadioCircle,
-            ]}>
-              {isOptionSelected(option) && (
-                <View style={styles.radioInner} />
-              )}
+            <View
+              style={[
+                styles.radioCircle,
+                isOptionSelected(option) && styles.selectedRadioCircle,
+              ]}>
+              {isOptionSelected(option) && <View style={styles.radioInner} />}
             </View>
           </TouchableOpacity>
         ))}
@@ -705,7 +844,9 @@ const EnhancedPreferencesScreen: React.FC<EnhancedPreferencesScreenProps> = ({
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={styles.backButton}>
           <ChevronLeft size={24} color="#2D1B69" />
           <Text style={styles.backText}>Review Ingredients</Text>
         </TouchableOpacity>
@@ -718,7 +859,7 @@ const EnhancedPreferencesScreen: React.FC<EnhancedPreferencesScreenProps> = ({
           <Text style={styles.progressPercentage}>{completionPercentage}%</Text>
         </View>
         <View style={styles.progressBar}>
-          <Animated.View 
+          <Animated.View
             style={[
               styles.progressFill,
               {
@@ -726,8 +867,8 @@ const EnhancedPreferencesScreen: React.FC<EnhancedPreferencesScreenProps> = ({
                   inputRange: [0, 1],
                   outputRange: ['0%', '100%'],
                 }),
-              }
-            ]} 
+              },
+            ]}
           />
         </View>
         <Text style={styles.progressText}>
@@ -737,52 +878,47 @@ const EnhancedPreferencesScreen: React.FC<EnhancedPreferencesScreenProps> = ({
 
       {/* Main Content */}
       <View style={styles.content}>
-        <Animated.View 
+        <Animated.View
           style={[
             styles.questionContainer,
             {
               opacity: fadeAnim,
               transform: [{translateX: slideAnim}],
-            }
-          ]}
-        >
+            },
+          ]}>
           <Text style={styles.title}>{currentStepData.title}</Text>
-          
+
           {currentStepData.type === 'serving' && renderServingStep()}
           {currentStepData.type === 'appliances' && renderAppliancesStep()}
           {currentStepData.type === 'multi' && renderMultiChoice()}
           {currentStepData.type === 'single' && renderSingleChoice()}
-          
+
           {/* Show badge hint for cuisine selection */}
           {currentStep === 3 && cuisine.length >= 3 && (
             <Animated.View style={[styles.badgeHint, {opacity: fadeAnim}]}>
               <Globe size={16} color="#FFB800" />
-              <Text style={styles.badgeHintText}>Explorer badge unlocked for trying exotic cuisines!</Text>
+              <Text style={styles.badgeHintText}>
+                Explorer badge unlocked for trying exotic cuisines!
+              </Text>
             </Animated.View>
           )}
         </Animated.View>
-        
+
         {/* XP Reward Animation */}
         {showXPReward && (
-          <Animated.View 
-            style={[
-              styles.xpReward,
-              {transform: [{scale: xpRewardScale}]}
-            ]}
-          >
+          <Animated.View
+            style={[styles.xpReward, {transform: [{scale: xpRewardScale}]}]}>
             <Star size={24} color="#FFB800" />
-            <Text style={styles.xpRewardText}>+{XP_VALUES.COMPLETE_PREFERENCES} XP</Text>
+            <Text style={styles.xpRewardText}>
+              +{XP_VALUES.COMPLETE_PREFERENCES} XP
+            </Text>
           </Animated.View>
         )}
-        
+
         {/* Badge Unlock Animation */}
         {showBadgeUnlock && (
-          <Animated.View 
-            style={[
-              styles.badgeUnlock,
-              {transform: [{scale: badgeScale}]}
-            ]}
-          >
+          <Animated.View
+            style={[styles.badgeUnlock, {transform: [{scale: badgeScale}]}]}>
             <Trophy size={32} color="#FFB800" />
             <Text style={styles.badgeUnlockText}>Cuisine Explorer!</Text>
           </Animated.View>
@@ -792,18 +928,17 @@ const EnhancedPreferencesScreen: React.FC<EnhancedPreferencesScreenProps> = ({
       {/* Navigation */}
       <View style={styles.navigation}>
         <TouchableOpacity
-          style={[styles.navButton, currentStep === 0 && styles.invisibleButton]}
+          style={[
+            styles.navButton,
+            currentStep === 0 && styles.invisibleButton,
+          ]}
           onPress={handlePrev}
-          disabled={currentStep === 0}
-        >
+          disabled={currentStep === 0}>
           <ChevronLeft size={24} color="#2D1B69" />
           <Text style={styles.navButtonText}>Back</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.skipButton}
-          onPress={handleSkip}
-        >
+        <TouchableOpacity style={styles.skipButton} onPress={handleSkip}>
           <Text style={styles.skipButtonText}>Skip</Text>
           <SkipForward size={18} color="#8E8E93" />
         </TouchableOpacity>
@@ -815,8 +950,7 @@ const EnhancedPreferencesScreen: React.FC<EnhancedPreferencesScreenProps> = ({
             !canProceed() && styles.disabledButton,
           ]}
           onPress={handleNext}
-          disabled={!canProceed()}
-        >
+          disabled={!canProceed()}>
           <Text style={styles.nextButtonText}>
             {currentStep === steps.length - 1 ? 'Generate Recipes' : 'Next'}
           </Text>
@@ -829,20 +963,20 @@ const EnhancedPreferencesScreen: React.FC<EnhancedPreferencesScreenProps> = ({
         visible={showCustomInput}
         transparent
         animationType="fade"
-        onRequestClose={() => setShowCustomInput(false)}
-      >
+        onRequestClose={() => setShowCustomInput(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <TouchableOpacity
               style={styles.modalClose}
-              onPress={() => setShowCustomInput(false)}
-            >
+              onPress={() => setShowCustomInput(false)}>
               <X size={24} color="#666" />
             </TouchableOpacity>
-            
+
             <Text style={styles.modalTitle}>Custom Serving Size</Text>
-            <Text style={styles.modalSubtitle}>How many people are you cooking for?</Text>
-            
+            <Text style={styles.modalSubtitle}>
+              How many people are you cooking for?
+            </Text>
+
             <TextInput
               style={styles.customInput}
               value={customServingAmount}
@@ -852,11 +986,10 @@ const EnhancedPreferencesScreen: React.FC<EnhancedPreferencesScreenProps> = ({
               autoFocus
               maxLength={2}
             />
-            
+
             <TouchableOpacity
               style={styles.modalButton}
-              onPress={handleCustomServingSubmit}
-            >
+              onPress={handleCustomServingSubmit}>
               <Text style={styles.modalButtonText}>Confirm</Text>
             </TouchableOpacity>
           </View>
@@ -989,6 +1122,9 @@ const styles = StyleSheet.create({
     color: '#4CAF50',
     fontWeight: '600',
     marginTop: 4,
+  },
+  mealPrepSection: {
+    marginTop: 16,
   },
   mealPrepToggle: {
     flexDirection: 'row',
@@ -1372,7 +1508,7 @@ const styles = StyleSheet.create({
     borderRadius: responsive.borderRadius.medium,
     padding: responsive.spacing.m,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
@@ -1646,4 +1782,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default EnhancedPreferencesScreen; 
+export default EnhancedPreferencesScreen;

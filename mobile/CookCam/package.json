@@ -15,14 +15,23 @@
     "test": "jest",
     "metro-profile": "echo 'Press I in Metro console for bundle profile'",
     "cache-clean": "rm -rf $TMPDIR/metro-* && rm -rf $TMPDIR/react-* && watchman watch-del-all",
-    "watchman-reset": "watchman watch-del '$PWD' ; watchman watch-project '$PWD'"
+    "watchman-reset": "watchman watch-del '$PWD' ; watchman watch-project '$PWD'",
+    "check": "./check-syntax.sh",
+    "check-ts": "./check-ts-only.sh",
+    "check-fast": "npx tsc --noEmit --jsx react-native src/**/*.tsx src/**/*.ts",
+    "fix": "./quick-fix.sh",
+    "fix-format": "npx prettier --write src/**/*.{ts,tsx,js,jsx}",
+    "fix-lint": "npx eslint src/**/*.{ts,tsx} --fix"
   },
   "dependencies": {
+    "@invertase/react-native-apple-authentication": "^2.4.1",
     "@react-native-async-storage/async-storage": "^1.24.0",
+    "@react-native-google-signin/google-signin": "^14.0.1",
     "@react-native/virtualized-lists": "^0.79.3",
     "@react-navigation/bottom-tabs": "^6.6.1",
     "@react-navigation/native": "^6.1.18",
     "@react-navigation/native-stack": "^6.11.0",
+    "@stripe/stripe-react-native": "^0.47.1",
     "@supabase/supabase-js": "^2.50.0",
     "@types/react-native-push-notification": "^8.1.4",
     "deprecated-react-native-prop-types": "^4.1.0",
@@ -37,10 +46,10 @@
     "react": "18.2.0",
     "react-native": "0.73.9",
     "react-native-config": "^1.5.1",
-    "react-native-deck-swiper": "^2.0.17",
     "react-native-gesture-handler": "~2.14.0",
     "react-native-haptic-feedback": "^2.3.3",
     "react-native-iap": "^12.16.2",
+    "react-native-keychain": "^10.0.0",
     "react-native-push-notification": "^8.1.1",
     "react-native-reanimated": "^3.6.3",
     "react-native-safe-area-context": "^4.14.1",
@@ -68,7 +77,7 @@
     "metro-minify-terser": "^0.82.4",
     "prettier": "2.8.8",
     "react-test-renderer": "18.2.0",
-    "typescript": "5.0.4"
+    "typescript": "^5.0.4"
   },
   "engines": {
     "node": ">=18"

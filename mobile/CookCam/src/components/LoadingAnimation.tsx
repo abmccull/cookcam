@@ -1,13 +1,7 @@
-import React, { useRef, useEffect } from 'react';
-import {
-  View,
-  StyleSheet,
-  Text,
-  Modal,
-  Animated,
-} from 'react-native';
+import React, {useRef, useEffect} from 'react';
+import {View, StyleSheet, Text, Modal, Animated} from 'react-native';
 import AIChefIcon from './AIChefIcon';
-import { moderateScale } from '../utils/responsive';
+import {moderateScale} from '../utils/responsive';
 
 export type LoadingVariant = 'scanning' | 'previews' | 'detailed';
 
@@ -23,9 +17,9 @@ const getContentForVariant = (variant: LoadingVariant) => {
         title: 'AI Chef Analyzing...',
         subtitle: 'Identifying ingredients with computer vision',
         steps: [
-          { icon: '🔍', text: 'Scanning image patterns' },
-          { icon: '🧠', text: 'Processing with neural networks' },
-          { icon: '✨', text: 'Matching to ingredient database' },
+          {icon: '🔍', text: 'Scanning image patterns'},
+          {icon: '🧠', text: 'Processing with neural networks'},
+          {icon: '✨', text: 'Matching to ingredient database'},
         ],
       };
     case 'previews':
@@ -33,9 +27,9 @@ const getContentForVariant = (variant: LoadingVariant) => {
         title: '👨‍🍳 Crafting Recipe Ideas...',
         subtitle: 'Creating 3 unique dishes just for you',
         steps: [
-          { icon: '🥘', text: 'Exploring flavor combinations' },
-          { icon: '🌟', text: 'Personalizing to your taste' },
-          { icon: '🎯', text: 'Curating diverse options' },
+          {icon: '🥘', text: 'Exploring flavor combinations'},
+          {icon: '🌟', text: 'Personalizing to your taste'},
+          {icon: '🎯', text: 'Curating diverse options'},
         ],
       };
     case 'detailed':
@@ -43,9 +37,9 @@ const getContentForVariant = (variant: LoadingVariant) => {
         title: '📝 Perfecting Your Recipe...',
         subtitle: 'Crafting step-by-step cooking instructions',
         steps: [
-          { icon: '⏱️', text: 'Calculating optimal timing' },
-          { icon: '🔥', text: 'Detailing cooking techniques' },
-          { icon: '📋', text: 'Organizing clear steps' },
+          {icon: '⏱️', text: 'Calculating optimal timing'},
+          {icon: '🔥', text: 'Detailing cooking techniques'},
+          {icon: '📋', text: 'Organizing clear steps'},
         ],
       };
     default:
@@ -53,9 +47,9 @@ const getContentForVariant = (variant: LoadingVariant) => {
   }
 };
 
-const LoadingAnimation: React.FC<LoadingAnimationProps> = ({ 
-  visible, 
-  variant 
+const LoadingAnimation: React.FC<LoadingAnimationProps> = ({
+  visible,
+  variant,
 }) => {
   const aiPulseAnim = useRef(new Animated.Value(1)).current;
   const aiOpacityAnim = useRef(new Animated.Value(0.7)).current;
@@ -75,7 +69,7 @@ const LoadingAnimation: React.FC<LoadingAnimationProps> = ({
             duration: 1000,
             useNativeDriver: true,
           }),
-        ])
+        ]),
       );
 
       const opacity = Animated.loop(
@@ -90,7 +84,7 @@ const LoadingAnimation: React.FC<LoadingAnimationProps> = ({
             duration: 1500,
             useNativeDriver: true,
           }),
-        ])
+        ]),
       );
 
       pulse.start();
@@ -106,29 +100,28 @@ const LoadingAnimation: React.FC<LoadingAnimationProps> = ({
   const content = getContentForVariant(variant);
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade">
+    <Modal visible={visible} transparent animationType="fade">
       <View style={styles.overlay}>
-        <Animated.View style={[
-          styles.modal,
-          {
-            transform: [{ scale: aiPulseAnim }],
-            opacity: aiOpacityAnim,
-          }
-        ]}>
+        <Animated.View
+          style={[
+            styles.modal,
+            {
+              transform: [{scale: aiPulseAnim}],
+              opacity: aiOpacityAnim,
+            },
+          ]}>
           <View style={styles.content}>
-            <Animated.View style={[
-              styles.iconContainer,
-              { transform: [{ scale: aiPulseAnim }] }
-            ]}>
+            <Animated.View
+              style={[
+                styles.iconContainer,
+                {transform: [{scale: aiPulseAnim}]},
+              ]}>
               <AIChefIcon size={moderateScale(64)} variant="analyzing" />
             </Animated.View>
-            
+
             <Text style={styles.title}>{content.title}</Text>
             <Text style={styles.subtitle}>{content.subtitle}</Text>
-            
+
             <View style={styles.stepsContainer}>
               {content.steps.map((step, index) => (
                 <Text key={index} style={styles.stepText}>
@@ -198,4 +191,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default LoadingAnimation; 
+export default LoadingAnimation;

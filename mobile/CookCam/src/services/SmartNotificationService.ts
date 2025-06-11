@@ -6,7 +6,13 @@ interface NotificationData {
   id: string;
   title: string;
   message: string;
-  type: 'streak' | 'achievement' | 'social' | 'recipe' | 'challenge' | 'reminder';
+  type:
+    | 'streak'
+    | 'achievement'
+    | 'social'
+    | 'recipe'
+    | 'challenge'
+    | 'reminder';
   data?: any;
   scheduledTime?: Date;
 }
@@ -31,18 +37,18 @@ class SmartNotificationService {
   private static instance: SmartNotificationService;
   private userBehavior: UserBehavior | null = null;
   private notificationQueue: NotificationData[] = [];
-  
+
   private constructor() {
     this.initializeService();
   }
-  
+
   static getInstance(): SmartNotificationService {
     if (!SmartNotificationService.instance) {
       SmartNotificationService.instance = new SmartNotificationService();
     }
     return SmartNotificationService.instance;
   }
-  
+
   private async initializeService() {
     // Configure push notifications
     PushNotification.configure({
@@ -60,7 +66,7 @@ class SmartNotificationService {
       popInitialNotification: true,
       requestPermissions: Platform.OS === 'ios',
     });
-    
+
     // Create notification channels for Android
     if (Platform.OS === 'android') {
       PushNotification.createChannel(
@@ -73,14 +79,14 @@ class SmartNotificationService {
           importance: 4,
           vibrate: true,
         },
-        (created) => console.log(`createChannel returned '${created}'`)
+        created => console.log(`createChannel returned '${created}'`),
       );
     }
-    
+
     // Load user behavior data
     await this.loadUserBehavior();
   }
-  
+
   private async loadUserBehavior() {
     try {
       const behaviorData = await AsyncStorage.getItem('userBehavior');
@@ -107,7 +113,7 @@ class SmartNotificationService {
       console.error('Error loading user behavior:', error);
     }
   }
-  
+
   // Analyze user patterns and update behavior profile
   async analyzeUserBehavior(sessionData: {
     cookingTime: Date;
@@ -115,83 +121,94 @@ class SmartNotificationService {
     recipesViewed: string[];
     recipesCooked: string[];
   }) {
-    if (!this.userBehavior) return;
-    
+    if (!this.userBehavior) {
+      return;
+    }
+
     // Update last cook time
     this.userBehavior.lastCookTime = sessionData.cookingTime.toISOString();
-    
+
     // Update average session length
     const currentAvg = this.userBehavior.averageSessionLength;
-    this.userBehavior.averageSessionLength = (currentAvg * 0.8) + (sessionData.sessionLength * 0.2);
-    
+    this.userBehavior.averageSessionLength =
+      currentAvg * 0.8 + sessionData.sessionLength * 0.2;
+
     // Analyze cooking time patterns
     const cookHour = sessionData.cookingTime.getHours();
     const timeString = `${cookHour}:00`;
     if (!this.userBehavior.preferredCookingTimes.includes(timeString)) {
       this.userBehavior.preferredCookingTimes.push(timeString);
     }
-    
+
     // Update engagement level
     if (sessionData.recipesCooked.length > 0) {
       this.userBehavior.engagementLevel = 'high';
     } else if (sessionData.recipesViewed.length > 3) {
       this.userBehavior.engagementLevel = 'medium';
     }
-    
+
     // Save updated behavior
-    await AsyncStorage.setItem('userBehavior', JSON.stringify(this.userBehavior));
+    await AsyncStorage.setItem(
+      'userBehavior',
+      JSON.stringify(this.userBehavior),
+    );
   }
-  
+
   // Smart notification scheduling based on user behavior
   async scheduleSmartNotifications() {
-    if (!this.userBehavior) return;
-    
+    if (!this.userBehavior) {
+      return;
+    }
+
     // Cancel all existing notifications
     PushNotification.cancelAllLocalNotifications();
-    
+
     // Schedule based on notification preferences
     const prefs = this.userBehavior.notificationPreferences;
-    
+
     // Streak reminders
     if (prefs.streaks) {
       await this.scheduleStreakReminder();
     }
-    
+
     // Achievement proximity alerts
     if (prefs.achievements) {
       await this.scheduleAchievementAlerts();
     }
-    
+
     // Social notifications
     if (prefs.social) {
       await this.scheduleSocialNotifications();
     }
-    
+
     // Recipe suggestions
     if (prefs.recipes) {
       await this.scheduleRecipeSuggestions();
     }
-    
+
     // Challenge reminders
     if (prefs.challenges) {
       await this.scheduleChallengeReminders();
     }
   }
-  
+
   private async scheduleStreakReminder() {
-    const lastCook = this.userBehavior?.lastCookTime 
-      ? new Date(this.userBehavior.lastCookTime) 
+    const lastCook = this.userBehavior?.lastCookTime
+      ? new Date(this.userBehavior.lastCookTime)
       : new Date();
-    
+
     const nextReminder = new Date(lastCook);
     nextReminder.setDate(nextReminder.getDate() + 1);
-    
+
     // Set reminder for preferred cooking time
     if (this.userBehavior?.preferredCookingTimes.length) {
-      const preferredHour = parseInt(this.userBehavior.preferredCookingTimes[0].split(':')[0]);
+      const preferredHour = parseInt(
+        this.userBehavior.preferredCookingTimes[0].split(':')[0],
+        10
+      );
       nextReminder.setHours(preferredHour - 1); // 1 hour before usual time
     }
-    
+
     this.scheduleNotification({
       id: 'streak-reminder',
       title: '🔥 Keep Your Streak Alive!',
@@ -200,11 +217,11 @@ class SmartNotificationService {
       scheduledTime: nextReminder,
     });
   }
-  
+
   private async scheduleAchievementAlerts() {
     // Check proximity to achievements
     const userStats = await this.getUserStats();
-    
+
     if (userStats.recipesUntilNextBadge <= 2) {
       this.scheduleNotification({
         id: 'achievement-proximity',
@@ -215,7 +232,7 @@ class SmartNotificationService {
       });
     }
   }
-  
+
   private async scheduleSocialNotifications() {
     // FOMO triggers
     const messages = [
@@ -223,9 +240,9 @@ class SmartNotificationService {
       '🎉 Sarah just beat your weekly XP record!',
       '🔥 Mike is on a 10-day streak - can you beat it?',
     ];
-    
+
     const randomMessage = messages[Math.floor(Math.random() * messages.length)];
-    
+
     this.scheduleNotification({
       id: 'social-fomo',
       title: 'Your Friends Are Cooking! 👨‍🍳',
@@ -234,30 +251,31 @@ class SmartNotificationService {
       scheduledTime: this.getOptimalNotificationTime(),
     });
   }
-  
+
   private async scheduleRecipeSuggestions() {
     const dinnerTime = new Date();
     dinnerTime.setHours(17, 0, 0, 0); // 5 PM
-    
+
     if (dinnerTime < new Date()) {
       dinnerTime.setDate(dinnerTime.getDate() + 1);
     }
-    
+
     this.scheduleNotification({
       id: 'recipe-suggestion',
       title: '🍝 Perfect for Tonight!',
-      message: 'Your favorite Creamy Pasta takes just 30 min - perfect for dinner!',
+      message:
+        'Your favorite Creamy Pasta takes just 30 min - perfect for dinner!',
       type: 'recipe',
       scheduledTime: dinnerTime,
     });
   }
-  
+
   private async scheduleChallengeReminders() {
     // Weekly challenge reminder
     const endOfWeek = new Date();
     endOfWeek.setDate(endOfWeek.getDate() + (7 - endOfWeek.getDay()));
     endOfWeek.setHours(20, 0, 0, 0); // Sunday 8 PM
-    
+
     this.scheduleNotification({
       id: 'challenge-reminder',
       title: '⏰ Challenge Ending Soon!',
@@ -266,10 +284,11 @@ class SmartNotificationService {
       scheduledTime: endOfWeek,
     });
   }
-  
+
   private scheduleNotification(notification: NotificationData) {
-    const scheduledTime = notification.scheduledTime || new Date(Date.now() + 3600000); // 1 hour from now
-    
+    const scheduledTime =
+      notification.scheduledTime || new Date(Date.now() + 3600000); // 1 hour from now
+
     PushNotification.localNotificationSchedule({
       id: notification.id,
       title: notification.title,
@@ -293,28 +312,31 @@ class SmartNotificationService {
       visibility: 'public',
     });
   }
-  
+
   private getOptimalNotificationTime(): Date {
     const now = new Date();
     const optimalTime = new Date();
-    
+
     // Use preferred cooking time if available
     if (this.userBehavior?.preferredCookingTimes.length) {
-      const preferredHour = parseInt(this.userBehavior.preferredCookingTimes[0].split(':')[0]);
+      const preferredHour = parseInt(
+        this.userBehavior.preferredCookingTimes[0].split(':')[0],
+        10
+      );
       optimalTime.setHours(preferredHour - 2); // 2 hours before usual cooking time
     } else {
       // Default to 5 PM
       optimalTime.setHours(17, 0, 0, 0);
     }
-    
+
     // If time has passed today, schedule for tomorrow
     if (optimalTime < now) {
       optimalTime.setDate(optimalTime.getDate() + 1);
     }
-    
+
     return optimalTime;
   }
-  
+
   private async getUserStats() {
     // Mock implementation - would connect to actual user stats
     return {
@@ -324,22 +346,33 @@ class SmartNotificationService {
       friendsActive: 3,
     };
   }
-  
+
   // Update notification preferences
-  async updateNotificationPreferences(preferences: Partial<UserBehavior['notificationPreferences']>) {
-    if (!this.userBehavior) return;
-    
+  async updateNotificationPreferences(
+    preferences: Partial<UserBehavior['notificationPreferences']>,
+  ) {
+    if (!this.userBehavior) {
+      return;
+    }
+
     this.userBehavior.notificationPreferences = {
       ...this.userBehavior.notificationPreferences,
       ...preferences,
     };
-    
-    await AsyncStorage.setItem('userBehavior', JSON.stringify(this.userBehavior));
+
+    await AsyncStorage.setItem(
+      'userBehavior',
+      JSON.stringify(this.userBehavior),
+    );
     await this.scheduleSmartNotifications();
   }
-  
+
   // Send immediate notification
-  sendImmediateNotification(title: string, message: string, type: NotificationData['type']) {
+  sendImmediateNotification(
+    title: string,
+    message: string,
+    type: NotificationData['type'],
+  ) {
     PushNotification.localNotification({
       title,
       message,
@@ -358,24 +391,27 @@ class SmartNotificationService {
       visibility: 'public',
     });
   }
-  
+
   // A/B Testing for notification messages
-  getOptimizedMessage(type: NotificationData['type'], variants: string[]): string {
+  getOptimizedMessage(
+    type: NotificationData['type'],
+    variants: string[],
+  ): string {
     // In production, this would use actual A/B testing service
     // For now, random selection with tracking
     const selectedIndex = Math.floor(Math.random() * variants.length);
     const selectedMessage = variants[selectedIndex];
-    
+
     // Track which variant was used
     this.trackNotificationVariant(type, selectedIndex);
-    
+
     return selectedMessage;
   }
-  
+
   private async trackNotificationVariant(type: string, variantIndex: number) {
     // Track in analytics service
     console.log(`Notification variant used: ${type} - Variant ${variantIndex}`);
   }
 }
 
-export default SmartNotificationService.getInstance(); 
+export default SmartNotificationService.getInstance();
