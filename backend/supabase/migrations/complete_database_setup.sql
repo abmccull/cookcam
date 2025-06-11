@@ -8,14 +8,14 @@ CREATE TABLE IF NOT EXISTS system_metrics (
   cpu_usage INTEGER,
   memory_usage INTEGER,
   database_latency INTEGER,
-  timestamp TIMESTAMPTZ DEFAULT NOW()
+  created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS slow_queries (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   query TEXT NOT NULL,
   execution_time INTEGER NOT NULL,
-  timestamp TIMESTAMPTZ DEFAULT NOW()
+  created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- 2. Create user progress table for gamification
@@ -37,7 +37,7 @@ RETURNS TABLE(
   avg_response_time NUMERIC,
   total_requests BIGINT,
   error_rate NUMERIC,
-  timestamp TIMESTAMPTZ
+  measured_at TIMESTAMPTZ
 ) AS $$
 BEGIN
   -- Return mock data for now - in production this would analyze request logs
@@ -45,7 +45,7 @@ BEGIN
     150.5::NUMERIC as avg_response_time,
     1000::BIGINT as total_requests, 
     0.5::NUMERIC as error_rate,
-    NOW() as timestamp;
+    NOW() as measured_at;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -200,8 +200,8 @@ GRANT EXECUTE ON FUNCTION add_user_xp(UUID, INTEGER, TEXT, JSONB) TO authenticat
 -- 10. Create indexes for performance
 CREATE INDEX IF NOT EXISTS idx_user_progress_user_id ON user_progress(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_progress_created_at ON user_progress(created_at);
-CREATE INDEX IF NOT EXISTS idx_system_metrics_timestamp ON system_metrics(timestamp);
-CREATE INDEX IF NOT EXISTS idx_slow_queries_timestamp ON slow_queries(timestamp);
+CREATE INDEX IF NOT EXISTS idx_system_metrics_created_at ON system_metrics(created_at);
+CREATE INDEX IF NOT EXISTS idx_slow_queries_created_at ON slow_queries(created_at);
 
 -- Success message
 SELECT 'CookCam database setup completed successfully!' as status; 

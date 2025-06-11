@@ -285,11 +285,11 @@ export class MonitoringService {
         logger.error('Failed to get API metrics', { error });
       }
 
-      // Get slow queries
+            // Get slow queries  
       const { data: slowQueries } = await client
         .from('slow_queries')
-        .select('query, execution_time, timestamp')
-        .gte('timestamp', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
+        .select('query, execution_time, created_at')
+        .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
         .order('execution_time', { ascending: false })
         .limit(10);
       
@@ -307,7 +307,7 @@ export class MonitoringService {
           cpu_usage: health.system.cpu.usage,
           memory_usage: health.system.memory.percentage,
           database_latency: health.services.database.latency,
-          timestamp: new Date().toISOString()
+          created_at: new Date().toISOString()
         });
     } catch (metricsError: unknown) {
       logger.error('Metrics logging error', { error: metricsError });
@@ -336,22 +336,23 @@ export class MonitoringService {
       // Get slow queries  
       const { data: slowQueries } = await client
         .from('slow_queries')
-        .select('query, execution_time, timestamp')
-        .gte('timestamp', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
+        .select('query, execution_time, created_at')
+        .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
         .order('execution_time', { ascending: false })
         .limit(10);
       
       return {
         apiMetrics: apiMetrics || [],
         slowQueries: slowQueries || [],
-        timestamp: new Date().toISOString()
+        measured_at: new Date().toISOString()
       };
     } catch (error: unknown) {
       logger.error('Performance metrics error', { error });
       return {
         apiMetrics: [],
         slowQueries: [],
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
+        measured_at: new Date().toISOString()
       };
     }
   }
