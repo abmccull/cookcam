@@ -42,7 +42,7 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "./plugins/withIAPStore.js",
+      "./plugins/withIAPConfig.js",
       "expo-camera",
       "expo-secure-store",
       "react-native-reanimated/plugin",
