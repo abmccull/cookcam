@@ -25,7 +25,7 @@
   "dependencies": {
     "@expo/cli": "^0.24.14",
     "@react-native-async-storage/async-storage": "2.1.2",
-    "@react-native/virtualized-lists": "^0.80.0",
+    "@react-native/virtualized-lists": "0.79.3",
     "@react-native-firebase/app": "^22.2.1",
     "@react-native-firebase/messaging": "^22.2.1",
     "@react-navigation/bottom-tabs": "^7.3.14",
