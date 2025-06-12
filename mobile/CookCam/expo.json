@@ -1,0 +1,61 @@
+{
+  "expo": {
+    "name": "CookCam",
+    "slug": "cookcam",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#4CAF50"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.cookcam.app",
+      "jsEngine": "hermes",
+      "infoPlist": {
+        "NSCameraUsageDescription": "CookCam needs camera access to scan ingredients for recipe generation.",
+        "NSPhotoLibraryUsageDescription": "CookCam needs photo library access to save and share recipe images."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#4CAF50"
+      },
+      "package": "com.abmccull.cookcamexpo",
+      "jsEngine": "hermes",
+      "permissions": [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "RECEIVE_BOOT_COMPLETED",
+        "VIBRATE",
+        "WAKE_LOCK",
+        "com.google.android.c2dm.permission.RECEIVE"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "./plugins/withIAPStore.js",
+      "expo-camera",
+      "expo-secure-store",
+      "react-native-reanimated/plugin",
+      "expo-notifications",
+      "expo-dev-client"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "dd1a18d1-591b-4ea4-a300-6f0c4cdcec87"
+      },
+      "SUPABASE_URL": "https://prpvrnxtpvilxakxzajm.supabase.co",
+      "SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBycHZybnh0cHZpbHhha3h6YWptIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg1NDI3OTMsImV4cCI6MjA2NDExODc5M30.Yy-sEHdASoSnjjoi0DjeICSvnWj0g5svYS5Crok8J8k",
+      "API_BASE_URL": "https://64.23.236.43"
+    }
+  }
+} 
