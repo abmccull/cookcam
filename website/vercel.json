@@ -23,13 +23,5 @@
         }
       ]
     }
-  ],
-  "functions": {
-    "ref.html": {
-      "includeFiles": "ref.html"
-    },
-    "c.html": {
-      "includeFiles": "c.html"
-    }
-  }
+  ]
 } 
