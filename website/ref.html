@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Join CookCam AI - Referred by Creator</title>
+    <meta name="description" content="You've been invited to join CookCam AI! Download the app and start your cooking journey with AI-powered recipes.">
+    
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        .referral-landing {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #FF6B35 0%, #2D1B69 100%);
+            color: white;
+            text-align: center;
+            padding: 2rem;
+        }
+        
+        .referral-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 24px;
+            padding: 3rem 2rem;
+            max-width: 500px;
+            width: 100%;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .app-icon {
+            width: 80px;
+            height: 80px;
+            background: #FF6B35;
+            border-radius: 20px;
+            margin: 0 auto 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+        }
+        
+        .referral-message {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+        
+        .creator-info {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+        }
+        
+        .download-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+        
+        .download-btn {
+            flex: 1;
+            background: #FF6B35;
+            color: white;
+            padding: 1rem 1.5rem;
+            border: none;
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .download-btn:hover {
+            background: #e55a2b;
+            transform: translateY(-2px);
+        }
+        
+        .loading-text {
+            margin-top: 1rem;
+            opacity: 0.8;
+        }
+        
+        @media (max-width: 640px) {
+            .download-buttons {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="referral-landing">
+        <div class="referral-card">
+            <div class="app-icon">🍳</div>
+            <h1 class="referral-message">You've been invited to CookCam AI!</h1>
+            
+            <div class="creator-info">
+                <p>🎉 A creator you follow shared their favorite cooking app with you</p>
+                <p><strong>Get AI-powered recipes from your ingredients</strong></p>
+            </div>
+            
+            <p>Opening the app now...</p>
+            <p class="loading-text">If the app doesn't open automatically, choose your platform below:</p>
+            
+            <div class="download-buttons">
+                <a href="#" class="download-btn" id="ios-download">📱 Download for iOS</a>
+                <a href="#" class="download-btn" id="android-download">🤖 Download for Android</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Extract referral code from URL
+        const pathParts = window.location.pathname.split('/');
+        const referralCode = pathParts[2]; // /ref/{code}
+        
+        console.log('🔗 Referral code:', referralCode);
+        
+        // Store referral code for attribution
+        if (referralCode) {
+            localStorage.setItem('cookcam_referral_code', referralCode);
+            sessionStorage.setItem('cookcam_referral_code', referralCode);
+            
+            // Track the click
+            fetch(`https://api.cookcam.ai/api/v1/subscription/affiliate/track/${referralCode}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    source: 'web_landing',
+                    user_agent: navigator.userAgent,
+                    referrer: document.referrer,
+                    timestamp: new Date().toISOString()
+                })
+            }).then(response => {
+                if (response.ok) {
+                    console.log('📊 Successfully tracked referral click');
+                } else {
+                    console.log('⚠️ Failed to track referral click');
+                }
+            }).catch(error => {
+                console.log('❌ Error tracking referral click:', error);
+            });
+        }
+        
+        // Detect mobile platform and set up store links
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+        const isAndroid = /Android/.test(navigator.userAgent);
+        const isMobile = isIOS || isAndroid;
+        
+        const iosStoreUrl = 'https://apps.apple.com/app/cookcam-ai';
+        const androidStoreUrl = 'https://play.google.com/store/apps/details?id=com.abmccull.cookcamexpo';
+        
+        // Set up download button links
+        document.getElementById('ios-download').href = iosStoreUrl;
+        document.getElementById('android-download').href = androidStoreUrl;
+        
+        // Function to redirect to appropriate app store
+        function redirectToAppStore() {
+            if (isIOS) {
+                window.location.href = iosStoreUrl;
+            } else if (isAndroid) {
+                window.location.href = androidStoreUrl;
+            } else {
+                // Desktop - show both options or redirect to main site
+                window.location.href = '/index.html#download';
+            }
+        }
+        
+        // Try to open app first, fallback to app store
+        function smartRedirect() {
+            if (!referralCode) {
+                // No referral code, just redirect to store
+                redirectToAppStore();
+                return;
+            }
+            
+            // Try Universal Link first (iOS)
+            const universalLink = `https://cookcam.ai/ref/${referralCode}`;
+            
+            // Try custom scheme (both platforms)
+            const customScheme = `cookcam://ref/${referralCode}`;
+            
+            if (isMobile) {
+                // Try to open the app
+                window.location.href = universalLink;
+                
+                // Fallback to custom scheme after short delay
+                setTimeout(() => {
+                    window.location.href = customScheme;
+                }, 1000);
+                
+                // Final fallback to app store
+                setTimeout(redirectToAppStore, 3000);
+            } else {
+                // Desktop - redirect to download page
+                setTimeout(() => {
+                    window.location.href = '/index.html#download';
+                }, 2000);
+            }
+        }
+        
+        // Add click handlers for manual download
+        document.getElementById('ios-download').addEventListener('click', function(e) {
+            e.preventDefault();
+            window.location.href = iosStoreUrl;
+        });
+        
+        document.getElementById('android-download').addEventListener('click', function(e) {
+            e.preventDefault();
+            window.location.href = androidStoreUrl;
+        });
+        
+        // Start the smart redirect process
+        setTimeout(smartRedirect, 1500);
+        
+        // Optional: Update UI based on detected platform
+        if (isIOS) {
+            document.getElementById('android-download').style.opacity = '0.6';
+        } else if (isAndroid) {
+            document.getElementById('ios-download').style.opacity = '0.6';
+        }
+    </script>
+</body>
+</html> 

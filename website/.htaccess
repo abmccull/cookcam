@@ -1,0 +1,29 @@
+RewriteEngine On
+
+# Referral link redirects: /ref/{code} -> /ref.html with code in URL
+RewriteRule ^ref/([a-zA-Z0-9_-]+)/?$ /ref.html [L,QSA]
+
+# Creator link redirects: /c/{slug} -> /c.html with slug in URL  
+RewriteRule ^c/([a-zA-Z0-9_-]+)/?$ /c.html [L,QSA]
+
+# Force HTTPS (optional but recommended for Universal Links)
+RewriteCond %{HTTPS} off
+RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# Ensure apple-app-site-association is served with correct content type
+<Files "apple-app-site-association">
+    Header set Content-Type "application/json"
+    Header set Access-Control-Allow-Origin "*"
+</Files>
+
+# Cache static assets
+<IfModule mod_expires.c>
+    ExpiresActive on
+    ExpiresByType text/css "access plus 1 year"
+    ExpiresByType application/javascript "access plus 1 year"
+    ExpiresByType image/png "access plus 1 year"
+    ExpiresByType image/jpg "access plus 1 year"
+    ExpiresByType image/jpeg "access plus 1 year"
+    ExpiresByType image/gif "access plus 1 year"
+    ExpiresByType image/svg+xml "access plus 1 year"
+</IfModule> 
