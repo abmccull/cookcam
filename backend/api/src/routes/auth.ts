@@ -609,4 +609,59 @@ router.delete('/account', authenticateUser, async (req: Request, res: Response) 
   }
 });
 
+// Link user to referral code (for attribution)
+router.post('/link-referral', authenticateUser, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user.id;
+    const { referralCode } = req.body;
+
+    if (!referralCode) {
+      return res.status(400).json({ error: 'Referral code is required' });
+    }
+
+    // Verify the referral code exists
+    const { data: affiliateLink, error: linkError } = await supabase
+      .from('creator_affiliate_links')
+      .select('creator_id, id')
+      .eq('link_code', referralCode)
+      .eq('is_active', true)
+      .single();
+
+    if (linkError || !affiliateLink) {
+      logger.warn('Invalid referral code attempt', { referralCode, userId });
+      return res.status(400).json({ error: 'Invalid referral code' });
+    }
+
+    // Store the referral attribution (for later conversion tracking)
+    const { error: attributionError } = await supabase
+      .from('referral_attributions')
+      .insert({
+        user_id: userId,
+        referrer_id: affiliateLink.creator_id,
+        affiliate_link_id: affiliateLink.id,
+        link_code: referralCode,
+        attributed_at: new Date().toISOString()
+      });
+
+    if (attributionError) {
+      logger.error('Failed to store referral attribution', { error: attributionError, userId, referralCode });
+      // Don't fail the request - attribution is nice to have but not critical
+    }
+
+    logger.info('✅ User linked to referral', { 
+      userId, 
+      referralCode, 
+      creatorId: affiliateLink.creator_id 
+    });
+
+    res.json({
+      success: true,
+      message: 'Referral linked successfully'
+    });
+  } catch (error) {
+    logger.error('Link referral error:', error);
+    res.status(500).json({ error: 'Failed to link referral' });
+  }
+});
+
 export default router; 

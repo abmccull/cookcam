@@ -489,6 +489,45 @@ export class SubscriptionService {
       providerSubscriptionId: session.subscription,
       providerCustomerId: session.customer
     });
+
+    // Check for referral attribution and record conversion
+    await this.checkAndRecordReferralConversion(userId, session.subscription, tierId);
+  }
+
+  // Check for referral attribution and record conversion
+  private async checkAndRecordReferralConversion(userId: string, subscriptionId: string, tierId: number): Promise<void> {
+    try {
+      // Check if user has referral attribution
+      const { data: attribution } = await supabase
+        .from('referral_attributions')
+        .select('*')
+        .eq('user_id', userId)
+        .order('attributed_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (attribution) {
+        // Import CreatorService to record conversion
+        const { CreatorService } = await import('./creatorService');
+        const creatorService = new CreatorService();
+        
+        await creatorService.recordAffiliateConversion({
+          linkCode: attribution.link_code,
+          subscriberId: userId,
+          subscriptionId: subscriptionId,
+          tierId: tierId
+        });
+
+        logger.info('💰 Referral conversion recorded from subscription', {
+          userId,
+          linkCode: attribution.link_code,
+          subscriptionId
+        });
+      }
+    } catch (error) {
+      logger.error('❌ Failed to check referral attribution', { error, userId });
+      // Don't fail the subscription if referral tracking fails
+    }
   }
 
   private async handleSubscriptionUpdate(subscription: any): Promise<void> {

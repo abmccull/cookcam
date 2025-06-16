@@ -1,382 +1,307 @@
-import React, {useEffect} from 'react';
-import {NavigationContainer} from '@react-navigation/native';
-import {createNativeStackNavigator} from '@react-navigation/native-stack';
-import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
-import {
-  StatusBar,
-  ActivityIndicator,
-  View,
-  StyleSheet,
-  AppState,
-} from 'react-native';
-import {GestureHandlerRootView} from 'react-native-gesture-handler';
-import {AuthProvider, useAuth} from './context/AuthContext';
-import {GamificationProvider} from './context/GamificationContext';
-import {SubscriptionProvider} from './context/SubscriptionContext';
-import {TempDataProvider} from './context/TempDataContext';
-import {SafeAreaProvider} from 'react-native-safe-area-context';
-import TabBar from './components/TabBar';
-import XPNotificationProvider from './components/XPNotificationProvider';
-import XPHeader from './components/XPHeader';
-import {analyticsService} from './services/analyticsService';
+import React, { useRef, useEffect } from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { StatusBar } from 'expo-status-bar';
+import { View, ActivityIndicator } from 'react-native';
+import { Camera, Heart, Trophy, User, Home } from 'lucide-react-native';
 
-// Import screens
+// Context Providers
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { GamificationProvider } from './context/GamificationContext';
+import { SubscriptionProvider } from './context/SubscriptionContext';
+import { TempDataProvider } from './context/TempDataContext';
+
+// Screens
+import WelcomeScreen from './screens/WelcomeScreen';
+import OnboardingScreen from './screens/OnboardingScreen';
 import LoginScreen from './screens/LoginScreen';
 import SignupScreen from './screens/SignupScreen';
-import OnboardingScreen from './screens/OnboardingScreen';
-import CreatorOnboardingScreen from './screens/CreatorOnboardingScreen';
+import MainScreen from './screens/MainScreen';
 import CameraScreen from './screens/CameraScreen';
+import DemoOnboardingScreen from './screens/DemoOnboardingScreen';
 import IngredientReviewScreen from './screens/IngredientReviewScreen';
-import EnhancedPreferencesScreen from './screens/EnhancedPreferencesScreen';
 import RecipeCardsScreen from './screens/RecipeCardsScreen';
 import CookModeScreen from './screens/CookModeScreen';
-import LeaderboardScreen from './screens/LeaderboardScreen';
-import FavoritesScreen from './screens/FavoritesScreen';
-import DiscoverScreen from './screens/DiscoverScreen';
-import CreatorScreen from './screens/CreatorScreen';
 import ProfileScreen from './screens/ProfileScreen';
-
-// New onboarding v2 screens
-import WelcomeScreen from './screens/WelcomeScreen';
-import ColdOpenScreen from './screens/ColdOpenScreen';
-import DemoOnboardingScreen from './screens/DemoOnboardingScreen';
-import RecipeCarouselScreen from './screens/RecipeCarouselScreen';
-import PlanSelectionSheet from './screens/PlanSelectionSheet';
-import AccountGateScreen from './screens/AccountGateScreen';
-import PlanPaywallScreen from './screens/PlanPaywallScreen';
+import FavoritesScreen from './screens/FavoritesScreen';
+import LeaderboardScreen from './screens/LeaderboardScreen';
+import CreatorScreen from './screens/CreatorScreen';
+import CreatorOnboardingScreen from './screens/CreatorOnboardingScreen';
 import CreatorKYCScreen from './screens/CreatorKYCScreen';
+import SubscriptionScreen from './screens/SubscriptionScreen';
+import PlanSelectionSheet from './screens/PlanSelectionSheet';
+import PlanPaywallScreen from './screens/PlanPaywallScreen';
+import PreferencesScreen from './screens/PreferencesScreen';
+import EnhancedPreferencesScreen from './screens/EnhancedPreferencesScreen';
+import NotificationPreferencesScreen from './screens/NotificationPreferencesScreen';
+import DiscoverScreen from './screens/DiscoverScreen';
+import RecipeCarouselScreen from './screens/RecipeCarouselScreen';
+import AccountGateScreen from './screens/AccountGateScreen';
+import ExampleFeatureGateScreen from './screens/ExampleFeatureGateScreen';
+import ColdOpenScreen from './screens/ColdOpenScreen';
+import DeepLinkService from './services/DeepLinkService';
 
-// Navigation types
+// Navigation Types
 export type RootStackParamList = {
-  // New onboarding flow
+  // Auth Flow
   Welcome: undefined;
-  ColdOpen: undefined;
-  DemoOnboarding: undefined;
-  RecipeCarousel: undefined;
-  PlanSelection: undefined;
-  AccountGate: {intendedPlan: string; tempData?: any};
-  PlanPaywall: {selectedPlan: string; tempData?: any};
-  CreatorKYC: undefined;
-  PreferenceQuiz: {skipable: boolean};
-
-  // Existing routes
-  Auth: undefined;
-  Main: undefined;
-  Onboarding: {isCreator?: boolean}; // Legacy - will be deprecated
-  CreatorOnboarding: {returnToTab?: string};
-};
-
-export type AuthStackParamList = {
+  Onboarding: undefined;
   Login: undefined;
   Signup: undefined;
-};
-
-export type MainTabParamList = {
-  Home: undefined;
+  
+  // Main App Tabs
+  MainTabs: undefined;
+  
+  // Stack Screens
+  Main: undefined;
+  Camera: undefined;
+  DemoOnboarding: undefined;
+  IngredientReview: {
+    ingredients: Array<{
+      id: string;
+      name: string;
+      confidence: number;
+      quantity?: string;
+    }>;
+  };
+  RecipeCards: {
+    ingredients: string[];
+    filters?: {
+      cuisine?: string;
+      maxTime?: number;
+      difficulty?: string;
+    };
+  };
+  CookMode: {
+    recipeId: string;
+    recipe: {
+      id: string;
+      title: string;
+      description: string;
+      ingredients: string[];
+      steps: Array<{
+        step: number;
+        instruction: string;
+        time?: number;
+        temperature?: string;
+      }>;
+      totalTime: number;
+      difficulty: string;
+      servings: number;
+    };
+  };
+  Profile: undefined;
   Favorites: undefined;
   Leaderboard: undefined;
-  Discover: undefined;
   Creator: undefined;
+  CreatorOnboarding: undefined;
+  CreatorKYC: undefined;
+  Subscription: undefined;
+  PlanSelection: undefined;
+  PlanPaywall: {
+    source?: string;
+    feature?: string;
+  };
+  Preferences: undefined;
+  EnhancedPreferences: undefined;
+  NotificationPreferences: undefined;
+  Discover: undefined;
+  RecipeCarousel: {
+    recipes: Array<{
+      id: string;
+      title: string;
+      image: string;
+      time: number;
+      difficulty: string;
+    }>;
+    initialIndex?: number;
+  };
+  AccountGate: {
+    requiredFeature: string;
+    onContinue: () => void;
+  };
+  ExampleFeatureGate: undefined;
+  ColdOpen: undefined;
+};
+
+export type TabParamList = {
+  Home: undefined;
+  Camera: undefined;
+  Favorites: undefined;
+  Leaderboard: undefined;
   Profile: undefined;
 };
 
-export type HomeStackParamList = {
-  Camera: undefined;
-  IngredientReview: {imageUri: string};
-  Preferences: {ingredients: any[]; imageUri?: string};
-  RecipeCards: {ingredients: any[]; imageUri?: string; preferences: any};
-  CookMode: {recipe: any};
-};
+const Stack = createNativeStackNavigator<RootStackParamList>();
+const Tab = createBottomTabNavigator<TabParamList>();
 
-const RootStack = createNativeStackNavigator<RootStackParamList>();
-const AuthStack = createNativeStackNavigator<AuthStackParamList>();
-const Tab = createBottomTabNavigator<MainTabParamList>();
-const HomeStack = createNativeStackNavigator<HomeStackParamList>();
-
-// Home Stack Navigator
-const HomeStackScreen = () => (
-  <HomeStack.Navigator
-    screenOptions={{
-      headerStyle: {
-        backgroundColor: '#2D1B69',
-      },
-      headerTintColor: '#F8F8FF',
-      headerTitleStyle: {
-        fontWeight: 'bold',
-        fontSize: 18,
-      },
-      gestureEnabled: true,
-      animation: 'slide_from_right',
-    }}>
-    <HomeStack.Screen
-      name="Camera"
-      component={CameraScreen}
-      options={{
-        title: 'CookCam',
-        headerShown: false,
-      }}
-    />
-    <HomeStack.Screen
-      name="IngredientReview"
-      component={IngredientReviewScreen as any}
-      options={{
-        title: 'Review Ingredients',
-      }}
-    />
-    <HomeStack.Screen
-      name="Preferences"
-      component={EnhancedPreferencesScreen}
-      options={{
-        title: 'Your Preferences',
-      }}
-    />
-    <HomeStack.Screen
-      name="RecipeCards"
-      component={RecipeCardsScreen}
-      options={{
-        title: 'AI Generated Recipes',
-      }}
-    />
-    <HomeStack.Screen
-      name="CookMode"
-      component={CookModeScreen}
-      options={{
-        headerShown: false,
-        gestureEnabled: false,
-      }}
-    />
-  </HomeStack.Navigator>
-);
-
-// Auth Stack Navigator
-const AuthStackScreen = () => (
-  <AuthStack.Navigator
-    screenOptions={{
-      headerShown: false,
-      animation: 'slide_from_right',
-    }}>
-    <AuthStack.Screen name="Login" component={LoginScreen} />
-    <AuthStack.Screen name="Signup" component={SignupScreen} />
-  </AuthStack.Navigator>
-);
-
-// Main Tab Navigator with improved styling
-const MainTabs = () => {
-  const {user} = useAuth();
-
+// Main Tab Navigator
+function MainTabs() {
   return (
-    <>
-      <XPHeader />
-      <Tab.Navigator
-        tabBar={props => <TabBar {...props} />}
-        screenOptions={{
-          headerShown: false,
-        }}>
-        <Tab.Screen
-          name="Home"
-          component={HomeStackScreen}
-          options={{
-            tabBarLabel: 'Cook',
-          }}
-        />
-        <Tab.Screen
-          name="Favorites"
-          component={FavoritesScreen}
-          options={{
-            tabBarLabel: 'Saved',
-            tabBarBadge:
-              user?.favoriteCount && user.favoriteCount > 0
-                ? user.favoriteCount
-                : undefined,
-          }}
-        />
-        <Tab.Screen
-          name="Leaderboard"
-          component={LeaderboardScreen}
-          options={{
-            tabBarLabel: 'Compete',
-          }}
-        />
-        <Tab.Screen
-          name="Discover"
-          component={DiscoverScreen}
-          options={{
-            tabBarLabel: 'Discover',
-          }}
-        />
-        <Tab.Screen
-          name="Creator"
-          component={CreatorScreen}
-          options={{
-            tabBarLabel: 'Creator',
-          }}
-        />
-        <Tab.Screen
-          name="Profile"
-          component={ProfileScreen}
-          options={{
-            tabBarLabel: 'Me',
-            tabBarBadge:
-              user?.streak && user.streak > 0 ? `🔥${user.streak}` : undefined,
-          }}
-        />
-      </Tab.Navigator>
-    </>
+    <Tab.Navigator
+      screenOptions={({ route }) => ({
+        tabBarIcon: ({ focused, color, size }) => {
+          let IconComponent;
+
+          if (route.name === 'Home') {
+            IconComponent = Home;
+          } else if (route.name === 'Camera') {
+            IconComponent = Camera;
+          } else if (route.name === 'Favorites') {
+            IconComponent = Heart;
+          } else if (route.name === 'Leaderboard') {
+            IconComponent = Trophy;
+          } else if (route.name === 'Profile') {
+            IconComponent = User;
+          }
+
+          return IconComponent ? (
+            <IconComponent 
+              size={size} 
+              color={focused ? '#FF6B35' : color} 
+            />
+          ) : null;
+        },
+        tabBarActiveTintColor: '#FF6B35',
+        tabBarInactiveTintColor: 'gray',
+        tabBarStyle: {
+          backgroundColor: '#FFFFFF',
+          borderTopWidth: 1,
+          borderTopColor: '#E0E0E0',
+          paddingBottom: 5,
+          paddingTop: 5,
+          height: 60,
+        },
+        headerShown: false,
+      })}
+    >
+      <Tab.Screen name="Home" component={MainScreen} />
+      <Tab.Screen name="Camera" component={CameraScreen} />
+      <Tab.Screen name="Favorites" component={FavoritesScreen} />
+      <Tab.Screen name="Leaderboard" component={LeaderboardScreen} />
+      <Tab.Screen name="Profile" component={ProfileScreen} />
+    </Tab.Navigator>
   );
-};
+}
 
-// Root Navigator with Auth Check
-const RootNavigator = () => {
-  const {user, isLoading} = useAuth();
-
-  if (isLoading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#FF6B35" />
-      </View>
-    );
-  }
-
+// Auth Navigator
+function AuthNavigator() {
   return (
-    <RootStack.Navigator screenOptions={{headerShown: false}}>
-      {user ? (
-        <>
-          <RootStack.Screen name="Main" component={MainTabs} />
-          <RootStack.Screen
-            name="CreatorOnboarding"
-            component={CreatorOnboardingScreen as any}
-          />
-        </>
-      ) : (
-        <>
-          {/* Start with splash screen first */}
-          <RootStack.Screen name="ColdOpen" component={ColdOpenScreen} />
-          
-          {/* New welcome screen */}
-          <RootStack.Screen name="Welcome" component={WelcomeScreen} />
-          
-          {/* New onboarding v2 flow */}
-          <RootStack.Screen
-            name="DemoOnboarding"
-            component={DemoOnboardingScreen}
-          />
-          <RootStack.Screen
-            name="RecipeCarousel"
-            component={RecipeCarouselScreen}
-            options={{
-              presentation: 'modal',
-              animation: 'slide_from_bottom',
-            }}
-          />
-          <RootStack.Screen
-            name="PlanSelection"
-            component={PlanSelectionSheet}
-            options={{
-              presentation: 'modal',
-              animation: 'slide_from_bottom',
-            }}
-          />
-          <RootStack.Screen
-            name="AccountGate"
-            component={AccountGateScreen}
-            options={{
-              presentation: 'modal',
-              animation: 'slide_from_bottom',
-            }}
-          />
-          <RootStack.Screen
-            name="PlanPaywall"
-            component={PlanPaywallScreen}
-            options={{
-              presentation: 'modal',
-              animation: 'slide_from_bottom',
-            }}
-          />
-          <RootStack.Screen
-            name="CreatorKYC"
-            component={CreatorKYCScreen}
-            options={{
-              presentation: 'modal',
-              animation: 'slide_from_bottom',
-            }}
-          />
-          {/* TODO: Add PreferenceQuiz screen */}
-
-          {/* Legacy onboarding - keeping for fallback */}
-          <RootStack.Screen name="Auth" component={AuthStackScreen} />
-          <RootStack.Screen name="Onboarding" component={OnboardingScreen} />
-          <RootStack.Screen
-            name="CreatorOnboarding"
-            component={CreatorOnboardingScreen as any}
-          />
-        </>
-      )}
-    </RootStack.Navigator>
+    <Stack.Navigator 
+      initialRouteName="Welcome"
+      screenOptions={{ headerShown: false }}
+    >
+      <Stack.Screen name="Welcome" component={WelcomeScreen} />
+      <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+      <Stack.Screen name="Login" component={LoginScreen} />
+      <Stack.Screen name="Signup" component={SignupScreen} />
+    </Stack.Navigator>
   );
-};
+}
 
-// Main App Component with Analytics Integration
-const AppWithAnalytics = () => {
+// Main App Navigator
+function AppNavigator() {
+  return (
+    <Stack.Navigator 
+      initialRouteName="MainTabs"
+      screenOptions={{ headerShown: false }}
+    >
+      <Stack.Screen name="MainTabs" component={MainTabs} />
+      <Stack.Screen name="DemoOnboarding" component={DemoOnboardingScreen} />
+      <Stack.Screen name="IngredientReview" component={IngredientReviewScreen} />
+      <Stack.Screen name="RecipeCards" component={RecipeCardsScreen} />
+      <Stack.Screen name="CookMode" component={CookModeScreen} />
+      <Stack.Screen name="Creator" component={CreatorScreen} />
+      <Stack.Screen name="CreatorOnboarding" component={CreatorOnboardingScreen} />
+      <Stack.Screen name="CreatorKYC" component={CreatorKYCScreen} />
+      <Stack.Screen name="Subscription" component={SubscriptionScreen} />
+      <Stack.Screen name="PlanSelection" component={PlanSelectionSheet} />
+      <Stack.Screen name="PlanPaywall" component={PlanPaywallScreen} />
+      <Stack.Screen name="Preferences" component={PreferencesScreen} />
+      <Stack.Screen name="EnhancedPreferences" component={EnhancedPreferencesScreen} />
+      <Stack.Screen name="NotificationPreferences" component={NotificationPreferencesScreen} />
+      <Stack.Screen name="Discover" component={DiscoverScreen} />
+      <Stack.Screen name="RecipeCarousel" component={RecipeCarouselScreen} />
+      <Stack.Screen name="AccountGate" component={AccountGateScreen} />
+      <Stack.Screen name="ExampleFeatureGate" component={ExampleFeatureGateScreen} />
+      <Stack.Screen name="ColdOpen" component={ColdOpenScreen} />
+    </Stack.Navigator>
+  );
+}
+
+// Loading Screen
+function LoadingScreen() {
+  return (
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F8F8FF' }}>
+      <ActivityIndicator size="large" color="#FF6B35" />
+    </View>
+  );
+}
+
+// Root Navigator Component
+function RootNavigator() {
+  const { user, isLoading } = useAuth();
+  const navigationRef = useRef<any>(null);
+
   useEffect(() => {
-    // Track app lifecycle events
-    const handleAppStateChange = (nextAppState: string) => {
-      analyticsService.trackAppStateChange(
-        nextAppState as 'active' | 'background' | 'inactive',
-      );
+    const deepLinkService = DeepLinkService.getInstance();
+    deepLinkService.setNavigationRef(navigationRef);
+    
+    // Initialize deep link handling
+    const initDeepLinks = async () => {
+      await deepLinkService.initialize();
     };
-
-    // Set up app state listener
-    const subscription = AppState.addEventListener(
-      'change',
-      handleAppStateChange,
-    );
-
-    // Track app launch
-    analyticsService.track('app_launched');
-
-    return () => {
-      subscription.remove();
-      analyticsService.destroy();
-    };
+    
+    initDeepLinks();
   }, []);
 
+  useEffect(() => {
+    // Process any pending links after navigation is ready
+    if (navigationRef.current) {
+      const deepLinkService = DeepLinkService.getInstance();
+      deepLinkService.processPendingLinks();
+    }
+  }, [user]);
+
+  if (isLoading) {
+    return <LoadingScreen />;
+  }
+
+  const linking = {
+    prefixes: ['cookcam://', 'https://cookcam.ai', 'https://www.cookcam.ai'],
+    config: {
+      screens: {
+        Welcome: 'signup',
+        Login: 'login',
+        Signup: 'signup',
+        MainTabs: 'main',
+        CookMode: 'recipe/:recipeId',
+      },
+    },
+  };
+
   return (
-    <GestureHandlerRootView style={{flex: 1}}>
-      <SafeAreaProvider>
-        <StatusBar
-          barStyle="light-content"
-          backgroundColor="#2D1B69"
-          translucent={false}
-        />
-        <TempDataProvider>
-          <AuthProvider>
-            <SubscriptionProvider>
-              <GamificationProvider>
-                <XPNotificationProvider>
-                  <NavigationContainer>
-                    <RootNavigator />
-                  </NavigationContainer>
-                </XPNotificationProvider>
-              </GamificationProvider>
-            </SubscriptionProvider>
-          </AuthProvider>
-        </TempDataProvider>
-      </SafeAreaProvider>
-    </GestureHandlerRootView>
+    <NavigationContainer ref={navigationRef} linking={linking}>
+      {user ? <AppNavigator /> : <AuthNavigator />}
+    </NavigationContainer>
   );
-};
+}
 
-const styles = StyleSheet.create({
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#F8F8FF',
-  },
-});
-
+// Main App Component
 const App: React.FC = () => {
-  return <AppWithAnalytics />;
+  return (
+    <AuthProvider>
+      <GamificationProvider>
+        <SubscriptionProvider>
+          <TempDataProvider>
+            <StatusBar style="auto" />
+            <RootNavigator />
+          </TempDataProvider>
+        </SubscriptionProvider>
+      </GamificationProvider>
+    </AuthProvider>
+  );
 };
 
 export default App;

@@ -1,5 +1,5 @@
-import apiService, {ApiResponse} from './apiService';
-import {API_ENDPOINTS} from '../config/api';
+import apiService, { ApiResponse } from "./apiService";
+import { API_ENDPOINTS } from "../config/api";
 
 // Types for CookCam API responses
 export interface User {
@@ -54,7 +54,7 @@ export interface Recipe {
   prep_time?: number;
   cook_time?: number;
   servings?: number;
-  difficulty?: 'easy' | 'medium' | 'hard';
+  difficulty?: "easy" | "medium" | "hard";
   cuisine_type?: string;
   dietary_tags?: string[];
   nutrition_info?: NutritionInfo;
@@ -106,11 +106,11 @@ export interface LeaderboardEntry {
 // Add new types for subscription
 export interface SubscriptionTier {
   id: string;
-  slug: 'free' | 'regular' | 'creator';
+  slug: "free" | "regular" | "creator";
   name: string;
   price: number;
   currency: string;
-  billing_period: 'monthly' | 'yearly';
+  billing_period: "monthly" | "yearly";
   features: string[];
   limits: {
     daily_scans?: number;
@@ -122,8 +122,8 @@ export interface SubscriptionTier {
 
 export interface UserSubscription {
   id: string;
-  tier_slug: 'free' | 'regular' | 'creator';
-  status: 'active' | 'cancelled' | 'expired' | 'trial';
+  tier_slug: "free" | "regular" | "creator";
+  status: "active" | "cancelled" | "expired" | "trial";
   trial_ends_at?: string;
   current_period_start: string;
   current_period_end: string;
@@ -352,8 +352,8 @@ class CookCamApi {
 
   async createCheckoutSession(
     tierId: string,
-  ): Promise<ApiResponse<{checkoutUrl: string}>> {
-    return apiService.post<{checkoutUrl: string}>(
+  ): Promise<ApiResponse<{ checkoutUrl: string }>> {
+    return apiService.post<{ checkoutUrl: string }>(
       API_ENDPOINTS.subscription.checkout,
       {
         tier_id: tierId,
@@ -369,8 +369,8 @@ class CookCamApi {
 
   async checkFeatureAccess(
     feature: string,
-  ): Promise<ApiResponse<{hasAccess: boolean; usage?: any}>> {
-    return apiService.get<{hasAccess: boolean; usage?: any}>(
+  ): Promise<ApiResponse<{ hasAccess: boolean; usage?: any }>> {
+    return apiService.get<{ hasAccess: boolean; usage?: any }>(
       API_ENDPOINTS.subscription.feature(feature),
     );
   }
@@ -395,6 +395,16 @@ class CookCamApi {
     );
   }
 
+  // Link user to referral code for attribution
+  async linkUserToReferral(userId: string, referralCode: string): Promise<ApiResponse<any>> {
+    return apiService.post<any>(
+      '/api/v1/auth/link-referral',
+      {
+        referralCode: referralCode,
+      },
+    );
+  }
+
   async getAffiliateLinks(): Promise<ApiResponse<AffiliateLink[]>> {
     return apiService.get<AffiliateLink[]>(
       API_ENDPOINTS.subscription.affiliate.links,
@@ -403,7 +413,7 @@ class CookCamApi {
 
   async requestPayout(
     amount: number,
-    method: 'stripe' | 'paypal' | 'bank_transfer' = 'stripe',
+    method: "stripe" | "paypal" | "bank_transfer" = "stripe",
   ): Promise<ApiResponse> {
     return apiService.post(API_ENDPOINTS.subscription.creator.payout, {
       amount,
@@ -412,7 +422,7 @@ class CookCamApi {
   }
 
   async getCreatorAnalytics(
-    period: 'week' | 'month' | 'year' = 'month',
+    period: "week" | "month" | "year" = "month",
   ): Promise<ApiResponse<any>> {
     return apiService.get(
       `${API_ENDPOINTS.subscription.creator.analytics}?period=${period}`,
@@ -432,7 +442,7 @@ class CookCamApi {
 
   // App Store/Google Play Subscription Methods
   async validateSubscriptionPurchase(validationData: {
-    platform: 'ios' | 'android';
+    platform: "ios" | "android";
     receipt?: string;
     purchaseToken?: string;
     transactionId?: string;
@@ -453,7 +463,7 @@ class CookCamApi {
     subscriptionData?: {
       productId: string;
       transactionId: string;
-      tier: 'creator';
+      tier: "creator";
     };
   }): Promise<ApiResponse<User>> {
     return apiService.post(API_ENDPOINTS.subscription.upgradeToCreator, data);
@@ -469,7 +479,7 @@ class CookCamApi {
         currency: string;
         title: string;
         description: string;
-        tier: 'regular' | 'creator';
+        tier: "regular" | "creator";
         revenue_share?: {
           referrals: number; // 30% lifetime recurring revenue for referrals
           tips: number; // 100% of tips
@@ -491,13 +501,13 @@ class CookCamApi {
       event_data: properties || {},
       metadata: {
         timestamp: new Date().toISOString(),
-        platform: 'mobile',
+        platform: "mobile",
       },
     });
   }
 
   async getAnalyticsDashboard(
-    period: 'day' | 'week' | 'month' = 'week',
+    period: "day" | "week" | "month" = "week",
   ): Promise<
     ApiResponse<{
       totalUsers: number;
@@ -512,9 +522,9 @@ class CookCamApi {
         recipeConversionRate: number;
       };
       charts: {
-        userGrowth: Array<{date: string; count: number}>;
-        scanActivity: Array<{date: string; count: number}>;
-        revenueGrowth: Array<{date: string; amount: number}>;
+        userGrowth: Array<{ date: string; count: number }>;
+        scanActivity: Array<{ date: string; count: number }>;
+        revenueGrowth: Array<{ date: string; amount: number }>;
       };
     }>
   > {
@@ -543,12 +553,12 @@ class CookCamApi {
       return {
         connected: isHealthy,
         latency: isHealthy ? latency : undefined,
-        error: isHealthy ? undefined : 'Health check failed',
+        error: isHealthy ? undefined : "Health check failed",
       };
     } catch (error: any) {
       return {
         connected: false,
-        error: error.message || 'Connection failed',
+        error: error.message || "Connection failed",
       };
     }
   }

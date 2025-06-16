@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, { useState } from "react";
 import {
   View,
   StyleSheet,
@@ -12,7 +12,7 @@ import {
   Alert,
   ScrollView,
   Switch,
-} from 'react-native';
+} from "react-native";
 import {
   Mail,
   Lock,
@@ -23,8 +23,10 @@ import {
   DollarSign,
   Check,
   X,
-} from 'lucide-react-native';
-import {useAuth} from '../context/AuthContext';
+} from "lucide-react-native";
+import { useAuth } from "../context/AuthContext";
+import DeepLinkService from "../services/DeepLinkService";
+import cookCamApi from "../services/cookCamApi";
 
 interface SignupScreenProps {
   navigation: any;
@@ -39,11 +41,11 @@ interface PasswordValidation {
   isValid: boolean;
 }
 
-const SignupScreen: React.FC<SignupScreenProps> = ({navigation}) => {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isCreator, setIsCreator] = useState(false);
@@ -57,7 +59,7 @@ const SignupScreen: React.FC<SignupScreenProps> = ({navigation}) => {
       minLength: false,
       isValid: false,
     });
-  const {signup} = useAuth();
+  const { signup } = useAuth();
 
   // Password validation function that matches Supabase requirements
   const validatePassword = (pwd: string): PasswordValidation => {
@@ -88,27 +90,27 @@ const SignupScreen: React.FC<SignupScreenProps> = ({navigation}) => {
 
   const handleSignup = async () => {
     if (!name || !email || !password || !confirmPassword) {
-      Alert.alert('Error', 'Please fill in all fields');
+      Alert.alert("Error", "Please fill in all fields");
       return;
     }
 
     if (!passwordValidation.isValid) {
       Alert.alert(
-        'Error',
-        'Please ensure your password meets all requirements',
+        "Error",
+        "Please ensure your password meets all requirements",
       );
       return;
     }
 
     if (password !== confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match');
+      Alert.alert("Error", "Passwords do not match");
       return;
     }
 
     // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      Alert.alert('Error', 'Please enter a valid email address');
+      Alert.alert("Error", "Please enter a valid email address");
       return;
     }
 
@@ -116,10 +118,25 @@ const SignupScreen: React.FC<SignupScreenProps> = ({navigation}) => {
 
     try {
       await signup(email, password, name, isCreator);
+      
+      // Check for pending referral code and link user
+      try {
+        const referralCode = await DeepLinkService.getInstance().getPendingReferralCode();
+        if (referralCode) {
+          console.log('🔗 Linking user to referral code:', referralCode);
+          await cookCamApi.linkUserToReferral('', referralCode); // User ID will be added by backend from JWT
+          await DeepLinkService.getInstance().clearPendingReferralCode();
+          console.log('✅ User successfully linked to referral');
+        }
+      } catch (referralError) {
+        console.log('⚠️ Failed to link referral, but signup successful:', referralError);
+        // Don't fail signup if referral linking fails
+      }
+      
       // Navigation will be handled by auth state change
     } catch (error: any) {
-      console.error('Signup error:', error);
-      Alert.alert('Error', error.message || 'Failed to create account');
+      console.error("Signup error:", error);
+      Alert.alert("Error", error.message || "Failed to create account");
     } finally {
       setLoading(false);
     }
@@ -145,8 +162,9 @@ const SignupScreen: React.FC<SignupScreenProps> = ({navigation}) => {
       <Text
         style={[
           styles.requirementText,
-          {color: isValid ? '#66BB6A' : '#FF5252'},
-        ]}>
+          { color: isValid ? "#66BB6A" : "#FF5252" },
+        ]}
+      >
         {text}
       </Text>
     </View>
@@ -155,8 +173,9 @@ const SignupScreen: React.FC<SignupScreenProps> = ({navigation}) => {
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardView}>
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={styles.keyboardView}
+      >
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={handleBack} style={styles.backButton}>
@@ -168,7 +187,8 @@ const SignupScreen: React.FC<SignupScreenProps> = ({navigation}) => {
 
         <ScrollView
           showsVerticalScrollIndicator={false}
-          style={styles.scrollView}>
+          style={styles.scrollView}
+        >
           {/* Sign Up Form */}
           <View style={styles.form}>
             {/* Name Input */}
@@ -214,7 +234,8 @@ const SignupScreen: React.FC<SignupScreenProps> = ({navigation}) => {
               />
               <TouchableOpacity
                 onPress={() => setShowPassword(!showPassword)}
-                style={styles.eyeIcon}>
+                style={styles.eyeIcon}
+              >
                 {showPassword ? (
                   <EyeOff size={20} color="#8E8E93" />
                 ) : (
@@ -266,7 +287,8 @@ const SignupScreen: React.FC<SignupScreenProps> = ({navigation}) => {
               />
               <TouchableOpacity
                 onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-                style={styles.eyeIcon}>
+                style={styles.eyeIcon}
+              >
                 {showConfirmPassword ? (
                   <EyeOff size={20} color="#8E8E93" />
                 ) : (
@@ -288,9 +310,10 @@ const SignupScreen: React.FC<SignupScreenProps> = ({navigation}) => {
                     styles.requirementText,
                     {
                       color:
-                        password === confirmPassword ? '#66BB6A' : '#FF5252',
+                        password === confirmPassword ? "#66BB6A" : "#FF5252",
                     },
-                  ]}>
+                  ]}
+                >
                   Passwords match
                 </Text>
               </View>
@@ -310,8 +333,8 @@ const SignupScreen: React.FC<SignupScreenProps> = ({navigation}) => {
               <Switch
                 value={isCreator}
                 onValueChange={setIsCreator}
-                trackColor={{false: '#E5E5E7', true: '#66BB6A'}}
-                thumbColor={isCreator ? '#FFFFFF' : '#F8F8FF'}
+                trackColor={{ false: "#E5E5E7", true: "#66BB6A" }}
+                thumbColor={isCreator ? "#FFFFFF" : "#F8F8FF"}
               />
             </View>
 
@@ -329,7 +352,8 @@ const SignupScreen: React.FC<SignupScreenProps> = ({navigation}) => {
                 loading ||
                 !passwordValidation.isValid ||
                 password !== confirmPassword
-              }>
+              }
+            >
               {loading ? (
                 <ActivityIndicator color="#F8F8FF" />
               ) : (
@@ -339,8 +363,8 @@ const SignupScreen: React.FC<SignupScreenProps> = ({navigation}) => {
 
             {/* Terms */}
             <Text style={styles.termsText}>
-              By signing up, you agree to our{' '}
-              <Text style={styles.termsLink}>Terms of Service</Text> and{' '}
+              By signing up, you agree to our{" "}
+              <Text style={styles.termsLink}>Terms of Service</Text> and{" "}
               <Text style={styles.termsLink}>Privacy Policy</Text>
             </Text>
 
@@ -354,9 +378,10 @@ const SignupScreen: React.FC<SignupScreenProps> = ({navigation}) => {
             {/* Login Link */}
             <TouchableOpacity
               onPress={handleBack}
-              style={styles.loginContainer}>
+              style={styles.loginContainer}
+            >
               <Text style={styles.loginText}>
-                Already have an account?{' '}
+                Already have an account?{" "}
                 <Text style={styles.loginLink}>Log In</Text>
               </Text>
             </TouchableOpacity>
@@ -370,15 +395,15 @@ const SignupScreen: React.FC<SignupScreenProps> = ({navigation}) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F8FF',
+    backgroundColor: "#F8F8FF",
   },
   keyboardView: {
     flex: 1,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 20,
     paddingTop: 20,
     paddingBottom: 10,
@@ -388,8 +413,8 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#2D1B69',
+    fontWeight: "bold",
+    color: "#2D1B69",
   },
   placeholder: {
     width: 40,
@@ -403,12 +428,12 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#E5E5E7',
+    borderColor: "#E5E5E7",
     paddingHorizontal: 16,
     marginBottom: 16,
     height: 56,
@@ -419,43 +444,43 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: 16,
-    color: '#2D1B69',
+    color: "#2D1B69",
   },
   eyeIcon: {
     padding: 4,
   },
   passwordRequirementsContainer: {
-    backgroundColor: '#F8F9FA',
+    backgroundColor: "#F8F9FA",
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#E5E5E7',
+    borderColor: "#E5E5E7",
   },
   requirementsTitle: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#2D1B69',
+    fontWeight: "600",
+    color: "#2D1B69",
     marginBottom: 12,
   },
   passwordRequirement: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 8,
   },
   requirementText: {
     fontSize: 14,
     marginLeft: 8,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   creatorContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#FFFFFF',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#FFFFFF",
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#E5E5E7',
+    borderColor: "#E5E5E7",
     padding: 16,
     marginBottom: 24,
   },
@@ -464,26 +489,26 @@ const styles = StyleSheet.create({
     marginRight: 16,
   },
   creatorHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 4,
   },
   creatorTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#2D1B69',
+    fontWeight: "600",
+    color: "#2D1B69",
     marginLeft: 8,
   },
   creatorDescription: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: "#8E8E93",
   },
   signupButton: {
-    backgroundColor: '#FF6B35',
+    backgroundColor: "#FF6B35",
     borderRadius: 28,
     height: 56,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: 16,
   },
   disabledButton: {
@@ -491,44 +516,44 @@ const styles = StyleSheet.create({
   },
   signupButtonText: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#F8F8FF',
+    fontWeight: "600",
+    color: "#F8F8FF",
   },
   termsText: {
     fontSize: 14,
-    color: '#8E8E93',
-    textAlign: 'center',
+    color: "#8E8E93",
+    textAlign: "center",
     marginBottom: 24,
   },
   termsLink: {
-    color: '#FF6B35',
-    textDecorationLine: 'underline',
+    color: "#FF6B35",
+    textDecorationLine: "underline",
   },
   divider: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 24,
   },
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: '#E5E5E7',
+    backgroundColor: "#E5E5E7",
   },
   dividerText: {
     marginHorizontal: 16,
     fontSize: 14,
-    color: '#8E8E93',
+    color: "#8E8E93",
   },
   loginContainer: {
-    alignItems: 'center',
+    alignItems: "center",
   },
   loginText: {
     fontSize: 16,
-    color: '#8E8E93',
+    color: "#8E8E93",
   },
   loginLink: {
-    color: '#FF6B35',
-    fontWeight: '600',
+    color: "#FF6B35",
+    fontWeight: "600",
   },
 });
 
