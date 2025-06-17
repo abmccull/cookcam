@@ -28,6 +28,8 @@ import logger from "../utils/logger";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 const SWIPE_THRESHOLD = screenWidth * 0.3;
+const CARD_WIDTH = screenWidth - 60;
+const CARD_HEIGHT = screenHeight * 0.65;
 
 interface SwipeableCardProps {
   recipe: Recipe;
@@ -55,7 +57,6 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
   const [isCardFavorited, setIsCardFavorited] = useState(isFavorited);
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
-  const scale = useSharedValue(1);
   const rotate = useSharedValue(0);
 
   // Check if recipe has a real image (not placeholder)
@@ -90,91 +91,69 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
     return "No time data";
   };
 
-  const gestureHandler =
-    useAnimatedGestureHandler<PanGestureHandlerGestureEvent>({
-      onStart: () => {
-        if (isTop) {
-          runOnJS(() => {
-            console.log("👆 Gesture started on top card:", recipe.title);
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          })();
-        }
-      },
-      onActive: (event) => {
-        if (!isTop) {
-          return;
-        }
+  const gestureHandler = useAnimatedGestureHandler<PanGestureHandlerGestureEvent, { startX: number; startY: number; }>({
+    onStart: (_, ctx) => {
+      if (isTop) {
+        ctx.startX = translateX.value;
+        ctx.startY = translateY.value;
+        runOnJS(Haptics.impactAsync)(Haptics.ImpactFeedbackStyle.Light);
+      }
+    },
+    onActive: (event, ctx) => {
+      if (!isTop) return;
+      translateX.value = ctx.startX + event.translationX;
+      translateY.value = ctx.startY + event.translationY;
+      rotate.value = interpolate(
+        event.translationX,
+        [-screenWidth / 2, screenWidth / 2],
+        [-10, 10],
+        Extrapolate.CLAMP
+      );
+    },
+    onEnd: (event) => {
+      if (!isTop) return;
+      const shouldSwipeLeft = event.translationX < -SWIPE_THRESHOLD;
+      const shouldSwipeRight = event.translationX > SWIPE_THRESHOLD;
 
-        translateX.value = event.translationX;
-        translateY.value = event.translationY * 0.1;
-        rotate.value = interpolate(
-          event.translationX,
-          [-screenWidth, 0, screenWidth],
-          [-15, 0, 15],
-          Extrapolate.CLAMP,
-        );
-        scale.value = interpolate(
-          Math.abs(event.translationX),
-          [0, SWIPE_THRESHOLD],
-          [1, 0.95],
-          Extrapolate.CLAMP,
-        );
-      },
-      onEnd: (event) => {
-        if (!isTop) {
-          return;
-        }
-
-        const shouldSwipeLeft = event.translationX < -SWIPE_THRESHOLD;
-        const shouldSwipeRight = event.translationX > SWIPE_THRESHOLD;
-
-        if (shouldSwipeLeft) {
-          translateX.value = withSpring(-screenWidth * 1.2, {
-            velocity: event.velocityX,
-          });
+      if (shouldSwipeLeft) {
+        translateX.value = withSpring(-screenWidth * 1.5, { damping: 50 }, () => {
           runOnJS(onSwipeLeft)(recipe);
-          runOnJS(() =>
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning),
-          )();
-        } else if (shouldSwipeRight) {
-          translateX.value = withSpring(screenWidth * 1.2, {
-            velocity: event.velocityX,
-          });
+        });
+      } else if (shouldSwipeRight) {
+        translateX.value = withSpring(screenWidth * 1.5, { damping: 50 }, () => {
           runOnJS(onSwipeRight)(recipe);
-          runOnJS(() =>
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success),
-          )();
-        } else {
-          // Snap back
-          translateX.value = withSpring(0);
-          translateY.value = withSpring(0);
-          rotate.value = withSpring(0);
-          scale.value = withSpring(1);
-        }
-      },
-    });
+        });
+      } else {
+        translateX.value = withSpring(0);
+        translateY.value = withSpring(0);
+        rotate.value = withSpring(0);
+      }
+    },
+  });
 
   const cardStyle = useAnimatedStyle(() => {
-    // More visible stacking effect
-    const stackOffset = (2 - index) * 12; // Increased offset
-    const stackScale = 1 - index * 0.025; // Less scaling
-    const stackOpacity = 1 - index * 0.12; // Less opacity fade
-    const stackRotation = index % 2 === 0 ? index * 1.5 : -index * 1.5;
+    // This logic creates the fanned, bottom-left aligned stack.
+    const scale = interpolate(index, [0, 1, 2], [0.8, 0.9, 1], Extrapolate.CLAMP);
+    
+    // As cards get smaller, they must be shifted down and right to keep their
+    // bottom and left edges aligned with the largest (100% scale) card.
+    const correctiveTranslateY = (CARD_HEIGHT - (CARD_HEIGHT * scale)) / 2;
+    const correctiveTranslateX = (CARD_WIDTH - (CARD_WIDTH * scale)) / 2;
 
-    const finalTranslateX = isTop ? translateX.value : 0;
-    const finalTranslateY = isTop ? translateY.value : stackOffset;
-    const finalScale = isTop ? scale.value : stackScale;
-    const finalRotation = isTop ? rotate.value : stackRotation;
+    // The top card also gets interactive translation from the gesture.
+    const interactiveTranslateX = isTop ? translateX.value : 0;
+    const interactiveTranslateY = isTop ? translateY.value : 0;
+    const interactiveRotate = isTop ? rotate.value : 0;
 
     return {
+      position: 'absolute',
+      zIndex: 100 - index,
       transform: [
-        { translateX: finalTranslateX },
-        { translateY: finalTranslateY },
-        { scale: finalScale },
-        { rotateZ: `${finalRotation}deg` },
-      ] as any,
-      opacity: stackOpacity,
-      zIndex: 10 - index,
+        { translateX: interactiveTranslateX + correctiveTranslateX },
+        { translateY: interactiveTranslateY + correctiveTranslateY },
+        { rotate: `${interactiveRotate}deg` },
+        { scale },
+      ],
     };
   });
 
@@ -246,85 +225,18 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
       <Animated.View style={[styles.card, cardStyle]}>
         <TouchableOpacity
           style={styles.cardContent}
-          onPress={handleCardTap}
-          activeOpacity={0.95}
+          onPress={() => isTop ? onCardTap(recipe) : onCardSelect(recipe)}
+          activeOpacity={1}
         >
-          {/* Conditional Image Section */}
-          {hasRealImage && (
-            <View style={styles.imageContainer}>
-              <OptimizedImage
-                source={{ uri: recipe.image }}
-                style={styles.heroImage}
-              />
-            </View>
-          )}
-
-          {/* Recipe Info */}
-          <View
-            style={[
-              styles.recipeInfo,
-              !hasRealImage && styles.recipeInfoFullHeight,
-            ]}
-          >
-            {/* Action Buttons - Only on top card */}
-            {isTop && (
-              <View style={styles.actionButtons}>
-                <TouchableOpacity
-                  style={styles.infoButton}
-                  onPress={handleInfoPress}
-                >
-                  <Info size={18} color="#666" />
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.favoriteButton}
-                  onPress={handleFavorite}
-                >
-                  <Heart
-                    size={20}
-                    color={isCardFavorited ? "#FF6B6B" : "#CCC"}
-                    fill={isCardFavorited ? "#FF6B6B" : "none"}
-                    strokeWidth={2}
-                  />
-                </TouchableOpacity>
-              </View>
-            )}
-
-            {/* Temporary Debug Buttons */}
-            {isTop && (
-              <View style={styles.debugButtons}>
-                <TouchableOpacity
-                  style={styles.debugButton}
-                  onPress={() => {
-                    console.log("🍳 Debug: Cook button pressed");
-                    onSwipeRight(recipe);
-                  }}
-                >
-                  <Text style={styles.debugButtonText}>🍳 COOK</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.debugButton}
-                  onPress={() => {
-                    console.log("❌ Debug: Pass button pressed");
-                    onSwipeLeft(recipe);
-                  }}
-                >
-                  <Text style={styles.debugButtonText}>❌ PASS</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-
-            {/* Recipe Title */}
+          <View style={styles.recipeInfo}>
             <Text style={styles.recipeTitle} numberOfLines={3}>
               {recipe.title}
             </Text>
 
-            {/* Recipe Description */}
             <Text style={styles.recipeDescription} numberOfLines={3}>
               {recipe.description}
             </Text>
 
-            {/* Styled Meta Info Row */}
             <View style={styles.metaInfo}>
               <View style={[styles.metaItem, styles.timeItem]}>
                 <Clock size={16} color="#FF6B35" />
@@ -346,7 +258,6 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
               </View>
             </View>
 
-            {/* Complete Macros Display */}
             <View style={styles.macrosGrid}>
               <View style={styles.macroItem}>
                 <Text style={styles.macroValue}>
@@ -374,7 +285,6 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
               </View>
             </View>
 
-            {/* Tags */}
             <View style={styles.tagsContainer}>
               {recipe.tags?.slice(0, 3).map((tag, tagIndex) => (
                 <View key={tagIndex} style={styles.tag}>
@@ -382,10 +292,22 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
                 </View>
               ))}
             </View>
+
+            {isTop && (
+              <TouchableOpacity
+                style={styles.favoriteButton}
+                onPress={handleFavorite}
+              >
+                <Heart
+                  size={24}
+                  color={isCardFavorited ? "#FF6B6B" : "#CCC"}
+                  fill={isCardFavorited ? "#FF6B6B" : "none"}
+                />
+              </TouchableOpacity>
+            )}
           </View>
         </TouchableOpacity>
 
-        {/* Swipe Overlays */}
         {isTop && (
           <Animated.View style={[styles.overlay, overlayStyle]}>
             <Animated.View style={[styles.leftOverlay, leftOverlayStyle]}>
@@ -404,8 +326,8 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
 const styles = StyleSheet.create({
   card: {
     position: "absolute",
-    width: screenWidth - 40,
-    height: screenHeight * 0.62, // Reduced height to not overlap footer
+    width: CARD_WIDTH,
+    height: CARD_HEIGHT,
     backgroundColor: "#FFFFFF",
     borderRadius: 20,
     shadowColor: "#000",
@@ -422,65 +344,17 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     overflow: "hidden",
   },
-  imageContainer: {
-    height: "32%", // Smaller for more content space
-    position: "relative",
-  },
-  heroImage: {
-    width: "100%",
-    height: "100%",
-    backgroundColor: "#f0f0f0",
-  },
   recipeInfo: {
     flex: 1,
     padding: 20,
-    position: "relative",
-  },
-  recipeInfoFullHeight: {
-    paddingTop: 60, // Space for action buttons
-  },
-  actionButtons: {
-    position: "absolute",
-    top: 16,
-    left: 16,
-    right: 16,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    zIndex: 1,
-  },
-  favoriteButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: "rgba(255, 255, 255, 0.95)",
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  infoButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: "rgba(255, 255, 255, 0.95)",
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    justifyContent: 'flex-start',
   },
   recipeTitle: {
     fontSize: 24,
     fontWeight: "bold",
     color: "#2D1B69",
+    textAlign: 'center',
     marginBottom: 10,
-    lineHeight: 28,
-    marginTop: 20,
   },
   recipeDescription: {
     fontSize: 15,
@@ -518,7 +392,7 @@ const styles = StyleSheet.create({
   },
   timeText: {
     color: "#FF6B35",
-    fontFamily: "System", // Different font weight
+    fontFamily: "System",
   },
   servingsText: {
     color: "#4CAF50",
@@ -604,27 +478,21 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#FFFFFF",
   },
-  debugButtons: {
-    flexDirection: "row",
-    gap: 10,
-    marginTop: 10,
+  favoriteButton: {
+    position: 'absolute',
+    bottom: 20,
+    right: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "rgba(255, 255, 255, 0.95)",
     justifyContent: "center",
-  },
-  debugButton: {
-    backgroundColor: "#FF6B35",
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  debugButtonText: {
-    color: "#FFFFFF",
-    fontWeight: "bold",
-    fontSize: 14,
-    color: "#FFFFFF",
-    letterSpacing: 3,
-    textShadowColor: "rgba(0,0,0,0.3)",
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 4,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
 });
 

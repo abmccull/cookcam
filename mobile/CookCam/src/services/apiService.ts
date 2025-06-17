@@ -289,68 +289,6 @@ class ApiService {
     return this.request<T>("PATCH", endpoint, data, headers);
   }
 
-  // Upload file (for image scanning)
-  async uploadFile(
-    endpoint: string,
-    file: any,
-    additionalData?: Record<string, any>,
-  ): Promise<ApiResponse> {
-    try {
-      const formData = new FormData();
-
-      // Add file to form data
-      formData.append("image", {
-        uri: file.uri,
-        type: file.type || "image/jpeg",
-        name: file.fileName || "image.jpg",
-      } as any);
-
-      // Add additional data
-      if (additionalData) {
-        Object.keys(additionalData).forEach((key) => {
-          formData.append(key, additionalData[key]);
-        });
-      }
-
-      const headers = await this.buildHeaders({
-        "Content-Type": "multipart/form-data",
-      });
-
-      const url = `${this.baseURL}${endpoint}`;
-      this.logRequest("POST", url, { file: file.fileName, additionalData });
-
-      const response = await fetch(url, {
-        method: "POST",
-        headers,
-        body: formData,
-      });
-
-      const responseData = await response.json();
-      this.logResponse("POST", url, responseData);
-
-      if (SUCCESS_CODES.includes(response.status)) {
-        return {
-          success: true,
-          data: responseData,
-          status: response.status,
-        };
-      } else {
-        return {
-          success: false,
-          error: responseData.message || responseData.error || "Upload failed",
-          status: response.status,
-        };
-      }
-    } catch (error: any) {
-      const apiError = this.handleApiError(error, endpoint);
-      return {
-        success: false,
-        error: apiError.message,
-        status: apiError.status,
-      };
-    }
-  }
-
   // Health check
   async healthCheck(): Promise<boolean> {
     try {

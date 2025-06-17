@@ -123,22 +123,22 @@ export class RecipePreviewService {
   }
 
   private buildPreviewPrompt(request: PreviewRequest): string {
-    const ingredients = request.detectedIngredients.join(', ');
-    const cuisines = request.userPreferences.cuisinePreferences.join(', ');
-    const appliances = request.userPreferences.selectedAppliances.join(', ');
-    const dietary = request.userPreferences.dietaryTags.length > 0 
+    const ingredients = request.detectedIngredients?.join(', ') || '';
+    const cuisines = request.userPreferences?.cuisinePreferences?.join(', ') || 'any';
+    const appliances = request.userPreferences?.selectedAppliances?.join(', ') || 'any';
+    const dietary = (request.userPreferences?.dietaryTags?.length || 0) > 0 
       ? request.userPreferences.dietaryTags.join(', ') 
       : 'none';
 
     return `Generate 3 diverse recipe previews using these ingredients: ${ingredients}
 
 User Preferences:
-- Serving size: ${request.userPreferences.servingSize}
+- Serving size: ${request.userPreferences?.servingSize || 0}
 - Cuisine preferences: ${cuisines}
 - Available appliances: ${appliances}
 - Dietary restrictions: ${dietary}
-- Skill level: ${request.userPreferences.skillLevel}
-- Time available: ${request.userPreferences.timeAvailable}
+- Skill level: ${request.userPreferences?.skillLevel || ''}
+- Time available: ${request.userPreferences?.timeAvailable || ''}
 
 Return JSON with this EXACT structure:
 {

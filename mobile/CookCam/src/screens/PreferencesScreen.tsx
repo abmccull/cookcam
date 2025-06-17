@@ -205,10 +205,17 @@ const PreferencesScreen: React.FC<PreferencesScreenProps> = ({
 
       // Navigate after animation
       setTimeout(() => {
-        navigation.navigate("RecipeCards", {
-          ingredients,
-          imageUri,
-          preferences,
+        // Correctly navigate to the deeply nested screen
+        navigation.navigate('MainTabs', {
+          screen: 'HomeStack',
+          params: {
+            screen: 'RecipeCards',
+            params: {
+              ingredients,
+              imageUri,
+              preferences,
+            },
+          },
         });
       }, 1500);
     }

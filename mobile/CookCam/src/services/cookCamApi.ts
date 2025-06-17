@@ -45,6 +45,13 @@ export interface ScanResult {
   created_at: string;
 }
 
+export interface ScanApiResponse {
+  scan_id: string;
+  ingredients: DetectedIngredient[];
+  confidence_score: number;
+  xp_awarded: number;
+}
+
 export interface Recipe {
   id: string;
   title: string;
@@ -226,8 +233,13 @@ class CookCamApi {
   }
 
   // Ingredient Scanning Methods
-  async scanIngredients(imageFile: any): Promise<ApiResponse<ScanResult>> {
-    return apiService.uploadFile(API_ENDPOINTS.scan.detect, imageFile);
+  async scanIngredients(
+    base64Image: string,
+  ): Promise<ApiResponse<ScanApiResponse>> {
+    // The production endpoint expects a JSON payload with the base64 data
+    return apiService.post<ScanApiResponse>(API_ENDPOINTS.scan.detect, {
+      image_data: base64Image,
+    });
   }
 
   async getScanHistory(

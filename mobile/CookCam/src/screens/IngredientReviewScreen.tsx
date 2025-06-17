@@ -30,7 +30,8 @@ import {
 import * as Haptics from "expo-haptics";
 import { useGamification, XP_VALUES } from "../context/GamificationContext";
 import { useAuth } from "../context/AuthContext";
-import { ingredientService, scanService } from "../services/api";
+import { ingredientService } from "../services/api";
+import cookCamApi from "../services/cookCamApi";
 import MysteryBox from "../components/MysteryBox";
 import AIChefIcon from "../components/AIChefIcon";
 import LoadingAnimation from "../components/LoadingAnimation";
@@ -161,139 +162,55 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
         return;
       }
 
-      // Convert image to base64 for API
-      let base64Image: string;
-      try {
-        logger.debug("📸 Converting image to base64...");
-        logger.debug("📸 Image URI type:", typeof imageUri);
-        logger.debug("📸 Image URI starts with:", imageUri.substring(0, 50));
+      // For file:// URIs, we need to read the file
+      if (imageUri) {
+        logger.debug("✅ Image URI present, converting to base64...");
 
-        // For file:// URIs, we need to read the file
-        if (imageUri.startsWith("file://")) {
-          logger.debug("📸 Processing file:// URI...");
-          const response = await fetch(imageUri);
-          const blob = await response.blob();
+        // Convert image to base64 before sending
+        const response = await fetch(imageUri);
+        const blob = await response.blob();
+        const reader = new FileReader();
+        const base64Image = await new Promise<string>((resolve, reject) => {
+          reader.onload = () => {
+            if (typeof reader.result === "string") {
+              resolve(reader.result);
+            } else {
+              reject(new Error("Failed to read file as base64 string"));
+            }
+          };
+          reader.onerror = (error) => reject(error);
+          reader.readAsDataURL(blob);
+        });
 
-          // Convert blob to base64
-          const reader = new FileReader();
-          base64Image = await new Promise((resolve, reject) => {
-            reader.onload = () => {
-              const result = reader.result as string;
-              logger.debug(
-                "📸 Base64 conversion successful, length:",
-                result.length,
-              );
-              resolve(result);
-            };
-            reader.onerror = reject;
-            reader.readAsDataURL(blob);
-          });
-        } else if (imageUri.startsWith("http")) {
-          logger.debug("📸 Processing http URI...");
-          // For URL images, fetch and convert
-          const response = await fetch(imageUri);
-          const blob = await response.blob();
+        // The base64 string includes a prefix "data:image/jpeg;base64,"
+        // which we need to remove before sending.
+        const base64Data = base64Image.split(",")[1];
 
-          const reader = new FileReader();
-          base64Image = await new Promise((resolve, reject) => {
-            reader.onload = () => {
-              const result = reader.result as string;
-              logger.debug(
-                "📸 Base64 conversion successful, length:",
-                result.length,
-              );
-              resolve(result);
-            };
-            reader.onerror = reject;
-            reader.readAsDataURL(blob);
-          });
-        } else {
-          throw new Error("Unsupported image URI format");
-        }
+        // Use the cookCamApi service to handle the upload correctly
+        const apiResponse = await cookCamApi.scanIngredients(base64Data);
 
-        logger.debug("✅ Image converted to base64, sending to backend...");
-        logger.debug("📤 Calling scanService.analyzeScan...");
+        logger.debug("📥 Backend response received:", apiResponse);
 
-        // Send image to backend for analysis
-        const response = await scanService.analyzeScan(base64Image, []);
-
-        logger.debug("📥 Backend response received:", response);
-
-        if (response.success && response.data && response.data.ingredients) {
+        if (apiResponse.success && apiResponse.data) {
+          // The backend now returns a ScanResult object
+          const scanResult = apiResponse.data;
           logger.debug(
             "🎯 Backend analysis successful:",
-            response.data.ingredients,
+            scanResult.ingredients,
           );
 
-          // Convert backend response to our ingredient format and search USDA
-          const foundIngredients: Ingredient[] = [];
-
-          for (let i = 0; i < response.data.ingredients.length; i++) {
-            const detectedIng = response.data.ingredients[i];
-            logger.debug(
-              `🔍 Processing detected ingredient ${i + 1}:`,
-              detectedIng,
-            );
-
-            try {
-              // Search for this ingredient in our USDA database
-              const searchResponse = await ingredientService.searchIngredients(
-                detectedIng.name,
-                1,
-              );
-
-              if (
-                searchResponse.success &&
-                searchResponse.data &&
-                searchResponse.data.length > 0
-              ) {
-                const ingredient = searchResponse.data[0];
-                foundIngredients.push({
-                  id: ingredient.id || `detected-${i}`,
-                  name: ingredient.name || detectedIng.name,
-                  confidence: detectedIng.confidence || 0.8,
-                  emoji: getEmojiForIngredient(
-                    ingredient.name || detectedIng.name,
-                  ),
-                  quantity: detectedIng.quantity || "",
-                  unit: detectedIng.unit || "",
-                  variety: detectedIng.variety || "",
-                  category: detectedIng.category || "",
-                });
-                logger.debug(`✅ Found in USDA: ${ingredient.name}`);
-              } else {
-                // Add as custom ingredient if not found in USDA
-                foundIngredients.push({
-                  id: `detected-${i}`,
-                  name: detectedIng.name,
-                  confidence: detectedIng.confidence || 0.8,
-                  emoji: getEmojiForIngredient(detectedIng.name),
-                  quantity: detectedIng.quantity || "",
-                  unit: detectedIng.unit || "",
-                  variety: detectedIng.variety || "",
-                  category: detectedIng.category || "",
-                });
-                logger.debug(`➕ Added as custom: ${detectedIng.name}`);
-              }
-            } catch (error) {
-              logger.debug(
-                `Failed to search for ingredient ${detectedIng.name}:`,
-                error,
-              );
-
-              // Add anyway as fallback
-              foundIngredients.push({
-                id: `detected-${i}`,
-                name: detectedIng.name,
-                confidence: detectedIng.confidence || 0.8,
-                emoji: getEmojiForIngredient(detectedIng.name),
-                quantity: detectedIng.quantity || "",
-                unit: detectedIng.unit || "",
-                variety: detectedIng.variety || "",
-                category: detectedIng.category || "",
-              });
-            }
-          }
+          // Convert backend response to our local ingredient format
+          const foundIngredients: Ingredient[] =
+            scanResult.ingredients.map((detectedIng, i) => ({
+              id: `detected-${i}`, // Or use an ID from backend if available
+              name: detectedIng.name,
+              confidence: detectedIng.confidence || 0.8,
+              emoji: getEmojiForIngredient(detectedIng.name),
+              quantity: detectedIng.quantity || "",
+              unit: detectedIng.unit || "",
+              variety: detectedIng.variety || "",
+              category: detectedIng.category || "",
+            }));
 
           if (foundIngredients.length > 0) {
             setIngredients(foundIngredients);
@@ -302,75 +219,66 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
             );
 
             // Award bonus XP for successful real analysis
-            await addXP(10, "SUCCESSFUL_IMAGE_ANALYSIS");
+            await addXP(XP_VALUES.SCAN_INGREDIENTS, "SUCCESSFUL_SCAN");
           } else {
             throw new Error("No ingredients detected in image");
           }
         } else {
-          logger.debug("❌ Backend analysis failed:", response.error);
-          throw new Error(response.error || "Backend analysis failed");
+          logger.debug("❌ Backend analysis failed:", apiResponse.error);
+          throw new Error(apiResponse.error || "Backend analysis failed");
         }
-      } catch (imageError) {
-        logger.error("❌ Image processing/analysis error:", imageError);
+      } else {
+        throw new Error("Unsupported image URI format or URI is missing");
+      }
+    } catch (imageError) {
+      logger.error("❌ Image processing/analysis error:", imageError);
 
-        // Fallback to common ingredients if image analysis fails
-        logger.debug("🔄 Falling back to common ingredients...");
-        const simulatedDetectedNames = ["cheddar cheese", "butter", "cheez-it crackers", "salt", "pepper"];
-        const foundIngredients: Ingredient[] = [];
+      // Fallback to common ingredients if image analysis fails
+      logger.debug("🔄 Falling back to common ingredients...");
+      const simulatedDetectedNames = ["cheddar cheese", "butter", "cheez-it crackers", "salt", "pepper"];
+      const foundIngredients: Ingredient[] = [];
 
-        for (let i = 0; i < simulatedDetectedNames.length; i++) {
-          const name = simulatedDetectedNames[i];
-          try {
-            const response = await ingredientService.searchIngredients(name, 1);
+      for (let i = 0; i < simulatedDetectedNames.length; i++) {
+        const name = simulatedDetectedNames[i];
+        try {
+          const response = await ingredientService.searchIngredients(name, 1);
 
-            if (response.success && response.data && response.data.length > 0) {
-              const ingredient = response.data[0];
-              foundIngredients.push({
-                id: ingredient.id || `detected-${i}`,
-                name: ingredient.name || name,
-                confidence: 0.9 - i * 0.1,
-                emoji: getEmojiForIngredient(ingredient.name || name),
-              });
-            }
-          } catch (error) {
-            logger.debug(`Failed to find fallback ingredient ${name}:`, error);
+          if (response.success && response.data && response.data.length > 0) {
+            const ingredient = response.data[0];
+            foundIngredients.push({
+              id: ingredient.id || `detected-${i}`,
+              name: ingredient.name || name,
+              confidence: 0.9 - i * 0.1,
+              emoji: getEmojiForIngredient(ingredient.name || name),
+            });
           }
-        }
-
-        if (foundIngredients.length > 0) {
-          setIngredients(foundIngredients);
-          logger.debug(
-            `✅ Fallback successful: ${foundIngredients.length} ingredients found`,
-          );
-        } else {
-          // Ultimate fallback
-          setIngredients([
-            {
-              id: "1",
-              name: "Detected Ingredient 1",
-              confidence: 0.85,
-              emoji: "🥘",
-            },
-            {
-              id: "2",
-              name: "Detected Ingredient 2",
-              confidence: 0.75,
-              emoji: "🍽️",
-            },
-          ]);
+        } catch (error) {
+          logger.debug(`Failed to find fallback ingredient ${name}:`, error);
         }
       }
-    } catch (error) {
-      logger.error("❌ Image analysis error:", error);
-      // Fallback to manual mode
-      setIngredients([
-        {
-          id: "manual",
-          name: "Add ingredients manually",
-          confidence: 1.0,
-          emoji: "✋",
-        },
-      ]);
+
+      if (foundIngredients.length > 0) {
+        setIngredients(foundIngredients);
+        logger.debug(
+          `✅ Fallback successful: ${foundIngredients.length} ingredients found`,
+        );
+      } else {
+        // Ultimate fallback
+        setIngredients([
+          {
+            id: "1",
+            name: "Detected Ingredient 1",
+            confidence: 0.85,
+            emoji: "🥘",
+          },
+          {
+            id: "2",
+            name: "Detected Ingredient 2",
+            confidence: 0.75,
+            emoji: "🍽️",
+          },
+        ]);
+      }
     } finally {
       setLoading(false);
     }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -42,129 +42,76 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
 }) => {
   const { ingredients = [], preferences = {} } = route.params || {};
 
-  // State management
   const [recipes, setRecipes] = useState<Recipe[]>([]);
-  const [previewData, setPreviewData] = useState<{[key: string]: any}>({});
+  const [rawPreviews, setRawPreviews] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
 
-  // Generate recipes from API
-  const generateRecipesFromAPI = async () => {
+  const generateRecipes = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
     try {
-      setIsLoading(true);
-      setError(null);
-
-      logger.debug("🚀 Generating recipe previews with data:", {
-        ingredients: ingredients.length,
-        ingredientsList: ingredients,
-        preferences: Object.keys(preferences).length,
-        preferencesData: preferences,
-      });
-
+      logger.info("🚀 Generating new recipe previews...", { preferences });
       const detectedIngredients = ingredients.map((ing: any) => ing.name);
       
-      // Map preferences to expected format
-      const userPreferences = {
+      // Map frontend preferences to the structure the backend API expects
+      const apiPreferences = {
         cuisinePreferences: preferences.cuisine || [],
         dietaryTags: preferences.dietary || [],
-        selectedAppliances: ["oven", "stove", "microwave"],
-        servingSize: 2,
+        selectedAppliances: preferences.appliances || ["oven", "stove", "microwave"],
+        servingSize: preferences.servings || 2,
         skillLevel: preferences.difficulty || "any",
         timeAvailable: preferences.cookingTime || "any",
-        mealPrepEnabled: false,
+        mealPrepEnabled: preferences.mealPrep || false,
       };
-
-      logger.debug("📤 Sending preview request to AI:", {
-        detectedIngredients,
-        userPreferences,
-      });
 
       const response = await recipeService.generatePreviews({
         detectedIngredients,
-        userPreferences,
+        userPreferences: apiPreferences,
       });
 
-      logger.debug("📥 Preview API Response:", response);
-
-      if (response.success && response.data?.data?.previews) {
-        const previews = response.data.data.previews;
-        const storedSessionId = response.data.data.sessionId;
-
-        if (storedSessionId) {
-          setSessionId(storedSessionId);
-          logger.debug("💾 Stored session ID:", storedSessionId);
-        }
-
-        // Convert previews to Recipe format and store preview data separately
-        const previewRecipes: Recipe[] = [];
-        const newPreviewData: {[key: string]: any} = {};
-
-        previews.forEach((preview: any, index: number) => {
-          const recipeId = preview.id || `preview-${index}`;
-          const dynamicMacros = {
-            calories: Math.round(200 + Math.random() * 400),
-            protein: Math.round(15 + Math.random() * 25),
-            carbs: Math.round(30 + Math.random() * 40),
-            fat: Math.round(8 + Math.random() * 15),
-          };
-
-          const recipe: Recipe = {
-            id: recipeId,
-            title: preview.title,
-            image: `https://via.placeholder.com/400x300/4CAF50/FFFFFF?text=${encodeURIComponent(preview.title)}`,
-            cookingTime: `${preview.estimatedTime} min`,
-            servings: userPreferences.servingSize,
-            difficulty: preview.difficulty,
-            macros: dynamicMacros,
-            tags: [
-              ...userPreferences.dietaryTags,
-              preview.cuisineType,
-              "AI Generated",
-            ].filter(Boolean),
-            description: preview.description,
-            ingredients: preview.mainIngredients?.map((ing: string) => ({
-              name: ing,
-              amount: "1",
-              unit: "portion",
-            })) || [],
-            instructions: [],
-            tips: [],
-          };
-
-          previewRecipes.push(recipe);
-          newPreviewData[recipeId] = preview;
-        });
-
-        logger.debug("✅ Successfully converted recipe previews:", previewRecipes.map(r => r.title));
-        logger.debug("🔍 Recipe data structure:", {
-          count: previewRecipes.length,
-          firstRecipe: previewRecipes[0],
-          allTitles: previewRecipes.map(r => r.title),
-        });
-        setRecipes(previewRecipes);
-        setPreviewData(newPreviewData);
+      if (response.success && response.data?.data?.previews?.length) {
+        const { previews, sessionId } = response.data.data;
+        setSessionId(sessionId);
+        setRawPreviews(previews);
+        
+        const formattedRecipes: Recipe[] = previews.map((p: any) => ({
+          id: p.id || `preview-${Math.random()}`,
+          title: p.title,
+          description: p.description,
+          image: `https://via.placeholder.com/400x300/4CAF50/FFFFFF?text=${encodeURIComponent(p.title)}`, // Placeholder
+          cookingTime: `${p.estimatedTime} min`,
+          servings: preferences.servingSize || 2,
+          difficulty: p.difficulty,
+          tags: [p.cuisineType, "AI Generated"].filter(Boolean),
+          // ... other fields from your Recipe type
+        }));
+        
+        setRecipes(formattedRecipes);
+        logger.info(`✅ Found ${formattedRecipes.length} recipes.`);
       } else {
-        throw new Error("No recipe previews were generated. Please try different ingredients or preferences.");
+        throw new Error("No recipe previews were generated.");
       }
-    } catch (error: any) {
-      logger.error("❌ Recipe preview generation failed:", error);
-      setError(error.message || "Failed to generate recipe previews");
-      setRecipes([]);
+    } catch (e: any) {
+      logger.error("❌ Recipe generation failed", e);
+      setError(e.message || "Could not fetch recipes.");
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [ingredients, preferences]);
 
   useEffect(() => {
-    generateRecipesFromAPI();
-  }, []);
+    generateRecipes();
+  }, [generateRecipes]);
 
   // Handle cooking a recipe
   const handleCookRecipe = async (recipe: Recipe) => {
-    const recipePreviewData = previewData[recipe.id];
+    // Find the original preview data using the recipe's ID
+    const recipePreviewData = rawPreviews.find(p => (p.id || `preview-${p.title}`) === recipe.id);
+
     if (!recipePreviewData || !sessionId) {
-      Alert.alert("Error", "Unable to generate detailed recipe. Please try again.");
+      Alert.alert("Error", "Unable to generate detailed recipe. Session data is missing.");
       return;
     }
 
@@ -217,7 +164,7 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
 
   // Handle refreshing recipes
   const handleRefreshRecipes = () => {
-    generateRecipesFromAPI();
+    generateRecipes();
   };
 
   logger.debug("🎯 RecipeCardsScreen render:", {
@@ -228,35 +175,40 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
   });
 
   return (
-    <SafeScreen>
-      <CardStack
-        recipes={recipes}
-        onCookRecipe={handleCookRecipe}
-        onFavoriteRecipe={handleFavoriteRecipe}
-        onViewRecipeDetails={handleViewRecipeDetails}
-        onRefreshRecipes={handleRefreshRecipes}
-        isLoading={false}
-      />
-      
-      {/* Loading Animation */}
-      <LoadingAnimation
-        visible={isLoading}
-        variant="previews"
-      />
-      
-      {/* Error State */}
-      {error && !isLoading && (
-        <View style={styles.errorOverlay}>
+    <SafeScreen style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.title}>Recipe Suggestions</Text>
+        <Text style={styles.subtitle}>
+          {isLoading ? "Finding ideas..." : `${recipes.length} recipes found • Swipe to explore`}
+        </Text>
+      </View>
+
+      <View style={styles.contentContainer}>
+        {isLoading && (
+          <LoadingAnimation visible={true} variant="previews" />
+        )}
+
+        {!isLoading && error && (
           <View style={styles.errorContainer}>
-            <Text style={styles.errorTitle}>Oops! Something went wrong</Text>
+            <Text style={styles.errorTitle}>Oops!</Text>
             <Text style={styles.errorText}>{error}</Text>
-            <TouchableOpacity style={styles.retryButton} onPress={generateRecipesFromAPI}>
-              <RotateCcw size={20} color="#FFFFFF" />
+            <TouchableOpacity style={styles.retryButton} onPress={generateRecipes}>
+              <RotateCcw size={18} color="#fff" />
               <Text style={styles.retryText}>Try Again</Text>
             </TouchableOpacity>
           </View>
-        </View>
-      )}
+        )}
+
+        {!isLoading && !error && (
+          <CardStack
+            recipes={recipes}
+            onCookRecipe={handleCookRecipe}
+            onFavoriteRecipe={handleFavoriteRecipe}
+            onViewRecipeDetails={handleViewRecipeDetails}
+            onRefreshRecipes={generateRecipes}
+          />
+        )}
+      </View>
     </SafeScreen>
   );
 };
@@ -264,7 +216,27 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8F8FF",
+    backgroundColor: '#F8F9FA',
+  },
+  header: {
+    padding: 20,
+    paddingTop: 40,
+    alignItems: 'center',
+  },
+  title: {
+    fontSize: 26,
+    fontWeight: 'bold',
+    color: '#2D1B69',
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#6c757d',
+    marginTop: 4,
+  },
+  contentContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   errorOverlay: {
     position: "absolute",

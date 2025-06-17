@@ -128,7 +128,7 @@ export type RootStackParamList = {
 };
 
 export type TabParamList = {
-  Home: undefined;
+  HomeStack: undefined;
   Camera: undefined;
   Favorites: undefined;
   Leaderboard: undefined;
@@ -137,6 +137,18 @@ export type TabParamList = {
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<TabParamList>();
+const HomeStack = createNativeStackNavigator();
+
+// Home Stack Navigator (new)
+function HomeStackNavigator() {
+  return (
+    <HomeStack.Navigator screenOptions={{ headerShown: false }}>
+      <HomeStack.Screen name="Main" component={MainScreen} />
+      <HomeStack.Screen name="RecipeCards" component={RecipeCardsScreen} />
+      {/* Add other screens from the home flow here if needed */}
+    </HomeStack.Navigator>
+  );
+}
 
 // Main Tab Navigator
 function MainTabs() {
@@ -146,7 +158,7 @@ function MainTabs() {
         tabBarIcon: ({ focused, color, size }) => {
           let IconComponent;
 
-          if (route.name === 'Home') {
+          if (route.name === 'HomeStack') {
             IconComponent = Home;
           } else if (route.name === 'Camera') {
             IconComponent = Camera;
@@ -175,7 +187,11 @@ function MainTabs() {
         headerShown: false,
       })}
     >
-      <Tab.Screen name="Home" component={MainScreen} />
+      <Tab.Screen
+        name="HomeStack"
+        component={HomeStackNavigator}
+        options={{ title: 'Home' }}
+      />
       <Tab.Screen name="Camera" component={CameraScreen} />
       <Tab.Screen name="Favorites" component={FavoritesScreen} />
       <Tab.Screen name="Leaderboard" component={LeaderboardScreen} />
@@ -208,8 +224,7 @@ function AppNavigator() {
     >
       <Stack.Screen name="MainTabs" component={MainTabs} />
       <Stack.Screen name="DemoOnboarding" component={DemoOnboardingScreen} />
-      <Stack.Screen name="IngredientReview" component={IngredientReviewScreen} />
-      <Stack.Screen name="RecipeCards" component={RecipeCardsScreen} />
+      <Stack.Screen name="IngredientReview" component={IngredientReviewScreen as any} />
       <Stack.Screen name="CookMode" component={CookModeScreen} />
       <Stack.Screen name="Creator" component={CreatorScreen} />
       <Stack.Screen name="CreatorOnboarding" component={CreatorOnboardingScreen} />
@@ -218,7 +233,7 @@ function AppNavigator() {
       <Stack.Screen name="PlanSelection" component={PlanSelectionSheet} />
       <Stack.Screen name="PlanPaywall" component={PlanPaywallScreen} />
       <Stack.Screen name="Preferences" component={PreferencesScreen} />
-      <Stack.Screen name="EnhancedPreferences" component={EnhancedPreferencesScreen} />
+      <Stack.Screen name="EnhancedPreferences" component={EnhancedPreferencesScreen as any} />
       <Stack.Screen name="NotificationPreferences" component={NotificationPreferencesScreen} />
       <Stack.Screen name="Discover" component={DiscoverScreen} />
       <Stack.Screen name="RecipeCarousel" component={RecipeCarouselScreen} />
@@ -288,23 +303,22 @@ function RootNavigator() {
 }
 
 // Main App Component
-const App: React.FC = () => {
+function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <AuthProvider>
-          <GamificationProvider>
-            <SubscriptionProvider>
+          <SubscriptionProvider>
+            <GamificationProvider>
               <TempDataProvider>
-                <StatusBar style="auto" />
                 <RootNavigator />
               </TempDataProvider>
-            </SubscriptionProvider>
-          </GamificationProvider>
+            </GamificationProvider>
+          </SubscriptionProvider>
         </AuthProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
-};
+}
 
 export default App;

@@ -119,6 +119,7 @@ app.use('/api/v1/subscription', subscriptionRoutes);
 
 // Health check routes
 import healthRoutes from './routes/health';
+app.use('/api/v1/health', healthRoutes);
 app.use('/health', healthRoutes);
 
 // Apply subscription middleware after auth but before other routes
