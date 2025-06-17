@@ -467,22 +467,80 @@
                     </div>
                 </div>
                 
-                <!-- Compound Growth Explanation -->
-                <div class="compound-explanation">
-                    <h4>🔄 The Power of Compound Recurring Revenue</h4>
-                    <div class="compound-grid">
-                        <div class="compound-card">
-                            <h5>Traditional Sponsorship</h5>
-                            <p class="compound-amount">$1,000 once</p>
-                            <p>One-time payment for a viral video</p>
+                <!-- Interactive Revenue Calculator -->
+                <div class="revenue-calculator-section">
+                    <h4>🧮 Interactive Revenue Calculator</h4>
+                    <p style="color: rgba(255, 255, 255, 0.8); text-align: center; margin-bottom: 2rem;">
+                        See how much you could earn with CookCam vs. traditional sponsorships
+                    </p>
+                    
+                    <div class="calculator-container">
+                        <div class="calculator-controls">
+                            <div class="control-group">
+                                <label for="calcViews">Monthly Video Views</label>
+                                <div class="slider-container">
+                                    <input type="range" id="calcViews" class="calc-slider" min="100000" max="2000000" value="500000" step="50000">
+                                    <div class="slider-value"><span id="calcViewsDisplay">500K</span> views</div>
+                                </div>
+                                <div class="preset-buttons">
+                                    <button class="preset-btn" onclick="setCalcValue('calcViews', 100000)">100K</button>
+                                    <button class="preset-btn" onclick="setCalcValue('calcViews', 500000)">500K</button>
+                                    <button class="preset-btn" onclick="setCalcValue('calcViews', 1000000)">1M</button>
+                                    <button class="preset-btn" onclick="setCalcValue('calcViews', 2000000)">2M</button>
+                                </div>
+                            </div>
+                            
+                            <div class="control-group">
+                                <label for="calcSponsorship">Traditional Sponsorship Value</label>
+                                <div class="slider-container">
+                                    <input type="range" id="calcSponsorship" class="calc-slider" min="500" max="5000" value="1000" step="100">
+                                    <div class="slider-value">$<span id="calcSponsorshipDisplay">1,000</span></div>
+                                </div>
+                                <div class="preset-buttons">
+                                    <button class="preset-btn" onclick="setCalcValue('calcSponsorship', 500)">$500</button>
+                                    <button class="preset-btn" onclick="setCalcValue('calcSponsorship', 1000)">$1K</button>
+                                    <button class="preset-btn" onclick="setCalcValue('calcSponsorship', 2500)">$2.5K</button>
+                                    <button class="preset-btn" onclick="setCalcValue('calcSponsorship', 5000)">$5K</button>
+                                </div>
+                            </div>
                         </div>
-                        <div class="compound-card featured">
-                            <h5>CookCam Creator Program</h5>
-                            <p class="compound-amount">$15,975 lifetime</p>
-                            <p>Same viral video generates recurring revenue for life with 6% monthly churn</p>
+                        
+                        <div class="calculator-results">
+                            <div class="comparison-grid">
+                                <div class="calc-card traditional">
+                                    <h5>Traditional Sponsorship</h5>
+                                    <div class="calc-amount">$<span id="traditionalAmount">1,000</span></div>
+                                    <div class="calc-desc">One-time payment for a viral video</div>
+                                </div>
+                                <div class="calc-card cookcam">
+                                    <div class="calc-badge">⚡ BETTER CHOICE</div>
+                                    <h5>CookCam Creator Program</h5>
+                                    <div class="calc-amount cookcam-color">$<span id="cookcamAmount">15,975</span></div>
+                                    <div class="calc-desc">Same viral video generates recurring revenue for life with 6% monthly churn</div>
+                                    <div class="calc-multiplier">
+                                        <span id="revenueMultiplier">15.9</span>x more revenue
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="calc-details">
+                                <div class="detail-item">
+                                    <span class="detail-label">Total Referrals:</span>
+                                    <span class="detail-value" id="totalReferrals">500</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Active Subs (Month 12):</span>
+                                    <span class="detail-value" id="activeSubs">312</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Monthly Recurring:</span>
+                                    <span class="detail-value">$<span id="monthlyRecurring">89</span></span>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <p class="compound-note">
+                    
+                    <p class="calculator-note">
                         <strong>Real Example:</strong> A 500K view TikTok that gets 500 referrals (60% at $3.99/month, 40% at $9.99/month) generates $958.50 in month 1, 
                         declining by 6% monthly due to churn, totaling <strong>$15,975 in lifetime revenue</strong> from that single video.
                     </p>

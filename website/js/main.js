@@ -18,6 +18,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Analytics tracking
     initAnalytics();
+    
+    // Revenue calculator
+    initRevenueCalculator();
 });
 
 // Mobile Menu
@@ -465,4 +468,91 @@ if (document.readyState === 'loading') {
 
 function init() {
     console.log('CookCam AI website loaded successfully! 🍳');
+}
+
+// Revenue Calculator
+function initRevenueCalculator() {
+    const viewsSlider = document.getElementById('calcViews');
+    const sponsorshipSlider = document.getElementById('calcSponsorship');
+    
+    if (viewsSlider && sponsorshipSlider) {
+        // Initial calculation
+        updateCalculator();
+        
+        // Event listeners
+        viewsSlider.addEventListener('input', updateCalculator);
+        sponsorshipSlider.addEventListener('input', updateCalculator);
+    }
+}
+
+function updateCalculator() {
+    const views = parseInt(document.getElementById('calcViews').value);
+    const sponsorship = parseInt(document.getElementById('calcSponsorship').value);
+    
+    // Update display values
+    document.getElementById('calcViewsDisplay').textContent = formatViews(views);
+    document.getElementById('calcSponsorshipDisplay').textContent = sponsorship.toLocaleString();
+    
+    // Calculate CookCam revenue
+    const clickRate = 1.2; // 1.2% CTR
+    const conversionRate = 10; // 10% conversion
+    const churnRate = 6; // 6% monthly churn
+    const premiumMix = 25; // 25% premium subscriptions
+    const revenueShare = 30; // 30% revenue share
+    
+    const clicks = Math.round(views * (clickRate / 100));
+    const conversions = Math.round(clicks * (conversionRate / 100));
+    
+    // Calculate subscription mix
+    const premiumSubs = Math.round(conversions * (premiumMix / 100));
+    const basicSubs = conversions - premiumSubs;
+    
+    // Calculate 12-month revenue with churn
+    let totalRevenue = 0;
+    let currentBasicSubs = basicSubs;
+    let currentPremiumSubs = premiumSubs;
+    
+    for (let month = 1; month <= 12; month++) {
+        const monthlyBasicRevenue = currentBasicSubs * 3.99;
+        const monthlyPremiumRevenue = currentPremiumSubs * 9.99;
+        const monthlyGrossRevenue = monthlyBasicRevenue + monthlyPremiumRevenue;
+        const monthlyCreatorRevenue = monthlyGrossRevenue * (revenueShare / 100);
+        
+        totalRevenue += monthlyCreatorRevenue;
+        
+        // Apply churn for next month
+        if (month < 12) {
+            currentBasicSubs = Math.round(currentBasicSubs * (1 - churnRate / 100));
+            currentPremiumSubs = Math.round(currentPremiumSubs * (1 - churnRate / 100));
+        }
+    }
+    
+    const finalSubs = currentBasicSubs + currentPremiumSubs;
+    const finalMonthlyRevenue = (currentBasicSubs * 3.99 + currentPremiumSubs * 9.99) * (revenueShare / 100);
+    const multiplier = totalRevenue / sponsorship;
+    
+    // Update displays
+    document.getElementById('traditionalAmount').textContent = sponsorship.toLocaleString();
+    document.getElementById('cookcamAmount').textContent = Math.round(totalRevenue).toLocaleString();
+    document.getElementById('revenueMultiplier').textContent = multiplier.toFixed(1);
+    document.getElementById('totalReferrals').textContent = conversions.toLocaleString();
+    document.getElementById('activeSubs').textContent = finalSubs.toLocaleString();
+    document.getElementById('monthlyRecurring').textContent = Math.round(finalMonthlyRevenue).toLocaleString();
+}
+
+function formatViews(views) {
+    if (views >= 1000000) {
+        return (views / 1000000).toFixed(1) + 'M';
+    } else if (views >= 1000) {
+        return (views / 1000).toFixed(0) + 'K';
+    }
+    return views.toString();
+}
+
+function setCalcValue(sliderId, value) {
+    const slider = document.getElementById(sliderId);
+    if (slider) {
+        slider.value = value;
+        updateCalculator();
+    }
 } 
