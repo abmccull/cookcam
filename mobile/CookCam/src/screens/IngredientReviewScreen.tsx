@@ -544,7 +544,7 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
 
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
-    navigation.navigate("Preferences", {
+    navigation.navigate("EnhancedPreferences", {
       ingredients,
       imageUri,
     });
@@ -958,7 +958,7 @@ const styles = StyleSheet.create({
   headerContainer: {
     alignItems: "center",
     padding: responsive.spacing.m,
-    paddingTop: responsive.spacing.s,
+    paddingTop: verticalScale(24),
     paddingBottom: responsive.spacing.s,
     backgroundColor: "#FFFFFF",
     borderBottomWidth: 1,

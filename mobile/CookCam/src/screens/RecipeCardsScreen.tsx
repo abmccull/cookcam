@@ -22,6 +22,7 @@ import {
 } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
 import { recipeService } from "../services/api";
+import { cookCamApi } from "../services/cookCamApi";
 import LoadingAnimation from "../components/LoadingAnimation";
 import CardStack from "../components/CardStack";
 import SafeScreen from "../components/SafeScreen";
@@ -45,6 +46,7 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [rawPreviews, setRawPreviews] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isGeneratingDetailed, setIsGeneratingDetailed] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
 
@@ -53,18 +55,34 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
     setError(null);
     try {
       logger.info("🚀 Generating new recipe previews...", { preferences });
+      logger.debug("📊 Preferences received:", {
+        servingSize: preferences.servingSize,
+        selectedAppliances: preferences.selectedAppliances,
+        mealPrepEnabled: preferences.mealPrepEnabled,
+        mealPrepPortions: preferences.mealPrepPortions,
+        cookingTime: preferences.cookingTime,
+        difficulty: preferences.difficulty,
+        dietary: preferences.dietary,
+        cuisine: preferences.cuisine
+      });
       const detectedIngredients = ingredients.map((ing: any) => ing.name);
       
       // Map frontend preferences to the structure the backend API expects
       const apiPreferences = {
         cuisinePreferences: preferences.cuisine || [],
         dietaryTags: preferences.dietary || [],
-        selectedAppliances: preferences.appliances || ["oven", "stove", "microwave"],
-        servingSize: preferences.servings || 2,
+        selectedAppliances: preferences.selectedAppliances || ["oven", "stove", "microwave"],
+        servingSize: preferences.servingSize || 2,
         skillLevel: preferences.difficulty || "any",
         timeAvailable: preferences.cookingTime || "any",
-        mealPrepEnabled: preferences.mealPrep || false,
+        mealPrepEnabled: preferences.mealPrepEnabled || false,
+        mealPrepPortions: preferences.mealPrepPortions || null,
       };
+
+      logger.debug("🚀 Sending to backend API:", {
+        detectedIngredients,
+        userPreferences: apiPreferences,
+      });
 
       const response = await recipeService.generatePreviews({
         detectedIngredients,
@@ -76,8 +94,8 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
         setSessionId(sessionId);
         setRawPreviews(previews);
         
-        const formattedRecipes: Recipe[] = previews.map((p: any) => ({
-          id: p.id || `preview-${Math.random()}`,
+        const formattedRecipes: Recipe[] = previews.map((p: any, index: number) => ({
+          id: p.id || `preview-${sessionId}-${index}`, // Use sessionId for better tracking
           title: p.title,
           description: p.description,
           image: `https://via.placeholder.com/400x300/4CAF50/FFFFFF?text=${encodeURIComponent(p.title)}`, // Placeholder
@@ -85,6 +103,9 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
           servings: preferences.servingSize || 2,
           difficulty: p.difficulty,
           tags: [p.cuisineType, "AI Generated"].filter(Boolean),
+          // Add preview data for favorites functionality
+          previewData: p,
+          isPreview: true, // Flag to indicate this is a preview, not a saved recipe
           // ... other fields from your Recipe type
         }));
         
@@ -116,6 +137,7 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
     }
 
     try {
+      setIsGeneratingDetailed(true);
       logger.debug("🍳 Generating detailed recipe for:", recipe.title);
       
       const detailedResponse = await recipeService.generateDetailedRecipe({
@@ -146,14 +168,78 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
     } catch (error: any) {
       logger.error("❌ Detailed recipe generation failed:", error);
       Alert.alert("Recipe Generation Failed", error?.message || "Please try again.");
+    } finally {
+      setIsGeneratingDetailed(false);
     }
   };
 
   // Handle favoriting a recipe
-  const handleFavoriteRecipe = (recipe: Recipe) => {
+  const handleFavoriteRecipe = async (recipe: Recipe) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    // Implement favorite logic here
-    logger.debug("❤️ Favorited recipe:", recipe.title);
+    
+    try {
+      logger.debug("❤️ Toggling favorite for recipe:", recipe.title);
+      
+      // Check if this is a preview recipe (not yet saved)
+      if ((recipe as any).isPreview) {
+        // First, we need to generate and save the detailed recipe
+        const recipePreviewData = rawPreviews.find(p => 
+          (p.id || `preview-${sessionId}-${rawPreviews.indexOf(p)}`) === recipe.id
+        );
+
+        if (!recipePreviewData || !sessionId) {
+          throw new Error("Unable to save recipe. Session data is missing.");
+        }
+
+        logger.debug("🔄 Generating detailed recipe to save as favorite...");
+        
+        const detailedResponse = await recipeService.generateDetailedRecipe({
+          selectedPreview: recipePreviewData,
+          sessionId: sessionId,
+        });
+
+        if (detailedResponse.success && detailedResponse.data?.data?.stored_recipe?.id) {
+          const savedRecipeId = detailedResponse.data.data.stored_recipe.id;
+          logger.debug("✅ Recipe saved with ID:", savedRecipeId);
+          
+          // Now favorite the saved recipe
+          const favoriteResponse = await cookCamApi.toggleFavoriteRecipe(savedRecipeId);
+          
+          if (favoriteResponse.success) {
+            Alert.alert(
+              "Added to Favorites! ❤️",
+              `Recipe "${recipe.title}" has been saved and added to your favorites!`,
+              [{ text: "OK" }]
+            );
+          } else {
+            throw new Error("Recipe was saved but failed to add to favorites");
+          }
+        } else {
+          throw new Error("Failed to generate detailed recipe");
+        }
+      } else {
+        // This is already a saved recipe, just toggle favorite status
+        const response = await cookCamApi.toggleFavoriteRecipe(recipe.id);
+        
+        if (response.success) {
+          logger.debug("✅ Successfully toggled favorite for:", recipe.title);
+          Alert.alert(
+            "Success!",
+            `Recipe "${recipe.title}" has been ${response.data?.favorited ? 'added to' : 'removed from'} your favorites!`,
+            [{ text: "OK" }]
+          );
+        } else {
+          throw new Error(response.error || "Failed to update favorite status");
+        }
+      }
+    } catch (error: any) {
+      logger.error("❌ Failed to toggle favorite:", error);
+      Alert.alert(
+        "Error",
+        error.message || "Failed to update favorite status. Please try again.",
+        [{ text: "OK" }]
+      );
+    }
   };
 
   // Handle viewing recipe details
@@ -188,6 +274,10 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
           <LoadingAnimation visible={true} variant="previews" />
         )}
 
+        {isGeneratingDetailed && (
+          <LoadingAnimation visible={true} variant="detailed" />
+        )}
+
         {!isLoading && error && (
           <View style={styles.errorContainer}>
             <Text style={styles.errorTitle}>Oops!</Text>
@@ -206,6 +296,7 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
             onFavoriteRecipe={handleFavoriteRecipe}
             onViewRecipeDetails={handleViewRecipeDetails}
             onRefreshRecipes={generateRecipes}
+            isLoading={false}
           />
         )}
       </View>
@@ -219,8 +310,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8F9FA',
   },
   header: {
-    padding: 20,
-    paddingTop: 40,
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingBottom: 20,
     alignItems: 'center',
   },
   title: {
@@ -235,8 +327,7 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    paddingBottom: 100, // Add padding to prevent overlap with bottom navbar
   },
   errorOverlay: {
     position: "absolute",

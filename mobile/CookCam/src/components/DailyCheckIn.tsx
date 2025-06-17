@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   View,
   Text,
@@ -9,32 +9,17 @@ import {
 } from "react-native";
 import {
   Camera,
-  Check,
-  Calendar,
-  Star,
-  ChefHat,
   Upload,
+  Check,
+  ChefHat,
+  Star,
+  Calendar,
 } from "lucide-react-native";
+import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from "expo-haptics";
 import * as SecureStore from "expo-secure-store";
 import { useGamification } from "../context/GamificationContext";
 import logger from "../utils/logger";
-
-// import {launchImageLibrary} from 'react-native-image-picker';
-
-// Mock image picker for now
-const launchImageLibrary = (
-  _options: any,
-  callback: (_response: any) => void,
-) => {
-  // Simulate image selection
-  setTimeout(() => {
-    callback({
-      assets: [{ uri: "mock-photo-uri" }],
-      didCancel: false,
-    });
-  }, 500);
-};
 
 interface CheckInDay {
   date: string;
@@ -104,33 +89,63 @@ const DailyCheckIn: React.FC = () => {
         setHasCheckedInToday(true);
       }
 
-      // Load weekly progress
-      const weekData = await SecureStore.getItemAsync("weeklyCheckIns");
-      if (weekData) {
-        setWeeklyProgress(JSON.parse(weekData));
-      } else {
-        generateWeeklyProgress();
-      }
+      // Always generate current week progress to ensure proper dates
+      await generateWeeklyProgress();
     } catch (error) {
       logger.error("Error loading check-in data:", error);
     }
   };
 
-  const generateWeeklyProgress = () => {
+  const generateWeeklyProgress = async () => {
     const days: CheckInDay[] = [];
     const today = new Date();
+    
+    // Get the start of the current week (Sunday)
+    const startOfWeek = new Date(today);
+    const dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
+    startOfWeek.setDate(today.getDate() - dayOfWeek);
 
-    for (let i = 6; i >= 0; i--) {
-      const date = new Date();
-      date.setDate(today.getDate() - i);
+    // Load existing check-in data
+    let existingData: CheckInDay[] = [];
+    try {
+      const weekData = await SecureStore.getItemAsync("weeklyCheckIns");
+      if (weekData) {
+        existingData = JSON.parse(weekData);
+      }
+    } catch (error) {
+      logger.error("Error loading existing check-in data:", error);
+    }
+
+    // Generate Sunday through Saturday of current week
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(startOfWeek);
+      date.setDate(startOfWeek.getDate() + i);
+      const dateString = date.toDateString();
+
+      // Check if this day already has check-in data
+      const existingDay = existingData.find(d => d.date === dateString);
 
       days.push({
-        date: date.toDateString(),
-        completed: false,
+        date: dateString,
+        completed: existingDay?.completed || false,
+        photoUri: existingDay?.photoUri,
       });
     }
 
     setWeeklyProgress(days);
+  };
+
+  const requestCameraPermissions = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert(
+        'Camera Permission Required',
+        'Please allow camera access to take photos of your fridge contents.',
+        [{ text: 'OK' }]
+      );
+      return false;
+    }
+    return true;
   };
 
   const handleCheckIn = async () => {
@@ -144,55 +159,112 @@ const DailyCheckIn: React.FC = () => {
 
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
-    // Launch camera/gallery
-    launchImageLibrary(
-      {
-        mediaType: "photo",
-        quality: 0.7,
-      },
-      async (response) => {
-        if (response.didCancel || response.errorMessage) {
-          return;
-        }
+    // Request camera permissions
+    const hasPermission = await requestCameraPermissions();
+    if (!hasPermission) {
+      return;
+    }
 
-        const photoUri = response.assets?.[0]?.uri;
-        if (!photoUri) {
-          return;
-        }
-
-        // Mark as checked in
-        setHasCheckedInToday(true);
-        const today = new Date().toDateString();
-        await SecureStore.setItemAsync("lastCheckIn", today);
-
-        // Update weekly progress
-        const updatedProgress = weeklyProgress.map((day) =>
-          day.date === today ? { ...day, completed: true, photoUri } : day,
-        );
-        setWeeklyProgress(updatedProgress);
-        await SecureStore.setItemAsync(
-          "weeklyCheckIns",
-          JSON.stringify(updatedProgress),
-        );
-
-        // Award XP
-        await addXP(5, "DAILY_CHECK_IN");
-
-        // Animate checkmark
-        Animated.spring(checkmarkScale, {
-          toValue: 1,
-          tension: 50,
-          friction: 5,
-          useNativeDriver: true,
-        }).start();
-
-        // Generate AI suggestion (mock for now)
-        generateRecipeSuggestion(photoUri);
-
-        // Check for weekly bonus
-        checkWeeklyBonus(updatedProgress);
-      },
+    // Show camera/gallery options
+    Alert.alert(
+      "Take Fridge Photo",
+      "Choose how to capture your fridge contents:",
+      [
+        {
+          text: "Camera",
+          onPress: () => launchCamera(),
+        },
+        {
+          text: "Photo Library",
+          onPress: () => launchImageLibrary(),
+        },
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+      ],
     );
+  };
+
+  const launchCamera = async () => {
+    try {
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.7,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        await processPhoto(result.assets[0].uri);
+      }
+    } catch (error) {
+      logger.error("Error launching camera:", error);
+      Alert.alert("Error", "Failed to open camera. Please try again.");
+    }
+  };
+
+  const launchImageLibrary = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.7,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        await processPhoto(result.assets[0].uri);
+      }
+    } catch (error) {
+      logger.error("Error launching image library:", error);
+      Alert.alert("Error", "Failed to open photo library. Please try again.");
+    }
+  };
+
+  const processPhoto = async (photoUri: string) => {
+    try {
+      // Mark as checked in
+      setHasCheckedInToday(true);
+      const today = new Date().toDateString();
+      await SecureStore.setItemAsync("lastCheckIn", today);
+
+      // Update weekly progress
+      const updatedProgress = weeklyProgress.map((day) =>
+        day.date === today ? { ...day, completed: true, photoUri } : day,
+      );
+      setWeeklyProgress(updatedProgress);
+      await SecureStore.setItemAsync(
+        "weeklyCheckIns",
+        JSON.stringify(updatedProgress),
+      );
+
+      // Award XP
+      await addXP(5, "DAILY_CHECK_IN");
+
+      // Animate checkmark
+      Animated.spring(checkmarkScale, {
+        toValue: 1,
+        tension: 50,
+        friction: 5,
+        useNativeDriver: true,
+      }).start();
+
+      // Generate AI suggestion (mock for now - in real app would analyze photo)
+      generateRecipeSuggestion(photoUri);
+
+      // Check for weekly bonus
+      checkWeeklyBonus(updatedProgress);
+
+      Alert.alert(
+        "Check-In Complete! 📸",
+        "Thanks for sharing your fridge contents! +5 XP awarded.",
+        [{ text: "Awesome!" }]
+      );
+    } catch (error) {
+      logger.error("Error processing photo:", error);
+      Alert.alert("Error", "Failed to save check-in. Please try again.");
+    }
   };
 
   const generateRecipeSuggestion = (_photoUri: string) => {
@@ -203,6 +275,9 @@ const DailyCheckIn: React.FC = () => {
       "Quick Stir-Fry",
       "Homemade Pizza",
       "Veggie Wrap",
+      "Mediterranean Bowl",
+      "Asian Fusion Soup",
+      "Loaded Quesadillas",
     ];
 
     const randomSuggestion =
@@ -290,7 +365,7 @@ const DailyCheckIn: React.FC = () => {
             activeOpacity={0.8}
           >
             <Upload size={24} color="#FFFFFF" />
-            <Text style={styles.checkInButtonText}>Upload Fridge Photo</Text>
+            <Text style={styles.checkInButtonText}>Take Fridge Photo</Text>
             <View style={styles.xpBadge}>
               <Text style={styles.xpBadgeText}>+5 XP</Text>
             </View>
@@ -321,7 +396,10 @@ const DailyCheckIn: React.FC = () => {
             Based on your fridge, try making:
           </Text>
           <Text style={styles.recipeName}>{suggestedRecipe}</Text>
-          <TouchableOpacity style={styles.viewRecipeButton}>
+          <TouchableOpacity 
+            style={styles.viewRecipeButton}
+            onPress={() => Alert.alert("Coming Soon!", "Full recipe functionality will be available soon! 🍽️")}
+          >
             <Text style={styles.viewRecipeText}>View Recipe</Text>
             <Star size={16} color="#FF6B35" />
           </TouchableOpacity>

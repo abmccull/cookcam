@@ -6,14 +6,27 @@
       }
     },
     "android": {
-      "package": "com.abmccull.cookcamexpo"
+      "package": "com.abmccull.cookcamexpo",
+      "permissions": [
+        "USE_FINGERPRINT",
+        "USE_BIOMETRIC"
+      ]
     },
     "owner": "abmccull",
     "plugins": [
-      "react-native-iap"
+      "react-native-iap",
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Allow CookCam to use Face ID for secure and convenient authentication."
+        }
+      ]
     ],
     "ios": {
-      "bundleIdentifier": "com.abmccull.cookcamexpo"
+      "bundleIdentifier": "com.abmccull.cookcamexpo",
+      "infoPlist": {
+        "NSFaceIDUsageDescription": "Allow CookCam to use Face ID for secure and convenient authentication."
+      }
     }
   }
 }

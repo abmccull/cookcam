@@ -13,6 +13,8 @@ import {
 } from "react-native";
 import { Mail, Lock, Eye, EyeOff, ChefHat } from "lucide-react-native";
 import { useAuth } from "../context/AuthContext";
+import { secureStorage } from "../services/secureStorage";
+import BiometricLogin from "../components/BiometricLogin";
 // import Animated, {
 //   useAnimatedStyle,
 //   useSharedValue,
@@ -30,7 +32,8 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+  const [biometricRefreshTrigger, setBiometricRefreshTrigger] = useState(0);
+  const { login, loginWithBiometrics, enableBiometricLogin } = useAuth();
 
   // Animation for the chef hat - TEMPORARILY DISABLED
   // const rotation = useSharedValue(0);
@@ -63,6 +66,36 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 
     try {
       await login(email, password);
+      
+      // After successful login, offer to enable biometric authentication
+      // This will be shown only once per session
+      setTimeout(() => {
+        Alert.alert(
+          "Enable Biometric Login",
+          "Would you like to enable biometric authentication for faster login next time?",
+          [
+            { text: "Maybe Later", style: "cancel" },
+            {
+              text: "Enable",
+              onPress: async () => {
+                try {
+                  // Get the current session token
+                  const token = await secureStorage.getSecureItem('access_token');
+                  if (token) {
+                    await enableBiometricLogin(email, token);
+                    // Trigger refresh of biometric component
+                    setBiometricRefreshTrigger(prev => prev + 1);
+                    Alert.alert("Success", "Biometric login has been enabled! You can now use it to sign in quickly.");
+                  }
+                } catch (error) {
+                  Alert.alert("Error", "Failed to enable biometric login. You can enable it later in settings.");
+                }
+              },
+            },
+          ]
+        );
+      }, 1000);
+      
       // Navigation will be handled by the auth state change in App.tsx
     } catch (error) {
       Alert.alert(
@@ -72,6 +105,25 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleBiometricLogin = async (credentials: { email: string; token: string }) => {
+    try {
+      setLoading(true);
+      await loginWithBiometrics(credentials);
+      // Navigation will be handled by the auth state change in App.tsx
+    } catch (error) {
+      Alert.alert(
+        "Biometric Login Failed",
+        error instanceof Error ? error.message : "Please try logging in with your password."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleBiometricError = (error: string) => {
+    Alert.alert("Authentication Error", error);
   };
 
   const handleSignup = () => {
@@ -163,6 +215,15 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
               <Text style={styles.loginButtonText}>Log In</Text>
             )}
           </TouchableOpacity>
+
+          {/* Biometric Login */}
+          <BiometricLogin
+            onSuccess={handleBiometricLogin}
+            onError={handleBiometricError}
+            disabled={loading}
+            style={styles.biometricButton}
+            refreshTrigger={biometricRefreshTrigger}
+          />
 
           {/* Divider */}
           <View style={styles.divider}>
@@ -287,6 +348,9 @@ const styles = StyleSheet.create({
   signupLink: {
     color: "#FF6B35",
     fontWeight: "600",
+  },
+  biometricButton: {
+    marginBottom: 24,
   },
 });
 

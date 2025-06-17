@@ -29,7 +29,7 @@ import logger from "../utils/logger";
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 const SWIPE_THRESHOLD = screenWidth * 0.3;
 const CARD_WIDTH = screenWidth - 60;
-const CARD_HEIGHT = screenHeight * 0.65;
+const CARD_HEIGHT = screenHeight * 0.49; // Reduced from 0.65 to 0.49 (25% reduction)
 
 interface SwipeableCardProps {
   recipe: Recipe;
@@ -198,10 +198,22 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
     ),
   }));
 
-  const handleFavorite = () => {
-    setIsCardFavorited(!isCardFavorited);
+  const handleFavorite = async () => {
+    const newFavoriteState = !isCardFavorited;
+    setIsCardFavorited(newFavoriteState);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    
+    logger.debug("🔥 Heart button tapped:", {
+      recipeTitle: recipe.title,
+      recipeId: recipe.id,
+      newFavoriteState,
+      isPreview: (recipe as any).isPreview,
+    });
+    
+    // Call the parent's onFavorite callback
     onFavorite(recipe);
+    
+    logger.debug(newFavoriteState ? "❤️ Added to favorites:" : "💔 Removed from favorites:", recipe.title);
   };
 
   const handleCardTap = () => {

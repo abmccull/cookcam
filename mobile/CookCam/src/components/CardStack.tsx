@@ -94,9 +94,10 @@ const CardStack: React.FC<CardStackProps> = ({ recipes, onCookRecipe, onRefreshR
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     alignItems: 'center',
     width: '100%',
+    paddingTop: 20,
   },
   cardContainer: {
     width: screenWidth,

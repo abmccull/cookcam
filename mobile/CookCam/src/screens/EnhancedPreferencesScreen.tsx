@@ -250,6 +250,7 @@ const EnhancedPreferencesScreen: React.FC<EnhancedPreferencesScreenProps> = ({
       subtitle: "Select all that apply",
       type: "multi",
       options: [
+        "None",
         "Vegetarian",
         "Vegan",
         "Gluten-Free",
@@ -483,11 +484,18 @@ const EnhancedPreferencesScreen: React.FC<EnhancedPreferencesScreenProps> = ({
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
     if (step.id === "dietary") {
-      setDietary((prev) =>
-        prev.includes(option)
-          ? prev.filter((item) => item !== option)
-          : [...prev, option],
-      );
+      if (option === "None") {
+        // If "None" is selected, clear all other selections
+        setDietary((prev) => (prev.includes("None") ? [] : ["None"]));
+      } else {
+        // If any other option is selected, remove "None" if it was selected
+        setDietary((prev) => {
+          const filtered = prev.filter((item) => item !== "None");
+          return prev.includes(option)
+            ? filtered.filter((item) => item !== option)
+            : [...filtered, option];
+        });
+      }
     } else if (step.id === "cuisine") {
       if (option === "🎲 Surprise Me!") {
         setCuisine((prev) => (prev.includes(option) ? [] : [option]));
@@ -537,19 +545,20 @@ const EnhancedPreferencesScreen: React.FC<EnhancedPreferencesScreenProps> = ({
     const step = steps[currentStep];
 
     if (step.id === "serving") {
-      return true; // Always can proceed from serving selection
+      return selectedServing !== null; // Must select a serving size
     } else if (step.id === "appliances") {
-      return appliances.filter((a) => a.selected).length > 0;
-    } else if (step.type === "multi") {
-      if (step.id === "dietary") {
-        return true;
-      } // Optional
-      if (step.id === "cuisine") {
-        return cuisine.length > 0;
-      }
+      return appliances.filter((a) => a.selected).length > 0; // Must select at least one appliance
+    } else if (step.id === "dietary") {
+      return dietary.length > 0; // Must select at least one dietary option (including "None")
+    } else if (step.id === "cuisine") {
+      return cuisine.length > 0; // Must select at least one cuisine
+    } else if (step.id === "time") {
+      return cookingTime !== ""; // Must select a cooking time
+    } else if (step.id === "difficulty") {
+      return difficulty !== ""; // Must select a difficulty
     }
 
-    return true; // Single choice steps can always proceed
+    return true;
   };
 
   const showCompletionReward = async () => {
@@ -625,10 +634,16 @@ const EnhancedPreferencesScreen: React.FC<EnhancedPreferencesScreenProps> = ({
 
     // Navigate after animation
     setTimeout(() => {
-      navigation.navigate("RecipeCards", {
-        ingredients,
-        imageUri,
-        preferences,
+      navigation.navigate("MainTabs", {
+        screen: "HomeStack",
+        params: {
+          screen: "RecipeCards",
+          params: {
+            ingredients,
+            imageUri,
+            preferences,
+          },
+        },
       });
     }, 1500);
   };
@@ -1042,7 +1057,8 @@ const styles = StyleSheet.create({
   header: {
     backgroundColor: "#FFFFFF",
     paddingHorizontal: 20,
-    paddingVertical: 12,
+    paddingTop: 20,
+    paddingBottom: 12,
     borderBottomWidth: 1,
     borderBottomColor: "#E5E5E7",
   },

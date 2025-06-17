@@ -152,6 +152,10 @@ export interface Recipe {
 
   // Tips and additional info
   tips?: string[];
+
+  // Preview recipe functionality
+  isPreview?: boolean; // Flag to indicate this is a preview, not a saved recipe
+  previewData?: any; // Original preview data from API
 }
 
 // Utility functions for Recipe format conversion
