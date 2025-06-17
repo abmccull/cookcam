@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   StyleSheet,
@@ -15,6 +15,8 @@ import { Mail, Lock, Eye, EyeOff, ChefHat } from "lucide-react-native";
 import { useAuth } from "../context/AuthContext";
 import { secureStorage } from "../services/secureStorage";
 import BiometricLogin from "../components/BiometricLogin";
+import BiometricAuthService from "../services/biometricAuth";
+import logger from "../utils/logger";
 // import Animated, {
 //   useAnimatedStyle,
 //   useSharedValue,
@@ -125,6 +127,37 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   const handleBiometricError = (error: string) => {
     Alert.alert("Authentication Error", error);
   };
+
+  // Debug function to check biometric status
+  const debugBiometricStatus = async () => {
+    try {
+      const biometricService = BiometricAuthService.getInstance();
+      const capabilities = await biometricService.checkBiometricCapabilities();
+      const isEnabled = await biometricService.isBiometricEnabled();
+      const credentials = await biometricService.getStoredCredentials();
+      
+      logger.debug('🔍 Biometric Debug Status:', {
+        capabilities: {
+          isAvailable: capabilities.isAvailable,
+          hasHardware: capabilities.hasHardware,
+          isEnrolled: capabilities.isEnrolled,
+          fingerprintAvailable: capabilities.fingerprintAvailable,
+          faceIdAvailable: capabilities.faceIdAvailable,
+        },
+        isEnabled,
+        hasStoredCredentials: !!credentials,
+        credentialsEmail: credentials?.email,
+        hasRefreshToken: !!credentials?.refreshToken,
+      });
+    } catch (error) {
+      logger.error('❌ Debug biometric status error:', error);
+    }
+  };
+
+  // Debug biometric status on screen load
+  useEffect(() => {
+    debugBiometricStatus();
+  }, []);
 
   const handleSignup = () => {
     navigation.navigate("Signup");
