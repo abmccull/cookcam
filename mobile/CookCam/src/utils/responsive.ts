@@ -1,6 +1,6 @@
-import {Dimensions, PixelRatio} from 'react-native';
+import { Dimensions, PixelRatio, Platform } from "react-native";
 
-const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 
 // Guideline sizes are based on standard iPhone 12 dimensions
 const guidelineBaseWidth = 390;
@@ -83,28 +83,28 @@ export const responsive = {
   // Shadow depths
   shadow: {
     small: {
-      shadowColor: '#000',
-      shadowOffset: {width: 0, height: 1},
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 1 },
       shadowOpacity: 0.1,
       shadowRadius: 2,
       elevation: 2,
-      backgroundColor: '#FFFFFF', // Required for efficient shadow calculation
+      backgroundColor: "#FFFFFF", // Required for efficient shadow calculation
     },
     medium: {
-      shadowColor: '#000',
-      shadowOffset: {width: 0, height: 2},
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.15,
       shadowRadius: 4,
       elevation: 4,
-      backgroundColor: '#FFFFFF', // Required for efficient shadow calculation
+      backgroundColor: "#FFFFFF", // Required for efficient shadow calculation
     },
     large: {
-      shadowColor: '#000',
-      shadowOffset: {width: 0, height: 2},
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.2,
       shadowRadius: 8,
       elevation: 8,
-      backgroundColor: '#FFFFFF', // Required for efficient shadow calculation
+      backgroundColor: "#FFFFFF", // Required for efficient shadow calculation
     },
   },
 };
@@ -133,10 +133,10 @@ export const isLargeScreen = () => SCREEN_WIDTH >= 400;
 
 // Platform-specific adjustments
 export const platformSpecific = {
-  isIOS: require('react-native').Platform.OS === 'ios',
-  isAndroid: require('react-native').Platform.OS === 'android',
-  statusBarHeight: require('react-native').Platform.OS === 'ios' ? 44 : 24,
-  bottomSafeArea: require('react-native').Platform.OS === 'ios' ? 34 : 0,
+  isIOS: Platform.OS === "ios",
+  isAndroid: Platform.OS === "android",
+  statusBarHeight: Platform.OS === "ios" ? 44 : 24,
+  bottomSafeArea: Platform.OS === "ios" ? 34 : 0,
 };
 
 export default responsive;

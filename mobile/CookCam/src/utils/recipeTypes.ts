@@ -29,7 +29,7 @@ export interface ClaimedRecipe {
   prepTime: number;
   cookTime: number;
   servings: number;
-  difficulty: 'Easy' | 'Medium' | 'Hard';
+  difficulty: "Easy" | "Medium" | "Hard";
   cuisine: string;
   tags: string[];
   creatorId: string;
@@ -162,12 +162,12 @@ export const normalizeRecipe = (recipe: any): Recipe => {
     prepTime:
       recipe.prepTime ||
       (recipe.cookingTime
-        ? parseInt(recipe.cookingTime.replace(/\D/g, ''), 10) / 2
+        ? parseInt(recipe.cookingTime.replace(/\D/g, ""), 10) / 2
         : 0),
     cookTime:
       recipe.cookTime ||
       (recipe.cookingTime
-        ? parseInt(recipe.cookingTime.replace(/\D/g, ''), 10) / 2
+        ? parseInt(recipe.cookingTime.replace(/\D/g, ""), 10) / 2
         : 0),
     cookingTime:
       recipe.cookingTime ||
@@ -193,8 +193,8 @@ export const convertToCardStackRecipe = (recipe: Recipe): Recipe => {
     ...recipe,
     prepTime: recipe.prepTime || 0,
     cookTime: recipe.cookTime || 0,
-    cuisineType: recipe.cuisineType || recipe.cuisine || 'Unknown',
-    cookingMethod: recipe.cookingMethod || 'Standard',
+    cuisineType: recipe.cuisineType || recipe.cuisine || "Unknown",
+    cookingMethod: recipe.cookingMethod || "Standard",
     calories: recipe.calories || recipe.macros?.calories || 0,
   };
 };

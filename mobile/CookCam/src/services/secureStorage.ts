@@ -1,5 +1,7 @@
-import * as Keychain from 'react-native-keychain';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from "expo-secure-store";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import logger from "../utils/logger";
+
 
 /**
  * Secure Storage Service
@@ -8,28 +10,29 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
  */
 
 // Keychain service identifiers
-const KEYCHAIN_SERVICE = 'CookCam';
+const KEYCHAIN_SERVICE = "CookCam";
 
 // Keys for sensitive data (stored in Keychain)
 export const SECURE_KEYS = {
-  ACCESS_TOKEN: 'access_token',
-  REFRESH_TOKEN: 'refresh_token',
-  USER_CREDENTIALS: 'user_credentials',
+  ACCESS_TOKEN: "supabase-access-token",
+  REFRESH_TOKEN: "supabase-refresh-token",
+  USER_ID: "user-id",
 } as const;
 
 // Keys for non-sensitive data (stored in AsyncStorage)
 export const STORAGE_KEYS = {
-  USER_PREFERENCES: 'user_preferences',
-  ANALYTICS_SESSION: 'analytics_session',
-  NOTIFICATION_PREFERENCES: 'notification_preferences',
-  ONBOARDING_COMPLETED: 'onboarding_completed',
-  LAST_CHECK_IN: 'last_check_in',
-  WEEKLY_CHECK_INS: 'weekly_check_ins',
-  USER_BEHAVIOR: 'user_behavior',
-  CREATOR_KYC_COMPLETED: 'creator_kyc_completed',
-  SUBSCRIPTION_EXPIRED_AT: 'subscription_expired_at',
-  PAYMENT_FAILED_AT: 'payment_failed_at',
-  GRACE_PERIOD_END: 'grace_period_end',
+  USER_PREFERENCES: "user-preferences",
+  TEMP_SCAN_DATA: "temp-scan-data",
+  ONBOARDING_COMPLETED: "onboarding-completed",
+  LAST_CHECK_IN: "last-check-in-date",
+  ANALYTICS_SESSION: "analytics_session",
+  NOTIFICATION_PREFERENCES: "notification_preferences",
+  WEEKLY_CHECK_INS: "weekly_check_ins",
+  USER_BEHAVIOR: "user_behavior",
+  CREATOR_KYC_COMPLETED: "creator_kyc_completed",
+  SUBSCRIPTION_EXPIRED_AT: "subscription_expired_at",
+  PAYMENT_FAILED_AT: "payment_failed_at",
+  GRACE_PERIOD_END: "grace_period_end",
 } as const;
 
 class SecureStorage {
@@ -45,11 +48,13 @@ class SecureStorage {
 
     try {
       // Try a simple keychain operation to test availability
-      await Keychain.getSupportedBiometryType();
+      await SecureStore.getItemAsync(SECURE_KEYS.ACCESS_TOKEN);
       this.keychainAvailable = true;
       return true;
     } catch (error) {
-      console.warn('⚠️ Keychain not available, falling back to AsyncStorage for tokens. This is less secure but allows development to continue.');
+      logger.warn(
+        "⚠️ Keychain not available, falling back to AsyncStorage for tokens. This is less secure but allows development to continue.",
+      );
       this.keychainAvailable = false;
       return false;
     }
@@ -62,27 +67,10 @@ class SecureStorage {
    */
   async setSecureItem(key: string, value: string): Promise<void> {
     try {
-      const keychainAvailable = await this.checkKeychainAvailability();
-      
-      if (keychainAvailable) {
-        await Keychain.setGenericPassword(key, value, {
-          service: `${KEYCHAIN_SERVICE}_${key}`,
-        });
-      } else {
-        // Fallback to AsyncStorage with a warning prefix
-        console.warn(`🔒 Using AsyncStorage fallback for secure item: ${key}`);
-        await AsyncStorage.setItem(`SECURE_FALLBACK_${key}`, value);
-      }
+      await SecureStore.setItemAsync(key, value);
     } catch (error) {
-      console.error(`Error storing secure item ${key}:`, error);
-      // Try AsyncStorage as final fallback
-      try {
-        console.warn(`🔒 Final fallback to AsyncStorage for: ${key}`);
-        await AsyncStorage.setItem(`SECURE_FALLBACK_${key}`, value);
-      } catch (fallbackError) {
-        console.error(`Final fallback failed for ${key}:`, fallbackError);
-        throw new Error(`Failed to store secure data: ${key}`);
-      }
+      logger.error(`Error setting secure item for key: ${key}`, error);
+      throw new Error("Failed to set secure item.");
     }
   }
 
@@ -91,33 +79,10 @@ class SecureStorage {
    */
   async getSecureItem(key: string): Promise<string | null> {
     try {
-      const keychainAvailable = await this.checkKeychainAvailability();
-      
-      if (keychainAvailable) {
-        const credentials = await Keychain.getGenericPassword({
-          service: `${KEYCHAIN_SERVICE}_${key}`,
-        });
-
-        if (credentials && credentials.password) {
-          return credentials.password;
-        }
-      } else {
-        // Fallback to AsyncStorage
-        const value = await AsyncStorage.getItem(`SECURE_FALLBACK_${key}`);
-        return value;
-      }
-
-      return null;
+      return await SecureStore.getItemAsync(key);
     } catch (error) {
-      console.error(`Error retrieving secure item ${key}:`, error);
-      // Try AsyncStorage fallback
-      try {
-        const fallbackValue = await AsyncStorage.getItem(`SECURE_FALLBACK_${key}`);
-        return fallbackValue;
-      } catch (fallbackError) {
-        console.error(`Fallback retrieval failed for ${key}:`, fallbackError);
-        return null;
-      }
+      logger.error(`Error getting secure item for key: ${key}`, error);
+      return null;
     }
   }
 
@@ -126,24 +91,9 @@ class SecureStorage {
    */
   async removeSecureItem(key: string): Promise<void> {
     try {
-      const keychainAvailable = await this.checkKeychainAvailability();
-      
-      if (keychainAvailable) {
-        await Keychain.resetGenericPassword({
-          service: `${KEYCHAIN_SERVICE}_${key}`,
-        });
-      }
-      
-      // Always also try to remove from AsyncStorage fallback (in case data was stored there)
-      await AsyncStorage.removeItem(`SECURE_FALLBACK_${key}`);
+      await SecureStore.deleteItemAsync(key);
     } catch (error) {
-      console.error(`Error removing secure item ${key}:`, error);
-      // Still try to remove from AsyncStorage fallback
-      try {
-        await AsyncStorage.removeItem(`SECURE_FALLBACK_${key}`);
-      } catch (fallbackError) {
-        console.error(`Fallback removal failed for ${key}:`, fallbackError);
-      }
+      logger.error(`Error removing secure item for key: ${key}`, error);
     }
   }
 
@@ -152,10 +102,12 @@ class SecureStorage {
    */
   async clearAllSecureData(): Promise<void> {
     try {
-      const secureKeys = Object.values(SECURE_KEYS);
-      await Promise.all(secureKeys.map(key => this.removeSecureItem(key)));
+      const allKeys = Object.values(SECURE_KEYS);
+      const promises = allKeys.map((key) => this.removeSecureItem(key));
+      await Promise.all(promises);
+      logger.debug("All secure data cleared.");
     } catch (error) {
-      console.error('Error clearing secure data:', error);
+      logger.error("Failed to clear all secure data.", error);
     }
   }
 
@@ -207,8 +159,10 @@ class SecureStorage {
     try {
       await AsyncStorage.setItem(key, value);
     } catch (error) {
-      console.error(`Error storing item ${key}:`, error);
-      throw new Error(`Failed to store data: ${key}`);
+      logger.error(
+        `Error setting item in AsyncStorage for key: ${key}`,
+        error,
+      );
     }
   }
 
@@ -220,7 +174,7 @@ class SecureStorage {
       const jsonString = JSON.stringify(value);
       await this.setItem(key, jsonString);
     } catch (error) {
-      console.error(`Error storing JSON item ${key}:`, error);
+      logger.error(`Error storing JSON item ${key}:`, error);
       throw new Error(`Failed to store JSON data: ${key}`);
     }
   }
@@ -232,7 +186,10 @@ class SecureStorage {
     try {
       return await AsyncStorage.getItem(key);
     } catch (error) {
-      console.error(`Error retrieving item ${key}:`, error);
+      logger.error(
+        `Error getting item from AsyncStorage for key: ${key}`,
+        error,
+      );
       return null;
     }
   }
@@ -248,7 +205,7 @@ class SecureStorage {
       }
       return null;
     } catch (error) {
-      console.error(`Error retrieving JSON item ${key}:`, error);
+      logger.error(`Error retrieving JSON item ${key}:`, error);
       return null;
     }
   }
@@ -260,7 +217,10 @@ class SecureStorage {
     try {
       await AsyncStorage.removeItem(key);
     } catch (error) {
-      console.error(`Error removing item ${key}:`, error);
+      logger.error(
+        `Error removing item from AsyncStorage for key: ${key}`,
+        error,
+      );
     }
   }
 
@@ -271,7 +231,7 @@ class SecureStorage {
     try {
       await AsyncStorage.multiRemove(keys);
     } catch (error) {
-      console.error('Error removing multiple items:', error);
+      logger.error("Error removing multiple items:", error);
     }
   }
 
@@ -283,7 +243,7 @@ class SecureStorage {
       const allKeys = Object.values(STORAGE_KEYS);
       await this.removeItems(allKeys);
     } catch (error) {
-      console.error('Error clearing all data:', error);
+      logger.error("Error clearing all data:", error);
     }
   }
 
@@ -301,10 +261,10 @@ class SecureStorage {
    */
   async isKeychainAvailable(): Promise<boolean> {
     try {
-      const supportedType = await Keychain.getSupportedBiometryType();
+      await SecureStore.getItemAsync(SECURE_KEYS.ACCESS_TOKEN);
       return true; // If this doesn't throw, Keychain is available
     } catch (error) {
-      console.warn('Keychain not available on this device:', error);
+      logger.warn("Keychain not available on this device:", error);
       return false;
     }
   }
@@ -314,10 +274,12 @@ class SecureStorage {
    */
   async getBiometryType(): Promise<string | null> {
     try {
-      const biometryType = await Keychain.getSupportedBiometryType();
+      const biometryType = await SecureStore.getItemAsync(
+        SECURE_KEYS.ACCESS_TOKEN,
+      );
       return biometryType;
     } catch (error) {
-      console.error('Error getting biometry type:', error);
+      logger.error("Error getting biometry type:", error);
       return null;
     }
   }

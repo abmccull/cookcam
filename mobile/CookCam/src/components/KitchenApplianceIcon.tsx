@@ -1,5 +1,5 @@
-import React from 'react';
-import {View, Text, StyleSheet} from 'react-native';
+import React from "react";
+import { View, Text, StyleSheet } from "react-native";
 import Svg, {
   G,
   Path,
@@ -9,7 +9,7 @@ import Svg, {
   Defs,
   LinearGradient,
   Stop,
-} from 'react-native-svg';
+} from "react-native-svg";
 
 interface KitchenApplianceIconProps {
   appliance: string;
@@ -22,7 +22,7 @@ const KitchenApplianceIcon: React.FC<KitchenApplianceIconProps> = ({
 }) => {
   const renderSVGIcon = () => {
     switch (appliance.toLowerCase()) {
-      case 'oven':
+      case "oven":
         return (
           <Svg height={size} viewBox="0 0 24 24" width={size}>
             <Defs>
@@ -47,8 +47,8 @@ const KitchenApplianceIcon: React.FC<KitchenApplianceIconProps> = ({
           </Svg>
         );
 
-      case 'stove':
-      case 'stovetop':
+      case "stove":
+      case "stovetop":
         return (
           <Svg height={size} viewBox="0 0 24 24" width={size}>
             <Defs>
@@ -76,7 +76,7 @@ const KitchenApplianceIcon: React.FC<KitchenApplianceIconProps> = ({
           </Svg>
         );
 
-      case 'microwave':
+      case "microwave":
         return (
           <Svg height={size} viewBox="0 0 24 24" width={size}>
             <Defs>
@@ -85,7 +85,8 @@ const KitchenApplianceIcon: React.FC<KitchenApplianceIconProps> = ({
                 x1="0%"
                 y1="0%"
                 x2="0%"
-                y2="100%">
+                y2="100%"
+              >
                 <Stop offset="0%" stopColor="#F5F5F5" />
                 <Stop offset="100%" stopColor="#BDBDBD" />
               </LinearGradient>
@@ -107,7 +108,7 @@ const KitchenApplianceIcon: React.FC<KitchenApplianceIconProps> = ({
           </Svg>
         );
 
-      case 'toaster oven':
+      case "toaster oven":
         return (
           <Svg height={size} viewBox="0 0 24 24" width={size}>
             <Defs>
@@ -116,7 +117,8 @@ const KitchenApplianceIcon: React.FC<KitchenApplianceIconProps> = ({
                 x1="0%"
                 y1="0%"
                 x2="0%"
-                y2="100%">
+                y2="100%"
+              >
                 <Stop offset="0%" stopColor="#F5F5F5" />
                 <Stop offset="100%" stopColor="#BDBDBD" />
               </LinearGradient>
@@ -138,8 +140,8 @@ const KitchenApplianceIcon: React.FC<KitchenApplianceIconProps> = ({
           </Svg>
         );
 
-      case 'grill':
-      case 'outdoor grill':
+      case "grill":
+      case "outdoor grill":
         return (
           <Svg height={size} viewBox="0 0 24 24" width={size}>
             <Defs>
@@ -168,7 +170,7 @@ const KitchenApplianceIcon: React.FC<KitchenApplianceIconProps> = ({
           </Svg>
         );
 
-      case 'slow cooker':
+      case "slow cooker":
         return (
           <Svg height={size} viewBox="0 0 24 24" width={size}>
             <Defs>
@@ -177,7 +179,8 @@ const KitchenApplianceIcon: React.FC<KitchenApplianceIconProps> = ({
                 x1="0%"
                 y1="0%"
                 x2="0%"
-                y2="100%">
+                y2="100%"
+              >
                 <Stop offset="0%" stopColor="#8D6E63" />
                 <Stop offset="100%" stopColor="#5D4037" />
               </LinearGradient>
@@ -215,7 +218,7 @@ const KitchenApplianceIcon: React.FC<KitchenApplianceIconProps> = ({
           </Svg>
         );
 
-      case 'blender':
+      case "blender":
         return (
           <Svg height={size} viewBox="0 0 24 24" width={size}>
             <Defs>
@@ -224,7 +227,8 @@ const KitchenApplianceIcon: React.FC<KitchenApplianceIconProps> = ({
                 x1="0%"
                 y1="0%"
                 x2="0%"
-                y2="100%">
+                y2="100%"
+              >
                 <Stop offset="0%" stopColor="#F5F5F5" />
                 <Stop offset="100%" stopColor="#E0E0E0" />
               </LinearGradient>
@@ -239,7 +243,7 @@ const KitchenApplianceIcon: React.FC<KitchenApplianceIconProps> = ({
           </Svg>
         );
 
-      case 'food processor':
+      case "food processor":
         return (
           <Svg height={size} viewBox="0 0 24 24" width={size}>
             <Defs>
@@ -248,7 +252,8 @@ const KitchenApplianceIcon: React.FC<KitchenApplianceIconProps> = ({
                 x1="0%"
                 y1="0%"
                 x2="0%"
-                y2="100%">
+                y2="100%"
+              >
                 <Stop offset="0%" stopColor="#F5F5F5" />
                 <Stop offset="100%" stopColor="#E0E0E0" />
               </LinearGradient>
@@ -271,7 +276,7 @@ const KitchenApplianceIcon: React.FC<KitchenApplianceIconProps> = ({
           </Svg>
         );
 
-      case 'pressure cooker':
+      case "pressure cooker":
         return (
           <Svg height={size} viewBox="0 0 24 24" width={size}>
             <Defs>
@@ -280,7 +285,8 @@ const KitchenApplianceIcon: React.FC<KitchenApplianceIconProps> = ({
                 x1="0%"
                 y1="0%"
                 x2="0%"
-                y2="100%">
+                y2="100%"
+              >
                 <Stop offset="0%" stopColor="#E8EAF6" />
                 <Stop offset="100%" stopColor="#C5CAE9" />
               </LinearGradient>
@@ -321,7 +327,7 @@ const KitchenApplianceIcon: React.FC<KitchenApplianceIconProps> = ({
           </Svg>
         );
 
-      case 'air fryer':
+      case "air fryer":
         return (
           <Svg height={size} viewBox="0 0 24 24" width={size}>
             <Defs>
@@ -330,7 +336,8 @@ const KitchenApplianceIcon: React.FC<KitchenApplianceIconProps> = ({
                 x1="0%"
                 y1="0%"
                 x2="0%"
-                y2="100%">
+                y2="100%"
+              >
                 <Stop offset="0%" stopColor="#263238" />
                 <Stop offset="100%" stopColor="#37474F" />
               </LinearGradient>
@@ -375,8 +382,8 @@ const KitchenApplianceIcon: React.FC<KitchenApplianceIconProps> = ({
           </Svg>
         );
 
-      case 'bbq smoker':
-      case 'smoker':
+      case "bbq smoker":
+      case "smoker":
         return (
           <Svg height={size} viewBox="0 0 24 24" width={size}>
             <Defs>
@@ -389,7 +396,8 @@ const KitchenApplianceIcon: React.FC<KitchenApplianceIconProps> = ({
                 x1="0%"
                 y1="0%"
                 x2="0%"
-                y2="100%">
+                y2="100%"
+              >
                 <Stop offset="0%" stopColor="#8D6E63" />
                 <Stop offset="100%" stopColor="#5D4037" />
               </LinearGradient>
@@ -428,7 +436,7 @@ const KitchenApplianceIcon: React.FC<KitchenApplianceIconProps> = ({
           </Svg>
         );
 
-      case 'stand mixer':
+      case "stand mixer":
         return (
           <Svg height={size} viewBox="0 0 24 24" width={size}>
             <Defs>
@@ -437,7 +445,8 @@ const KitchenApplianceIcon: React.FC<KitchenApplianceIconProps> = ({
                 x1="0%"
                 y1="0%"
                 x2="0%"
-                y2="100%">
+                y2="100%"
+              >
                 <Stop offset="0%" stopColor="#F5F5F5" />
                 <Stop offset="100%" stopColor="#E0E0E0" />
               </LinearGradient>
@@ -446,7 +455,8 @@ const KitchenApplianceIcon: React.FC<KitchenApplianceIconProps> = ({
                 x1="0%"
                 y1="0%"
                 x2="0%"
-                y2="100%">
+                y2="100%"
+              >
                 <Stop offset="0%" stopColor="#E8EAF6" />
                 <Stop offset="100%" stopColor="#C5CAE9" />
               </LinearGradient>
@@ -455,7 +465,8 @@ const KitchenApplianceIcon: React.FC<KitchenApplianceIconProps> = ({
                 x1="0%"
                 y1="0%"
                 x2="0%"
-                y2="100%">
+                y2="100%"
+              >
                 <Stop offset="0%" stopColor="#ECEFF1" />
                 <Stop offset="100%" stopColor="#CFD8DC" />
               </LinearGradient>
@@ -501,10 +512,10 @@ const KitchenApplianceIcon: React.FC<KitchenApplianceIconProps> = ({
 
   const renderEmojiIcon = () => {
     switch (appliance.toLowerCase()) {
-      case 'rice cooker':
-        return '🍚';
+      case "rice cooker":
+        return "🍚";
       default:
-        return '🔧'; // Generic appliance icon
+        return "🔧"; // Generic appliance icon
     }
   };
 
@@ -512,14 +523,14 @@ const KitchenApplianceIcon: React.FC<KitchenApplianceIconProps> = ({
 
   if (svgIcon) {
     return (
-      <View style={[styles.container, {width: size, height: size}]}>
+      <View style={[styles.container, { width: size, height: size }]}>
         {svgIcon}
       </View>
     );
   }
 
   return (
-    <Text style={[{fontSize: size * 0.8}, styles.emoji]}>
+    <Text style={[{ fontSize: size * 0.8 }, styles.emoji]}>
       {renderEmojiIcon()}
     </Text>
   );
@@ -527,11 +538,11 @@ const KitchenApplianceIcon: React.FC<KitchenApplianceIconProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   emoji: {
-    textAlign: 'center',
+    textAlign: "center",
   },
 });
 

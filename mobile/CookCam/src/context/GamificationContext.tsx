@@ -4,9 +4,13 @@ import React, {
   useState,
   useEffect,
   ReactNode,
-} from 'react';
-import {useAuth} from './AuthContext';
-import {gamificationService} from '../services/gamificationService';
+  useRef,
+} from "react";
+import { useAuth } from "./AuthContext";
+import { gamificationService } from "../services/gamificationService";
+import * as SecureStore from "expo-secure-store";
+import logger from "../utils/logger";
+
 
 interface Badge {
   id: string;
@@ -121,86 +125,86 @@ const LEVEL_THRESHOLDS = [
 // Available badges
 const ALL_BADGES: Badge[] = [
   {
-    id: 'first_scan',
-    name: 'First Scan',
-    description: 'Scanned your first ingredients',
-    icon: '📸',
+    id: "first_scan",
+    name: "First Scan",
+    description: "Scanned your first ingredients",
+    icon: "📸",
   },
   {
-    id: 'first_recipe',
-    name: 'First Recipe',
-    description: 'Completed your first recipe',
-    icon: '👨‍🍳',
+    id: "first_recipe",
+    name: "First Recipe",
+    description: "Completed your first recipe",
+    icon: "👨‍🍳",
   },
   {
-    id: 'streak_7',
-    name: 'Week Warrior',
-    description: 'Maintained a 7-day streak',
-    icon: '🔥',
+    id: "streak_7",
+    name: "Week Warrior",
+    description: "Maintained a 7-day streak",
+    icon: "🔥",
   },
   {
-    id: 'streak_30',
-    name: 'Monthly Master',
-    description: 'Maintained a 30-day streak',
-    icon: '💎',
+    id: "streak_30",
+    name: "Monthly Master",
+    description: "Maintained a 30-day streak",
+    icon: "💎",
   },
   {
-    id: 'level_5',
-    name: 'Rising Chef',
-    description: 'Reached level 5',
-    icon: '⭐',
+    id: "level_5",
+    name: "Rising Chef",
+    description: "Reached level 5",
+    icon: "⭐",
   },
   {
-    id: 'level_10',
-    name: 'Master Chef',
-    description: 'Reached level 10',
-    icon: '👑',
+    id: "level_10",
+    name: "Master Chef",
+    description: "Reached level 10",
+    icon: "👑",
   },
   {
-    id: 'recipes_10',
-    name: 'Recipe Explorer',
-    description: 'Completed 10 recipes',
-    icon: '🍳',
+    id: "recipes_10",
+    name: "Recipe Explorer",
+    description: "Completed 10 recipes",
+    icon: "🍳",
   },
   {
-    id: 'recipes_50',
-    name: 'Culinary Expert',
-    description: 'Completed 50 recipes',
-    icon: '🎖️',
+    id: "recipes_50",
+    name: "Culinary Expert",
+    description: "Completed 50 recipes",
+    icon: "🎖️",
   },
   {
-    id: 'share_master',
-    name: 'Social Chef',
-    description: 'Shared 10 recipes',
-    icon: '📢',
+    id: "share_master",
+    name: "Social Chef",
+    description: "Shared 10 recipes",
+    icon: "📢",
   },
 ];
 
 // Define badge types
 export const BADGES = {
   // Existing badges
-  FIRST_RECIPE: 'first_recipe',
-  STREAK_WEEK: 'streak_week',
-  STREAK_MONTH: 'streak_month',
-  LEVEL_10: 'level_10',
-  LEVEL_25: 'level_25',
-  LEVEL_50: 'level_50',
-  COMPETITION_WINNER: 'competition_winner',
+  FIRST_RECIPE: "first_recipe",
+  STREAK_WEEK: "streak_week",
+  STREAK_MONTH: "streak_month",
+  LEVEL_10: "level_10",
+  LEVEL_25: "level_25",
+  LEVEL_50: "level_50",
+  COMPETITION_WINNER: "competition_winner",
 
   // New recipe creator badges
-  RECIPE_PIONEER: 'recipe_pioneer', // First claimed recipe
-  RECIPE_MASTER: 'recipe_master', // 50 claimed recipes
-  VIRAL_CHEF: 'viral_chef', // 10k+ views on a recipe
-  COMMUNITY_FAVORITE: 'community_favorite', // 100+ 5-star ratings
-  TRENDSETTER: 'trendsetter', // 3 recipes in trending
-  HELPFUL_CRITIC: 'helpful_critic', // 50 helpful reviews
-  SOCIAL_BUTTERFLY: 'social_butterfly', // 100 verified shares
+  RECIPE_PIONEER: "recipe_pioneer", // First claimed recipe
+  RECIPE_MASTER: "recipe_master", // 50 claimed recipes
+  VIRAL_CHEF: "viral_chef", // 10k+ views on a recipe
+  COMMUNITY_FAVORITE: "community_favorite", // 100+ 5-star ratings
+  TRENDSETTER: "trendsetter", // 3 recipes in trending
+  HELPFUL_CRITIC: "helpful_critic", // 50 helpful reviews
+  SOCIAL_BUTTERFLY: "social_butterfly", // 100 verified shares
 };
 
 export const GamificationProvider: React.FC<GamificationProviderProps> = ({
   children,
 }) => {
-  const {user, updateUser} = useAuth();
+  const { user, updateUser } = useAuth();
 
   const [xp, setXP] = useState(user?.xp || 0);
   const [level, setLevel] = useState(user?.level || 1);
@@ -210,71 +214,97 @@ export const GamificationProvider: React.FC<GamificationProviderProps> = ({
   const [recipesCompleted, setRecipesCompleted] = useState(0);
   const [recipesShared, setRecipesShared] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+  const [lastChecked, setLastChecked] = useState<number | null>(null);
+  
+  // Track the last user ID to prevent unnecessary loads
+  const lastUserIdRef = useRef<string | null>(null);
 
   // XP Notification state
   const [xpNotification, setXPNotification] = useState({
     visible: false,
     xpGained: 0,
-    reason: '',
+    reason: "",
     showConfetti: false,
   });
 
   useEffect(() => {
-    // Load gamification data when user logs in
-    if (user) {
-      loadGamificationProgress();
-    } else {
-      // Reset state when user logs out
-      setXP(0);
-      setLevel(1);
-      setStreak(0);
-      setBadges([]);
+    const currentUserId = user?.id || null;
+    
+    // Only run effect if user ID actually changed
+    if (currentUserId !== lastUserIdRef.current) {
+      lastUserIdRef.current = currentUserId;
+      
+      if (currentUserId && !isLoading) {
+        // Only load once per user change
+        if (!lastChecked || lastChecked === 0) {
+          logger.debug("🎮 Initial gamification load for user:", currentUserId);
+          loadGamificationProgress();
+        }
+      } else if (!currentUserId) {
+        // Reset state when user logs out
+        setXP(0);
+        setLevel(1);
+        setStreak(0);
+        setBadges([]);
+        setLastChecked(null);
+      }
     }
-  }, [user]);
+  }, [user?.id]); // Keep the dependency but use ref to prevent unnecessary runs
 
   const loadGamificationProgress = async () => {
     if (!user || isLoading) {
       return;
     }
 
+    // Only load if we haven't checked recently (within 5 minutes)
+    const now = Date.now();
+    if (lastChecked && (now - lastChecked < 5 * 60 * 1000)) {
+      logger.debug("🎮 Skipping gamification load - checked recently");
+      return;
+    }
+
     try {
       setIsLoading(true);
-      console.log('🎮 Loading gamification progress for user:', user.id);
+      setLastChecked(now);
+      logger.debug("🎮 Loading gamification progress for user:", user.id);
 
       const response = await gamificationService.getProgress();
 
       if (response.success && response.data) {
-        const {user_stats} = response.data;
+        const user_stats = response.data;
 
         if (user_stats) {
-          console.log('✅ Loaded gamification data:', user_stats);
+          logger.debug("✅ Loaded gamification data:", user_stats);
 
-          // Update local state with backend data
-          setXP(user_stats.total_xp || user_stats.xp || 0);
-          setLevel(user_stats.level || 1);
-          setStreak(user_stats.streak_current || 0);
-          setFreezeTokens(user_stats.streak_shields || 3);
+          // Only update state if values have actually changed
+          const newXP = user_stats.total_xp || user_stats.current_xp || 0;
+          const newLevel = user_stats.level || 1;
+          
+          if (newXP !== xp) {
+            setXP(newXP);
+          }
+          if (newLevel !== level) {
+            setLevel(newLevel);
+          }
+          
+          // Note: Don't call updateUser here to prevent infinite loop
+          // The Auth context will be updated when needed
 
-          // Update user in auth context to sync the data
-          updateUser({
-            xp: user_stats.total_xp || user_stats.xp || 0,
-            level: user_stats.level || 1,
-            streak: user_stats.streak_current || 0,
-          });
-
-          // Load badges
-          loadBadges();
+          // Load badges only once per session
+          if (badges.length === 0) {
+            loadBadges();
+          }
         } else {
-          console.log('⚠️ No user stats in response, using defaults');
+          logger.debug("⚠️ No user stats in response, using defaults");
         }
       } else {
-        console.error(
-          '❌ Failed to load gamification progress:',
+        logger.error(
+          "❌ Failed to load gamification progress:",
           response.error,
         );
       }
     } catch (error) {
-      console.error('❌ Error loading gamification progress:', error);
+      logger.error("❌ Error loading gamification progress:", error);
     } finally {
       setIsLoading(false);
     }
@@ -286,10 +316,10 @@ export const GamificationProvider: React.FC<GamificationProviderProps> = ({
     const unlockedBadges: Badge[] = [];
 
     if (user?.badges) {
-      user.badges.forEach(badgeId => {
-        const badge = ALL_BADGES.find(b => b.id === badgeId);
+      user.badges.forEach((badgeId) => {
+        const badge = ALL_BADGES.find((b) => b.id === badgeId);
         if (badge) {
-          unlockedBadges.push({...badge, unlockedAt: new Date()});
+          unlockedBadges.push({ ...badge, unlockedAt: new Date() });
         }
       });
     }
@@ -336,14 +366,14 @@ export const GamificationProvider: React.FC<GamificationProviderProps> = ({
       setLevel(newLevel);
       // Check for level-based badges
       if (newLevel === 5) {
-        await unlockBadge('level_5');
+        await unlockBadge("level_5");
       } else if (newLevel === 10) {
-        await unlockBadge('level_10');
+        await unlockBadge("level_10");
       }
     }
 
     // Show XP notification with confetti for big gains or level ups
-    const showConfetti = amount >= 50 || leveledUp || reason === 'CLAIM_RECIPE';
+    const showConfetti = amount >= 50 || leveledUp || reason === "CLAIM_RECIPE";
     setXPNotification({
       visible: true,
       xpGained: amount,
@@ -351,32 +381,36 @@ export const GamificationProvider: React.FC<GamificationProviderProps> = ({
       showConfetti,
     });
 
-    // Update user in auth context
-    updateUser({xp: newXP, level: newLevel});
+    // NOTE: Don't call updateUser here to prevent circular dependency
+    // The AuthContext will sync with backend data when needed
 
     // Add XP to backend
     try {
-      console.log(`🎯 Attempting to add ${amount} XP for ${reason}...`);
-      const response = await gamificationService.addXP(amount, reason);
+      logger.debug(`🎯 Attempting to add ${amount} XP for ${reason}...`);
+      const response = await gamificationService.addXP(
+        user?.id || "default",
+        amount,
+        reason,
+      );
       if (response.success) {
-        console.log(
+        logger.debug(
           `✅ Added ${amount} XP for ${reason} - Response:`,
           response,
         );
       } else {
-        console.error(
+        logger.error(
           `❌ Failed to add XP to backend - Error: ${response.error}`,
         );
 
         // If authentication error, log additional details
         if (
-          response.error?.includes('Authentication') ||
-          response.error?.includes('401')
+          response.error?.includes("Authentication") ||
+          response.error?.includes("401")
         ) {
           const AsyncStorage =
-            require('@react-native-async-storage/async-storage').default;
-          const token = await AsyncStorage.getItem('@cookcam_token');
-          console.error('🔍 Debug info:', {
+            require("@react-native-async-storage/async-storage").default;
+          const token = await SecureStore.getItemAsync("@cookcam_token");
+          logger.error("🔍 Debug info:", {
             hasToken: !!token,
             tokenLength: token?.length,
             tokenPrefix: token?.substring(0, 20),
@@ -385,36 +419,36 @@ export const GamificationProvider: React.FC<GamificationProviderProps> = ({
         }
       }
     } catch (error) {
-      console.error('❌ Exception when adding XP to backend:', error);
+      logger.error("❌ Exception when adding XP to backend:", error);
     }
 
     // Check for other badge conditions
     if (
-      reason === 'SCAN_INGREDIENTS' &&
-      !badges.find(b => b.id === 'first_scan')
+      reason === "SCAN_INGREDIENTS" &&
+      !badges.find((b) => b.id === "first_scan")
     ) {
-      await unlockBadge('first_scan');
+      await unlockBadge("first_scan");
     }
 
-    if (reason === 'COMPLETE_RECIPE') {
+    if (reason === "COMPLETE_RECIPE") {
       const newCount = recipesCompleted + 1;
       setRecipesCompleted(newCount);
 
       if (newCount === 1) {
-        await unlockBadge('first_recipe');
+        await unlockBadge("first_recipe");
       } else if (newCount === 10) {
-        await unlockBadge('recipes_10');
+        await unlockBadge("recipes_10");
       } else if (newCount === 50) {
-        await unlockBadge('recipes_50');
+        await unlockBadge("recipes_50");
       }
     }
 
-    if (reason === 'SHARE_RECIPE') {
+    if (reason === "SHARE_RECIPE") {
       const newCount = recipesShared + 1;
       setRecipesShared(newCount);
 
       if (newCount === 10) {
-        await unlockBadge('share_master');
+        await unlockBadge("share_master");
       }
     }
   };
@@ -424,17 +458,17 @@ export const GamificationProvider: React.FC<GamificationProviderProps> = ({
     // For demo, just increment streak
     const newStreak = streak + 1;
     setStreak(newStreak);
-    updateUser({streak: newStreak});
+    updateUser({ streak: newStreak });
 
     // Check for streak badges
     if (newStreak === 7) {
-      await unlockBadge('streak_7');
+      await unlockBadge("streak_7");
     } else if (newStreak === 30) {
-      await unlockBadge('streak_30');
+      await unlockBadge("streak_30");
     }
 
     // Add streak bonus XP
-    await addXP(XP_VALUES.STREAK_BONUS * newStreak, 'STREAK_BONUS');
+    await addXP(XP_VALUES.STREAK_BONUS * newStreak, "STREAK_BONUS");
   };
 
   const useFreeze = async (): Promise<boolean> => {
@@ -447,21 +481,21 @@ export const GamificationProvider: React.FC<GamificationProviderProps> = ({
   };
 
   const unlockBadge = async (badgeId: string) => {
-    if (!badges.find(b => b.id === badgeId)) {
-      const badge = ALL_BADGES.find(b => b.id === badgeId);
+    if (!badges.find((b) => b.id === badgeId)) {
+      const badge = ALL_BADGES.find((b) => b.id === badgeId);
       if (badge) {
-        const unlockedBadge = {...badge, unlockedAt: new Date()};
+        const unlockedBadge = { ...badge, unlockedAt: new Date() };
         setBadges([...badges, unlockedBadge]);
 
         // Update user badges
         const updatedBadgeIds = [...(user?.badges || []), badgeId];
-        updateUser({badges: updatedBadgeIds});
+        updateUser({ badges: updatedBadgeIds });
       }
     }
   };
 
   const hideXPNotification = () => {
-    setXPNotification(prev => ({...prev, visible: false}));
+    setXPNotification((prev) => ({ ...prev, visible: false }));
   };
 
   const value: GamificationContextType = {
@@ -492,7 +526,7 @@ export const useGamification = (): GamificationContextType => {
   const context = useContext(GamificationContext);
   if (!context) {
     throw new Error(
-      'useGamification must be used within a GamificationProvider',
+      "useGamification must be used within a GamificationProvider",
     );
   }
   return context;

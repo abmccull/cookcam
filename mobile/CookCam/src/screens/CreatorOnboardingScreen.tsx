@@ -1,4 +1,4 @@
-import React, {useState, useRef, useEffect} from 'react';
+import React, { useState, useRef, useEffect } from "react";
 import {
   View,
   Text,
@@ -10,7 +10,7 @@ import {
   TextInput,
   Animated,
   Dimensions,
-} from 'react-native';
+} from "react-native";
 import {
   ChefHat,
   Users,
@@ -25,13 +25,15 @@ import {
   Heart,
   TrendingUp,
   Clock,
-} from 'lucide-react-native';
-import {useAuth} from '../context/AuthContext';
-import {useGamification, XP_VALUES} from '../context/GamificationContext';
-import {authService} from '../services/api';
-import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
+} from "lucide-react-native";
+import { useAuth } from "../context/AuthContext";
+import { useGamification, XP_VALUES } from "../context/GamificationContext";
+import { authService } from "../services/api";
+import * as Haptics from "expo-haptics";
+import logger from "../utils/logger";
 
-const {width: SCREEN_WIDTH} = Dimensions.get('window');
+
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
 interface CreatorOnboardingScreenProps {
   navigation: any;
@@ -56,12 +58,12 @@ const CreatorOnboardingScreen: React.FC<CreatorOnboardingScreenProps> = ({
   navigation,
   route,
 }) => {
-  const {user, updateUser} = useAuth();
-  const {addXP, unlockBadge} = useGamification();
+  const { user, updateUser } = useAuth();
+  const { addXP, unlockBadge } = useGamification();
   const [currentStep, setCurrentStep] = useState(0);
-  const [creatorName, setCreatorName] = useState(user?.name || '');
-  const [creatorBio, setCreatorBio] = useState('');
-  const [specialty, setSpecialty] = useState('');
+  const [creatorName, setCreatorName] = useState(user?.name || "");
+  const [creatorBio, setCreatorBio] = useState("");
+  const [specialty, setSpecialty] = useState("");
   const [loading, setLoading] = useState(false);
   const [completed, setCompleted] = useState(false);
 
@@ -74,61 +76,61 @@ const CreatorOnboardingScreen: React.FC<CreatorOnboardingScreenProps> = ({
   const onboardingSteps: OnboardingStep[] = [
     {
       id: 0,
-      title: 'Welcome to Creator Program! 🎉',
-      subtitle: 'Your culinary journey starts here',
+      title: "Welcome to Creator Program! 🎉",
+      subtitle: "Your culinary journey starts here",
       description:
-        'Join thousands of creators sharing recipes and earning revenue through CookCam',
+        "Join thousands of creators sharing recipes and earning revenue through CookCam",
       icon: ChefHat,
-      color: '#FF6B35',
+      color: "#FF6B35",
     },
     {
       id: 1,
-      title: 'Build Your Audience 👥',
-      subtitle: 'Share recipes that inspire',
+      title: "Build Your Audience 👥",
+      subtitle: "Share recipes that inspire",
       description:
-        'Create engaging content that brings people together around food and cooking',
+        "Create engaging content that brings people together around food and cooking",
       icon: Users,
-      color: '#66BB6A',
+      color: "#66BB6A",
     },
     {
       id: 2,
-      title: 'Earn Real Money 💰',
-      subtitle: 'Get paid for your passion',
+      title: "Earn Real Money 💰",
+      subtitle: "Get paid for your passion",
       description:
-        'Earn up to 30% commission on subscribers you bring to CookCam',
+        "Earn up to 30% commission on subscribers you bring to CookCam",
       icon: DollarSign,
-      color: '#2196F3',
+      color: "#2196F3",
     },
     {
       id: 3,
-      title: 'Setup Your Profile 📝',
-      subtitle: 'Tell your story',
+      title: "Setup Your Profile 📝",
+      subtitle: "Tell your story",
       description:
-        'Let people know who you are and what makes your cooking special',
+        "Let people know who you are and what makes your cooking special",
       icon: Star,
-      color: '#9C27B0',
+      color: "#9C27B0",
     },
     {
       id: 4,
       title: "You're All Set! 🚀",
-      subtitle: 'Ready to create amazing content',
+      subtitle: "Ready to create amazing content",
       description:
-        'Your creator account is now active. Start sharing recipes and building your community!',
+        "Your creator account is now active. Start sharing recipes and building your community!",
       icon: Trophy,
-      color: '#FFB800',
+      color: "#FFB800",
     },
   ];
 
   const specialties = [
-    'International Cuisine',
-    'Healthy Cooking',
-    'Desserts & Baking',
-    'Quick & Easy Meals',
-    'Vegan Cooking',
-    'Traditional Family Recipes',
-    'Gourmet Cooking',
-    'Comfort Food',
-    'Diet-Specific Cooking',
+    "International Cuisine",
+    "Healthy Cooking",
+    "Desserts & Baking",
+    "Quick & Easy Meals",
+    "Vegan Cooking",
+    "Traditional Family Recipes",
+    "Gourmet Cooking",
+    "Comfort Food",
+    "Diet-Specific Cooking",
   ];
 
   useEffect(() => {
@@ -171,7 +173,7 @@ const CreatorOnboardingScreen: React.FC<CreatorOnboardingScreenProps> = ({
   };
 
   const handleNext = async () => {
-    ReactNativeHapticFeedback.trigger('impactMedium');
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     if (currentStep < onboardingSteps.length - 1) {
       setCurrentStep(currentStep + 1);
@@ -194,15 +196,15 @@ const CreatorOnboardingScreen: React.FC<CreatorOnboardingScreenProps> = ({
     setLoading(true);
 
     try {
-      ReactNativeHapticFeedback.trigger('notificationSuccess');
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
       // Update user to creator status
       const updateData = {
         is_creator: true,
         creator_bio:
           creatorBio ||
-          `Passionate cook specializing in ${specialty || 'delicious recipes'}`,
-        creator_specialty: specialty || 'General Cooking',
+          `Passionate cook specializing in ${specialty || "delicious recipes"}`,
+        creator_specialty: specialty || "General Cooking",
         creator_tier: 1, // Start at Sous Chef level
         onboarding_completed: true,
       };
@@ -219,26 +221,26 @@ const CreatorOnboardingScreen: React.FC<CreatorOnboardingScreenProps> = ({
         });
 
         // Award massive XP for becoming a creator
-        await addXP(XP_VALUES.BECOME_CREATOR || 500, 'BECOME_CREATOR');
+        await addXP(XP_VALUES.BECOME_CREATOR || 500, "BECOME_CREATOR");
 
         // Unlock creator badge
-        await unlockBadge('creator_activated');
+        await unlockBadge("creator_activated");
 
         setCompleted(true);
 
         // Show success and navigate
         setTimeout(() => {
           Alert.alert(
-            '🎉 Welcome, Creator!',
-            'Your creator account is now active! You can start sharing recipes and earning revenue.',
+            "🎉 Welcome, Creator!",
+            "Your creator account is now active! You can start sharing recipes and earning revenue.",
             [
               {
-                text: 'Start Creating!',
+                text: "Start Creating!",
                 onPress: () => {
-                  const returnTab = route.params?.returnToTab || 'Creator';
-                  navigation.navigate('Main', {
+                  const returnTab = route.params?.returnToTab || "Creator";
+                  navigation.navigate("Main", {
                     screen: returnTab,
-                    params: {newCreator: true},
+                    params: { newCreator: true },
                   });
                 },
               },
@@ -249,13 +251,13 @@ const CreatorOnboardingScreen: React.FC<CreatorOnboardingScreenProps> = ({
         // Check if this is a development environment issue
         const isDevelopmentError =
           response.error &&
-          (response.error.includes('subscription') ||
-            response.error.includes('billing') ||
-            response.error.includes('payment'));
+          (response.error.includes("subscription") ||
+            response.error.includes("billing") ||
+            response.error.includes("payment"));
 
         if (isDevelopmentError) {
-          console.log(
-            '🧪 Development Mode: Bypassing subscription requirement for creator activation',
+          logger.debug(
+            "🧪 Development Mode: Bypassing subscription requirement for creator activation",
           );
 
           // In development, proceed with local-only creator activation
@@ -266,24 +268,24 @@ const CreatorOnboardingScreen: React.FC<CreatorOnboardingScreenProps> = ({
           });
 
           // Award XP locally
-          await addXP(XP_VALUES.BECOME_CREATOR || 500, 'BECOME_CREATOR');
-          await unlockBadge('creator_activated');
+          await addXP(XP_VALUES.BECOME_CREATOR || 500, "BECOME_CREATOR");
+          await unlockBadge("creator_activated");
 
           setCompleted(true);
 
           // Show development success message
           setTimeout(() => {
             Alert.alert(
-              '🎉 Welcome, Creator! (Dev Mode)',
-              'Your creator account is active locally for development. Full subscription features will be available in production.',
+              "🎉 Welcome, Creator! (Dev Mode)",
+              "Your creator account is active locally for development. Full subscription features will be available in production.",
               [
                 {
-                  text: 'Start Creating!',
+                  text: "Start Creating!",
                   onPress: () => {
-                    const returnTab = route.params?.returnToTab || 'Creator';
-                    navigation.navigate('Main', {
+                    const returnTab = route.params?.returnToTab || "Creator";
+                    navigation.navigate("Main", {
                       screen: returnTab,
-                      params: {newCreator: true},
+                      params: { newCreator: true },
                     });
                   },
                 },
@@ -291,24 +293,24 @@ const CreatorOnboardingScreen: React.FC<CreatorOnboardingScreenProps> = ({
             );
           }, 1500);
         } else {
-          throw new Error('Failed to activate creator account');
+          throw new Error("Failed to activate creator account");
         }
       }
     } catch (error) {
-      console.error('Creator onboarding error:', error);
+      logger.error("Creator onboarding error:", error);
 
       // Enhanced error handling for development vs production
-      const errorMessage = error.message || 'Unknown error';
+      const errorMessage = error.message || "Unknown error";
       const isDevelopmentContext =
-        __DEV__ || errorMessage.includes('subscription');
+        __DEV__ || errorMessage.includes("subscription");
 
       if (isDevelopmentContext) {
         Alert.alert(
-          'Development Mode Notice',
-          'Creator activation requires subscription setup. In production, this will be handled by Apple IAP. For development, you can continue with limited creator features.',
+          "Development Mode Notice",
+          "Creator activation requires subscription setup. In production, this will be handled by Apple IAP. For development, you can continue with limited creator features.",
           [
             {
-              text: 'Continue in Dev Mode',
+              text: "Continue in Dev Mode",
               onPress: async () => {
                 // Local-only activation for development
                 await updateUser({
@@ -317,22 +319,22 @@ const CreatorOnboardingScreen: React.FC<CreatorOnboardingScreenProps> = ({
                   creatorTier: 1,
                 });
                 setCompleted(true);
-                navigation.navigate('Main', {
-                  screen: 'Creator',
-                  params: {newCreator: true, devMode: true},
+                navigation.navigate("Main", {
+                  screen: "Creator",
+                  params: { newCreator: true, devMode: true },
                 });
               },
             },
-            {text: 'Go Back', onPress: () => navigation.goBack()},
+            { text: "Go Back", onPress: () => navigation.goBack() },
           ],
         );
       } else {
         Alert.alert(
-          'Setup Error',
-          'There was a problem activating your creator account. Please try again.',
+          "Setup Error",
+          "There was a problem activating your creator account. Please try again.",
           [
-            {text: 'Retry', onPress: () => setLoading(false)},
-            {text: 'Skip for Now', onPress: () => navigation.goBack()},
+            { text: "Retry", onPress: () => setLoading(false) },
+            { text: "Skip for Now", onPress: () => navigation.goBack() },
           ],
         );
       }
@@ -348,8 +350,8 @@ const CreatorOnboardingScreen: React.FC<CreatorOnboardingScreenProps> = ({
             {
               width: progressAnim.interpolate({
                 inputRange: [0, 100],
-                outputRange: ['0%', '100%'],
-                extrapolate: 'clamp',
+                outputRange: ["0%", "100%"],
+                extrapolate: "clamp",
               }),
             },
           ]}
@@ -396,7 +398,8 @@ const CreatorOnboardingScreen: React.FC<CreatorOnboardingScreenProps> = ({
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          style={styles.specialtyScroll}>
+          style={styles.specialtyScroll}
+        >
           {specialties.map((item, index) => (
             <TouchableOpacity
               key={index}
@@ -405,14 +408,16 @@ const CreatorOnboardingScreen: React.FC<CreatorOnboardingScreenProps> = ({
                 specialty === item && styles.specialtyChipSelected,
               ]}
               onPress={() => {
-                ReactNativeHapticFeedback.trigger('selection');
+                Haptics.selectionAsync();
                 setSpecialty(item);
-              }}>
+              }}
+            >
               <Text
                 style={[
                   styles.specialtyChipText,
                   specialty === item && styles.specialtyChipTextSelected,
-                ]}>
+                ]}
+              >
                 {item}
               </Text>
             </TouchableOpacity>
@@ -429,7 +434,11 @@ const CreatorOnboardingScreen: React.FC<CreatorOnboardingScreenProps> = ({
       <SafeAreaView style={styles.container}>
         <View style={styles.completedContainer}>
           <Animated.View
-            style={[styles.completedIcon, {transform: [{scale: scaleAnim}]}]}>
+            style={[
+              styles.completedIcon,
+              { transform: [{ scale: scaleAnim }] },
+            ]}
+          >
             <CheckCircle size={80} color="#66BB6A" />
           </Animated.View>
           <Text style={styles.completedTitle}>
@@ -467,15 +476,17 @@ const CreatorOnboardingScreen: React.FC<CreatorOnboardingScreenProps> = ({
             styles.stepContainer,
             {
               opacity: fadeAnim,
-              transform: [{translateY: slideAnim}, {scale: scaleAnim}],
+              transform: [{ translateY: slideAnim }, { scale: scaleAnim }],
             },
-          ]}>
+          ]}
+        >
           {/* Icon */}
           <View
             style={[
               styles.iconContainer,
-              {backgroundColor: currentStepData.color + '20'},
-            ]}>
+              { backgroundColor: currentStepData.color + "20" },
+            ]}
+          >
             <currentStepData.icon size={64} color={currentStepData.color} />
           </View>
 
@@ -532,15 +543,16 @@ const CreatorOnboardingScreen: React.FC<CreatorOnboardingScreenProps> = ({
         <TouchableOpacity
           style={[
             styles.nextButton,
-            {backgroundColor: currentStepData.color},
+            { backgroundColor: currentStepData.color },
             loading && styles.disabledButton,
           ]}
           onPress={handleNext}
-          disabled={loading}>
+          disabled={loading}
+        >
           <Text style={styles.nextButtonText}>
             {currentStep === onboardingSteps.length - 1
-              ? 'Activate Account'
-              : 'Continue'}
+              ? "Activate Account"
+              : "Continue"}
           </Text>
           {currentStep < onboardingSteps.length - 1 && (
             <ArrowRight size={20} color="#FFFFFF" />
@@ -554,199 +566,199 @@ const CreatorOnboardingScreen: React.FC<CreatorOnboardingScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F8FF',
+    backgroundColor: "#F8F8FF",
   },
   progressContainer: {
     paddingHorizontal: 20,
     paddingVertical: 16,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E7',
+    borderBottomColor: "#E5E5E7",
   },
   progressBackground: {
     height: 4,
-    backgroundColor: '#E5E5E7',
+    backgroundColor: "#E5E5E7",
     borderRadius: 2,
-    overflow: 'hidden',
+    overflow: "hidden",
     marginBottom: 8,
   },
   progressFill: {
-    height: '100%',
-    backgroundColor: '#FF6B35',
+    height: "100%",
+    backgroundColor: "#FF6B35",
     borderRadius: 2,
   },
   progressText: {
     fontSize: 14,
-    color: '#8E8E93',
-    textAlign: 'center',
+    color: "#8E8E93",
+    textAlign: "center",
   },
   content: {
     flex: 1,
   },
   stepContainer: {
     padding: 32,
-    alignItems: 'center',
+    alignItems: "center",
   },
   iconContainer: {
     width: 120,
     height: 120,
     borderRadius: 60,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginBottom: 32,
   },
   stepTitle: {
     fontSize: 28,
-    fontWeight: 'bold',
-    color: '#2D1B69',
-    textAlign: 'center',
+    fontWeight: "bold",
+    color: "#2D1B69",
+    textAlign: "center",
     marginBottom: 12,
   },
   stepSubtitle: {
     fontSize: 20,
-    fontWeight: '600',
-    color: '#2D1B69',
-    textAlign: 'center',
+    fontWeight: "600",
+    color: "#2D1B69",
+    textAlign: "center",
     marginBottom: 16,
   },
   stepDescription: {
     fontSize: 16,
-    color: '#8E8E93',
-    textAlign: 'center',
+    color: "#8E8E93",
+    textAlign: "center",
     lineHeight: 24,
     marginBottom: 32,
   },
   profileSetupContainer: {
-    width: '100%',
+    width: "100%",
     marginTop: 16,
   },
   profileSetupTitle: {
     fontSize: 20,
-    fontWeight: '600',
-    color: '#2D1B69',
+    fontWeight: "600",
+    color: "#2D1B69",
     marginBottom: 24,
-    textAlign: 'center',
+    textAlign: "center",
   },
   inputContainer: {
     marginBottom: 20,
   },
   inputLabel: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#2D1B69',
+    fontWeight: "600",
+    color: "#2D1B69",
     marginBottom: 8,
   },
   textInput: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderWidth: 1,
-    borderColor: '#E5E5E7',
+    borderColor: "#E5E5E7",
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
     fontSize: 16,
-    color: '#2D1B69',
+    color: "#2D1B69",
   },
   bioInput: {
     height: 80,
-    textAlignVertical: 'top',
+    textAlignVertical: "top",
   },
   specialtyScroll: {
     marginTop: 8,
   },
   specialtyChip: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderWidth: 1,
-    borderColor: '#E5E5E7',
+    borderColor: "#E5E5E7",
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 8,
     marginRight: 12,
   },
   specialtyChipSelected: {
-    backgroundColor: '#FF6B35',
-    borderColor: '#FF6B35',
+    backgroundColor: "#FF6B35",
+    borderColor: "#FF6B35",
   },
   specialtyChipText: {
     fontSize: 14,
-    color: '#2D1B69',
-    fontWeight: '500',
+    color: "#2D1B69",
+    fontWeight: "500",
   },
   specialtyChipTextSelected: {
-    color: '#FFFFFF',
-    fontWeight: '600',
+    color: "#FFFFFF",
+    fontWeight: "600",
   },
   featuresContainer: {
-    width: '100%',
+    width: "100%",
     marginTop: 16,
   },
   featureRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 16,
     gap: 12,
   },
   featureText: {
     fontSize: 16,
-    color: '#2D1B69',
-    fontWeight: '500',
+    color: "#2D1B69",
+    fontWeight: "500",
   },
   earningsContainer: {
-    width: '100%',
+    width: "100%",
     marginTop: 16,
   },
   tierShowcase: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderRadius: 16,
     padding: 20,
-    alignItems: 'center',
+    alignItems: "center",
     borderWidth: 2,
-    borderColor: '#4CAF50',
+    borderColor: "#4CAF50",
   },
   tierTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#2D1B69',
+    fontWeight: "bold",
+    color: "#2D1B69",
     marginBottom: 4,
   },
   tierRevenue: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#4CAF50',
+    fontWeight: "bold",
+    color: "#4CAF50",
     marginBottom: 8,
   },
   tierDescription: {
     fontSize: 14,
-    color: '#8E8E93',
-    textAlign: 'center',
+    color: "#8E8E93",
+    textAlign: "center",
   },
   bottomNavigation: {
-    flexDirection: 'row',
+    flexDirection: "row",
     paddingHorizontal: 20,
     paddingVertical: 16,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderTopWidth: 1,
-    borderTopColor: '#E5E5E7',
+    borderTopColor: "#E5E5E7",
     gap: 12,
   },
   skipButton: {
     flex: 1,
     paddingVertical: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   skipButtonText: {
     fontSize: 16,
-    color: '#8E8E93',
-    fontWeight: '600',
+    color: "#8E8E93",
+    fontWeight: "600",
   },
   nextButton: {
     flex: 2,
-    flexDirection: 'row',
-    backgroundColor: '#FF6B35',
+    flexDirection: "row",
+    backgroundColor: "#FF6B35",
     borderRadius: 12,
     paddingVertical: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     gap: 8,
   },
   disabledButton: {
@@ -754,13 +766,13 @@ const styles = StyleSheet.create({
   },
   nextButtonText: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
+    fontWeight: "bold",
+    color: "#FFFFFF",
   },
   completedContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     padding: 32,
   },
   completedIcon: {
@@ -768,23 +780,23 @@ const styles = StyleSheet.create({
   },
   completedTitle: {
     fontSize: 28,
-    fontWeight: 'bold',
-    color: '#2D1B69',
-    textAlign: 'center',
+    fontWeight: "bold",
+    color: "#2D1B69",
+    textAlign: "center",
     marginBottom: 12,
   },
   completedSubtitle: {
     fontSize: 16,
-    color: '#8E8E93',
-    textAlign: 'center',
+    color: "#8E8E93",
+    textAlign: "center",
     marginBottom: 32,
   },
   completedFeatures: {
-    width: '100%',
+    width: "100%",
   },
   featureItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 16,
     gap: 16,
   },

@@ -1,85 +1,66 @@
-source 'https://cdn.cocoapods.org/'
+require File.join(File.dirname(`node --print "require.resolve('expo/package.json')"`), "scripts/autolinking")
+require File.join(File.dirname(`node --print "require.resolve('react-native/package.json')"`), "scripts/react_native_pods")
 
-# Resolve react_native_pods.rb with node to allow for hoisting
-require Pod::Executable.execute_command('node', ['-p',
-  'require.resolve(
-    "react-native/scripts/react_native_pods.rb",
-    {paths: [process.argv[1]]},
-  )', __dir__]).strip
+require 'json'
+podfile_properties = JSON.parse(File.read(File.join(__dir__, 'Podfile.properties.json'))) rescue {}
 
-platform :ios, '15.1'
+ENV['RCT_NEW_ARCH_ENABLED'] = '0' if podfile_properties['newArchEnabled'] == 'false'
+ENV['EX_DEV_CLIENT_NETWORK_INSPECTOR'] = podfile_properties['EX_DEV_CLIENT_NETWORK_INSPECTOR']
+
+platform :ios, podfile_properties['ios.deploymentTarget'] || '15.1'
+install! 'cocoapods',
+  :deterministic_uuids => false
+
+# React Native Firebase requires modular headers
+use_modular_headers!
+
 prepare_react_native_project!
 
-# Disable Flipper to avoid boost dependency issues
-flipper_config = FlipperConfiguration.disabled
+target 'cookcamexpo' do
+  use_expo_modules!
 
-linkage = ENV['USE_FRAMEWORKS']
-if linkage != nil
-  Pod::UI.puts "Configuring Pod with #{linkage}ally linked Frameworks".green
-  use_frameworks! :linkage => linkage.to_sym
-end
+  if ENV['EXPO_USE_COMMUNITY_AUTOLINKING'] == '1'
+    config_command = ['node', '-e', "process.argv=['', '', 'config'];require('@react-native-community/cli').run()"];
+  else
+    config_command = [
+      'npx',
+      'expo-modules-autolinking',
+      'react-native-config',
+      '--json',
+      '--platform',
+      'ios'
+    ]
+  end
 
-target 'CookCam' do
-  config = use_native_modules!
-  
-  # Add react-native-svg
-  pod 'RNSVG', :path => '../node_modules/react-native-svg'
+  config = use_native_modules!(config_command)
 
-  # Flags change depending on the env values.
-  flags = get_default_flags()
+  # Force all pods to be built as static frameworks to resolve module conflicts.
+  use_frameworks! :linkage => :static
 
   use_react_native!(
     :path => config[:reactNativePath],
-    # Disable Hermes temporarily to avoid boost dependency
-    :hermes_enabled => false,
-    :fabric_enabled => flags[:fabric_enabled],
-    # Flipper disabled
-    :flipper_configuration => flipper_config,
+    :hermes_enabled => podfile_properties['expo.jsEngine'] == nil || podfile_properties['expo.jsEngine'] == 'hermes',
     # An absolute path to your application root.
-    :app_path => "#{Pod::Config.instance.installation_root}/.."
+    :app_path => "#{Pod::Config.instance.installation_root}/..",
+    :privacy_file_aggregation_enabled => podfile_properties['apple.privacyManifestAggregationEnabled'] != 'false',
   )
 
-  target 'CookCamTests' do
-    inherit! :complete
-    # Pods for testing
-  end
-
   post_install do |installer|
-    # https://github.com/facebook/react-native/blob/main/packages/react-native/scripts/react_native_pods.rb#L197-L202
     react_native_post_install(
       installer,
       config[:reactNativePath],
-      :mac_catalyst_enabled => false
+      :mac_catalyst_enabled => false,
+      :ccache_enabled => podfile_properties['apple.ccacheEnabled'] == 'true',
     )
-    
-    # Fix for macOS compatibility issues with CocoaPods scripts
-    installer.pods_project.targets.each do |target|
-      # Fix realpath and rsync issues in resources script
-      resources_script = "Pods/Target Support Files/#{target.name}/#{target.name}-resources.sh"
-      if File.exist?(resources_script)
-        script_content = File.read(resources_script)
-        
-        # Fix realpath -mq issue
-        script_content.gsub!('realpath -mq', 'realpath -q')
-        
-        # Fix RESOURCES_TO_COPY path to use TARGET_TEMP_DIR
-        script_content.gsub!('RESOURCES_TO_COPY=${PODS_ROOT}/resources-to-copy-${TARGETNAME}.txt', 
-                           'RESOURCES_TO_COPY="${TARGET_TEMP_DIR}/resources-to-copy-${TARGETNAME}.txt"')
-        
-        # Replace rsync with cp for bundles to avoid sandbox issues
-        script_content.gsub!(/echo "\$RESOURCE_PATH" >> "\$RESOURCES_TO_COPY"/) do |match|
-          <<-SCRIPT
-      echo "$RESOURCE_PATH" || true
-      if [[ "$RESOURCE_PATH" == *.bundle ]]; then
-        echo "cp -R '$RESOURCE_PATH' '${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/'" || true
-        cp -R "$RESOURCE_PATH" "${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/" || true
-      else
-        echo "$RESOURCE_PATH" >> "$RESOURCES_TO_COPY"
-      fi
-          SCRIPT
+
+    # This is necessary for Xcode 14, because it signs resource bundles by default
+    # when building for devices.
+    installer.target_installation_results.pod_target_installation_results
+      .each do |pod_name, target_installation_result|
+      target_installation_result.resource_bundle_targets.each do |resource_bundle_target|
+        resource_bundle_target.build_configurations.each do |config|
+          config.build_settings['CODE_SIGNING_ALLOWED'] = 'NO'
         end
-        
-        File.write(resources_script, script_content)
       end
     end
   end

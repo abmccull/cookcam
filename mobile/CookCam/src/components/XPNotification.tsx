@@ -1,4 +1,4 @@
-import React, {useEffect, useRef, useState} from 'react';
+import React, { useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -6,9 +6,9 @@ import {
   Animated,
   Dimensions,
   Easing,
-} from 'react-native';
-import {TrendingUp} from 'lucide-react-native';
-import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
+} from "react-native";
+import { TrendingUp } from "lucide-react-native";
+import { haptics } from "../utils/haptics";
 
 interface XPNotificationProps {
   visible: boolean;
@@ -22,7 +22,7 @@ interface XPNotificationProps {
   showConfetti?: boolean;
 }
 
-const {width: screenWidth} = Dimensions.get('window');
+const { width: screenWidth } = Dimensions.get("window");
 
 const XPNotification: React.FC<XPNotificationProps> = ({
   visible,
@@ -39,7 +39,7 @@ const XPNotification: React.FC<XPNotificationProps> = ({
   const scaleAnim = useRef(new Animated.Value(0)).current;
   const progressAnim = useRef(new Animated.Value(0)).current;
   const confettiAnims = useRef(
-    Array.from({length: 20}, () => ({
+    Array.from({ length: 20 }, () => ({
       x: new Animated.Value(0),
       y: new Animated.Value(0),
       rotate: new Animated.Value(0),
@@ -50,24 +50,24 @@ const XPNotification: React.FC<XPNotificationProps> = ({
   const [progressWidth, setProgressWidth] = useState(0);
 
   const getReasonText = (reason: string) => {
-    const reasonMap: {[key: string]: string} = {
-      SCAN_INGREDIENTS: 'Scanned ingredients! 📸',
-      COMPLETE_RECIPE: 'Recipe completed! 🎉',
-      CLAIM_RECIPE: 'Recipe claimed! 🏆',
-      SHARE_RECIPE: 'Recipe shared! 📤',
-      RECEIVE_RATING: 'Received a rating! ⭐',
-      RECEIVE_5_STAR: '5-star rating! 🌟',
-      HELPFUL_REVIEW: 'Helpful review! 💬',
-      DAILY_STREAK: 'Daily streak! 🔥',
-      WEEKLY_STREAK: 'Weekly streak! 💎',
+    const reasonMap: { [key: string]: string } = {
+      SCAN_INGREDIENTS: "Scanned ingredients! 📸",
+      COMPLETE_RECIPE: "Recipe completed! 🎉",
+      CLAIM_RECIPE: "Recipe claimed! 🏆",
+      SHARE_RECIPE: "Recipe shared! 📤",
+      RECEIVE_RATING: "Received a rating! ⭐",
+      RECEIVE_5_STAR: "5-star rating! 🌟",
+      HELPFUL_REVIEW: "Helpful review! 💬",
+      DAILY_STREAK: "Daily streak! 🔥",
+      WEEKLY_STREAK: "Weekly streak! 💎",
     };
-    return reasonMap[reason] || 'Great job! ✨';
+    return reasonMap[reason] || "Great job! ✨";
   };
 
   useEffect(() => {
     if (visible) {
       // Trigger haptic feedback
-      ReactNativeHapticFeedback.trigger('notificationSuccess', {
+      haptics.success({
         enableVibrateFallback: true,
         ignoreAndroidSystemSettings: false,
       });
@@ -171,7 +171,7 @@ const XPNotification: React.FC<XPNotificationProps> = ({
     ]).start(() => {
       // Reset animations
       progressAnim.setValue(0);
-      confettiAnims.forEach(anim => {
+      confettiAnims.forEach((anim) => {
         anim.x.setValue(0);
         anim.y.setValue(0);
         anim.rotate.setValue(0);
@@ -188,11 +188,11 @@ const XPNotification: React.FC<XPNotificationProps> = ({
   }
 
   const confettiColors = [
-    '#FF6B35',
-    '#FFB800',
-    '#4CAF50',
-    '#9C27B0',
-    '#2196F3',
+    "#FF6B35",
+    "#FFB800",
+    "#4CAF50",
+    "#9C27B0",
+    "#2196F3",
   ];
 
   return (
@@ -201,9 +201,10 @@ const XPNotification: React.FC<XPNotificationProps> = ({
         style={[
           styles.container,
           {
-            transform: [{translateY: slideAnim}, {scale: scaleAnim}],
+            transform: [{ translateY: slideAnim }, { scale: scaleAnim }],
           },
-        ]}>
+        ]}
+      >
         {/* XP Icon and Amount */}
         <View style={styles.xpSection}>
           <View style={styles.xpIcon}>
@@ -232,7 +233,7 @@ const XPNotification: React.FC<XPNotificationProps> = ({
                 {
                   width: progressAnim.interpolate({
                     inputRange: [0, 100],
-                    outputRange: ['0%', '100%'],
+                    outputRange: ["0%", "100%"],
                   }),
                 },
               ]}
@@ -263,12 +264,12 @@ const XPNotification: React.FC<XPNotificationProps> = ({
                     confettiColors[index % confettiColors.length],
                   opacity: anim.opacity,
                   transform: [
-                    {translateX: anim.x},
-                    {translateY: anim.y},
+                    { translateX: anim.x },
+                    { translateY: anim.y },
                     {
                       rotate: anim.rotate.interpolate({
                         inputRange: [0, 360],
-                        outputRange: ['0deg', '360deg'],
+                        outputRange: ["0deg", "360deg"],
                       }),
                     },
                   ],
@@ -284,14 +285,14 @@ const XPNotification: React.FC<XPNotificationProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    position: 'absolute',
+    position: "absolute",
     top: 100,
     left: 20,
     right: 20,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderRadius: 20,
     padding: 20,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: {
       width: 0,
       height: 4,
@@ -302,85 +303,85 @@ const styles = StyleSheet.create({
     zIndex: 1000,
   },
   xpSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 12,
   },
   xpIcon: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(255, 184, 0, 0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(255, 184, 0, 0.2)",
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: 12,
   },
   xpAmount: {
     fontSize: 28,
-    fontWeight: 'bold',
-    color: '#FFB800',
+    fontWeight: "bold",
+    color: "#FFB800",
   },
   reasonText: {
     fontSize: 16,
-    color: '#2D1B69',
+    color: "#2D1B69",
     marginBottom: 16,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   progressSection: {
     marginTop: 8,
   },
   levelInfo: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginBottom: 8,
   },
   levelText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#2D1B69',
+    fontWeight: "600",
+    color: "#2D1B69",
   },
   progressText: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: "#8E8E93",
   },
   progressBarContainer: {
-    position: 'relative',
+    position: "relative",
     height: 12,
     borderRadius: 6,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   progressBarBg: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: '#E5E5E7',
+    backgroundColor: "#E5E5E7",
   },
   progressBarFill: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     bottom: 0,
-    backgroundColor: '#FFB800',
+    backgroundColor: "#FFB800",
     borderRadius: 6,
   },
   progressBarShine: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
     height: 4,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    backgroundColor: "rgba(255, 255, 255, 0.3)",
     borderRadius: 2,
   },
   trendingBadge: {
-    position: 'absolute',
+    position: "absolute",
     top: 16,
     right: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(76, 175, 80, 0.1)',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(76, 175, 80, 0.1)",
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
@@ -388,15 +389,15 @@ const styles = StyleSheet.create({
   },
   trendingText: {
     fontSize: 12,
-    color: '#4CAF50',
-    fontWeight: '600',
+    color: "#4CAF50",
+    fontWeight: "600",
   },
   confettiContainer: {
     ...StyleSheet.absoluteFillObject,
     zIndex: 999,
   },
   confettiParticle: {
-    position: 'absolute',
+    position: "absolute",
     width: 10,
     height: 10,
     borderRadius: 2,

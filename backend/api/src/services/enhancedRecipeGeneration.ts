@@ -636,5 +636,21 @@ Keep the same JSON structure but modify the ingredients, instructions, and metad
   }
 }
 
-export const enhancedRecipeService = new EnhancedRecipeGenerationService();
+// Use lazy initialization to avoid module load time errors
+let enhancedRecipeServiceInstance: EnhancedRecipeGenerationService | null = null;
+
+export const getEnhancedRecipeService = (): EnhancedRecipeGenerationService => {
+  if (!enhancedRecipeServiceInstance) {
+    enhancedRecipeServiceInstance = new EnhancedRecipeGenerationService();
+  }
+  return enhancedRecipeServiceInstance;
+};
+
+// For backwards compatibility, keep the named export but make it lazy
+export const enhancedRecipeService = {
+  generateRecipe: (options: RecipeGenerationOptions) => getEnhancedRecipeService().generateRecipe(options),
+  generateMultipleRecipes: (options: RecipeGenerationOptions) => getEnhancedRecipeService().generateMultipleRecipes(options),
+  generateRecipeVariations: (baseRecipe: GeneratedRecipe, count?: number) => getEnhancedRecipeService().generateRecipeVariations(baseRecipe, count)
+};
+
 export default enhancedRecipeService; 

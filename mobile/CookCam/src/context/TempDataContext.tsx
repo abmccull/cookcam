@@ -1,4 +1,4 @@
-import React, {createContext, useContext, useState, ReactNode} from 'react';
+import React, { createContext, useContext, useState, ReactNode } from "react";
 
 export interface TempScanData {
   imageUrl: string;
@@ -23,7 +23,7 @@ export interface TempRecipeData {
 export interface TempUserPreferences {
   cuisinePreferences: string[];
   dietaryRestrictions: string[];
-  cookingExperience: 'beginner' | 'intermediate' | 'advanced';
+  cookingExperience: "beginner" | "intermediate" | "advanced";
   preferredCookTime: number;
   servingSize: number;
 }
@@ -32,7 +32,7 @@ export interface TempDataState {
   tempScanData: TempScanData | null;
   tempRecipeHistory: TempRecipeData[];
   tempUserPreferences: TempUserPreferences | null;
-  selectedPlan: 'consumer' | 'creator' | null;
+  selectedPlan: "consumer" | "creator" | null;
 }
 
 interface TempDataContextType {
@@ -40,7 +40,7 @@ interface TempDataContextType {
   setTempScanData: (data: TempScanData) => void;
   addTempRecipe: (recipe: TempRecipeData) => void;
   setTempUserPreferences: (preferences: TempUserPreferences) => void;
-  setSelectedPlan: (plan: 'consumer' | 'creator') => void;
+  setSelectedPlan: (plan: "consumer" | "creator") => void;
   clearTempData: () => void;
   exportTempData: () => TempDataState;
 }
@@ -66,28 +66,28 @@ export const TempDataProvider: React.FC<TempDataProviderProps> = ({
   const [tempData, setTempData] = useState<TempDataState>(initialState);
 
   const setTempScanData = (data: TempScanData) => {
-    setTempData(prev => ({
+    setTempData((prev) => ({
       ...prev,
       tempScanData: data,
     }));
   };
 
   const addTempRecipe = (recipe: TempRecipeData) => {
-    setTempData(prev => ({
+    setTempData((prev) => ({
       ...prev,
       tempRecipeHistory: [recipe, ...prev.tempRecipeHistory.slice(0, 9)], // Keep last 10
     }));
   };
 
   const setTempUserPreferences = (preferences: TempUserPreferences) => {
-    setTempData(prev => ({
+    setTempData((prev) => ({
       ...prev,
       tempUserPreferences: preferences,
     }));
   };
 
-  const setSelectedPlan = (plan: 'consumer' | 'creator') => {
-    setTempData(prev => ({
+  const setSelectedPlan = (plan: "consumer" | "creator") => {
+    setTempData((prev) => ({
       ...prev,
       selectedPlan: plan,
     }));
@@ -98,7 +98,7 @@ export const TempDataProvider: React.FC<TempDataProviderProps> = ({
   };
 
   const exportTempData = () => {
-    return {...tempData};
+    return { ...tempData };
   };
 
   const value = {
@@ -121,7 +121,7 @@ export const TempDataProvider: React.FC<TempDataProviderProps> = ({
 export const useTempData = (): TempDataContextType => {
   const context = useContext(TempDataContext);
   if (context === undefined) {
-    throw new Error('useTempData must be used within a TempDataProvider');
+    throw new Error("useTempData must be used within a TempDataProvider");
   }
   return context;
 };

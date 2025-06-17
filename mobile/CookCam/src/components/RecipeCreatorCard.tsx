@@ -1,5 +1,6 @@
-import React from 'react';
-import {View, Text, StyleSheet, TouchableOpacity, Image} from 'react-native';
+import React from "react";
+import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import OptimizedImage from "./OptimizedImage";
 import {
   Star,
   Eye,
@@ -8,8 +9,8 @@ import {
   Users,
   Award,
   TrendingUp,
-} from 'lucide-react-native';
-import ChefBadge from './ChefBadge';
+} from "lucide-react-native";
+import ChefBadge from "./ChefBadge";
 
 interface RecipeCreatorCardProps {
   recipe: {
@@ -23,13 +24,13 @@ interface RecipeCreatorCardProps {
     averageRating: number;
     ratingCount: number;
     prepTime: number;
-    difficulty: 'Easy' | 'Medium' | 'Hard';
+    difficulty: "Easy" | "Medium" | "Hard";
     isSaved?: boolean;
   };
   onPress: () => void;
   onCreatorPress?: () => void;
   onSavePress?: () => void;
-  size?: 'small' | 'medium' | 'large';
+  size?: "small" | "medium" | "large";
 }
 
 const RecipeCreatorCard: React.FC<RecipeCreatorCardProps> = ({
@@ -37,18 +38,18 @@ const RecipeCreatorCard: React.FC<RecipeCreatorCardProps> = ({
   onPress,
   onCreatorPress,
   onSavePress,
-  size = 'medium',
+  size = "medium",
 }) => {
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
-      case 'Easy':
-        return '#4CAF50';
-      case 'Medium':
-        return '#FF9800';
-      case 'Hard':
-        return '#F44336';
+      case "Easy":
+        return "#4CAF50";
+      case "Medium":
+        return "#FF9800";
+      case "Hard":
+        return "#F44336";
       default:
-        return '#8E8E93';
+        return "#8E8E93";
     }
   };
 
@@ -62,23 +63,27 @@ const RecipeCreatorCard: React.FC<RecipeCreatorCardProps> = ({
   };
 
   const cardStyles =
-    size === 'small'
+    size === "small"
       ? smallStyles
-      : size === 'large'
-      ? largeStyles
-      : mediumStyles;
+      : size === "large"
+        ? largeStyles
+        : mediumStyles;
 
-  const iconSize = size === 'small' ? 30 : size === 'large' ? 50 : 40;
+  const iconSize = size === "small" ? 30 : size === "large" ? 50 : 40;
 
   return (
     <TouchableOpacity
       style={[styles.container, cardStyles.container]}
       onPress={onPress}
-      activeOpacity={0.8}>
+      activeOpacity={0.8}
+    >
       {/* Recipe Image */}
       <View style={[styles.imageContainer, cardStyles.imageContainer]}>
         {recipe.imageUrl ? (
-          <Image source={{uri: recipe.imageUrl}} style={styles.image} />
+          <OptimizedImage
+            source={{ uri: recipe.imageUrl }}
+            style={styles.image}
+          />
         ) : (
           <View style={styles.imagePlaceholder}>
             <ChefHat size={iconSize} color="#E5E5E7" />
@@ -90,8 +95,8 @@ const RecipeCreatorCard: React.FC<RecipeCreatorCardProps> = ({
           <TouchableOpacity style={styles.saveButton} onPress={onSavePress}>
             <Heart
               size={20}
-              color={recipe.isSaved ? '#FF6B35' : '#FFFFFF'}
-              fill={recipe.isSaved ? '#FF6B35' : 'transparent'}
+              color={recipe.isSaved ? "#FF6B35" : "#FFFFFF"}
+              fill={recipe.isSaved ? "#FF6B35" : "transparent"}
             />
           </TouchableOpacity>
         )}
@@ -100,13 +105,15 @@ const RecipeCreatorCard: React.FC<RecipeCreatorCardProps> = ({
         <View
           style={[
             styles.difficultyBadge,
-            {backgroundColor: getDifficultyColor(recipe.difficulty) + '20'},
-          ]}>
+            { backgroundColor: getDifficultyColor(recipe.difficulty) + "20" },
+          ]}
+        >
           <Text
             style={[
               styles.difficultyText,
-              {color: getDifficultyColor(recipe.difficulty)},
-            ]}>
+              { color: getDifficultyColor(recipe.difficulty) },
+            ]}
+          >
             {recipe.difficulty}
           </Text>
         </View>
@@ -141,11 +148,12 @@ const RecipeCreatorCard: React.FC<RecipeCreatorCardProps> = ({
           <TouchableOpacity
             style={styles.creatorRow}
             onPress={onCreatorPress}
-            disabled={!onCreatorPress}>
+            disabled={!onCreatorPress}
+          >
             <View style={styles.creatorAvatar}>
               {recipe.creatorAvatar ? (
-                <Image
-                  source={{uri: recipe.creatorAvatar}}
+                <OptimizedImage
+                  source={{ uri: recipe.creatorAvatar }}
                   style={styles.avatarImage}
                 />
               ) : (
@@ -172,9 +180,9 @@ const RecipeCreatorCard: React.FC<RecipeCreatorCardProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderRadius: 16,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: {
       width: 0,
       height: 2,
@@ -185,35 +193,35 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   imageContainer: {
-    position: 'relative',
+    position: "relative",
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   image: {
-    width: '100%',
-    height: '100%',
+    width: "100%",
+    height: "100%",
   },
   imagePlaceholder: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: '#F5F5F5',
-    justifyContent: 'center',
-    alignItems: 'center',
+    width: "100%",
+    height: "100%",
+    backgroundColor: "#F5F5F5",
+    justifyContent: "center",
+    alignItems: "center",
   },
   saveButton: {
-    position: 'absolute',
+    position: "absolute",
     top: 12,
     right: 12,
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(0, 0, 0, 0.3)",
+    justifyContent: "center",
+    alignItems: "center",
   },
   difficultyBadge: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 12,
     left: 12,
     paddingHorizontal: 12,
@@ -222,57 +230,57 @@ const styles = StyleSheet.create({
   },
   difficultyText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   infoContainer: {
     padding: 16,
   },
   title: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#2D1B69',
+    fontWeight: "600",
+    color: "#2D1B69",
     marginBottom: 8,
   },
   statsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 12,
   },
   stat: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginRight: 16,
   },
   statText: {
     fontSize: 14,
-    fontWeight: '500',
-    color: '#2D1B69',
+    fontWeight: "500",
+    color: "#2D1B69",
     marginLeft: 4,
   },
   statSubtext: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: "#8E8E93",
     marginLeft: 2,
   },
   prepTime: {
     fontSize: 14,
-    color: '#8E8E93',
-    marginLeft: 'auto',
+    color: "#8E8E93",
+    marginLeft: "auto",
   },
   creatorRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     borderTopWidth: 1,
-    borderTopColor: '#E5E5E7',
+    borderTopColor: "#E5E5E7",
     paddingTop: 12,
   },
   creatorAvatar: {
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: '#FF6B35',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "#FF6B35",
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: 8,
   },
   avatarImage: {
@@ -282,12 +290,12 @@ const styles = StyleSheet.create({
   },
   avatarText: {
     fontSize: 12,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
+    fontWeight: "bold",
+    color: "#FFFFFF",
   },
   creatorName: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: "#8E8E93",
     marginRight: 8,
   },
 });
@@ -310,7 +318,7 @@ const smallStyles = StyleSheet.create({
 
 const mediumStyles = StyleSheet.create({
   container: {
-    width: '100%',
+    width: "100%",
   },
   imageContainer: {
     height: 180,
@@ -325,7 +333,7 @@ const mediumStyles = StyleSheet.create({
 
 const largeStyles = StyleSheet.create({
   container: {
-    width: '100%',
+    width: "100%",
   },
   imageContainer: {
     height: 240,

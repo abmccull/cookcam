@@ -1,4 +1,5 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+// Note: AsyncStorage import kept for potential future use
+// import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   API_CONFIG,
   API_ENDPOINTS,
@@ -7,8 +8,10 @@ import {
   LOG_API_REQUESTS,
   LOG_API_RESPONSES,
   LOG_API_ERRORS,
-} from '../config/api';
-import {secureStorage, SECURE_KEYS, STORAGE_KEYS} from './secureStorage';
+} from "../config/api";
+import { secureStorage, SECURE_KEYS, STORAGE_KEYS } from "./secureStorage";
+import logger from "../utils/logger";
+
 
 // Types
 export interface ApiResponse<T = any> {
@@ -26,12 +29,12 @@ export interface ApiError {
   details?: any;
 }
 
-// Storage keys
-const DEPRECATED_STORAGE_KEYS = {
-  ACCESS_TOKEN: 'access_token',
-  REFRESH_TOKEN: '@cookcam_refresh_token',
-  USER_DATA: 'user_data',
-};
+// Storage keys (deprecated, kept for reference)
+// const DEPRECATED_STORAGE_KEYS = {
+//   ACCESS_TOKEN: "access_token",
+//   REFRESH_TOKEN: "@cookcam_refresh_token",
+//   USER_DATA: "user_data",
+// };
 
 class ApiService {
   private baseURL: string;
@@ -47,7 +50,7 @@ class ApiService {
     try {
       return await secureStorage.getSecureItem(SECURE_KEYS.ACCESS_TOKEN);
     } catch (error) {
-      console.error('Error getting auth token:', error);
+      logger.error("Error getting auth token:", error);
       return null;
     }
   }
@@ -57,7 +60,7 @@ class ApiService {
     try {
       await secureStorage.setAuthTokens(token, refreshToken);
     } catch (error) {
-      console.error('Error setting auth token:', error);
+      logger.error("Error setting auth token:", error);
     }
   }
 
@@ -67,7 +70,7 @@ class ApiService {
       await secureStorage.clearAllSecureData();
       await secureStorage.removeItem(STORAGE_KEYS.USER_PREFERENCES); // Example of removing non-sensitive data
     } catch (error) {
-      console.error('Error removing auth token:', error);
+      logger.error("Error removing auth token:", error);
     }
   }
 
@@ -75,7 +78,7 @@ class ApiService {
   private async buildHeaders(
     customHeaders?: Record<string, string>,
   ): Promise<Record<string, string>> {
-    const headers = {...this.defaultHeaders, ...customHeaders};
+    const headers = { ...this.defaultHeaders, ...customHeaders };
 
     const token = await this.getAuthToken();
     if (token) {
@@ -88,21 +91,24 @@ class ApiService {
   // Log API requests (development only)
   private logRequest(method: string, url: string, data?: any) {
     if (LOG_API_REQUESTS) {
-      console.log(`🔄 API ${method.toUpperCase()} ${url}`, data ? {data} : '');
+      logger.debug(
+        `🔄 API ${method.toUpperCase()} ${url}`,
+        data ? { data } : "",
+      );
     }
   }
 
   // Log API responses (development only)
   private logResponse(method: string, url: string, response: any) {
     if (LOG_API_RESPONSES) {
-      console.log(`✅ API ${method.toUpperCase()} ${url} Response:`, response);
+      logger.debug(`✅ API ${method.toUpperCase()} ${url} Response:`, response);
     }
   }
 
   // Log API errors
   private logError(method: string, url: string, error: any) {
     if (LOG_API_ERRORS) {
-      console.error(`❌ API ${method.toUpperCase()} ${url} Error:`, error);
+      logger.error(`❌ API ${method.toUpperCase()} ${url} Error:`, error);
     }
   }
 
@@ -116,7 +122,7 @@ class ApiService {
         message:
           error.response.data?.message ||
           error.response.data?.error ||
-          'Server error',
+          "Server error",
         status: error.response.status,
         code: error.response.data?.code,
         details: error.response.data,
@@ -124,18 +130,18 @@ class ApiService {
     } else if (error.request) {
       // Network error
       apiError = {
-        message: 'Network error. Please check your connection.',
+        message: "Network error. Please check your connection.",
         code: API_ERROR_CODES.NETWORK_ERROR,
       };
     } else {
       // Other error
       apiError = {
-        message: error.message || 'An unexpected error occurred',
-        code: 'UNKNOWN_ERROR',
+        message: error.message || "An unexpected error occurred",
+        code: "UNKNOWN_ERROR",
       };
     }
 
-    this.logError('ERROR', url, apiError);
+    this.logError("ERROR", url, apiError);
     return apiError;
   }
 
@@ -167,12 +173,12 @@ class ApiService {
 
   // Delay helper for retry logic
   private delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   // Generic request method
   private async request<T = any>(
-    method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH',
+    method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH",
     endpoint: string,
     data?: any,
     customHeaders?: Record<string, string>,
@@ -220,7 +226,7 @@ class ApiService {
       } else {
         return {
           success: false,
-          error: responseData.message || responseData.error || 'Request failed',
+          error: responseData.message || responseData.error || "Request failed",
           status: response.status,
         };
       }
@@ -245,7 +251,7 @@ class ApiService {
     endpoint: string,
     headers?: Record<string, string>,
   ): Promise<ApiResponse<T>> {
-    return this.request<T>('GET', endpoint, undefined, headers);
+    return this.request<T>("GET", endpoint, undefined, headers);
   }
 
   // POST request
@@ -254,7 +260,7 @@ class ApiService {
     data?: any,
     headers?: Record<string, string>,
   ): Promise<ApiResponse<T>> {
-    return this.request<T>('POST', endpoint, data, headers);
+    return this.request<T>("POST", endpoint, data, headers);
   }
 
   // PUT request
@@ -263,7 +269,7 @@ class ApiService {
     data?: any,
     headers?: Record<string, string>,
   ): Promise<ApiResponse<T>> {
-    return this.request<T>('PUT', endpoint, data, headers);
+    return this.request<T>("PUT", endpoint, data, headers);
   }
 
   // DELETE request
@@ -271,7 +277,7 @@ class ApiService {
     endpoint: string,
     headers?: Record<string, string>,
   ): Promise<ApiResponse<T>> {
-    return this.request<T>('DELETE', endpoint, undefined, headers);
+    return this.request<T>("DELETE", endpoint, undefined, headers);
   }
 
   // PATCH request
@@ -280,7 +286,7 @@ class ApiService {
     data?: any,
     headers?: Record<string, string>,
   ): Promise<ApiResponse<T>> {
-    return this.request<T>('PATCH', endpoint, data, headers);
+    return this.request<T>("PATCH", endpoint, data, headers);
   }
 
   // Upload file (for image scanning)
@@ -293,34 +299,34 @@ class ApiService {
       const formData = new FormData();
 
       // Add file to form data
-      formData.append('image', {
+      formData.append("image", {
         uri: file.uri,
-        type: file.type || 'image/jpeg',
-        name: file.fileName || 'image.jpg',
+        type: file.type || "image/jpeg",
+        name: file.fileName || "image.jpg",
       } as any);
 
       // Add additional data
       if (additionalData) {
-        Object.keys(additionalData).forEach(key => {
+        Object.keys(additionalData).forEach((key) => {
           formData.append(key, additionalData[key]);
         });
       }
 
       const headers = await this.buildHeaders({
-        'Content-Type': 'multipart/form-data',
+        "Content-Type": "multipart/form-data",
       });
 
       const url = `${this.baseURL}${endpoint}`;
-      this.logRequest('POST', url, {file: file.fileName, additionalData});
+      this.logRequest("POST", url, { file: file.fileName, additionalData });
 
       const response = await fetch(url, {
-        method: 'POST',
+        method: "POST",
         headers,
         body: formData,
       });
 
       const responseData = await response.json();
-      this.logResponse('POST', url, responseData);
+      this.logResponse("POST", url, responseData);
 
       if (SUCCESS_CODES.includes(response.status)) {
         return {
@@ -331,7 +337,7 @@ class ApiService {
       } else {
         return {
           success: false,
-          error: responseData.message || responseData.error || 'Upload failed',
+          error: responseData.message || responseData.error || "Upload failed",
           status: response.status,
         };
       }

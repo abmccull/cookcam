@@ -1,18 +1,30 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import PushNotification from 'react-native-push-notification';
-import {Platform} from 'react-native';
+import * as Notifications from "expo-notifications";
+import { Platform } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { supabase } from "./supabaseClient";
+import getEnvVars from "../config/env";
+import logger from "../utils/logger";
+
+
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: true,
+  }),
+});
 
 interface NotificationData {
   id: string;
   title: string;
   message: string;
   type:
-    | 'streak'
-    | 'achievement'
-    | 'social'
-    | 'recipe'
-    | 'challenge'
-    | 'reminder';
+    | "streak"
+    | "achievement"
+    | "social"
+    | "recipe"
+    | "challenge"
+    | "reminder";
   data?: any;
   scheduledTime?: Date;
 }
@@ -22,7 +34,7 @@ interface UserBehavior {
   preferredCookingTimes: string[];
   averageSessionLength: number;
   favoriteCategories: string[];
-  engagementLevel: 'high' | 'medium' | 'low';
+  engagementLevel: "high" | "medium" | "low";
   notificationPreferences: {
     streaks: boolean;
     achievements: boolean;
@@ -39,66 +51,96 @@ class SmartNotificationService {
   private notificationQueue: NotificationData[] = [];
 
   private constructor() {
-    this.initializeService();
+    this.configure();
   }
 
-  static getInstance(): SmartNotificationService {
+  public static getInstance(): SmartNotificationService {
     if (!SmartNotificationService.instance) {
       SmartNotificationService.instance = new SmartNotificationService();
     }
     return SmartNotificationService.instance;
   }
 
-  private async initializeService() {
-    // Configure push notifications
-    PushNotification.configure({
-      onRegister: function (token) {
-        console.log('TOKEN:', token);
-      },
-      onNotification: function (notification) {
-        console.log('NOTIFICATION:', notification);
-      },
-      permissions: {
-        alert: true,
-        badge: true,
-        sound: true,
-      },
-      popInitialNotification: true,
-      requestPermissions: Platform.OS === 'ios',
-    });
-
-    // Create notification channels for Android
-    if (Platform.OS === 'android') {
-      PushNotification.createChannel(
-        {
-          channelId: 'cookcam-default',
-          channelName: 'CookCam Notifications',
-          channelDescription: 'General notifications from CookCam',
-          playSound: true,
-          soundName: 'default',
-          importance: 4,
-          vibrate: true,
-        },
-        created => console.log(`createChannel returned '${created}'`),
-      );
+  private async configure() {
+    await this.requestPermissions();
+    if (Platform.OS === "android") {
+      await Notifications.setNotificationChannelAsync("default", {
+        name: "Default",
+        importance: Notifications.AndroidImportance.MAX,
+        vibrationPattern: [0, 250, 250, 250],
+        lightColor: "#FF231F7C",
+      });
     }
+  }
 
-    // Load user behavior data
-    await this.loadUserBehavior();
+  async requestPermissions() {
+    const { status } = await Notifications.requestPermissionsAsync();
+    if (status !== "granted") {
+      logger.debug("Failed to get push token for push notification!");
+      return false;
+    }
+    return true;
+  }
+
+  async registerForPushNotificationsAsync() {
+    try {
+      const token = (await Notifications.getExpoPushTokenAsync()).data;
+      logger.debug("Expo Push Token:", token);
+
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (user && token) {
+        const { error } = await supabase
+          .from("users")
+          .update({ push_token: token })
+          .eq("id", user.id);
+        if (error) {
+          logger.error("Error saving push token:", error);
+        }
+      }
+      return token;
+    } catch (e) {
+      logger.error("Failed to get push token", e);
+      return null;
+    }
+  }
+
+  async scheduleLocalNotification(
+    title: string,
+    body: string,
+    data: Record<string, unknown>,
+    delaySeconds: number,
+  ) {
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title,
+        body,
+        data,
+      },
+      trigger: {
+        seconds: delaySeconds,
+        channelId: "default",
+      },
+    });
+  }
+
+  cancelAllLocalNotifications() {
+    Notifications.cancelAllScheduledNotificationsAsync();
   }
 
   private async loadUserBehavior() {
     try {
-      const behaviorData = await AsyncStorage.getItem('userBehavior');
+      const behaviorData = await AsyncStorage.getItem("userBehavior");
       if (behaviorData) {
         this.userBehavior = JSON.parse(behaviorData);
       } else {
         // Initialize with defaults
         this.userBehavior = {
-          preferredCookingTimes: ['18:00', '19:00'],
+          preferredCookingTimes: ["18:00", "19:00"],
           averageSessionLength: 30,
           favoriteCategories: [],
-          engagementLevel: 'medium',
+          engagementLevel: "medium",
           notificationPreferences: {
             streaks: true,
             achievements: true,
@@ -110,7 +152,7 @@ class SmartNotificationService {
         };
       }
     } catch (error) {
-      console.error('Error loading user behavior:', error);
+      logger.error("Error loading user behavior:", error);
     }
   }
 
@@ -142,14 +184,14 @@ class SmartNotificationService {
 
     // Update engagement level
     if (sessionData.recipesCooked.length > 0) {
-      this.userBehavior.engagementLevel = 'high';
+      this.userBehavior.engagementLevel = "high";
     } else if (sessionData.recipesViewed.length > 3) {
-      this.userBehavior.engagementLevel = 'medium';
+      this.userBehavior.engagementLevel = "medium";
     }
 
     // Save updated behavior
     await AsyncStorage.setItem(
-      'userBehavior',
+      "userBehavior",
       JSON.stringify(this.userBehavior),
     );
   }
@@ -161,7 +203,7 @@ class SmartNotificationService {
     }
 
     // Cancel all existing notifications
-    PushNotification.cancelAllLocalNotifications();
+    this.cancelAllLocalNotifications();
 
     // Schedule based on notification preferences
     const prefs = this.userBehavior.notificationPreferences;
@@ -203,17 +245,17 @@ class SmartNotificationService {
     // Set reminder for preferred cooking time
     if (this.userBehavior?.preferredCookingTimes.length) {
       const preferredHour = parseInt(
-        this.userBehavior.preferredCookingTimes[0].split(':')[0],
-        10
+        this.userBehavior.preferredCookingTimes[0].split(":")[0],
+        10,
       );
       nextReminder.setHours(preferredHour - 1); // 1 hour before usual time
     }
 
     this.scheduleNotification({
-      id: 'streak-reminder',
-      title: '🔥 Keep Your Streak Alive!',
-      message: 'Cook something today to maintain your 7-day streak!',
-      type: 'streak',
+      id: "streak-reminder",
+      title: "🔥 Keep Your Streak Alive!",
+      message: "Cook something today to maintain your 7-day streak!",
+      type: "streak",
       scheduledTime: nextReminder,
     });
   }
@@ -224,10 +266,10 @@ class SmartNotificationService {
 
     if (userStats.recipesUntilNextBadge <= 2) {
       this.scheduleNotification({
-        id: 'achievement-proximity',
-        title: '🏆 So Close to a Badge!',
+        id: "achievement-proximity",
+        title: "🏆 So Close to a Badge!",
         message: `Just ${userStats.recipesUntilNextBadge} more recipes for Master Chef badge!`,
-        type: 'achievement',
+        type: "achievement",
         scheduledTime: this.getOptimalNotificationTime(),
       });
     }
@@ -236,18 +278,18 @@ class SmartNotificationService {
   private async scheduleSocialNotifications() {
     // FOMO triggers
     const messages = [
-      '👥 3 friends just claimed the viral Pasta recipe!',
-      '🎉 Sarah just beat your weekly XP record!',
-      '🔥 Mike is on a 10-day streak - can you beat it?',
+      "👥 3 friends just claimed the viral Pasta recipe!",
+      "🎉 Sarah just beat your weekly XP record!",
+      "🔥 Mike is on a 10-day streak - can you beat it?",
     ];
 
     const randomMessage = messages[Math.floor(Math.random() * messages.length)];
 
     this.scheduleNotification({
-      id: 'social-fomo',
-      title: 'Your Friends Are Cooking! 👨‍🍳',
+      id: "social-fomo",
+      title: "Your Friends Are Cooking! 👨‍🍳",
       message: randomMessage,
-      type: 'social',
+      type: "social",
       scheduledTime: this.getOptimalNotificationTime(),
     });
   }
@@ -261,11 +303,11 @@ class SmartNotificationService {
     }
 
     this.scheduleNotification({
-      id: 'recipe-suggestion',
-      title: '🍝 Perfect for Tonight!',
+      id: "recipe-suggestion",
+      title: "🍝 Perfect for Tonight!",
       message:
-        'Your favorite Creamy Pasta takes just 30 min - perfect for dinner!',
-      type: 'recipe',
+        "Your favorite Creamy Pasta takes just 30 min - perfect for dinner!",
+      type: "recipe",
       scheduledTime: dinnerTime,
     });
   }
@@ -277,10 +319,10 @@ class SmartNotificationService {
     endOfWeek.setHours(20, 0, 0, 0); // Sunday 8 PM
 
     this.scheduleNotification({
-      id: 'challenge-reminder',
-      title: '⏰ Challenge Ending Soon!',
-      message: 'Complete 2 more recipes to finish the Speed Chef challenge!',
-      type: 'challenge',
+      id: "challenge-reminder",
+      title: "⏰ Challenge Ending Soon!",
+      message: "Complete 2 more recipes to finish the Speed Chef challenge!",
+      type: "challenge",
       scheduledTime: endOfWeek,
     });
   }
@@ -289,28 +331,12 @@ class SmartNotificationService {
     const scheduledTime =
       notification.scheduledTime || new Date(Date.now() + 3600000); // 1 hour from now
 
-    PushNotification.localNotificationSchedule({
-      id: notification.id,
-      title: notification.title,
-      message: notification.message,
-      date: scheduledTime,
-      channelId: 'cookcam-default',
-      userInfo: {
-        type: notification.type,
-        data: notification.data,
-      },
-      // iOS specific
-      category: notification.type,
-      // Android specific
-      largeIcon: 'ic_launcher',
-      smallIcon: 'ic_notification',
-      bigText: notification.message,
-      subText: 'CookCam',
-      vibrate: true,
-      vibration: 300,
-      priority: 'high',
-      visibility: 'public',
-    });
+    this.scheduleLocalNotification(
+      notification.title,
+      notification.message,
+      { type: notification.type, data: notification.data },
+      (scheduledTime.getTime() - Date.now()) / 1000,
+    );
   }
 
   private getOptimalNotificationTime(): Date {
@@ -320,8 +346,8 @@ class SmartNotificationService {
     // Use preferred cooking time if available
     if (this.userBehavior?.preferredCookingTimes.length) {
       const preferredHour = parseInt(
-        this.userBehavior.preferredCookingTimes[0].split(':')[0],
-        10
+        this.userBehavior.preferredCookingTimes[0].split(":")[0],
+        10,
       );
       optimalTime.setHours(preferredHour - 2); // 2 hours before usual cooking time
     } else {
@@ -349,7 +375,7 @@ class SmartNotificationService {
 
   // Update notification preferences
   async updateNotificationPreferences(
-    preferences: Partial<UserBehavior['notificationPreferences']>,
+    preferences: Partial<UserBehavior["notificationPreferences"]>,
   ) {
     if (!this.userBehavior) {
       return;
@@ -361,7 +387,7 @@ class SmartNotificationService {
     };
 
     await AsyncStorage.setItem(
-      'userBehavior',
+      "userBehavior",
       JSON.stringify(this.userBehavior),
     );
     await this.scheduleSmartNotifications();
@@ -371,30 +397,14 @@ class SmartNotificationService {
   sendImmediateNotification(
     title: string,
     message: string,
-    type: NotificationData['type'],
+    type: NotificationData["type"],
   ) {
-    PushNotification.localNotification({
-      title,
-      message,
-      channelId: 'cookcam-default',
-      userInfo: {type},
-      // iOS specific
-      category: type,
-      // Android specific
-      largeIcon: 'ic_launcher',
-      smallIcon: 'ic_notification',
-      bigText: message,
-      subText: 'CookCam',
-      vibrate: true,
-      vibration: 300,
-      priority: 'high',
-      visibility: 'public',
-    });
+    this.scheduleLocalNotification(title, message, { type }, 0);
   }
 
   // A/B Testing for notification messages
   getOptimizedMessage(
-    type: NotificationData['type'],
+    type: NotificationData["type"],
     variants: string[],
   ): string {
     // In production, this would use actual A/B testing service
@@ -410,8 +420,54 @@ class SmartNotificationService {
 
   private async trackNotificationVariant(type: string, variantIndex: number) {
     // Track in analytics service
-    console.log(`Notification variant used: ${type} - Variant ${variantIndex}`);
+    logger.debug(`Notification variant used: ${type} - Variant ${variantIndex}`);
+  }
+}
+
+// Keep the rest of the user behavior tracking logic if needed,
+// but remove direct push notification calls from here.
+// For example, loadUserBehavior and trackUserEvent can remain if they
+// are used for other purposes like analytics.
+
+// Example of keeping user behavior logic (if needed elsewhere)
+class UserBehaviorTracker {
+  private userBehavior: { [key: string]: number } = {};
+  private static instance: UserBehaviorTracker;
+
+  private constructor() {
+    this.loadUserBehavior();
+  }
+
+  public static getInstance(): UserBehaviorTracker {
+    if (!UserBehaviorTracker.instance) {
+      UserBehaviorTracker.instance = new UserBehaviorTracker();
+    }
+    return UserBehaviorTracker.instance;
+  }
+
+  async loadUserBehavior() {
+    try {
+      const storedBehavior = await AsyncStorage.getItem("user_behavior");
+      if (storedBehavior) {
+        this.userBehavior = JSON.parse(storedBehavior);
+      }
+    } catch (error) {
+      logger.error("Failed to load user behavior:", error);
+    }
+  }
+
+  async trackUserEvent(event: string) {
+    this.userBehavior[event] = (this.userBehavior[event] || 0) + 1;
+    try {
+      await AsyncStorage.setItem(
+        "user_behavior",
+        JSON.stringify(this.userBehavior),
+      );
+    } catch (error) {
+      logger.error("Failed to save user behavior:", error);
+    }
   }
 }
 
 export default SmartNotificationService.getInstance();
+export const userBehaviorTracker = UserBehaviorTracker.getInstance();

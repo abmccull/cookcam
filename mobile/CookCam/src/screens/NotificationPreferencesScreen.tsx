@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -9,7 +9,7 @@ import {
   SafeAreaView,
   Alert,
   Platform,
-} from 'react-native';
+} from "react-native";
 import {
   Bell,
   Flame,
@@ -20,10 +20,12 @@ import {
   Clock,
   Info,
   ChevronLeft,
-} from 'lucide-react-native';
-import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import SmartNotificationService from '../services/SmartNotificationService';
+} from "lucide-react-native";
+import * as Haptics from "expo-haptics";
+import * as SecureStore from "expo-secure-store";
+import SmartNotificationService from "../services/SmartNotificationService";
+import logger from "../utils/logger";
+
 
 interface NotificationCategory {
   id: string;
@@ -34,65 +36,65 @@ interface NotificationCategory {
   color: string;
 }
 
-const NotificationPreferencesScreen: React.FC<{navigation: any}> = ({
+const NotificationPreferencesScreen: React.FC<{ navigation: any }> = ({
   navigation,
 }) => {
   const [masterEnabled, setMasterEnabled] = useState(true);
   const [categories, setCategories] = useState<NotificationCategory[]>([
     {
-      id: 'streaks',
-      title: 'Streak Reminders',
-      description: 'Daily reminders to maintain your cooking streak',
+      id: "streaks",
+      title: "Streak Reminders",
+      description: "Daily reminders to maintain your cooking streak",
       icon: Flame,
       enabled: true,
-      color: '#FF6B35',
+      color: "#FF6B35",
     },
     {
-      id: 'achievements',
-      title: 'Achievement Alerts',
+      id: "achievements",
+      title: "Achievement Alerts",
       description: "Notifications when you're close to earning badges",
       icon: Trophy,
       enabled: true,
-      color: '#FFB800',
+      color: "#FFB800",
     },
     {
-      id: 'social',
-      title: 'Social Updates',
-      description: 'When friends are cooking or beat your records',
+      id: "social",
+      title: "Social Updates",
+      description: "When friends are cooking or beat your records",
       icon: Users,
       enabled: true,
-      color: '#9C27B0',
+      color: "#9C27B0",
     },
     {
-      id: 'recipes',
-      title: 'Recipe Suggestions',
-      description: 'Personalized recipe recommendations',
+      id: "recipes",
+      title: "Recipe Suggestions",
+      description: "Personalized recipe recommendations",
       icon: ChefHat,
       enabled: true,
-      color: '#4CAF50',
+      color: "#4CAF50",
     },
     {
-      id: 'challenges',
-      title: 'Challenge Reminders',
-      description: 'Updates about weekly challenges and competitions',
+      id: "challenges",
+      title: "Challenge Reminders",
+      description: "Updates about weekly challenges and competitions",
       icon: Target,
       enabled: true,
-      color: '#2196F3',
+      color: "#2196F3",
     },
     {
-      id: 'reminders',
-      title: 'Cooking Reminders',
-      description: 'Smart reminders based on your cooking patterns',
+      id: "reminders",
+      title: "Cooking Reminders",
+      description: "Smart reminders based on your cooking patterns",
       icon: Clock,
       enabled: true,
-      color: '#FF9800',
+      color: "#FF9800",
     },
   ]);
 
   const [quietHours, setQuietHours] = useState({
     enabled: false,
-    startTime: '22:00',
-    endTime: '08:00',
+    startTime: "22:00",
+    endTime: "08:00",
   });
 
   useEffect(() => {
@@ -101,7 +103,9 @@ const NotificationPreferencesScreen: React.FC<{navigation: any}> = ({
 
   const loadPreferences = async () => {
     try {
-      const savedPrefs = await AsyncStorage.getItem('notificationPreferences');
+      const savedPrefs = await SecureStore.getItemAsync(
+        "notificationPreferences",
+      );
       if (savedPrefs) {
         const prefs = JSON.parse(savedPrefs);
         setMasterEnabled(prefs.masterEnabled);
@@ -109,7 +113,7 @@ const NotificationPreferencesScreen: React.FC<{navigation: any}> = ({
         setQuietHours(prefs.quietHours || quietHours);
       }
     } catch (error) {
-      console.error('Error loading preferences:', error);
+      logger.error("Error loading preferences:", error);
     }
   };
 
@@ -120,8 +124,8 @@ const NotificationPreferencesScreen: React.FC<{navigation: any}> = ({
         categories,
         quietHours,
       };
-      await AsyncStorage.setItem(
-        'notificationPreferences',
+      await SecureStore.setItemAsync(
+        "notificationPreferences",
         JSON.stringify(prefs),
       );
 
@@ -138,25 +142,25 @@ const NotificationPreferencesScreen: React.FC<{navigation: any}> = ({
         categoryPrefs,
       );
 
-      ReactNativeHapticFeedback.trigger('notificationSuccess');
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (error) {
-      console.error('Error saving preferences:', error);
+      logger.error("Error saving preferences:", error);
     }
   };
 
   const toggleMaster = async (value: boolean) => {
     setMasterEnabled(value);
-    ReactNativeHapticFeedback.trigger('impactLight');
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
     if (!value) {
       Alert.alert(
-        'Turn Off All Notifications?',
+        "Turn Off All Notifications?",
         "You won't receive any notifications from CookCam. You can turn them back on anytime.",
         [
-          {text: 'Cancel', style: 'cancel'},
+          { text: "Cancel", style: "cancel" },
           {
-            text: 'Turn Off',
-            style: 'destructive',
+            text: "Turn Off",
+            style: "destructive",
             onPress: async () => {
               await savePreferences();
             },
@@ -169,11 +173,11 @@ const NotificationPreferencesScreen: React.FC<{navigation: any}> = ({
   };
 
   const toggleCategory = async (categoryId: string) => {
-    ReactNativeHapticFeedback.trigger('selection');
+    Haptics.selectionAsync();
 
-    setCategories(prev =>
-      prev.map(cat =>
-        cat.id === categoryId ? {...cat, enabled: !cat.enabled} : cat,
+    setCategories((prev) =>
+      prev.map((cat) =>
+        cat.id === categoryId ? { ...cat, enabled: !cat.enabled } : cat,
       ),
     );
 
@@ -182,7 +186,7 @@ const NotificationPreferencesScreen: React.FC<{navigation: any}> = ({
   };
 
   const showInfo = (category: NotificationCategory) => {
-    ReactNativeHapticFeedback.trigger('impactLight');
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
     const examples = {
       streaks:
@@ -203,7 +207,7 @@ const NotificationPreferencesScreen: React.FC<{navigation: any}> = ({
       `${category.description}\n\n${
         examples[category.id as keyof typeof examples]
       }`,
-      [{text: 'Got it!'}],
+      [{ text: "Got it!" }],
     );
   };
 
@@ -213,7 +217,8 @@ const NotificationPreferencesScreen: React.FC<{navigation: any}> = ({
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.backButton}
-          onPress={() => navigation.goBack()}>
+          onPress={() => navigation.goBack()}
+        >
           <ChevronLeft size={24} color="#2D1B69" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Notifications</Text>
@@ -224,20 +229,20 @@ const NotificationPreferencesScreen: React.FC<{navigation: any}> = ({
         {/* Master Toggle */}
         <View style={styles.masterToggleCard}>
           <View style={styles.masterToggleContent}>
-            <Bell size={24} color={masterEnabled ? '#FF6B35' : '#8E8E93'} />
+            <Bell size={24} color={masterEnabled ? "#FF6B35" : "#8E8E93"} />
             <View style={styles.masterToggleText}>
               <Text style={styles.masterToggleTitle}>All Notifications</Text>
               <Text style={styles.masterToggleSubtitle}>
                 {masterEnabled
-                  ? 'Notifications are on'
-                  : 'Notifications are off'}
+                  ? "Notifications are on"
+                  : "Notifications are off"}
               </Text>
             </View>
           </View>
           <Switch
             value={masterEnabled}
             onValueChange={toggleMaster}
-            trackColor={{false: '#E5E5E7', true: '#FF6B35'}}
+            trackColor={{ false: "#E5E5E7", true: "#FF6B35" }}
             thumbColor="#FFFFFF"
             ios_backgroundColor="#E5E5E7"
           />
@@ -245,9 +250,10 @@ const NotificationPreferencesScreen: React.FC<{navigation: any}> = ({
 
         {/* Categories */}
         <View
-          style={[styles.section, !masterEnabled && styles.sectionDisabled]}>
+          style={[styles.section, !masterEnabled && styles.sectionDisabled]}
+        >
           <Text style={styles.sectionTitle}>Notification Types</Text>
-          {categories.map(category => {
+          {categories.map((category) => {
             const Icon = category.icon;
             return (
               <View key={category.id} style={styles.categoryCard}>
@@ -255,8 +261,9 @@ const NotificationPreferencesScreen: React.FC<{navigation: any}> = ({
                   <View
                     style={[
                       styles.categoryIcon,
-                      {backgroundColor: category.color + '20'},
-                    ]}>
+                      { backgroundColor: category.color + "20" },
+                    ]}
+                  >
                     <Icon size={20} color={category.color} />
                   </View>
                   <View style={styles.categoryText}>
@@ -270,13 +277,14 @@ const NotificationPreferencesScreen: React.FC<{navigation: any}> = ({
                   <TouchableOpacity
                     style={styles.infoButton}
                     onPress={() => showInfo(category)}
-                    disabled={!masterEnabled}>
+                    disabled={!masterEnabled}
+                  >
                     <Info size={16} color="#8E8E93" />
                   </TouchableOpacity>
                   <Switch
                     value={category.enabled && masterEnabled}
                     onValueChange={() => toggleCategory(category.id)}
-                    trackColor={{false: '#E5E5E7', true: category.color}}
+                    trackColor={{ false: "#E5E5E7", true: category.color }}
                     thumbColor="#FFFFFF"
                     ios_backgroundColor="#E5E5E7"
                     disabled={!masterEnabled}
@@ -289,7 +297,8 @@ const NotificationPreferencesScreen: React.FC<{navigation: any}> = ({
 
         {/* Quiet Hours */}
         <View
-          style={[styles.section, !masterEnabled && styles.sectionDisabled]}>
+          style={[styles.section, !masterEnabled && styles.sectionDisabled]}
+        >
           <Text style={styles.sectionTitle}>Quiet Hours</Text>
           <View style={styles.quietHoursCard}>
             <View style={styles.quietHoursHeader}>
@@ -299,19 +308,19 @@ const NotificationPreferencesScreen: React.FC<{navigation: any}> = ({
               </View>
               <Switch
                 value={quietHours.enabled && masterEnabled}
-                onValueChange={value => {
-                  ReactNativeHapticFeedback.trigger('selection');
-                  setQuietHours({...quietHours, enabled: value});
+                onValueChange={(value) => {
+                  Haptics.selectionAsync();
+                  setQuietHours({ ...quietHours, enabled: value });
                   setTimeout(savePreferences, 100);
                 }}
-                trackColor={{false: '#E5E5E7', true: '#FF9800'}}
+                trackColor={{ false: "#E5E5E7", true: "#FF9800" }}
                 thumbColor="#FFFFFF"
                 ios_backgroundColor="#E5E5E7"
                 disabled={!masterEnabled}
               />
             </View>
             <Text style={styles.quietHoursDescription}>
-              No notifications between {quietHours.startTime} -{' '}
+              No notifications between {quietHours.startTime} -{" "}
               {quietHours.endTime}
             </Text>
           </View>
@@ -338,47 +347,47 @@ const NotificationPreferencesScreen: React.FC<{navigation: any}> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F8FF',
+    backgroundColor: "#F8F8FF",
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E7',
+    borderBottomColor: "#E5E5E7",
   },
   backButton: {
     padding: 8,
   },
   headerTitle: {
     fontSize: 20,
-    fontWeight: '600',
-    color: '#2D1B69',
+    fontWeight: "600",
+    color: "#2D1B69",
   },
   headerSpacer: {
     width: 40,
   },
   masterToggleCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#FFFFFF',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#FFFFFF",
     marginHorizontal: 20,
     marginTop: 20,
     marginBottom: 24,
     padding: 20,
     borderRadius: 16,
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 4,
     elevation: 3,
   },
   masterToggleContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     flex: 1,
   },
   masterToggleText: {
@@ -387,13 +396,13 @@ const styles = StyleSheet.create({
   },
   masterToggleTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#2D1B69',
+    fontWeight: "600",
+    color: "#2D1B69",
     marginBottom: 4,
   },
   masterToggleSubtitle: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: "#8E8E93",
   },
   section: {
     marginBottom: 24,
@@ -403,34 +412,34 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 20,
-    fontWeight: '700',
-    color: '#2D1B69',
+    fontWeight: "700",
+    color: "#2D1B69",
     marginHorizontal: 20,
     marginBottom: 16,
   },
   categoryCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#FFFFFF',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#FFFFFF",
     marginHorizontal: 20,
     marginBottom: 12,
     padding: 16,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#E5E5E7',
+    borderColor: "#E5E5E7",
   },
   categoryLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     flex: 1,
   },
   categoryIcon: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   categoryText: {
     marginLeft: 16,
@@ -438,69 +447,69 @@ const styles = StyleSheet.create({
   },
   categoryTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#2D1B69',
+    fontWeight: "600",
+    color: "#2D1B69",
     marginBottom: 2,
   },
   categoryDescription: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: "#8E8E93",
     lineHeight: 18,
   },
   categoryRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 12,
   },
   infoButton: {
     padding: 4,
   },
   quietHoursCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     marginHorizontal: 20,
     padding: 16,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#E5E5E7',
+    borderColor: "#E5E5E7",
   },
   quietHoursHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     marginBottom: 12,
   },
   quietHoursLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 12,
   },
   quietHoursTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#2D1B69',
+    fontWeight: "600",
+    color: "#2D1B69",
   },
   quietHoursDescription: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: "#8E8E93",
   },
   tipsSection: {
-    backgroundColor: 'rgba(255, 184, 0, 0.1)',
+    backgroundColor: "rgba(255, 184, 0, 0.1)",
     marginHorizontal: 20,
     marginBottom: 40,
     padding: 20,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255, 184, 0, 0.2)',
+    borderColor: "rgba(255, 184, 0, 0.2)",
   },
   tipsTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#FFB800',
+    fontWeight: "600",
+    color: "#FFB800",
     marginBottom: 12,
   },
   tipText: {
     fontSize: 14,
-    color: '#666',
+    color: "#666",
     marginBottom: 8,
     lineHeight: 20,
   },

@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -6,17 +6,20 @@ import {
   StyleSheet,
   ScrollView,
   Alert,
-} from 'react-native';
+} from "react-native";
 import {
   FeatureGate,
   UnlimitedScansGate,
   PremiumRecipesGate,
   CreatorToolsGate,
   UsageLimit,
-} from '../components/FeatureGate';
-import {AnalyticsDashboard} from '../components/AnalyticsDashboard';
-import {useSubscription, useFeatureGate} from '../context/SubscriptionContext';
-import {useAnalytics, useScreenTracking} from '../services/analyticsService';
+} from "../components/FeatureGate";
+import { AnalyticsDashboard } from "../components/AnalyticsDashboard";
+import {
+  useSubscription,
+  useFeatureGate,
+} from "../context/SubscriptionContext";
+import { useAnalytics, useScreenTracking } from "../services/analyticsService";
 
 // Example of integrating feature gates into an existing screen
 export default function ExampleFeatureGateScreen() {
@@ -29,30 +32,30 @@ export default function ExampleFeatureGateScreen() {
     getRemainingUsage,
   } = useSubscription();
 
-  const {hasAccess: canScanUnlimited} = useFeatureGate('unlimited_scans');
+  const { hasAccess: canScanUnlimited } = useFeatureGate("unlimited_scans");
   const analytics = useAnalytics();
 
   // Track screen view
-  useScreenTracking('feature_gate_example', {
-    subscription_tier: state.currentSubscription?.tier_slug || 'free',
+  useScreenTracking("feature_gate_example", {
+    subscription_tier: state.currentSubscription?.tier_slug || "free",
   });
 
   // Example: Scanning with feature gate
   const handleScan = () => {
-    analytics.trackUserAction('scan_attempted');
+    analytics.trackUserAction("scan_attempted");
 
     if (!canScanUnlimited && scanCount >= 5) {
       // Show upgrade prompt for unlimited scans
       Alert.alert(
-        'Daily Scan Limit Reached',
-        'Upgrade to scan unlimited ingredients every day!',
+        "Daily Scan Limit Reached",
+        "Upgrade to scan unlimited ingredients every day!",
         [
-          {text: 'Maybe Later', style: 'cancel'},
+          { text: "Maybe Later", style: "cancel" },
           {
-            text: 'Upgrade Now',
+            text: "Upgrade Now",
             onPress: () => {
-              analytics.trackSubscriptionEvent('upgrade_clicked', {
-                trigger: 'scan_limit',
+              analytics.trackSubscriptionEvent("upgrade_clicked", {
+                trigger: "scan_limit",
               });
               // Navigate to subscription screen
             },
@@ -63,7 +66,7 @@ export default function ExampleFeatureGateScreen() {
     }
 
     // Perform scan
-    setScanCount(prev => prev + 1);
+    setScanCount((prev) => prev + 1);
     analytics.trackIngredientScan({
       ingredientCount: Math.floor(Math.random() * 5) + 1,
       confidence: 0.85,
@@ -73,22 +76,22 @@ export default function ExampleFeatureGateScreen() {
 
   // Example: Premium recipe generation
   const handlePremiumRecipe = () => {
-    analytics.trackUserAction('premium_recipe_attempted');
+    analytics.trackUserAction("premium_recipe_attempted");
 
-    if (!canUseFeature('premium_recipes')) {
-      analytics.trackSubscriptionEvent('upgrade_prompt_shown', {
-        feature: 'premium_recipes',
+    if (!canUseFeature("premium_recipes")) {
+      analytics.trackSubscriptionEvent("upgrade_prompt_shown", {
+        feature: "premium_recipes",
       });
       Alert.alert(
-        'Premium Feature',
-        'This advanced recipe requires a premium subscription',
+        "Premium Feature",
+        "This advanced recipe requires a premium subscription",
         [
-          {text: 'Cancel', style: 'cancel'},
+          { text: "Cancel", style: "cancel" },
           {
-            text: 'Upgrade',
+            text: "Upgrade",
             onPress: () => {
-              analytics.trackSubscriptionEvent('upgrade_clicked', {
-                feature: 'premium_recipes',
+              analytics.trackSubscriptionEvent("upgrade_clicked", {
+                feature: "premium_recipes",
               });
             },
           },
@@ -100,21 +103,21 @@ export default function ExampleFeatureGateScreen() {
     // Generate premium recipe
     analytics.trackRecipeGeneration({
       ingredientCount: 8,
-      recipeComplexity: 'complex',
+      recipeComplexity: "complex",
       generationTime: 3000,
       success: true,
     });
   };
 
-  const remainingScans = getRemainingUsage('daily_scans');
+  const remainingScans = getRemainingUsage("daily_scans");
 
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Feature Gates Example</Text>
         <Text style={styles.subtitle}>
-          Subscription: {state.currentSubscription?.tier_slug || 'free'}
-          {hasActiveTrial() && ' (Trial)'}
+          Subscription: {state.currentSubscription?.tier_slug || "free"}
+          {hasActiveTrial() && " (Trial)"}
         </Text>
       </View>
 
@@ -150,7 +153,8 @@ export default function ExampleFeatureGateScreen() {
         <PremiumRecipesGate>
           <TouchableOpacity
             style={[styles.actionButton, styles.premiumButton]}
-            onPress={handlePremiumRecipe}>
+            onPress={handlePremiumRecipe}
+          >
             <Text style={[styles.actionButtonText, styles.premiumButtonText]}>
               ✨ Generate Premium Recipe
             </Text>
@@ -226,7 +230,8 @@ export default function ExampleFeatureGateScreen() {
                 📊 Analytics dashboard is available with premium subscription
               </Text>
             </View>
-          }>
+          }
+        >
           <AnalyticsDashboard />
         </FeatureGate>
       </View>
@@ -237,7 +242,7 @@ export default function ExampleFeatureGateScreen() {
 
         <View style={styles.subscriptionInfo}>
           <Text style={styles.subscriptionText}>
-            Current Plan: {state.currentSubscription?.tier_slug || 'Free'}
+            Current Plan: {state.currentSubscription?.tier_slug || "Free"}
           </Text>
 
           {state.currentSubscription && (
@@ -250,11 +255,12 @@ export default function ExampleFeatureGateScreen() {
             <TouchableOpacity
               style={styles.upgradeButton}
               onPress={() => {
-                analytics.trackSubscriptionEvent('upgrade_clicked', {
-                  source: 'settings',
+                analytics.trackSubscriptionEvent("upgrade_clicked", {
+                  source: "settings",
                 });
                 // Navigate to subscription screen
-              }}>
+              }}
+            >
               <Text style={styles.upgradeButtonText}>Upgrade to Premium</Text>
             </TouchableOpacity>
           )}
@@ -274,15 +280,16 @@ function FeatureItem({
   name: string;
   icon: string;
 }) {
-  const {hasAccess} = useFeatureGate(feature);
+  const { hasAccess } = useFeatureGate(feature);
 
   return (
     <View style={styles.featureItem}>
       <Text style={styles.featureIcon}>{icon}</Text>
       <Text style={styles.featureName}>{name}</Text>
       <Text
-        style={[styles.featureStatus, hasAccess && styles.featureStatusActive]}>
-        {hasAccess ? '✅' : '🔒'}
+        style={[styles.featureStatus, hasAccess && styles.featureStatusActive]}
+      >
+        {hasAccess ? "✅" : "🔒"}
       </Text>
     </View>
   );
@@ -291,87 +298,87 @@ function FeatureItem({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
+    backgroundColor: "#F8F9FA",
   },
   header: {
     padding: 20,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderBottomWidth: 1,
-    borderBottomColor: '#E9ECEF',
+    borderBottomColor: "#E9ECEF",
   },
   title: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#343A40',
+    fontWeight: "bold",
+    color: "#343A40",
   },
   subtitle: {
     fontSize: 14,
-    color: '#6C757D',
+    color: "#6C757D",
     marginTop: 4,
   },
   section: {
     margin: 16,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderRadius: 12,
     padding: 16,
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#343A40',
+    fontWeight: "bold",
+    color: "#343A40",
     marginBottom: 16,
   },
   actionButton: {
-    backgroundColor: '#007BFF',
+    backgroundColor: "#007BFF",
     padding: 12,
     borderRadius: 8,
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 8,
   },
   actionButtonText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   premiumButton: {
-    backgroundColor: '#6F42C1',
+    backgroundColor: "#6F42C1",
   },
   premiumButtonText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
   },
   usageText: {
     fontSize: 12,
-    color: '#6C757D',
-    textAlign: 'center',
+    color: "#6C757D",
+    textAlign: "center",
     marginTop: 4,
   },
   creatorTools: {
     gap: 8,
   },
   creatorButton: {
-    backgroundColor: '#28A745',
+    backgroundColor: "#28A745",
     padding: 12,
     borderRadius: 8,
-    alignItems: 'center',
+    alignItems: "center",
   },
   creatorButtonText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   featuresList: {
     gap: 8,
   },
   featureItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     padding: 12,
-    backgroundColor: '#F8F9FA',
+    backgroundColor: "#F8F9FA",
     borderRadius: 8,
   },
   featureIcon: {
@@ -381,43 +388,43 @@ const styles = StyleSheet.create({
   featureName: {
     flex: 1,
     fontSize: 16,
-    color: '#343A40',
+    color: "#343A40",
   },
   featureStatus: {
     fontSize: 16,
   },
   featureStatusActive: {
-    color: '#28A745',
+    color: "#28A745",
   },
   analyticsPlaceholder: {
     padding: 40,
-    alignItems: 'center',
-    backgroundColor: '#F8F9FA',
+    alignItems: "center",
+    backgroundColor: "#F8F9FA",
     borderRadius: 8,
   },
   placeholderText: {
     fontSize: 14,
-    color: '#6C757D',
-    textAlign: 'center',
+    color: "#6C757D",
+    textAlign: "center",
   },
   subscriptionInfo: {
-    alignItems: 'center',
+    alignItems: "center",
   },
   subscriptionText: {
     fontSize: 16,
-    color: '#343A40',
+    color: "#343A40",
     marginBottom: 8,
   },
   upgradeButton: {
-    backgroundColor: '#FF6B35',
+    backgroundColor: "#FF6B35",
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
     marginTop: 8,
   },
   upgradeButtonText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
 });

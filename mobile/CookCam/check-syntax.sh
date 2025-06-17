@@ -1,10 +1,10 @@
 #!/bin/bash
 
-# CookCam Syntax and Error Checking Script
+# CookCam Expo Code Quality & Syntax Check
 # This script systematically checks for issues without needing to build the full app
 
-echo "🔍 CookCam Code Quality & Syntax Check"
-echo "======================================"
+echo "🔍 CookCam Expo Code Quality & Syntax Check"
+echo "==========================================="
 
 # Colors for output
 RED='\033[0;31m'
@@ -65,15 +65,15 @@ else
 fi
 
 echo ""
-echo "${BLUE}5. Metro Bundle Syntax Check${NC}"
+echo "${BLUE}5. Expo Configuration Check${NC}"
 echo "------------------------------"
-npx react-native bundle --platform ios --dev false --entry-file index.js --bundle-output /tmp/bundle.js --sourcemap-output /tmp/bundle.map --dry-run 2>/dev/null
-METRO_EXIT_CODE=$?
-if [ $METRO_EXIT_CODE -ne 0 ]; then
-    echo "${RED}❌ Metro bundler found syntax errors${NC}"
-    TOTAL_ERRORS=$((TOTAL_ERRORS + 1))
+npx expo-doctor
+EXPO_EXIT_CODE=$?
+if [ $EXPO_EXIT_CODE -ne 0 ]; then
+    echo "${YELLOW}⚠️  Expo configuration issues found${NC}"
+    TOTAL_WARNINGS=$((TOTAL_WARNINGS + 1))
 else
-    echo "${GREEN}✅ Metro bundler validation passed${NC}"
+    echo "${GREEN}✅ Expo configuration is valid${NC}"
 fi
 
 echo ""
@@ -89,16 +89,15 @@ else
 fi
 
 echo ""
-echo "${BLUE}7. JavaScript/JSX Syntax Check${NC}"
-echo "--------------------------------"
-# Check for common JSX syntax issues
-find src -name "*.tsx" -o -name "*.jsx" | xargs grep -l "JSX element.*has no corresponding closing tag" 2>/dev/null
-JSX_ISSUES=$?
-if [ $JSX_ISSUES -eq 0 ]; then
-    echo "${RED}❌ JSX syntax issues found${NC}"
-    TOTAL_ERRORS=$((TOTAL_ERRORS + 1))
+echo "${BLUE}7. Expo Dependencies Check${NC}"
+echo "------------------------------"
+npx expo install --check 2>/dev/null
+EXPO_DEPS_EXIT_CODE=$?
+if [ $EXPO_DEPS_EXIT_CODE -ne 0 ]; then
+    echo "${YELLOW}⚠️  Expo dependencies may need updates${NC}"
+    TOTAL_WARNINGS=$((TOTAL_WARNINGS + 1))
 else
-    echo "${GREEN}✅ No obvious JSX syntax issues${NC}"
+    echo "${GREEN}✅ Expo dependencies are up to date${NC}"
 fi
 
 echo ""
@@ -107,11 +106,11 @@ echo "${BLUE}📊 SUMMARY${NC}"
 echo "========================================="
 
 if [ $TOTAL_ERRORS -eq 0 ] && [ $TOTAL_WARNINGS -eq 0 ]; then
-    echo "${GREEN}🎉 All checks passed! Your code is ready.${NC}"
+    echo "${GREEN}🎉 All checks passed! Your Expo app is ready.${NC}"
     exit 0
 elif [ $TOTAL_ERRORS -eq 0 ]; then
     echo "${YELLOW}⚠️  ${TOTAL_WARNINGS} warning(s) found, but no critical errors.${NC}"
-    echo "${GREEN}✅ Code should build successfully.${NC}"
+    echo "${GREEN}✅ Expo app should build successfully.${NC}"
     exit 0
 else
     echo "${RED}❌ ${TOTAL_ERRORS} critical error(s) found.${NC}"

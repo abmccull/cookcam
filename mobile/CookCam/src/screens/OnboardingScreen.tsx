@@ -1,4 +1,4 @@
-import React, {useState, useRef, useEffect} from 'react';
+import React, { useState, useRef } from "react";
 import {
   View,
   StyleSheet,
@@ -7,18 +7,14 @@ import {
   SafeAreaView,
   Dimensions,
   ScrollView,
-  StatusBar,
-  Animated,
   Alert,
-} from 'react-native';
+} from "react-native";
 import {
   Camera,
-  Check,
   ChefHat,
-  Users,
   Trophy,
   ChevronRight,
-} from 'lucide-react-native';
+} from "lucide-react-native";
 // import Animated, {
 //   useAnimatedStyle,
 //   useSharedValue,
@@ -27,17 +23,21 @@ import {
 // } from 'react-native-reanimated';
 
 interface OnboardingScreenProps {
-  navigation: any;
-  route: any;
+  navigation: any; // TODO: Type with proper Navigation prop
+  route: {
+    params?: {
+      isCreator?: boolean;
+    };
+  };
 }
 
-const {width: SCREEN_WIDTH} = Dimensions.get('window');
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
 const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
   navigation,
   route,
 }) => {
-  const {isCreator} = route.params || {};
+  const { isCreator } = route.params || {};
   const [currentPage, setCurrentPage] = useState(0);
   const scrollViewRef = useRef<ScrollView>(null);
   // const scrollX = useSharedValue(0);
@@ -45,28 +45,28 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
   const onboardingData = [
     {
       icon: Camera,
-      title: 'Point',
-      subtitle: 'Snap a photo of your ingredients',
-      description: 'Our AI instantly identifies what you have',
-      color: '#FF6B35',
+      title: "Point",
+      subtitle: "Snap a photo of your ingredients",
+      description: "Our AI instantly identifies what you have",
+      color: "#FF6B35",
     },
     {
       icon: ChefHat,
-      title: 'Cook',
-      subtitle: 'Get personalized recipes',
-      description: 'Tailored to your preferences and skill level',
-      color: '#66BB6A',
+      title: "Cook",
+      subtitle: "Get personalized recipes",
+      description: "Tailored to your preferences and skill level",
+      color: "#66BB6A",
     },
     {
       icon: Trophy,
-      title: 'Earn',
-      subtitle: 'Level up your cooking game',
-      description: 'Complete recipes to earn XP and unlock badges',
-      color: '#2D1B69',
+      title: "Earn",
+      subtitle: "Level up your cooking game",
+      description: "Complete recipes to earn XP and unlock badges",
+      color: "#2D1B69",
     },
   ];
 
-  const handleScroll = (event: any) => {
+  const handleScroll = (event: { nativeEvent: { contentOffset: { x: number } } }) => {
     const offsetX = event.nativeEvent.contentOffset.x;
     const page = Math.round(offsetX / SCREEN_WIDTH);
     setCurrentPage(page);
@@ -93,16 +93,16 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
   const handleGetStarted = () => {
     // Show push notification permission prompt
     Alert.alert(
-      'Stay in the Loop! 🔔',
-      'Get notified about:\n• Daily streak reminders\n• New recipes\n• XP milestones\n• Special challenges',
+      "Stay in the Loop! 🔔",
+      "Get notified about:\n• Daily streak reminders\n• New recipes\n• XP milestones\n• Special challenges",
       [
         {
-          text: 'Not Now',
-          style: 'cancel',
+          text: "Not Now",
+          style: "cancel",
           onPress: () => navigateToMain(),
         },
         {
-          text: 'Enable Notifications',
+          text: "Enable Notifications",
           onPress: () => {
             // TODO: Request push notification permissions
             // PushNotification.requestPermissions();
@@ -114,10 +114,10 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
   };
 
   const navigateToMain = () => {
-    navigation.replace('Main');
+    navigation.navigate("Signup");
   };
 
-  const renderPage = (item: any, index: number) => {
+  const renderPage = (item: typeof onboardingData[0], index: number) => {
     const Icon = item.icon;
 
     // const animatedStyle = useAnimatedStyle(() => {
@@ -148,7 +148,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
     return (
       <View key={index} style={styles.page}>
         <View style={styles.iconContainer}>
-          <View style={[styles.iconCircle, {backgroundColor: item.color}]}>
+          <View style={[styles.iconCircle, { backgroundColor: item.color }]}>
             <Icon size={60} color="#F8F8FF" />
           </View>
         </View>
@@ -187,7 +187,8 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
         showsHorizontalScrollIndicator={false}
         onScroll={handleScroll}
         scrollEventThrottle={16}
-        style={styles.scrollView}>
+        style={styles.scrollView}
+      >
         {onboardingData.map((item, index) => renderPage(item, index))}
       </ScrollView>
 
@@ -197,7 +198,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
 
         <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
           <Text style={styles.nextButtonText}>
-            {currentPage === onboardingData.length - 1 ? 'Get Started' : 'Next'}
+            {currentPage === onboardingData.length - 1 ? "Get Started" : "Next"}
           </Text>
           <ChevronRight size={20} color="#F8F8FF" />
         </TouchableOpacity>
@@ -216,10 +217,10 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F8FF',
+    backgroundColor: "#F8F8FF",
   },
   skipButton: {
-    position: 'absolute',
+    position: "absolute",
     top: 60,
     right: 20,
     zIndex: 10,
@@ -227,15 +228,15 @@ const styles = StyleSheet.create({
   },
   skipText: {
     fontSize: 16,
-    color: '#8E8E93',
+    color: "#8E8E93",
   },
   scrollView: {
     flex: 1,
   },
   page: {
     width: SCREEN_WIDTH,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     paddingHorizontal: 40,
   },
   iconContainer: {
@@ -245,75 +246,75 @@ const styles = StyleSheet.create({
     width: 140,
     height: 140,
     borderRadius: 70,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   title: {
     fontSize: 32,
-    fontWeight: 'bold',
-    color: '#2D1B69',
+    fontWeight: "bold",
+    color: "#2D1B69",
     marginBottom: 16,
   },
   subtitle: {
     fontSize: 20,
-    fontWeight: '600',
-    color: '#2D1B69',
+    fontWeight: "600",
+    color: "#2D1B69",
     marginBottom: 12,
-    textAlign: 'center',
+    textAlign: "center",
   },
   description: {
     fontSize: 16,
-    color: '#8E8E93',
-    textAlign: 'center',
+    color: "#8E8E93",
+    textAlign: "center",
     lineHeight: 24,
   },
   bottomContainer: {
     paddingHorizontal: 20,
     paddingBottom: 40,
-    alignItems: 'center',
+    alignItems: "center",
   },
   dotsContainer: {
-    flexDirection: 'row',
+    flexDirection: "row",
     marginBottom: 30,
   },
   dot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#E5E5E7',
+    backgroundColor: "#E5E5E7",
     marginHorizontal: 4,
   },
   activeDot: {
-    backgroundColor: '#FF6B35',
+    backgroundColor: "#FF6B35",
     width: 24,
   },
   nextButton: {
-    backgroundColor: '#FF6B35',
+    backgroundColor: "#FF6B35",
     borderRadius: 28,
     paddingHorizontal: 32,
     paddingVertical: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   nextButtonText: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#F8F8FF',
+    fontWeight: "600",
+    color: "#F8F8FF",
     marginRight: 8,
   },
   creatorBadge: {
-    position: 'absolute',
+    position: "absolute",
     top: 100,
-    alignSelf: 'center',
-    backgroundColor: '#66BB6A',
+    alignSelf: "center",
+    backgroundColor: "#66BB6A",
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
   },
   creatorBadgeText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#F8F8FF',
+    fontWeight: "600",
+    color: "#F8F8FF",
   },
 });
 

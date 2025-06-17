@@ -396,13 +396,13 @@ class CookCamApi {
   }
 
   // Link user to referral code for attribution
-  async linkUserToReferral(userId: string, referralCode: string): Promise<ApiResponse<any>> {
-    return apiService.post<any>(
-      '/api/v1/auth/link-referral',
-      {
-        referralCode: referralCode,
-      },
-    );
+  async linkUserToReferral(
+    userId: string,
+    referralCode: string,
+  ): Promise<ApiResponse<any>> {
+    return apiService.post<any>("/api/v1/auth/link-referral", {
+      referralCode: referralCode,
+    });
   }
 
   async getAffiliateLinks(): Promise<ApiResponse<AffiliateLink[]>> {

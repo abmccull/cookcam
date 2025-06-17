@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, { useState } from "react";
 import {
   View,
   StyleSheet,
@@ -7,15 +7,17 @@ import {
   SafeAreaView,
   Alert,
   ActivityIndicator,
-} from 'react-native';
-import {NativeStackNavigationProp} from '@react-navigation/native-stack';
-import {RouteProp} from '@react-navigation/native';
-import {RootStackParamList} from '../App';
-import {Apple, Mail} from 'lucide-react-native';
+} from "react-native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { RouteProp } from "@react-navigation/native";
+import { RootStackParamList } from "../App";
+import { Apple, Mail } from "lucide-react-native";
+import logger from "../utils/logger";
+
 
 interface AccountGateScreenProps {
   navigation: NativeStackNavigationProp<RootStackParamList>;
-  route: RouteProp<RootStackParamList, 'AccountGate'>;
+  route: RouteProp<RootStackParamList, "AccountGate">;
 }
 
 const AccountGateScreen: React.FC<AccountGateScreenProps> = ({
@@ -24,14 +26,14 @@ const AccountGateScreen: React.FC<AccountGateScreenProps> = ({
 }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [loadingType, setLoadingType] = useState<
-    'apple' | 'google' | 'email' | null
+    "apple" | "google" | "email" | null
   >(null);
-  const {intendedPlan, tempData} = route.params;
+  const { intendedPlan, tempData } = route.params;
 
   const handleAppleSignIn = async () => {
     try {
       setIsLoading(true);
-      setLoadingType('apple');
+      setLoadingType("apple");
 
       // TODO: Implement Apple Sign-In
       // 1. Apple Sign-In → Get Apple ID + email
@@ -39,11 +41,11 @@ const AccountGateScreen: React.FC<AccountGateScreenProps> = ({
       // 3. Start Apple subscription trial
       // 4. Merge temp data
 
-      console.log('🍎 Apple Sign-In for plan:', intendedPlan);
+      logger.debug("🍎 Apple Sign-In for plan:", intendedPlan);
 
       // For now, simulate the flow
       setTimeout(() => {
-        navigation.navigate('PlanPaywall', {
+        navigation.navigate("PlanPaywall", {
           selectedPlan: intendedPlan,
           tempData,
         });
@@ -51,12 +53,12 @@ const AccountGateScreen: React.FC<AccountGateScreenProps> = ({
         setLoadingType(null);
       }, 2000);
     } catch (error) {
-      console.error('Apple Sign-In error:', error);
+      logger.error("Apple Sign-In error:", error);
       setIsLoading(false);
       setLoadingType(null);
       Alert.alert(
-        'Sign-In Failed',
-        'Please try again or use a different method.',
+        "Sign-In Failed",
+        "Please try again or use a different method.",
       );
     }
   };
@@ -64,16 +66,16 @@ const AccountGateScreen: React.FC<AccountGateScreenProps> = ({
   const handleGoogleSignIn = async () => {
     try {
       setIsLoading(true);
-      setLoadingType('google');
+      setLoadingType("google");
 
       // TODO: Implement Google Sign-In
       // Similar flow to Apple but with Google
 
-      console.log('🔍 Google Sign-In for plan:', intendedPlan);
+      logger.debug("🔍 Google Sign-In for plan:", intendedPlan);
 
       // For now, simulate the flow
       setTimeout(() => {
-        navigation.navigate('PlanPaywall', {
+        navigation.navigate("PlanPaywall", {
           selectedPlan: intendedPlan,
           tempData,
         });
@@ -81,12 +83,12 @@ const AccountGateScreen: React.FC<AccountGateScreenProps> = ({
         setLoadingType(null);
       }, 2000);
     } catch (error) {
-      console.error('Google Sign-In error:', error);
+      logger.error("Google Sign-In error:", error);
       setIsLoading(false);
       setLoadingType(null);
       Alert.alert(
-        'Sign-In Failed',
-        'Please try again or use a different method.',
+        "Sign-In Failed",
+        "Please try again or use a different method.",
       );
     }
   };
@@ -94,9 +96,9 @@ const AccountGateScreen: React.FC<AccountGateScreenProps> = ({
   const handleEmailSignUp = () => {
     // Navigate to existing signup screen with plan context
     Alert.alert(
-      'Email Signup',
-      'Email signup flow would go to existing signup screen with plan context.',
-      [{text: 'OK', onPress: () => console.log('Email signup selected')}],
+      "Email Signup",
+      "Email signup flow would go to existing signup screen with plan context.",
+      [{ text: "OK", onPress: () => logger.debug("Email signup selected") }],
     );
   };
 
@@ -106,10 +108,10 @@ const AccountGateScreen: React.FC<AccountGateScreenProps> = ({
         <View style={styles.header}>
           <Text style={styles.title}>Almost there!</Text>
           <Text style={styles.subtitle}>
-            Create your account to start your{' '}
+            Create your account to start your{" "}
             <Text style={styles.planText}>
-              {intendedPlan === 'creator' ? 'Creator' : 'Cooking'}
-            </Text>{' '}
+              {intendedPlan === "creator" ? "Creator" : "Cooking"}
+            </Text>{" "}
             trial
           </Text>
         </View>
@@ -118,8 +120,9 @@ const AccountGateScreen: React.FC<AccountGateScreenProps> = ({
           <TouchableOpacity
             style={[styles.authButton, styles.appleButton]}
             onPress={handleAppleSignIn}
-            disabled={isLoading}>
-            {loadingType === 'apple' ? (
+            disabled={isLoading}
+          >
+            {loadingType === "apple" ? (
               <ActivityIndicator color="#FFFFFF" size="small" />
             ) : (
               <>
@@ -132,8 +135,9 @@ const AccountGateScreen: React.FC<AccountGateScreenProps> = ({
           <TouchableOpacity
             style={[styles.authButton, styles.googleButton]}
             onPress={handleGoogleSignIn}
-            disabled={isLoading}>
-            {loadingType === 'google' ? (
+            disabled={isLoading}
+          >
+            {loadingType === "google" ? (
               <ActivityIndicator color="#2D1B69" size="small" />
             ) : (
               <>
@@ -150,8 +154,9 @@ const AccountGateScreen: React.FC<AccountGateScreenProps> = ({
           <TouchableOpacity
             style={[styles.authButton, styles.emailButton]}
             onPress={handleEmailSignUp}
-            disabled={isLoading}>
-            {loadingType === 'email' ? (
+            disabled={isLoading}
+          >
+            {loadingType === "email" ? (
               <ActivityIndicator color="#2D1B69" size="small" />
             ) : (
               <>
@@ -166,9 +171,9 @@ const AccountGateScreen: React.FC<AccountGateScreenProps> = ({
 
         <View style={styles.planReminder}>
           <Text style={styles.planReminderText}>
-            {intendedPlan === 'creator' ? (
+            {intendedPlan === "creator" ? (
               <>
-                You selected: <Text style={styles.boldText}>Creator Plan</Text>{' '}
+                You selected: <Text style={styles.boldText}>Creator Plan</Text>{" "}
                 - $9.99/mo + 30% revenue share
               </>
             ) : (
@@ -183,7 +188,7 @@ const AccountGateScreen: React.FC<AccountGateScreenProps> = ({
         <View style={styles.footer}>
           <Text style={styles.footerText}>
             By continuing, you agree to our Terms of Service and Privacy Policy.
-            {'\n'}Start your 3-day free trial, cancel anytime.
+            {"\n"}Start your 3-day free trial, cancel anytime.
           </Text>
         </View>
       </View>
@@ -194,41 +199,41 @@ const AccountGateScreen: React.FC<AccountGateScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F8FF',
+    backgroundColor: "#F8F8FF",
   },
   content: {
     flex: 1,
     paddingHorizontal: 24,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   header: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 48,
   },
   title: {
     fontSize: 28,
-    fontWeight: 'bold',
-    color: '#2D1B69',
+    fontWeight: "bold",
+    color: "#2D1B69",
     marginBottom: 12,
-    textAlign: 'center',
+    textAlign: "center",
   },
   subtitle: {
     fontSize: 16,
-    color: '#8E8E93',
-    textAlign: 'center',
+    color: "#8E8E93",
+    textAlign: "center",
     lineHeight: 22,
   },
   planText: {
-    color: '#FF6B35',
-    fontWeight: '600',
+    color: "#FF6B35",
+    fontWeight: "600",
   },
   authOptions: {
     marginBottom: 32,
   },
   authButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     paddingVertical: 16,
     paddingHorizontal: 24,
     borderRadius: 12,
@@ -236,66 +241,66 @@ const styles = StyleSheet.create({
     minHeight: 56,
   },
   appleButton: {
-    backgroundColor: '#000000',
+    backgroundColor: "#000000",
   },
   googleButton: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: "#E0E0E0",
   },
   emailButton: {
-    backgroundColor: '#F0F0F0',
+    backgroundColor: "#F0F0F0",
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: "#E0E0E0",
   },
   authButtonText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     marginLeft: 12,
-    color: '#FFFFFF',
+    color: "#FFFFFF",
   },
   googleText: {
-    color: '#2D1B69',
+    color: "#2D1B69",
   },
   emailText: {
-    color: '#2D1B69',
+    color: "#2D1B69",
   },
   googleIcon: {
     width: 24,
     height: 24,
-    backgroundColor: '#4285F4',
+    backgroundColor: "#4285F4",
     borderRadius: 4,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   googleG: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 14,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   planReminder: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     padding: 16,
     borderRadius: 12,
     marginBottom: 32,
     borderLeftWidth: 4,
-    borderLeftColor: '#FF6B35',
+    borderLeftColor: "#FF6B35",
   },
   planReminderText: {
     fontSize: 14,
-    color: '#2D1B69',
-    textAlign: 'center',
+    color: "#2D1B69",
+    textAlign: "center",
   },
   boldText: {
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   footer: {
-    alignItems: 'center',
+    alignItems: "center",
   },
   footerText: {
     fontSize: 12,
-    color: '#8E8E93',
-    textAlign: 'center',
+    color: "#8E8E93",
+    textAlign: "center",
     lineHeight: 16,
   },
 });

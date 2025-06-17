@@ -1,4 +1,19 @@
 {
-  "name": "CookCam",
-  "displayName": "CookCam"
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "dd1a18d1-591b-4ea4-a300-6f0c4cdcec87"
+      }
+    },
+    "android": {
+      "package": "com.abmccull.cookcamexpo"
+    },
+    "owner": "abmccull",
+    "plugins": [
+      "react-native-iap"
+    ],
+    "ios": {
+      "bundleIdentifier": "com.abmccull.cookcamexpo"
+    }
+  }
 }

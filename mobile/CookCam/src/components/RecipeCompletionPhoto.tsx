@@ -1,86 +1,84 @@
-import React, {useState, useRef} from 'react';
+import React, { useState, useRef, useEffect } from "react";
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   Alert,
-  Image,
   TextInput,
   ActivityIndicator,
   Modal,
   Dimensions,
   Share,
   Linking,
-} from 'react-native';
+} from "react-native";
+import OptimizedImage from "./OptimizedImage";
 import {
-  Camera,
+  Camera as CameraIcon,
   X,
   Star,
   Instagram,
   MessageCircle,
   Trophy,
-} from 'lucide-react-native';
-import {
-  Camera as VisionCamera,
-  useCameraPermission,
-  useCameraDevice,
-} from 'react-native-vision-camera';
-import {recipeService} from '../services/api';
-import {useGamification, XP_VALUES} from '../context/GamificationContext';
-import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
+} from "lucide-react-native";
+import { CameraView, Camera } from "expo-camera";
+import { recipeService } from "../services/api";
+import { useGamification, XP_VALUES } from "../context/GamificationContext";
+import * as Haptics from "expo-haptics";
+import logger from "../utils/logger";
+
 
 interface RecipeCompletionPhotoProps {
   recipeId: string;
   recipeName: string;
   onPhotoUploaded?: (photoUrl: string) => void;
   onClose?: () => void;
-  photoType?: 'completion' | 'process' | 'ingredients'; // Different photo types
+  photoType?: "completion" | "process" | "ingredients"; // Different photo types
 }
 
-const {width: screenWidth} = Dimensions.get('window');
+const { width: screenWidth } = Dimensions.get("window");
 
 // Social platforms configuration
 const SOCIAL_PLATFORMS = [
   {
-    id: 'instagram',
-    name: 'Instagram Stories',
+    id: "instagram",
+    name: "Instagram Stories",
     icon: Instagram,
-    color: '#E4405F',
+    color: "#E4405F",
     xp: XP_VALUES.SOCIAL_SHARE_INSTAGRAM,
-    action: 'instagram-stories',
+    action: "instagram-stories",
   },
   {
-    id: 'facebook',
-    name: 'Facebook',
+    id: "facebook",
+    name: "Facebook",
     icon: Instagram,
-    color: '#1877F2',
+    color: "#1877F2",
     xp: XP_VALUES.SOCIAL_SHARE_FACEBOOK,
-    action: 'facebook',
+    action: "facebook",
   },
   {
-    id: 'twitter',
-    name: 'Twitter',
+    id: "twitter",
+    name: "Twitter",
     icon: Instagram,
-    color: '#1DA1F2',
+    color: "#1DA1F2",
     xp: XP_VALUES.SOCIAL_SHARE_TWITTER,
-    action: 'twitter',
+    action: "twitter",
   },
   {
-    id: 'whatsapp',
-    name: 'WhatsApp',
+    id: "whatsapp",
+    name: "WhatsApp",
     icon: MessageCircle,
-    color: '#25D366',
+    color: "#25D366",
     xp: XP_VALUES.SOCIAL_SHARE_WHATSAPP,
-    action: 'whatsapp',
+    action: "whatsapp",
   },
   {
-    id: 'copy',
-    name: 'Copy Link',
+    id: "copy",
+    name: "Copy Link",
     icon: Instagram,
-    color: '#666',
+    color: "#666",
     xp: XP_VALUES.SOCIAL_SHARE_COPY_LINK,
-    action: 'copy',
+    action: "copy",
   },
 ];
 
@@ -89,16 +87,15 @@ const RecipeCompletionPhoto: React.FC<RecipeCompletionPhotoProps> = ({
   recipeName,
   onPhotoUploaded,
   onClose,
-  photoType = 'completion',
+  photoType = "completion",
 }) => {
-  const {hasPermission, requestPermission} = useCameraPermission();
-  const device = useCameraDevice('back');
-  const camera = useRef<VisionCamera>(null);
-  const {addXP} = useGamification();
+  const [hasPermission, setHasPermission] = useState(false);
+  const camera = useRef<CameraView>(null);
+  const { addXP } = useGamification();
 
   const [isVisible, setIsVisible] = useState(false);
   const [photoUri, setPhotoUri] = useState<string | null>(null);
-  const [description, setDescription] = useState('');
+  const [description, setDescription] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
   const [showSocialShare, setShowSocialShare] = useState(false);
@@ -107,37 +104,52 @@ const RecipeCompletionPhoto: React.FC<RecipeCompletionPhotoProps> = ({
   // Photo type configurations
   const photoTypeConfig = {
     completion: {
-      title: 'Share Your Masterpiece',
-      subtitle: 'Show off your finished dish!',
+      title: "Share Your Masterpiece",
+      subtitle: "Show off your finished dish!",
       xp: XP_VALUES.RECIPE_COMPLETION_PHOTO,
-      buttonText: 'Complete & Share',
-      emoji: '🍽️',
+      buttonText: "Complete & Share",
+      emoji: "🍽️",
     },
     process: {
-      title: 'Cooking in Progress',
-      subtitle: 'Capture the cooking process!',
+      title: "Cooking in Progress",
+      subtitle: "Capture the cooking process!",
       xp: XP_VALUES.RECIPE_PROCESS_PHOTO,
-      buttonText: 'Share Progress',
-      emoji: '👨‍🍳',
+      buttonText: "Share Progress",
+      emoji: "👨‍🍳",
     },
     ingredients: {
-      title: 'Ingredient Setup',
-      subtitle: 'Show your mise en place!',
+      title: "Ingredient Setup",
+      subtitle: "Show your mise en place!",
       xp: XP_VALUES.RECIPE_INGREDIENT_PHOTO,
-      buttonText: 'Share Setup',
-      emoji: '🥕',
+      buttonText: "Share Setup",
+      emoji: "🥕",
     },
   };
 
   const config = photoTypeConfig[photoType];
 
+  useEffect(() => {
+    checkCameraPermissions();
+  }, []);
+
+  const checkCameraPermissions = async () => {
+    const { status } = await Camera.getCameraPermissionsAsync();
+    setHasPermission(status === "granted");
+  };
+
+  const requestCameraPermission = async () => {
+    const { status } = await Camera.requestCameraPermissionsAsync();
+    setHasPermission(status === "granted");
+    return status === "granted";
+  };
+
   const handleOpenCamera = async () => {
     if (!hasPermission) {
-      const granted = await requestPermission();
+      const granted = await requestCameraPermission();
       if (!granted) {
         Alert.alert(
-          'Camera Permission',
-          'Camera access is needed to take photos of your recipe!',
+          "Camera Permission",
+          "Camera access is needed to take photos of your recipe!",
         );
         return;
       }
@@ -147,32 +159,31 @@ const RecipeCompletionPhoto: React.FC<RecipeCompletionPhotoProps> = ({
   };
 
   const handleTakePhoto = async () => {
-    if (!camera.current || !device) {
-      Alert.alert('Error', 'Camera not available');
+    if (!camera.current) {
+      Alert.alert("Error", "Camera not available");
       return;
     }
 
     try {
-      ReactNativeHapticFeedback.trigger('impactMedium');
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
-      const photo = await camera.current.takePhoto({
-        qualityPrioritization: 'quality',
-        flash: 'auto',
+      const photo = await camera.current.takePictureAsync({
+        quality: 0.7,
       });
 
-      setPhotoUri(`file://${photo.path}`);
+      setPhotoUri(photo.uri);
       setShowCamera(false);
 
-      ReactNativeHapticFeedback.trigger('notificationSuccess');
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (error) {
-      console.error('Failed to take photo:', error);
-      Alert.alert('Error', 'Failed to take photo. Please try again.');
+      logger.error("Failed to take photo:", error);
+      Alert.alert("Error", "Failed to take photo. Please try again.");
     }
   };
 
   const handleUploadPhoto = async () => {
     if (!photoUri) {
-      Alert.alert('Error', 'Please take a photo first');
+      Alert.alert("Error", "Please take a photo first");
       return;
     }
 
@@ -189,7 +200,7 @@ const RecipeCompletionPhoto: React.FC<RecipeCompletionPhotoProps> = ({
       );
 
       if (response.success) {
-        ReactNativeHapticFeedback.trigger('notificationSuccess');
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
         // Award XP based on photo type
         await addXP(config.xp, `${photoType.toUpperCase()}_PHOTO`);
@@ -202,11 +213,11 @@ const RecipeCompletionPhoto: React.FC<RecipeCompletionPhotoProps> = ({
           `🎉 Your ${photoType} photo has been shared! +${config.xp} XP`,
           [
             {
-              text: 'Share More!',
+              text: "Share More!",
               onPress: () => setShowSocialShare(true),
             },
             {
-              text: 'Done',
+              text: "Done",
               onPress: () => {
                 onPhotoUploaded?.(response.data?.photoUrl || photoUri);
                 if (!showSocialShare) {
@@ -217,11 +228,11 @@ const RecipeCompletionPhoto: React.FC<RecipeCompletionPhotoProps> = ({
           ],
         );
       } else {
-        throw new Error(response.error || 'Upload failed');
+        throw new Error(response.error || "Upload failed");
       }
     } catch (error) {
-      console.error('Upload error:', error);
-      Alert.alert('Upload Error', 'Failed to upload photo. Please try again.');
+      logger.error("Upload error:", error);
+      Alert.alert("Upload Error", "Failed to upload photo. Please try again.");
     } finally {
       setIsUploading(false);
     }
@@ -232,7 +243,7 @@ const RecipeCompletionPhoto: React.FC<RecipeCompletionPhotoProps> = ({
       const shareContent = {
         title: `Check out my ${recipeName}!`,
         message: `Just made this amazing ${recipeName} using CookCam! ${
-          description || '🍽️✨'
+          description || "🍽️✨"
         }`,
         url: uploadedPhotoUrl || `https://cookcam.app/recipe/${recipeId}`,
       };
@@ -240,9 +251,9 @@ const RecipeCompletionPhoto: React.FC<RecipeCompletionPhotoProps> = ({
       let success = false;
 
       switch (platform.action) {
-        case 'instagram-stories':
+        case "instagram-stories": {
           // Open Instagram if available
-          const instagramUrl = 'instagram://story-camera';
+          const instagramUrl = "instagram://story-camera";
           const canOpenInstagram = await Linking.canOpenURL(instagramUrl);
           if (canOpenInstagram) {
             await Linking.openURL(instagramUrl);
@@ -253,12 +264,12 @@ const RecipeCompletionPhoto: React.FC<RecipeCompletionPhotoProps> = ({
           }
           break;
 
-        case 'facebook':
+        case "facebook":
           await Share.share(shareContent);
           success = true;
           break;
 
-        case 'twitter':
+        case "twitter":
           const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(
             shareContent.message,
           )}&url=${encodeURIComponent(shareContent.url)}`;
@@ -272,7 +283,7 @@ const RecipeCompletionPhoto: React.FC<RecipeCompletionPhotoProps> = ({
           }
           break;
 
-        case 'whatsapp':
+        case "whatsapp":
           const whatsappUrl = `whatsapp://send?text=${encodeURIComponent(
             shareContent.message,
           )}`;
@@ -286,7 +297,7 @@ const RecipeCompletionPhoto: React.FC<RecipeCompletionPhotoProps> = ({
           }
           break;
 
-        case 'copy':
+        case "copy":
           // Copy link to clipboard (would need Clipboard API)
           await Share.share(shareContent);
           success = true;
@@ -298,20 +309,20 @@ const RecipeCompletionPhoto: React.FC<RecipeCompletionPhotoProps> = ({
       }
 
       if (success) {
-        ReactNativeHapticFeedback.trigger('notificationSuccess');
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
         // Award XP for social sharing
         await addXP(platform.xp, `SOCIAL_SHARE_${platform.id.toUpperCase()}`);
 
         Alert.alert(
-          '🎉 Shared Successfully!',
+          "🎉 Shared Successfully!",
           `Thanks for sharing! +${platform.xp} XP earned`,
-          [{text: 'Awesome!'}],
+          [{ text: "Awesome!" }],
         );
       }
     } catch (error) {
-      console.error('Share error:', error);
-      Alert.alert('Share Error', 'Failed to share. Please try again.');
+      logger.error("Share error:", error);
+      Alert.alert("Share Error", "Failed to share. Please try again.");
     }
   };
 
@@ -320,7 +331,7 @@ const RecipeCompletionPhoto: React.FC<RecipeCompletionPhotoProps> = ({
     setShowCamera(false);
     setShowSocialShare(false);
     setPhotoUri(null);
-    setDescription('');
+    setDescription("");
     setUploadedPhotoUrl(null);
     onClose?.();
   };
@@ -333,7 +344,7 @@ const RecipeCompletionPhoto: React.FC<RecipeCompletionPhotoProps> = ({
     return (
       <View style={styles.triggerContainer}>
         <TouchableOpacity style={styles.triggerButton} onPress={openModal}>
-          <Camera size={24} color="#FFFFFF" />
+          <CameraIcon size={24} color="#FFFFFF" />
           <Text style={styles.triggerButtonText}>{config.buttonText}</Text>
           <Text style={styles.xpBadge}>+{config.xp} XP</Text>
         </TouchableOpacity>
@@ -345,7 +356,8 @@ const RecipeCompletionPhoto: React.FC<RecipeCompletionPhotoProps> = ({
     <Modal
       visible={isVisible || showCamera || showSocialShare}
       animationType="slide"
-      presentationStyle="pageSheet">
+      presentationStyle="pageSheet"
+    >
       <View style={styles.container}>
         {showSocialShare ? (
           // Social sharing modal
@@ -363,8 +375,8 @@ const RecipeCompletionPhoto: React.FC<RecipeCompletionPhotoProps> = ({
             <View style={styles.socialShareContent}>
               <View style={styles.photoPreviewSmall}>
                 {uploadedPhotoUrl && (
-                  <Image
-                    source={{uri: uploadedPhotoUrl}}
+                  <OptimizedImage
+                    source={{ uri: uploadedPhotoUrl }}
                     style={styles.socialPreviewImage}
                   />
                 )}
@@ -375,14 +387,15 @@ const RecipeCompletionPhoto: React.FC<RecipeCompletionPhotoProps> = ({
               </Text>
 
               <View style={styles.socialPlatforms}>
-                {SOCIAL_PLATFORMS.map(platform => (
+                {SOCIAL_PLATFORMS.map((platform) => (
                   <TouchableOpacity
                     key={platform.id}
                     style={[
                       styles.socialPlatformButton,
-                      {borderColor: platform.color},
+                      { borderColor: platform.color },
                     ]}
-                    onPress={() => handleSocialShare(platform)}>
+                    onPress={() => handleSocialShare(platform)}
+                  >
                     <platform.icon size={24} color={platform.color} />
                     <Text style={styles.socialPlatformName}>
                       {platform.name}
@@ -390,8 +403,9 @@ const RecipeCompletionPhoto: React.FC<RecipeCompletionPhotoProps> = ({
                     <Text
                       style={[
                         styles.socialPlatformXP,
-                        {color: platform.color},
-                      ]}>
+                        { color: platform.color },
+                      ]}
+                    >
                       +{platform.xp} XP
                     </Text>
                   </TouchableOpacity>
@@ -400,29 +414,26 @@ const RecipeCompletionPhoto: React.FC<RecipeCompletionPhotoProps> = ({
 
               <TouchableOpacity
                 style={styles.skipSocialButton}
-                onPress={() => setShowSocialShare(false)}>
+                onPress={() => setShowSocialShare(false)}
+              >
                 <Text style={styles.skipSocialText}>Skip for now</Text>
               </TouchableOpacity>
             </View>
           </View>
         ) : showCamera ? (
           <View style={styles.cameraContainer}>
-            <VisionCamera
-              ref={camera}
-              style={styles.camera}
-              device={device!}
-              isActive={showCamera}
-              photo={true}
-            />
+            <CameraView ref={camera} style={styles.camera} facing="back" />
             <View style={styles.cameraControls}>
               <TouchableOpacity
                 style={styles.closeButton}
-                onPress={handleClose}>
+                onPress={handleClose}
+              >
                 <X size={24} color="#FFFFFF" />
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.captureButton}
-                onPress={handleTakePhoto}>
+                onPress={handleTakePhoto}
+              >
                 <View style={styles.captureButtonInner} />
               </TouchableOpacity>
               <View style={styles.placeholder} />
@@ -444,8 +455,9 @@ const RecipeCompletionPhoto: React.FC<RecipeCompletionPhotoProps> = ({
 
                 <TouchableOpacity
                   style={styles.cameraButton}
-                  onPress={handleOpenCamera}>
-                  <Camera size={32} color="#FFFFFF" />
+                  onPress={handleOpenCamera}
+                >
+                  <CameraIcon size={32} color="#FFFFFF" />
                   <Text style={styles.buttonText}>{config.buttonText}</Text>
                 </TouchableOpacity>
 
@@ -458,7 +470,10 @@ const RecipeCompletionPhoto: React.FC<RecipeCompletionPhotoProps> = ({
               </View>
             ) : (
               <View style={styles.photoPreviewContainer}>
-                <Image source={{uri: photoUri}} style={styles.photoPreview} />
+                <OptimizedImage
+                  source={{ uri: photoUri }}
+                  style={styles.photoPreview}
+                />
 
                 <TextInput
                   style={styles.descriptionInput}
@@ -473,7 +488,8 @@ const RecipeCompletionPhoto: React.FC<RecipeCompletionPhotoProps> = ({
                 <View style={styles.uploadButtonContainer}>
                   <TouchableOpacity
                     style={styles.retakeButton}
-                    onPress={() => setPhotoUri(null)}>
+                    onPress={() => setPhotoUri(null)}
+                  >
                     <Text style={styles.retakeButtonText}>Retake</Text>
                   </TouchableOpacity>
 
@@ -483,7 +499,8 @@ const RecipeCompletionPhoto: React.FC<RecipeCompletionPhotoProps> = ({
                       isUploading && styles.uploadButtonDisabled,
                     ]}
                     onPress={handleUploadPhoto}
-                    disabled={isUploading}>
+                    disabled={isUploading}
+                  >
                     {isUploading ? (
                       <ActivityIndicator color="#FFFFFF" />
                     ) : (
@@ -510,29 +527,29 @@ const styles = StyleSheet.create({
     marginVertical: 20,
   },
   triggerButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FF6B35',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#FF6B35",
     paddingVertical: 16,
     paddingHorizontal: 24,
     borderRadius: 12,
     gap: 8,
   },
   triggerButtonText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   xpBadge: {
-    color: '#FFB800',
+    color: "#FFB800",
     fontSize: 14,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginLeft: 4,
   },
   container: {
     flex: 1,
-    backgroundColor: '#000000',
+    backgroundColor: "#000000",
   },
   cameraContainer: {
     flex: 1,
@@ -541,72 +558,72 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   cameraControls: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 40,
     left: 0,
     right: 0,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 40,
   },
   closeButton: {
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: "rgba(0,0,0,0.5)",
+    alignItems: "center",
+    justifyContent: "center",
   },
   captureButton: {
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: "#FFFFFF",
+    alignItems: "center",
+    justifyContent: "center",
   },
   captureButtonInner: {
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: '#FF6B35',
+    backgroundColor: "#FF6B35",
   },
   uploadContainer: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 20,
     paddingTop: 60,
     paddingBottom: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E7',
+    borderBottomColor: "#E5E5E7",
   },
   title: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
+    fontWeight: "600",
+    color: "#333",
   },
   photoSelectContainer: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     paddingHorizontal: 40,
   },
   subtitle: {
     fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
+    color: "#666",
+    textAlign: "center",
     marginBottom: 40,
   },
   cameraButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FF6B35',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FF6B35",
     paddingVertical: 16,
     paddingHorizontal: 32,
     borderRadius: 12,
@@ -614,72 +631,72 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   buttonText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   photoPreviewContainer: {
     flex: 1,
     padding: 20,
   },
   photoPreview: {
-    width: '100%',
+    width: "100%",
     height: 300,
     borderRadius: 12,
     marginBottom: 20,
   },
   descriptionInput: {
     borderWidth: 1,
-    borderColor: '#E5E5E7',
+    borderColor: "#E5E5E7",
     borderRadius: 12,
     padding: 16,
     fontSize: 16,
-    color: '#333',
+    color: "#333",
     height: 100,
-    textAlignVertical: 'top',
+    textAlignVertical: "top",
     marginBottom: 20,
   },
   uploadButtonContainer: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 12,
   },
   retakeButton: {
     flex: 1,
     paddingVertical: 16,
-    alignItems: 'center',
+    alignItems: "center",
     borderWidth: 1,
-    borderColor: '#E5E5E7',
+    borderColor: "#E5E5E7",
     borderRadius: 12,
   },
   retakeButtonText: {
-    color: '#666',
+    color: "#666",
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   uploadButton: {
     flex: 2,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#4CAF50',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#4CAF50",
     paddingVertical: 16,
     borderRadius: 12,
     gap: 8,
   },
   uploadButtonDisabled: {
-    backgroundColor: '#CCC',
+    backgroundColor: "#CCC",
   },
   uploadButtonText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   placeholder: {
     width: 50,
   },
   socialShareContainer: {
     flex: 1,
-    backgroundColor: '#000000',
+    backgroundColor: "#000000",
   },
   socialShareContent: {
     flex: 1,
@@ -687,20 +704,20 @@ const styles = StyleSheet.create({
   },
   photoPreviewSmall: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   socialPreviewImage: {
-    width: '100%',
+    width: "100%",
     height: 300,
     borderRadius: 12,
     marginBottom: 20,
   },
   socialShareTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    textAlign: 'center',
+    fontWeight: "600",
+    color: "#FFFFFF",
+    textAlign: "center",
     marginBottom: 20,
   },
   socialPlatforms: {
@@ -711,53 +728,53 @@ const styles = StyleSheet.create({
     padding: 16,
     borderWidth: 2,
     borderRadius: 12,
-    alignItems: 'center',
+    alignItems: "center",
     minHeight: 100,
-    justifyContent: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    justifyContent: "center",
+    backgroundColor: "rgba(255, 255, 255, 0.05)",
   },
   socialPlatformName: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     marginTop: 8,
   },
   socialPlatformXP: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   skipSocialButton: {
     flex: 1,
     padding: 16,
-    alignItems: 'center',
+    alignItems: "center",
     borderWidth: 1,
-    borderColor: '#FFFFFF',
+    borderColor: "#FFFFFF",
     borderRadius: 12,
   },
   skipSocialText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   xpRewardBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     padding: 16,
-    backgroundColor: '#FFB800',
+    backgroundColor: "#FFB800",
     borderRadius: 12,
     marginBottom: 20,
   },
   xpRewardText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   doneText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   // Recipe claiming styles
   claimContainer: {
@@ -765,10 +782,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   claimButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#4CAF50',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#4CAF50",
     paddingVertical: 16,
     paddingHorizontal: 24,
     borderRadius: 12,
@@ -776,26 +793,26 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   claimButtonDisabled: {
-    backgroundColor: '#CCC',
+    backgroundColor: "#CCC",
   },
   claimButtonText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   claimXpBadge: {
-    color: '#FFB800',
+    color: "#FFB800",
     fontSize: 16,
-    fontWeight: 'bold',
-    backgroundColor: 'rgba(255, 184, 0, 0.2)',
+    fontWeight: "bold",
+    backgroundColor: "rgba(255, 184, 0, 0.2)",
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 8,
   },
   claimDescription: {
-    color: '#666',
+    color: "#666",
     fontSize: 14,
-    textAlign: 'center',
+    textAlign: "center",
     lineHeight: 18,
   },
 });
@@ -807,34 +824,34 @@ export const RecipeClaimButton: React.FC<{
   recipeId: string;
   recipeName: string;
   onRecipeClaimed?: () => void;
-}> = ({recipeId, recipeName, onRecipeClaimed}) => {
-  const {addXP} = useGamification();
+}> = ({ recipeId, recipeName, onRecipeClaimed }) => {
+  const { addXP } = useGamification();
   const [isClaiming, setIsClaiming] = useState(false);
 
   const handleClaimRecipe = async () => {
     setIsClaiming(true);
 
     try {
-      ReactNativeHapticFeedback.trigger('impactHeavy');
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
 
       // Award significant XP for claiming a recipe
-      await addXP(XP_VALUES.CLAIM_RECIPE, 'CLAIM_RECIPE');
+      await addXP(XP_VALUES.CLAIM_RECIPE, "CLAIM_RECIPE");
 
-      ReactNativeHapticFeedback.trigger('notificationSuccess');
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
       Alert.alert(
-        '🏆 Recipe Claimed!',
+        "🏆 Recipe Claimed!",
         `🎉 You've claimed "${recipeName}"! This recipe is now yours to customize and share. +${XP_VALUES.CLAIM_RECIPE} XP earned!`,
         [
           {
-            text: 'Awesome!',
+            text: "Awesome!",
             onPress: () => onRecipeClaimed?.(),
           },
         ],
       );
     } catch (error) {
-      console.error('Recipe claim error:', error);
-      Alert.alert('Claim Error', 'Failed to claim recipe. Please try again.');
+      logger.error("Recipe claim error:", error);
+      Alert.alert("Claim Error", "Failed to claim recipe. Please try again.");
     } finally {
       setIsClaiming(false);
     }
@@ -845,7 +862,8 @@ export const RecipeClaimButton: React.FC<{
       <TouchableOpacity
         style={[styles.claimButton, isClaiming && styles.claimButtonDisabled]}
         onPress={handleClaimRecipe}
-        disabled={isClaiming}>
+        disabled={isClaiming}
+      >
         {isClaiming ? (
           <ActivityIndicator color="#FFFFFF" />
         ) : (

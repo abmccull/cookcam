@@ -1,15 +1,23 @@
-import React, {useState, useEffect} from 'react';
-import {View, Text, TouchableOpacity, StyleSheet} from 'react-native';
-import {Heart, Clock, Flame, MessageCircle, Share2} from 'lucide-react-native';
+import React, { useState, useEffect } from "react";
+import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import {
+  Heart,
+  Clock,
+  Flame,
+  MessageCircle,
+  Share2,
+} from "lucide-react-native";
 import {
   scale,
   verticalScale,
   moderateScale,
   responsive,
-} from '../utils/responsive';
-import ChefBadge from './ChefBadge';
-import NutritionBadge from './NutritionBadge';
-import {recipeService} from '../services/api';
+} from "../utils/responsive";
+import ChefBadge from "./ChefBadge";
+import NutritionBadge from "./NutritionBadge";
+import { recipeService } from "../services/api";
+import logger from "../utils/logger";
+
 
 interface NutritionData {
   calories: number;
@@ -55,9 +63,9 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
   const [nutritionLoading, setNutritionLoading] = useState(false);
 
   const difficultyColors = {
-    Easy: '#4CAF50',
-    Medium: '#FF9800',
-    Hard: '#F44336',
+    Easy: "#4CAF50",
+    Medium: "#FF9800",
+    Hard: "#F44336",
   };
 
   // Fetch nutrition data when component mounts
@@ -79,7 +87,7 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
         setNutrition(response.data.data.per_serving);
       }
     } catch (error) {
-      console.log('Failed to fetch nutrition data:', error);
+      logger.debug("Failed to fetch nutrition data:", error);
       // Silently handle error - nutrition is optional
     } finally {
       setNutritionLoading(false);
@@ -90,7 +98,8 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
     <TouchableOpacity
       style={styles.container}
       onPress={onPress}
-      activeOpacity={0.9}>
+      activeOpacity={0.9}
+    >
       {/* Recipe Image */}
       <View style={styles.imageContainer}>
         <View style={styles.imagePlaceholder}>
@@ -125,7 +134,8 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
                     recipe.difficulty as keyof typeof difficultyColors
                   ],
               },
-            ]}>
+            ]}
+          >
             <Text style={styles.difficultyText}>{recipe.difficulty}</Text>
           </View>
           {/* Nutrition badge */}
@@ -178,10 +188,10 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderRadius: responsive.borderRadius.large,
     marginBottom: responsive.spacing.m,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: {
       width: 0,
       height: 2,
@@ -191,65 +201,65 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   imageContainer: {
-    position: 'relative',
+    position: "relative",
     height: verticalScale(200),
     borderTopLeftRadius: responsive.borderRadius.large,
     borderTopRightRadius: responsive.borderRadius.large,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   imagePlaceholder: {
     flex: 1,
-    backgroundColor: '#FFF3E0',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "#FFF3E0",
+    justifyContent: "center",
+    alignItems: "center",
   },
   creatorOverlay: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'rgba(0,0,0,0.3)',
+    backgroundColor: "rgba(0,0,0,0.3)",
     paddingTop: scale(12),
     paddingHorizontal: scale(12),
     paddingBottom: scale(24),
   },
   creatorInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: scale(8),
   },
   avatarContainer: {
     width: moderateScale(32),
     height: moderateScale(32),
     borderRadius: moderateScale(16),
-    backgroundColor: '#FF6B35',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "#FF6B35",
+    justifyContent: "center",
+    alignItems: "center",
     borderWidth: 2,
-    borderColor: '#F8F8FF',
+    borderColor: "#F8F8FF",
   },
   avatarText: {
     fontSize: responsive.fontSize.regular,
-    fontWeight: 'bold',
-    color: '#F8F8FF',
+    fontWeight: "bold",
+    color: "#F8F8FF",
   },
   creatorName: {
     fontSize: responsive.fontSize.regular,
-    fontWeight: '600',
-    color: '#F8F8FF',
+    fontWeight: "600",
+    color: "#F8F8FF",
     flex: 1,
   },
   recipeInfoBadges: {
-    position: 'absolute',
+    position: "absolute",
     bottom: scale(12),
     right: scale(12),
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: scale(8),
   },
   timeBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.6)",
     paddingHorizontal: scale(10),
     paddingVertical: scale(6),
     borderRadius: responsive.borderRadius.medium,
@@ -257,8 +267,8 @@ const styles = StyleSheet.create({
   },
   timeText: {
     fontSize: responsive.fontSize.small,
-    fontWeight: '600',
-    color: '#F8F8FF',
+    fontWeight: "600",
+    color: "#F8F8FF",
   },
   difficultyBadge: {
     paddingHorizontal: scale(10),
@@ -267,35 +277,35 @@ const styles = StyleSheet.create({
   },
   difficultyText: {
     fontSize: responsive.fontSize.small,
-    fontWeight: '600',
-    color: '#F8F8FF',
+    fontWeight: "600",
+    color: "#F8F8FF",
   },
   detailsContainer: {
     padding: responsive.spacing.m,
   },
   recipeTitle: {
     fontSize: responsive.fontSize.large,
-    fontWeight: '700',
-    color: '#2D1B69',
+    fontWeight: "700",
+    color: "#2D1B69",
     marginBottom: verticalScale(12),
   },
   actionsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
+    flexDirection: "row",
+    justifyContent: "space-around",
     borderTopWidth: 1,
-    borderTopColor: '#E5E5E7',
+    borderTopColor: "#E5E5E7",
     paddingTop: verticalScale(12),
     marginTop: verticalScale(8),
   },
   actionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: scale(6),
   },
   actionText: {
     fontSize: responsive.fontSize.regular,
-    color: '#666',
-    fontWeight: '500',
+    color: "#666",
+    fontWeight: "500",
   },
 });
 

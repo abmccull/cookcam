@@ -4,6 +4,8 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { StatusBar } from 'expo-status-bar';
 import { View, ActivityIndicator } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Camera, Heart, Trophy, User, Home } from 'lucide-react-native';
 
 // Context Providers
@@ -169,9 +171,6 @@ function MainTabs() {
           backgroundColor: '#FFFFFF',
           borderTopWidth: 1,
           borderTopColor: '#E0E0E0',
-          paddingBottom: 5,
-          paddingTop: 5,
-          height: 60,
         },
         headerShown: false,
       })}
@@ -291,16 +290,20 @@ function RootNavigator() {
 // Main App Component
 const App: React.FC = () => {
   return (
-    <AuthProvider>
-      <GamificationProvider>
-        <SubscriptionProvider>
-          <TempDataProvider>
-            <StatusBar style="auto" />
-            <RootNavigator />
-          </TempDataProvider>
-        </SubscriptionProvider>
-      </GamificationProvider>
-    </AuthProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <AuthProvider>
+          <GamificationProvider>
+            <SubscriptionProvider>
+              <TempDataProvider>
+                <StatusBar style="auto" />
+                <RootNavigator />
+              </TempDataProvider>
+            </SubscriptionProvider>
+          </GamificationProvider>
+        </AuthProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 };
 

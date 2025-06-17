@@ -4,20 +4,31 @@ import React, {
   useReducer,
   useEffect,
   ReactNode,
-} from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+} from "react";
+import * as SecureStore from "expo-secure-store";
 import {
   cookCamApi,
   SubscriptionTier,
   UserSubscription,
   CreatorRevenue,
-} from '../services/cookCamApi';
-import {
-  SubscriptionProduct,
-  SubscriptionStatus,
-} from '../services/subscriptionService';
-import SubscriptionService from '../services/subscriptionService';
-import {useAuth} from './AuthContext';
+} from "../services/cookCamApi";
+import subscriptionServiceInstance from "../services/subscriptionService";
+import { useAuth } from "./AuthContext";
+import logger from "../utils/logger";
+
+// Types for subscription products and status
+interface SubscriptionProduct {
+  productId: string;
+  price: string;
+  localizedPrice: string;
+  currency: string;
+  title: string;
+  description: string;
+  tier: "regular" | "creator";
+  freeTrialPeriod?: string;
+}
+
+type SubscriptionStatus = "active" | "cancelled" | "expired" | "trial";
 
 // Types
 interface SubscriptionState {
@@ -30,7 +41,7 @@ interface SubscriptionState {
 
   // Feature access
   featureAccess: Record<string, boolean>;
-  usageLimits: Record<string, {used: number; limit: number}>;
+  usageLimits: Record<string, { used: number; limit: number }>;
 
   // Creator data (if user is creator)
   isCreator: boolean;
@@ -42,20 +53,20 @@ interface SubscriptionState {
 }
 
 type SubscriptionAction =
-  | {type: 'SET_LOADING'; loading: boolean}
-  | {type: 'SET_ERROR'; error: string | null}
-  | {type: 'SET_TIERS'; tiers: SubscriptionTier[]}
-  | {type: 'SET_PRODUCTS'; products: SubscriptionProduct[]}
-  | {type: 'SET_SUBSCRIPTION'; subscription: UserSubscription | null}
+  | { type: "SET_LOADING"; loading: boolean }
+  | { type: "SET_ERROR"; error: string | null }
+  | { type: "SET_TIERS"; tiers: SubscriptionTier[] }
+  | { type: "SET_PRODUCTS"; products: SubscriptionProduct[] }
+  | { type: "SET_SUBSCRIPTION"; subscription: UserSubscription | null }
   | {
-      type: 'SET_FEATURE_ACCESS';
+      type: "SET_FEATURE_ACCESS";
       feature: string;
       hasAccess: boolean;
       usage?: any;
     }
-  | {type: 'SET_CREATOR_DATA'; revenue: CreatorRevenue | null}
-  | {type: 'SHOW_PAYWALL'; show: boolean}
-  | {type: 'RESET_STATE'};
+  | { type: "SET_CREATOR_DATA"; revenue: CreatorRevenue | null }
+  | { type: "SHOW_PAYWALL"; show: boolean }
+  | { type: "RESET_STATE" };
 
 interface SubscriptionContextType {
   state: SubscriptionState;
@@ -108,32 +119,32 @@ function subscriptionReducer(
   action: SubscriptionAction,
 ): SubscriptionState {
   switch (action.type) {
-    case 'SET_LOADING':
-      return {...state, subscriptionLoading: action.loading};
+    case "SET_LOADING":
+      return { ...state, subscriptionLoading: action.loading };
 
-    case 'SET_ERROR':
+    case "SET_ERROR":
       return {
         ...state,
         subscriptionError: action.error,
         subscriptionLoading: false,
       };
 
-    case 'SET_TIERS':
-      return {...state, tiers: action.tiers};
+    case "SET_TIERS":
+      return { ...state, tiers: action.tiers };
 
-    case 'SET_PRODUCTS':
-      return {...state, products: action.products};
+    case "SET_PRODUCTS":
+      return { ...state, products: action.products };
 
-    case 'SET_SUBSCRIPTION':
+    case "SET_SUBSCRIPTION":
       return {
         ...state,
         currentSubscription: action.subscription,
         lastChecked: Date.now(),
       };
 
-    case 'SET_FEATURE_ACCESS':
-      const newFeatureAccess = {...state.featureAccess};
-      const newUsageLimits = {...state.usageLimits};
+    case "SET_FEATURE_ACCESS": {
+      const newFeatureAccess = { ...state.featureAccess };
+      const newUsageLimits = { ...state.usageLimits };
 
       newFeatureAccess[action.feature] = action.hasAccess;
       if (action.usage) {
@@ -145,18 +156,19 @@ function subscriptionReducer(
         featureAccess: newFeatureAccess,
         usageLimits: newUsageLimits,
       };
+    }
 
-    case 'SET_CREATOR_DATA':
+    case "SET_CREATOR_DATA":
       return {
         ...state,
         creatorRevenue: action.revenue,
         isCreator: action.revenue !== null,
       };
 
-    case 'SHOW_PAYWALL':
-      return {...state, showPaywall: action.show};
+    case "SHOW_PAYWALL":
+      return { ...state, showPaywall: action.show };
 
-    case 'RESET_STATE':
+    case "RESET_STATE":
       return initialState;
 
     default:
@@ -168,39 +180,44 @@ function subscriptionReducer(
 const SubscriptionContext = createContext<SubscriptionContextType | null>(null);
 
 // Provider component
-export function SubscriptionProvider({children}: {children: ReactNode}) {
+export function SubscriptionProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(subscriptionReducer, initialState);
-  const {user} = useAuth();
+  const { user } = useAuth();
 
   // Load subscription data from API
   const loadSubscriptionData = async () => {
     try {
-      dispatch({type: 'SET_LOADING', loading: true});
-      dispatch({type: 'SET_ERROR', error: null});
-
-      const subscriptionService = SubscriptionService.getInstance();
+      dispatch({ type: "SET_LOADING", loading: true });
+      dispatch({ type: "SET_ERROR", error: null });
 
       // Load subscription tiers (public endpoint, no auth required)
       let tiersLoaded = false;
       try {
         const tiersResponse = await cookCamApi.getSubscriptionTiers();
         if (tiersResponse.success && tiersResponse.data) {
-          dispatch({type: 'SET_TIERS', tiers: tiersResponse.data});
+          dispatch({ type: "SET_TIERS", tiers: tiersResponse.data });
           tiersLoaded = true;
         }
       } catch (tiersError) {
-        console.warn('🔄 Could not load subscription tiers from API, using fallback data:', tiersError);
-        
+        logger.warn(
+          "🔄 Could not load subscription tiers from API, using fallback data:",
+          tiersError,
+        );
+
         // Fallback tiers for development/offline mode
         const fallbackTiers: SubscriptionTier[] = [
           {
-            id: 'tier_free',
-            slug: 'free',
-            name: 'Free',
+            id: "tier_free",
+            slug: "free",
+            name: "Free",
             price: 0,
-            currency: 'USD',
-            billing_period: 'monthly',
-            features: ['Basic recipe generation', '5 scans per day', 'Community recipes'],
+            currency: "USD",
+            billing_period: "monthly",
+            features: [
+              "Basic recipe generation",
+              "5 scans per day",
+              "Community recipes",
+            ],
             limits: {
               daily_scans: 5,
               monthly_recipes: 10,
@@ -208,107 +225,130 @@ export function SubscriptionProvider({children}: {children: ReactNode}) {
             },
           },
           {
-            id: 'tier_regular',
-            slug: 'regular',
-            name: 'Premium',
+            id: "tier_regular",
+            slug: "regular",
+            name: "Premium",
             price: 399,
-            currency: 'USD',
-            billing_period: 'monthly',
-            features: ['Unlimited scans', 'Premium recipes', 'Meal planning', 'Nutrition tracking'],
+            currency: "USD",
+            billing_period: "monthly",
+            features: [
+              "Unlimited scans",
+              "Premium recipes",
+              "Meal planning",
+              "Nutrition tracking",
+            ],
             limits: {
               monthly_recipes: 500,
               saved_recipes: 1000,
             },
           },
           {
-            id: 'tier_creator',
-            slug: 'creator',
-            name: 'Creator',
+            id: "tier_creator",
+            slug: "creator",
+            name: "Creator",
             price: 999,
-            currency: 'USD',
-            billing_period: 'monthly',
-            features: ['All Premium features', 'Recipe publishing', 'Analytics', 'Revenue sharing'],
+            currency: "USD",
+            billing_period: "monthly",
+            features: [
+              "All Premium features",
+              "Recipe publishing",
+              "Analytics",
+              "Revenue sharing",
+            ],
             limits: {
               saved_recipes: 5000,
             },
             revenue_share_percentage: 70,
           },
         ];
-        
-        dispatch({type: 'SET_TIERS', tiers: fallbackTiers});
+
+        dispatch({ type: "SET_TIERS", tiers: fallbackTiers });
         tiersLoaded = true;
       }
 
       // Load App Store/Google Play products (local IAP, no auth required)
-      const productsResponse = await subscriptionService.getAvailableProducts();
-      dispatch({type: 'SET_PRODUCTS', products: productsResponse});
+      try {
+        const productsResponse = await subscriptionServiceInstance.getAvailableProducts();
+        const formattedProducts: SubscriptionProduct[] = productsResponse.map((product: any) => ({
+          productId: product.productId,
+          price: product.price,
+          localizedPrice: product.localizedPrice,
+          currency: product.currency,
+          title: product.title,
+          description: product.description,
+          tier: product.productId.includes('creator') ? 'creator' : 'regular',
+          freeTrialPeriod: '3 days'
+        }));
+        dispatch({ type: "SET_PRODUCTS", products: formattedProducts });
+      } catch (error) {
+        logger.warn("Could not load IAP products:", error);
+        dispatch({ type: "SET_PRODUCTS", products: [] });
+      }
 
       // Only load user-specific subscription data if authenticated
       if (user) {
+        logger.debug("🔍 Loading subscription for user:", { userId: user.id, userEmail: user.email });
+        
         // Load current subscription (auth required)
         const subscriptionResponse = await cookCamApi.getSubscriptionStatus();
+        logger.debug("📊 Subscription response:", { 
+          success: subscriptionResponse.success, 
+          data: subscriptionResponse.data,
+          error: subscriptionResponse.error 
+        });
+        
         if (subscriptionResponse.success) {
           dispatch({
-            type: 'SET_SUBSCRIPTION',
+            type: "SET_SUBSCRIPTION",
             subscription: subscriptionResponse.data || null,
           });
 
           // Cache subscription data locally
           if (subscriptionResponse.data) {
-            await AsyncStorage.setItem(
-              'subscription_data',
+            await SecureStore.setItemAsync(
+              "subscription_data",
               JSON.stringify(subscriptionResponse.data),
             );
           }
         }
       } else {
-        console.log(
-          '⚠️ User not authenticated, skipping subscription status check',
+        logger.debug(
+          "⚠️ User not authenticated, skipping subscription status check",
         );
         // Try to load from cache if available
         try {
-          const cachedData = await AsyncStorage.getItem('subscription_data');
+          const cachedData =
+            await SecureStore.getItemAsync("subscription_data");
           if (cachedData) {
             const subscription = JSON.parse(cachedData);
-            dispatch({type: 'SET_SUBSCRIPTION', subscription});
+            dispatch({ type: "SET_SUBSCRIPTION", subscription });
           }
         } catch (cacheError) {
-          console.error('Failed to load cached subscription data:', cacheError);
+          logger.error("Failed to load cached subscription data:", cacheError);
         }
       }
 
-      dispatch({type: 'SET_LOADING', loading: false});
+      dispatch({ type: "SET_LOADING", loading: false });
     } catch (error) {
-      console.error('Failed to load subscription data:', error);
-      dispatch({type: 'SET_ERROR', error: 'Failed to load subscription data'});
-      dispatch({type: 'SET_LOADING', loading: false});
+      logger.error("Failed to load subscription data:", error);
+      dispatch({
+        type: "SET_ERROR",
+        error: "Failed to load subscription data",
+      });
+      dispatch({ type: "SET_LOADING", loading: false });
     }
   };
 
   // Auto-subscribe creator to their tier
   const autoSubscribeCreator = async (userId: string): Promise<boolean> => {
     try {
-      console.log('🎨 Auto-subscribing creator to Creator tier...');
+      logger.debug("🎨 Auto-subscribing creator to Creator tier...");
 
-      const success = await SubscriptionService.autoSubscribeCreator(userId);
-
-      if (success) {
-        // Refresh subscription data
-        await loadSubscriptionData();
-
-        // Track the auto-subscription
-        await cookCamApi.trackEvent('creator_auto_subscribed', {
-          userId,
-          tier: 'creator',
-          method: 'auto',
-        });
-
-        console.log('✅ Creator auto-subscribed successfully');
-      }
-
-      return success;
+      // TODO: Implement actual auto-subscribe logic via API
+      logger.warn("Auto-subscribe not yet implemented");
+      return false;
     } catch (error) {
-      console.error('❌ Failed to auto-subscribe creator:', error);
+      logger.error("❌ Failed to auto-subscribe creator:", error);
       return false;
     }
   };
@@ -316,7 +356,7 @@ export function SubscriptionProvider({children}: {children: ReactNode}) {
   // Check if user is creator
   const isCreator = (): boolean => {
     return (
-      state.currentSubscription?.tier_slug === 'creator' || state.isCreator
+      state.currentSubscription?.tier_slug === "creator" || state.isCreator
     );
   };
 
@@ -332,12 +372,12 @@ export function SubscriptionProvider({children}: {children: ReactNode}) {
       const revenueResponse = await cookCamApi.getCreatorRevenue();
       if (revenueResponse.success && revenueResponse.data) {
         dispatch({
-          type: 'SET_CREATOR_DATA',
+          type: "SET_CREATOR_DATA",
           revenue: revenueResponse.data,
         });
       }
     } catch (error) {
-      console.error('Failed to load creator data:', error);
+      logger.error("Failed to load creator data:", error);
     }
   };
 
@@ -347,7 +387,7 @@ export function SubscriptionProvider({children}: {children: ReactNode}) {
       const response = await cookCamApi.checkFeatureAccess(feature);
       if (response.success && response.data) {
         dispatch({
-          type: 'SET_FEATURE_ACCESS',
+          type: "SET_FEATURE_ACCESS",
           feature,
           hasAccess: response.data.hasAccess,
           usage: response.data.usage,
@@ -356,7 +396,7 @@ export function SubscriptionProvider({children}: {children: ReactNode}) {
       }
       return false;
     } catch (error) {
-      console.error(`Failed to check feature access for ${feature}:`, error);
+      logger.error(`Failed to check feature access for ${feature}:`, error);
       return false;
     }
   };
@@ -364,13 +404,11 @@ export function SubscriptionProvider({children}: {children: ReactNode}) {
   // Purchase subscription
   const purchaseSubscription = async (productId: string) => {
     try {
-      const success = await SubscriptionService.purchaseSubscription(productId);
-      if (success) {
-        // Purchase successful, refresh subscription data
-        await loadSubscriptionData();
-      }
+      // TODO: Implement actual purchase logic
+      logger.warn("Purchase subscription not yet implemented");
+      throw new Error("Not implemented");
     } catch (error) {
-      console.error('Failed to purchase subscription:', error);
+      logger.error("Failed to purchase subscription:", error);
       throw error;
     }
   };
@@ -378,12 +416,11 @@ export function SubscriptionProvider({children}: {children: ReactNode}) {
   // Restore purchases
   const restorePurchases = async () => {
     try {
-      const success = await SubscriptionService.restorePurchases();
-      if (success) {
-        await loadSubscriptionData();
-      }
+      // TODO: Implement actual restore logic
+      logger.warn("Restore purchases not yet implemented");
+      throw new Error("Not implemented");
     } catch (error) {
-      console.error('Failed to restore purchases:', error);
+      logger.error("Failed to restore purchases:", error);
       throw error;
     }
   };
@@ -391,10 +428,11 @@ export function SubscriptionProvider({children}: {children: ReactNode}) {
   // Open subscription management
   const openSubscriptionManagement = async () => {
     try {
-      await SubscriptionService.openSubscriptionManagement();
-      // No need to check response as this just opens the system settings
+      // TODO: Implement actual subscription management
+      logger.warn("Subscription management not yet implemented");
+      throw new Error("Not implemented");
     } catch (error) {
-      console.error('Failed to open subscription management:', error);
+      logger.error("Failed to open subscription management:", error);
       throw error;
     }
   };
@@ -408,9 +446,9 @@ export function SubscriptionProvider({children}: {children: ReactNode}) {
       if (response.success && response.data) {
         return response.data.full_url;
       }
-      throw new Error('Failed to generate affiliate link');
+      throw new Error("Failed to generate affiliate link");
     } catch (error) {
-      console.error('Failed to generate affiliate link:', error);
+      logger.error("Failed to generate affiliate link:", error);
       throw error;
     }
   };
@@ -423,7 +461,7 @@ export function SubscriptionProvider({children}: {children: ReactNode}) {
         await loadCreatorData(); // Refresh creator data
       }
     } catch (error) {
-      console.error('Failed to request payout:', error);
+      logger.error("Failed to request payout:", error);
       throw error;
     }
   };
@@ -442,9 +480,12 @@ export function SubscriptionProvider({children}: {children: ReactNode}) {
   };
 
   const showUpgradePrompt = (feature: string) => {
-    dispatch({type: 'SHOW_PAYWALL', show: true});
+    dispatch({ type: "SHOW_PAYWALL", show: true });
     // Track analytics
-    cookCamApi.trackEvent('paywall_shown', {feature, trigger: 'feature_gate'});
+    cookCamApi.trackEvent("paywall_shown", {
+      feature,
+      trigger: "feature_gate",
+    });
   };
 
   const refreshData = async () => {
@@ -452,15 +493,22 @@ export function SubscriptionProvider({children}: {children: ReactNode}) {
   };
 
   const isSubscribed = (): boolean => {
+    logger.debug("🔍 Checking subscription status:", { 
+      currentSubscription: state.currentSubscription,
+      status: state.currentSubscription?.status,
+      isActive: state.currentSubscription?.status === "active",
+      isTrial: state.currentSubscription?.status === "trial"
+    });
+    
     return (
-      state.currentSubscription?.status === 'active' ||
-      state.currentSubscription?.status === 'trial'
+      state.currentSubscription?.status === "active" ||
+      state.currentSubscription?.status === "trial"
     );
   };
 
   const hasActiveTrial = (): boolean => {
     return (
-      (state.currentSubscription?.status === 'trial' &&
+      (state.currentSubscription?.status === "trial" &&
         state.currentSubscription?.trial_ends_at &&
         new Date(state.currentSubscription.trial_ends_at) > new Date()) ||
       false
@@ -469,24 +517,38 @@ export function SubscriptionProvider({children}: {children: ReactNode}) {
 
   // Load data on mount and when authentication changes
   useEffect(() => {
-    loadSubscriptionData();
+    if (!user?.id) {
+      // User not authenticated, reset state
+      dispatch({ type: "RESET_STATE" });
+      return;
+    }
 
-    // Refresh every 10 minutes
+    // Only load if we haven't checked recently (within 5 minutes)
+    const shouldLoad = !state.lastChecked || 
+      (Date.now() - state.lastChecked > 5 * 60 * 1000);
+
+    if (shouldLoad) {
+      loadSubscriptionData();
+    }
+
+    // Refresh every 10 minutes, but only check every 5 minutes to avoid spam
     const interval = setInterval(() => {
       if (
+        user?.id &&
         state.lastChecked &&
         Date.now() - state.lastChecked > 10 * 60 * 1000
       ) {
+        logger.debug("🔄 Refreshing subscription data (scheduled)");
         refreshData();
       }
-    }, 60000); // Check every minute
+    }, 5 * 60 * 1000); // Check every 5 minutes instead of every minute
 
     return () => clearInterval(interval);
-  }, [user]); // Depend on authentication status
+  }, [user?.id]); // Only depend on user ID, not the entire user object
 
   // Load creator data when subscription changes
   useEffect(() => {
-    if (state.currentSubscription?.tier_slug === 'creator') {
+    if (state.currentSubscription?.tier_slug === "creator") {
       loadCreatorData();
     }
   }, [state.currentSubscription]);
@@ -523,7 +585,7 @@ export function useSubscription() {
   const context = useContext(SubscriptionContext);
   if (!context) {
     throw new Error(
-      'useSubscription must be used within a SubscriptionProvider',
+      "useSubscription must be used within a SubscriptionProvider",
     );
   }
   return context;
@@ -531,7 +593,7 @@ export function useSubscription() {
 
 // Feature gate hook
 export function useFeatureGate(feature: string) {
-  const {state, checkFeatureAccess, showUpgradePrompt} = useSubscription();
+  const { state, checkFeatureAccess, showUpgradePrompt } = useSubscription();
 
   const hasAccess = state.featureAccess[feature] ?? false;
   const usage = state.usageLimits[feature];

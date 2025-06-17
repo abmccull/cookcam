@@ -1,16 +1,16 @@
-import React, {useState, useEffect, useRef} from 'react';
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Image,
   SafeAreaView,
   Animated,
   ActivityIndicator,
   RefreshControl,
-} from 'react-native';
+} from "react-native";
+import OptimizedImage from "../components/OptimizedImage";
 import {
   Heart,
   Clock,
@@ -19,11 +19,13 @@ import {
   Trophy,
   TrendingUp,
   Award,
-} from 'lucide-react-native';
-import {useGamification} from '../context/GamificationContext';
-import {useAuth} from '../context/AuthContext';
-import {apiClient} from '../services/api';
-import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
+} from "lucide-react-native";
+import { useGamification } from "../context/GamificationContext";
+import { useAuth } from "../context/AuthContext";
+import { apiClient } from "../services/api";
+import * as Haptics from "expo-haptics";
+import logger from "../utils/logger";
+
 
 interface SavedRecipe {
   created_at: string;
@@ -59,15 +61,18 @@ interface CollectionBadge {
   earned: boolean;
 }
 
-const FavoritesScreen = ({navigation}: {navigation: any}) => {
+const FavoritesScreen = ({ navigation }: { navigation: any }) => {
   const [selectedFilter, setSelectedFilter] = useState<
-    'all' | 'recent' | 'top-rated' | 'collections'
-  >('all');
+    "all" | "recent" | "top-rated" | "collections"
+  >("all");
   const [savedRecipes, setSavedRecipes] = useState<SavedRecipe[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const {addXP} = useGamification();
-  const {user} = useAuth();
+  const { addXP } = useGamification();
+  const { user } = useAuth();
+
+  // Track last user ID to prevent unnecessary loads
+  const lastUserIdRef = useRef<string | null>(null);
 
   // Animation values
   const milestoneScale = useRef(new Animated.Value(0)).current;
@@ -81,15 +86,18 @@ const FavoritesScreen = ({navigation}: {navigation: any}) => {
 
     try {
       setIsLoading(true);
-      const response = await apiClient.getSavedRecipes({limit: 50, offset: 0});
+      const response = await apiClient.getSavedRecipes({
+        limit: 50,
+        offset: 0,
+      });
 
       if (response.success && response.data) {
         setSavedRecipes(response.data.saved_recipes || []);
       } else {
-        console.error('Failed to fetch saved recipes:', response.error);
+        logger.error("Failed to fetch saved recipes:", response.error);
       }
     } catch (error) {
-      console.error('Error fetching saved recipes:', error);
+      logger.error("Error fetching saved recipes:", error);
     } finally {
       setIsLoading(false);
     }
@@ -104,58 +112,58 @@ const FavoritesScreen = ({navigation}: {navigation: any}) => {
   // Collection badges
   const collectionBadges: CollectionBadge[] = [
     {
-      id: '1',
-      name: 'Italian Master',
-      icon: '🇮🇹',
+      id: "1",
+      name: "Italian Master",
+      icon: "🇮🇹",
       requirement: 10,
-      cuisineType: 'Italian',
+      cuisineType: "Italian",
       earned: false,
     },
     {
-      id: '2',
-      name: 'Asian Explorer',
-      icon: '🥢',
+      id: "2",
+      name: "Asian Explorer",
+      icon: "🥢",
       requirement: 10,
-      cuisineType: 'Asian',
+      cuisineType: "Asian",
       earned: false,
     },
     {
-      id: '3',
-      name: 'Indian Guru',
-      icon: '🌶️',
+      id: "3",
+      name: "Indian Guru",
+      icon: "🌶️",
       requirement: 10,
-      cuisineType: 'Indian',
+      cuisineType: "Indian",
       earned: false,
     },
     {
-      id: '4',
-      name: 'French Connoisseur',
-      icon: '🥖',
+      id: "4",
+      name: "French Connoisseur",
+      icon: "🥖",
       requirement: 10,
-      cuisineType: 'French',
+      cuisineType: "French",
       earned: false,
     },
     {
-      id: '5',
-      name: 'Mexican Aficionado',
-      icon: '🌮',
+      id: "5",
+      name: "Mexican Aficionado",
+      icon: "🌮",
       requirement: 10,
-      cuisineType: 'Mexican',
+      cuisineType: "Mexican",
       earned: false,
     },
   ];
 
   // Savings milestones
   const savingsMilestones = [
-    {count: 5, reward: 'Recipe Rookie', xp: 50, icon: '🌟'},
-    {count: 10, reward: 'Collection Starter', xp: 100, icon: '⭐'},
-    {count: 25, reward: 'Recipe Hunter', xp: 250, icon: '🏆'},
-    {count: 50, reward: 'Master Collector', xp: 500, icon: '👑'},
-    {count: 100, reward: 'Recipe Legend', xp: 1000, icon: '💎'},
+    { count: 5, reward: "Recipe Rookie", xp: 50, icon: "🌟" },
+    { count: 10, reward: "Collection Starter", xp: 100, icon: "⭐" },
+    { count: 25, reward: "Recipe Hunter", xp: 250, icon: "🏆" },
+    { count: 50, reward: "Master Collector", xp: 500, icon: "👑" },
+    { count: 100, reward: "Recipe Legend", xp: 1000, icon: "💎" },
   ];
 
   const currentMilestone =
-    savingsMilestones.find(m => m.count > savedRecipes.length) ||
+    savingsMilestones.find((m) => m.count > savedRecipes.length) ||
     savingsMilestones[savingsMilestones.length - 1];
   const progress = Math.min(
     (savedRecipes.length / currentMilestone.count) * 100,
@@ -164,21 +172,34 @@ const FavoritesScreen = ({navigation}: {navigation: any}) => {
 
   // Recipe recommendations based on saved
   const recommendations = [
-    {id: 'r1', title: 'Fettuccine Alfredo', cuisine: 'Italian', match: '92%'},
-    {id: 'r2', title: 'Pad Thai', cuisine: 'Thai', match: '88%'},
-    {id: 'r3', title: 'Butter Chicken', cuisine: 'Indian', match: '85%'},
+    { id: "r1", title: "Fettuccine Alfredo", cuisine: "Italian", match: "92%" },
+    { id: "r2", title: "Pad Thai", cuisine: "Thai", match: "88%" },
+    { id: "r3", title: "Butter Chicken", cuisine: "Indian", match: "85%" },
   ];
 
   const filters = [
-    {key: 'all', label: 'All'},
-    {key: 'recent', label: 'Recent'},
-    {key: 'top-rated', label: 'Top Rated'},
-    {key: 'collections', label: 'Collections'},
+    { key: "all", label: "All" },
+    { key: "recent", label: "Recent" },
+    { key: "top-rated", label: "Top Rated" },
+    { key: "collections", label: "Collections" },
   ];
 
   useEffect(() => {
-    fetchSavedRecipes();
-  }, [user]);
+    const currentUserId = user?.id || null;
+    
+    // Only run effect if user ID actually changed
+    if (currentUserId !== lastUserIdRef.current) {
+      lastUserIdRef.current = currentUserId;
+      
+      if (currentUserId) {
+        fetchSavedRecipes();
+      } else {
+        // Clear recipes when user logs out
+        setSavedRecipes([]);
+        setIsLoading(false);
+      }
+    }
+  }, [user?.id]); // Only depend on user ID, not the entire user object
 
   useEffect(() => {
     // Animate milestone progress
@@ -210,41 +231,41 @@ const FavoritesScreen = ({navigation}: {navigation: any}) => {
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
-      case 'Easy':
-      case 'easy':
-        return '#4CAF50';
-      case 'Medium':
-      case 'medium':
-        return '#FF9800';
-      case 'Hard':
-      case 'hard':
-        return '#F44336';
+      case "Easy":
+      case "easy":
+        return "#4CAF50";
+      case "Medium":
+      case "medium":
+        return "#FF9800";
+      case "Hard":
+      case "hard":
+        return "#F44336";
       default:
-        return '#8E8E93';
+        return "#8E8E93";
     }
   };
 
   const handleRecipePress = (savedRecipe: SavedRecipe) => {
-    ReactNativeHapticFeedback.trigger('impactMedium');
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     // Navigate to recipe detail or cook mode
-    navigation.navigate('Home', {
-      screen: 'CookMode',
-      params: {recipe: savedRecipe.recipe},
+    navigation.navigate("Home", {
+      screen: "CookMode",
+      params: { recipe: savedRecipe.recipe },
     });
   };
 
   const handleUnsaveRecipe = async (recipeId: string) => {
-    ReactNativeHapticFeedback.trigger('impactMedium');
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
       const response = await apiClient.unsaveRecipe(recipeId);
       if (response.success) {
         // Remove from local state
-        setSavedRecipes(prev =>
-          prev.filter(item => item.recipe.id !== recipeId),
+        setSavedRecipes((prev) =>
+          prev.filter((item) => item.recipe.id !== recipeId),
         );
       }
     } catch (error) {
-      console.error('Error unsaving recipe:', error);
+      logger.error("Error unsaving recipe:", error);
     }
   };
 
@@ -273,8 +294,9 @@ const FavoritesScreen = ({navigation}: {navigation: any}) => {
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.filterContent}>
-          {filters.map(filter => (
+          contentContainerStyle={styles.filterContent}
+        >
+          {filters.map((filter) => (
             <TouchableOpacity
               key={filter.key}
               style={[
@@ -282,14 +304,16 @@ const FavoritesScreen = ({navigation}: {navigation: any}) => {
                 selectedFilter === filter.key && styles.filterButtonActive,
               ]}
               onPress={() => {
-                ReactNativeHapticFeedback.trigger('selection');
+                Haptics.selectionAsync();
                 setSelectedFilter(filter.key as any);
-              }}>
+              }}
+            >
               <Text
                 style={[
                   styles.filterText,
                   selectedFilter === filter.key && styles.filterTextActive,
-                ]}>
+                ]}
+              >
                 {filter.label}
               </Text>
             </TouchableOpacity>
@@ -298,7 +322,7 @@ const FavoritesScreen = ({navigation}: {navigation: any}) => {
       </View>
 
       {/* Collections View */}
-      {selectedFilter === 'collections' ? (
+      {selectedFilter === "collections" ? (
         <ScrollView
           style={styles.recipeList}
           showsVerticalScrollIndicator={false}
@@ -308,10 +332,11 @@ const FavoritesScreen = ({navigation}: {navigation: any}) => {
               refreshing={isRefreshing}
               onRefresh={handleRefresh}
             />
-          }>
-          {collectionBadges.map(badge => {
+          }
+        >
+          {collectionBadges.map((badge) => {
             const cuisineCount = savedRecipes.filter(
-              r => r.recipe.cuisine_type === badge.cuisineType,
+              (r) => r.recipe.cuisine_type === badge.cuisineType,
             ).length;
             const progress = (cuisineCount / badge.requirement) * 100;
 
@@ -333,12 +358,12 @@ const FavoritesScreen = ({navigation}: {navigation: any}) => {
                     <View
                       style={[
                         styles.collectionProgressFill,
-                        {width: `${Math.min(progress, 100)}%`},
+                        { width: `${Math.min(progress, 100)}%` },
                       ]}
                     />
                   </View>
                   <Text style={styles.collectionProgressText}>
-                    {cuisineCount} / {badge.requirement} {badge.cuisineType}{' '}
+                    {cuisineCount} / {badge.requirement} {badge.cuisineType}{" "}
                     recipes
                   </Text>
                 </View>
@@ -352,13 +377,14 @@ const FavoritesScreen = ({navigation}: {navigation: any}) => {
           <View style={styles.recommendationsSection}>
             <Text style={styles.recommendationsTitle}>Recommended for you</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              {recommendations.map(rec => (
+              {recommendations.map((rec) => (
                 <Animated.View
                   key={rec.id}
                   style={[
                     styles.recommendCard,
-                    {transform: [{scale: recommendScale}]},
-                  ]}>
+                    { transform: [{ scale: recommendScale }] },
+                  ]}
+                >
                   <View style={styles.recommendMatch}>
                     <TrendingUp size={12} color="#4CAF50" />
                     <Text style={styles.recommendMatchText}>
@@ -382,7 +408,8 @@ const FavoritesScreen = ({navigation}: {navigation: any}) => {
                 refreshing={isRefreshing}
                 onRefresh={handleRefresh}
               />
-            }>
+            }
+          >
             {savedRecipes.length === 0 ? (
               <View style={styles.emptyState}>
                 <Heart size={48} color="#E5E5E7" />
@@ -398,14 +425,14 @@ const FavoritesScreen = ({navigation}: {navigation: any}) => {
                   key={savedRecipe.recipe.id}
                   style={styles.recipeCard}
                   onPress={() => handleRecipePress(savedRecipe)}
-                  activeOpacity={0.8}>
+                  activeOpacity={0.8}
+                >
                   {/* Recipe Image */}
                   <View style={styles.imageContainer}>
                     {savedRecipe.recipe.image_url ? (
-                      <Image
-                        source={{uri: savedRecipe.recipe.image_url}}
+                      <OptimizedImage
+                        source={{ uri: savedRecipe.recipe.image_url }}
                         style={styles.recipeImage}
-                        resizeMode="cover"
                       />
                     ) : (
                       <View style={styles.imagePlaceholder}>
@@ -414,7 +441,8 @@ const FavoritesScreen = ({navigation}: {navigation: any}) => {
                     )}
                     <TouchableOpacity
                       style={styles.favoriteButton}
-                      onPress={() => handleUnsaveRecipe(savedRecipe.recipe.id)}>
+                      onPress={() => handleUnsaveRecipe(savedRecipe.recipe.id)}
+                    >
                       <Heart size={20} color="#FF6B35" fill="#FF6B35" />
                     </TouchableOpacity>
                   </View>
@@ -425,7 +453,7 @@ const FavoritesScreen = ({navigation}: {navigation: any}) => {
                       {savedRecipe.recipe.title}
                     </Text>
                     <Text style={styles.recipeCuisine}>
-                      {savedRecipe.recipe.cuisine_type || 'Unknown'}
+                      {savedRecipe.recipe.cuisine_type || "Unknown"}
                     </Text>
 
                     <View style={styles.recipeStats}>
@@ -454,9 +482,10 @@ const FavoritesScreen = ({navigation}: {navigation: any}) => {
                               backgroundColor:
                                 getDifficultyColor(
                                   savedRecipe.recipe.difficulty,
-                                ) + '20',
+                                ) + "20",
                             },
-                          ]}>
+                          ]}
+                        >
                           <Text
                             style={[
                               styles.difficultyText,
@@ -465,7 +494,8 @@ const FavoritesScreen = ({navigation}: {navigation: any}) => {
                                   savedRecipe.recipe.difficulty,
                                 ),
                               },
-                            ]}>
+                            ]}
+                          >
                             {savedRecipe.recipe.difficulty}
                           </Text>
                         </View>
@@ -480,8 +510,9 @@ const FavoritesScreen = ({navigation}: {navigation: any}) => {
             <Animated.View
               style={[
                 styles.milestoneCard,
-                {transform: [{scale: milestoneScale}]},
-              ]}>
+                { transform: [{ scale: milestoneScale }] },
+              ]}
+            >
               <View style={styles.milestoneHeader}>
                 <Text style={styles.milestoneTitle}>
                   Next Milestone: {currentMilestone.reward}
@@ -494,7 +525,9 @@ const FavoritesScreen = ({navigation}: {navigation: any}) => {
                 </View>
               </View>
               <View style={styles.progressBar}>
-                <View style={[styles.progressFill, {width: `${progress}%`}]} />
+                <View
+                  style={[styles.progressFill, { width: `${progress}%` }]}
+                />
               </View>
               <Text style={styles.progressText}>
                 {savedRecipes.length} / {currentMilestone.count} recipes saved
@@ -510,57 +543,57 @@ const FavoritesScreen = ({navigation}: {navigation: any}) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F8FF',
+    backgroundColor: "#F8F8FF",
   },
   loadingContainer: {
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#8E8E93',
+    color: "#8E8E93",
   },
   emptyState: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingVertical: 48,
     paddingHorizontal: 20,
   },
   emptyStateTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#2D1B69',
+    fontWeight: "bold",
+    color: "#2D1B69",
     marginTop: 16,
     marginBottom: 8,
   },
   emptyStateText: {
     fontSize: 16,
-    color: '#8E8E93',
-    textAlign: 'center',
+    color: "#8E8E93",
+    textAlign: "center",
     lineHeight: 22,
   },
   recipeImage: {
-    width: '100%',
-    height: '100%',
+    width: "100%",
+    height: "100%",
     borderRadius: 12,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingHorizontal: 20,
     paddingTop: 20,
     paddingBottom: 4,
-    backgroundColor: '#F8F8FF',
+    backgroundColor: "#F8F8FF",
   },
   headerTitle: {
     fontSize: 28,
-    fontWeight: 'bold',
-    color: '#2D1B69',
+    fontWeight: "bold",
+    color: "#2D1B69",
   },
   favoritesCounter: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 6,
   },
   heartEmoji: {
@@ -568,96 +601,96 @@ const styles = StyleSheet.create({
   },
   counterText: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#2D1B69',
+    fontWeight: "bold",
+    color: "#2D1B69",
   },
   milestoneCard: {
     marginHorizontal: 20,
     marginBottom: 2,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderRadius: 12,
     padding: 12,
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 4,
     elevation: 3,
   },
   milestoneHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 12,
   },
   milestoneTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#2D1B69',
+    fontWeight: "600",
+    color: "#2D1B69",
   },
   milestoneReward: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 4,
   },
   milestoneXP: {
     fontSize: 14,
-    fontWeight: 'bold',
-    color: '#FFB800',
+    fontWeight: "bold",
+    color: "#FFB800",
   },
   progressBar: {
     height: 8,
-    backgroundColor: '#E5E5E7',
+    backgroundColor: "#E5E5E7",
     borderRadius: 4,
-    overflow: 'hidden',
+    overflow: "hidden",
     marginBottom: 8,
   },
   progressFill: {
-    height: '100%',
-    backgroundColor: '#4CAF50',
+    height: "100%",
+    backgroundColor: "#4CAF50",
     borderRadius: 4,
   },
   progressText: {
     fontSize: 12,
-    color: '#8E8E93',
-    textAlign: 'center',
+    color: "#8E8E93",
+    textAlign: "center",
   },
   filterContainer: {
     paddingHorizontal: 20,
     marginBottom: 4,
   },
   filterContent: {
-    alignItems: 'center',
+    alignItems: "center",
   },
   filterButton: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderRadius: 16,
     paddingHorizontal: 12,
     paddingVertical: 6,
     marginRight: 8,
     borderWidth: 1,
-    borderColor: '#E5E5E7',
+    borderColor: "#E5E5E7",
   },
   filterButtonActive: {
-    backgroundColor: '#2D1B69',
-    borderColor: '#2D1B69',
+    backgroundColor: "#2D1B69",
+    borderColor: "#2D1B69",
   },
   filterText: {
     fontSize: 13,
-    fontWeight: '500',
-    color: '#2D1B69',
+    fontWeight: "500",
+    color: "#2D1B69",
   },
   filterTextActive: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
   },
   collectionCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 1},
+    flexDirection: "row",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 2,
@@ -666,17 +699,17 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#F8F8FF',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "#F8F8FF",
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: 12,
-    position: 'relative',
+    position: "relative",
   },
   collectionEmoji: {
     fontSize: 24,
   },
   earnedBadge: {
-    position: 'absolute',
+    position: "absolute",
     top: -2,
     right: -2,
   },
@@ -685,25 +718,25 @@ const styles = StyleSheet.create({
   },
   collectionName: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#2D1B69',
+    fontWeight: "600",
+    color: "#2D1B69",
     marginBottom: 4,
   },
   collectionProgress: {
     height: 4,
-    backgroundColor: '#E5E5E7',
+    backgroundColor: "#E5E5E7",
     borderRadius: 2,
-    overflow: 'hidden',
+    overflow: "hidden",
     marginBottom: 4,
   },
   collectionProgressFill: {
-    height: '100%',
-    backgroundColor: '#4CAF50',
+    height: "100%",
+    backgroundColor: "#4CAF50",
     borderRadius: 2,
   },
   collectionProgressText: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: "#8E8E93",
   },
   recommendationsSection: {
     paddingLeft: 20,
@@ -712,42 +745,42 @@ const styles = StyleSheet.create({
   },
   recommendationsTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#2D1B69',
+    fontWeight: "600",
+    color: "#2D1B69",
     marginBottom: 8,
   },
   recommendCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderRadius: 12,
     padding: 12,
     marginRight: 12,
     width: 140,
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 1},
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 2,
   },
   recommendMatch: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 4,
     marginBottom: 8,
   },
   recommendMatchText: {
     fontSize: 12,
-    fontWeight: '600',
-    color: '#4CAF50',
+    fontWeight: "600",
+    color: "#4CAF50",
   },
   recommendTitle: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#2D1B69',
+    fontWeight: "600",
+    color: "#2D1B69",
     marginBottom: 4,
   },
   recommendCuisine: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: "#8E8E93",
   },
   recipeList: {
     flex: 1,
@@ -757,31 +790,31 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   recipeCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderRadius: 16,
     marginBottom: 4,
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 4,
     elevation: 3,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   imageContainer: {
     height: 160,
-    position: 'relative',
+    position: "relative",
   },
   imagePlaceholder: {
     flex: 1,
-    backgroundColor: '#F8F8FF',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "#F8F8FF",
+    justifyContent: "center",
+    alignItems: "center",
   },
   favoriteButton: {
-    position: 'absolute',
+    position: "absolute",
     top: 12,
     right: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    backgroundColor: "rgba(255, 255, 255, 0.9)",
     borderRadius: 20,
     padding: 8,
   },
@@ -790,28 +823,28 @@ const styles = StyleSheet.create({
   },
   recipeTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#2D1B69',
+    fontWeight: "bold",
+    color: "#2D1B69",
     marginBottom: 4,
   },
   recipeCuisine: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: "#8E8E93",
     marginBottom: 12,
   },
   recipeStats: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 12,
   },
   stat: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 4,
   },
   statText: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: "#8E8E93",
   },
   difficultyBadge: {
     paddingHorizontal: 8,
@@ -820,7 +853,7 @@ const styles = StyleSheet.create({
   },
   difficultyText: {
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: "600",
   },
 });
 

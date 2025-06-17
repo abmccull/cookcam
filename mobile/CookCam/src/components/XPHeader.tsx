@@ -1,19 +1,25 @@
-import React, {useEffect, useRef} from 'react';
-import {View, Text, StyleSheet, TouchableOpacity, Animated} from 'react-native';
-import {useSafeAreaInsets} from 'react-native-safe-area-context';
-import {User, Star} from 'lucide-react-native';
-import {useAuth} from '../context/AuthContext';
-import {useGamification} from '../context/GamificationContext';
-import {useNavigation} from '@react-navigation/native';
-import ChefBadge from './ChefBadge';
+import React, { useEffect, useRef } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Animated,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { User, Star } from "lucide-react-native";
+import { useAuth } from "../context/AuthContext";
+import { useGamification } from "../context/GamificationContext";
+import { useNavigation } from "@react-navigation/native";
+import ChefBadge from "./ChefBadge";
 
 // Remove unused screenWidth variable
 
 const XPHeader: React.FC = () => {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
-  const {user} = useAuth();
-  const {xp, level, levelProgress, nextLevelXP} = useGamification();
+  const { user } = useAuth();
+  const { xp, level, levelProgress, nextLevelXP } = useGamification();
 
   const progressAnim = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -43,7 +49,7 @@ const XPHeader: React.FC = () => {
   }, [xp, levelProgress]);
 
   const navigateToProfile = () => {
-    navigation.navigate('Profile' as never);
+    navigation.navigate("Profile" as never);
   };
 
   const getCreatorTier = () => {
@@ -70,12 +76,13 @@ const XPHeader: React.FC = () => {
   const creatorTier = getCreatorTier();
 
   return (
-    <View style={[styles.wrapper, {paddingTop: insets.top}]}>
+    <View style={[styles.wrapper, { paddingTop: insets.top }]}>
       <View style={styles.container}>
         <TouchableOpacity
           style={styles.profileSection}
           onPress={navigateToProfile}
-          activeOpacity={0.7}>
+          activeOpacity={0.7}
+        >
           <View style={styles.avatarContainer}>
             <User size={22} color="#2D1B69" />
           </View>
@@ -83,7 +90,7 @@ const XPHeader: React.FC = () => {
           <View style={styles.userInfo}>
             <View style={styles.nameRow}>
               <Text style={styles.userName} numberOfLines={1}>
-                {user?.name || 'Guest'}
+                {user?.name || "Guest"}
               </Text>
               {user?.isCreator && creatorTier > 0 && creatorTier <= 5 && (
                 <ChefBadge
@@ -102,7 +109,11 @@ const XPHeader: React.FC = () => {
 
         <View style={styles.xpSection}>
           <Animated.View
-            style={[styles.xpBarContainer, {transform: [{scale: pulseAnim}]}]}>
+            style={[
+              styles.xpBarContainer,
+              { transform: [{ scale: pulseAnim }] },
+            ]}
+          >
             <View style={styles.xpBarBg}>
               <Animated.View
                 style={[
@@ -110,7 +121,7 @@ const XPHeader: React.FC = () => {
                   {
                     width: progressAnim.interpolate({
                       inputRange: [0, 100],
-                      outputRange: ['0%', '100%'],
+                      outputRange: ["0%", "100%"],
                     }),
                   },
                 ]}
@@ -134,8 +145,8 @@ const XPHeader: React.FC = () => {
 
 const styles = StyleSheet.create({
   wrapper: {
-    backgroundColor: '#FFFFFF',
-    shadowColor: '#000',
+    backgroundColor: "#FFFFFF",
+    shadowColor: "#000",
     shadowOffset: {
       width: 0,
       height: 2,
@@ -146,18 +157,18 @@ const styles = StyleSheet.create({
     zIndex: 100,
   },
   container: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     paddingHorizontal: 16,
     paddingVertical: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E7',
+    borderBottomColor: "#E5E5E7",
   },
   profileSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     flex: 1,
     marginRight: 16,
   },
@@ -165,86 +176,86 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#F8F8FF',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "#F8F8FF",
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: 10,
     borderWidth: 2,
-    borderColor: '#E5E5E7',
+    borderColor: "#E5E5E7",
   },
   userInfo: {
     flex: 1,
   },
   nameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 6,
   },
   userName: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#2D1B69',
-    maxWidth: '70%',
+    fontWeight: "600",
+    color: "#2D1B69",
+    maxWidth: "70%",
   },
   levelContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 4,
     marginTop: 2,
   },
   levelText: {
     fontSize: 13,
-    color: '#FFB800',
-    fontWeight: '600',
+    color: "#FFB800",
+    fontWeight: "600",
   },
   xpSection: {
     flex: 1.2,
-    alignItems: 'flex-end',
+    alignItems: "flex-end",
   },
   xpBarContainer: {
-    width: '100%',
-    position: 'relative',
+    width: "100%",
+    position: "relative",
   },
   xpBarBg: {
     height: 24,
-    backgroundColor: '#F0F0F2',
+    backgroundColor: "#F0F0F2",
     borderRadius: 12,
-    overflow: 'hidden',
-    position: 'relative',
+    overflow: "hidden",
+    position: "relative",
     borderWidth: 1,
-    borderColor: '#E5E5E7',
+    borderColor: "#E5E5E7",
   },
   xpBarFill: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     bottom: 0,
-    backgroundColor: '#FFB800',
+    backgroundColor: "#FFB800",
     borderRadius: 12,
   },
   xpBarShine: {
-    position: 'absolute',
+    position: "absolute",
     top: 2,
     left: 2,
     right: 2,
     height: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.4)',
+    backgroundColor: "rgba(255, 255, 255, 0.4)",
     borderRadius: 10,
   },
   xpText: {
-    position: 'absolute',
-    alignSelf: 'center',
+    position: "absolute",
+    alignSelf: "center",
     top: 4,
     fontSize: 12,
-    fontWeight: '700',
-    color: '#2D1B69',
+    fontWeight: "700",
+    color: "#2D1B69",
     letterSpacing: 0.5,
   },
   xpToNext: {
     fontSize: 11,
-    color: '#8E8E93',
+    color: "#8E8E93",
     marginTop: 4,
-    fontWeight: '500',
+    fontWeight: "500",
   },
 });
 

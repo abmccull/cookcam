@@ -1,12 +1,22 @@
 // API service for CookCam backend integration
-import {secureStorage, SECURE_KEYS} from './secureStorage';
-import config from '../config/env';
+import { secureStorage, SECURE_KEYS } from "./secureStorage";
+import config from "../config/env";
+import logger from "../utils/logger";
+
+
+// Type alias for fetch options
+type FetchOptions = {
+  method?: string;
+  headers?: Record<string, string>;
+  body?: string;
+  signal?: AbortSignal;
+};
 
 // Use configuration for API URL
 const API_URL = config().API_BASE_URL;
 
-// Configuration
-const DEPRECATED_TOKEN_KEY = '@cookcam_token';
+// Configuration (deprecated, kept for reference)
+// const DEPRECATED_TOKEN_KEY = "@cookcam_token";
 
 interface ApiResponse<T> {
   success: boolean;
@@ -43,20 +53,20 @@ class ApiClient {
     try {
       return await secureStorage.getSecureItem(SECURE_KEYS.ACCESS_TOKEN);
     } catch (error) {
-      console.error('Error getting auth token:', error);
+      logger.error("Error getting auth token:", error);
       return null;
     }
   }
 
   private async makeRequest<T>(
     endpoint: string,
-    options: RequestInit = {},
+    options: FetchOptions = {},
   ): Promise<ApiResponse<T>> {
     try {
       const token = await this.getAuthToken();
 
       const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
         ...(options.headers as Record<string, string>),
       };
 
@@ -66,13 +76,13 @@ class ApiClient {
 
       // Set timeouts based on endpoint type
       const isPreviewGeneration = endpoint.includes(
-        '/recipes/generate-previews',
+        "/recipes/generate-previews",
       );
       const isDetailedGeneration = endpoint.includes(
-        '/recipes/generate-detailed',
+        "/recipes/generate-detailed",
       );
       const isLegacyGeneration =
-        endpoint.includes('/recipes/generate') &&
+        endpoint.includes("/recipes/generate") &&
         !isPreviewGeneration &&
         !isDetailedGeneration;
 
@@ -110,27 +120,27 @@ class ApiClient {
         data,
       };
     } catch (error) {
-      console.error('API request failed:', error);
+      logger.error("API request failed:", error);
 
       // Handle timeout errors specifically
-      if (error instanceof Error && error.name === 'AbortError') {
+      if (error instanceof Error && error.name === "AbortError") {
         return {
           success: false,
           error:
-            'Request timed out. Recipe generation may take longer than usual.',
+            "Request timed out. Recipe generation may take longer than usual.",
         };
       }
 
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? error.message : "Unknown error",
       };
     }
   }
 
   // Health check
   async healthCheck(): Promise<ApiResponse<any>> {
-    return this.makeRequest('/health');
+    return this.makeRequest("/health");
   }
 
   // Authentication endpoints - Updated to match our backend
@@ -139,9 +149,9 @@ class ApiClient {
     password: string,
     name: string,
   ): Promise<ApiResponse<AuthResponse>> {
-    return this.makeRequest('/auth/signup', {
-      method: 'POST',
-      body: JSON.stringify({email, password, name}),
+    return this.makeRequest("/auth/signup", {
+      method: "POST",
+      body: JSON.stringify({ email, password, name }),
     });
   }
 
@@ -149,9 +159,9 @@ class ApiClient {
     email: string,
     password: string,
   ): Promise<ApiResponse<AuthResponse>> {
-    const response = await this.makeRequest<AuthResponse>('/auth/signin', {
-      method: 'POST',
-      body: JSON.stringify({email, password}),
+    const response = await this.makeRequest<AuthResponse>("/auth/signin", {
+      method: "POST",
+      body: JSON.stringify({ email, password }),
     });
 
     // Store token if login successful
@@ -172,8 +182,8 @@ class ApiClient {
   }
 
   async signOut(): Promise<ApiResponse<any>> {
-    const response = await this.makeRequest('/auth/signout', {
-      method: 'POST',
+    const response = await this.makeRequest("/auth/signout", {
+      method: "POST",
     });
 
     // Clear stored token
@@ -183,12 +193,12 @@ class ApiClient {
   }
 
   async getProfile(): Promise<ApiResponse<any>> {
-    return this.makeRequest('/auth/me');
+    return this.makeRequest("/auth/me");
   }
 
   async updateProfile(data: any): Promise<ApiResponse<any>> {
-    return this.makeRequest('/auth/profile', {
-      method: 'PUT',
+    return this.makeRequest("/auth/profile", {
+      method: "PUT",
       body: JSON.stringify(data),
     });
   }
@@ -205,11 +215,11 @@ class ApiClient {
     mealPrepPortions?: number;
     selectedAppliances?: string[];
   }): Promise<ApiResponse<any>> {
-    console.warn(
-      '⚠️ generateRecipeSuggestions is deprecated. Use generatePreviews + generateDetailedRecipe instead.',
+    logger.warn(
+      "⚠️ generateRecipeSuggestions is deprecated. Use generatePreviews + generateDetailedRecipe instead.",
     );
-    return this.makeRequest('/recipes/generate', {
-      method: 'POST',
+    return this.makeRequest("/recipes/generate", {
+      method: "POST",
       body: JSON.stringify(data),
     });
   }
@@ -229,8 +239,8 @@ class ApiClient {
     };
     sessionId?: string;
   }): Promise<ApiResponse<any>> {
-    return this.makeRequest('/recipes/generate-previews', {
-      method: 'POST',
+    return this.makeRequest("/recipes/generate-previews", {
+      method: "POST",
       body: JSON.stringify(data),
     });
   }
@@ -248,8 +258,8 @@ class ApiClient {
     };
     sessionId: string;
   }): Promise<ApiResponse<any>> {
-    return this.makeRequest('/recipes/generate-detailed', {
-      method: 'POST',
+    return this.makeRequest("/recipes/generate-detailed", {
+      method: "POST",
       body: JSON.stringify(data),
     });
   }
@@ -258,9 +268,9 @@ class ApiClient {
     selectedTitle: string,
     sessionId: string,
   ): Promise<ApiResponse<any>> {
-    return this.makeRequest('/recipes/generate-full', {
-      method: 'POST',
-      body: JSON.stringify({selectedTitle, sessionId}),
+    return this.makeRequest("/recipes/generate-full", {
+      method: "POST",
+      body: JSON.stringify({ selectedTitle, sessionId }),
     });
   }
 
@@ -281,7 +291,7 @@ class ApiClient {
     }
 
     const endpoint = `/recipes${
-      queryParams.toString() ? `?${queryParams.toString()}` : ''
+      queryParams.toString() ? `?${queryParams.toString()}` : ""
     }`;
     return this.makeRequest(endpoint);
   }
@@ -292,7 +302,7 @@ class ApiClient {
 
   async saveRecipe(recipeId: string): Promise<ApiResponse<any>> {
     return this.makeRequest(`/recipes/${recipeId}/save`, {
-      method: 'POST',
+      method: "POST",
     });
   }
 
@@ -310,14 +320,14 @@ class ApiClient {
     }
 
     const endpoint = `/recipes/saved/my${
-      queryParams.toString() ? `?${queryParams.toString()}` : ''
+      queryParams.toString() ? `?${queryParams.toString()}` : ""
     }`;
     return this.makeRequest(endpoint);
   }
 
   async unsaveRecipe(recipeId: string): Promise<ApiResponse<any>> {
     return this.makeRequest(`/recipes/${recipeId}/save`, {
-      method: 'DELETE',
+      method: "DELETE",
     });
   }
 
@@ -327,8 +337,8 @@ class ApiClient {
     review?: string,
   ): Promise<ApiResponse<any>> {
     return this.makeRequest(`/recipes/${recipeId}/rate`, {
-      method: 'POST',
-      body: JSON.stringify({rating, review}),
+      method: "POST",
+      body: JSON.stringify({ rating, review }),
     });
   }
 
@@ -337,7 +347,7 @@ class ApiClient {
     recipeId: string,
     servings?: number,
   ): Promise<ApiResponse<any>> {
-    const params = servings ? `?servings=${servings}` : '';
+    const params = servings ? `?servings=${servings}` : "";
     return this.makeRequest(`/recipes/${recipeId}/nutrition${params}`);
   }
 
@@ -346,14 +356,14 @@ class ApiClient {
     servings?: number,
   ): Promise<ApiResponse<any>> {
     return this.makeRequest(`/recipes/${recipeId}/save-nutrition`, {
-      method: 'POST',
-      body: JSON.stringify({servings: servings || 1}),
+      method: "POST",
+      body: JSON.stringify({ servings: servings || 1 }),
     });
   }
 
   async testNutritionAnalysis(): Promise<ApiResponse<any>> {
-    return this.makeRequest('/recipes/test-nutrition', {
-      method: 'POST',
+    return this.makeRequest("/recipes/test-nutrition", {
+      method: "POST",
     });
   }
 
@@ -364,8 +374,8 @@ class ApiClient {
     description?: string,
   ): Promise<ApiResponse<any>> {
     return this.makeRequest(`/recipes/${recipeId}/upload-completion-photo`, {
-      method: 'POST',
-      body: JSON.stringify({imageData, description}),
+      method: "POST",
+      body: JSON.stringify({ imageData, description }),
     });
   }
 
@@ -385,25 +395,25 @@ class ApiClient {
     action: string,
     metadata?: any,
   ): Promise<ApiResponse<any>> {
-    return this.makeRequest('/gamification/add-xp', {
-      method: 'POST',
-      body: JSON.stringify({xp_amount: xpAmount, action, metadata}),
+    return this.makeRequest("/gamification/add-xp", {
+      method: "POST",
+      body: JSON.stringify({ xp_amount: xpAmount, action, metadata }),
     });
   }
 
   async checkStreak(): Promise<ApiResponse<any>> {
-    return this.makeRequest('/gamification/check-streak', {
-      method: 'POST',
+    return this.makeRequest("/gamification/check-streak", {
+      method: "POST",
     });
   }
 
   async getProgress(): Promise<ApiResponse<any>> {
-    return this.makeRequest('/gamification/progress');
+    return this.makeRequest("/gamification/progress");
   }
 
   async getLeaderboard(
-    type = 'global',
-    period = 'weekly',
+    type = "global",
+    period = "weekly",
   ): Promise<ApiResponse<any>> {
     return this.makeRequest(
       `/gamification/leaderboard?type=${type}&period=${period}`,
@@ -412,36 +422,36 @@ class ApiClient {
 
   // Mystery box endpoint
   async openMysteryBox(): Promise<ApiResponse<any>> {
-    return this.makeRequest('/mystery-box/open', {
-      method: 'POST',
+    return this.makeRequest("/mystery-box/open", {
+      method: "POST",
     });
   }
 
   async getMysteryBoxHistory(): Promise<ApiResponse<any>> {
-    return this.makeRequest('/mystery-box/history');
+    return this.makeRequest("/mystery-box/history");
   }
 
   // User endpoints
   async getUserProfile(): Promise<ApiResponse<any>> {
-    return this.makeRequest('/users/profile');
+    return this.makeRequest("/users/profile");
   }
 
   async updateUserProfile(data: any): Promise<ApiResponse<any>> {
-    return this.makeRequest('/users/profile', {
-      method: 'PUT',
+    return this.makeRequest("/users/profile", {
+      method: "PUT",
       body: JSON.stringify(data),
     });
   }
 
   async followUser(userId: string): Promise<ApiResponse<any>> {
     return this.makeRequest(`/users/follow/${userId}`, {
-      method: 'POST',
+      method: "POST",
     });
   }
 
   async unfollowUser(userId: string): Promise<ApiResponse<any>> {
     return this.makeRequest(`/users/follow/${userId}`, {
-      method: 'DELETE',
+      method: "DELETE",
     });
   }
 
@@ -458,8 +468,8 @@ class ApiClient {
     imageData: any,
     detectedIngredients: string[],
   ): Promise<ApiResponse<any>> {
-    return this.makeRequest('/scan/analyze', {
-      method: 'POST',
+    return this.makeRequest("/scan/analyze", {
+      method: "POST",
       body: JSON.stringify({
         image_data: imageData,
         detected_ingredients: detectedIngredients,
@@ -502,7 +512,7 @@ class ApiClient {
     }
 
     const endpoint = `/ingredients${
-      queryParams.toString() ? `?${queryParams.toString()}` : ''
+      queryParams.toString() ? `?${queryParams.toString()}` : ""
     }`;
     return this.makeRequest(endpoint);
   }
@@ -514,7 +524,7 @@ class ApiClient {
   async getIngredientNutrition(
     id: string,
     servingSize = 100,
-    unit = 'g',
+    unit = "g",
   ): Promise<ApiResponse<any>> {
     return this.makeRequest(
       `/ingredients/${id}/nutrition?serving_size=${servingSize}&unit=${unit}`,
@@ -524,24 +534,24 @@ class ApiClient {
   async syncIngredientWithUSDA(
     ingredientName: string,
   ): Promise<ApiResponse<any>> {
-    return this.makeRequest('/ingredients/sync-usda', {
-      method: 'POST',
-      body: JSON.stringify({ingredientName}),
+    return this.makeRequest("/ingredients/sync-usda", {
+      method: "POST",
+      body: JSON.stringify({ ingredientName }),
     });
   }
 
   async batchSyncIngredientsWithUSDA(
     ingredientNames: string[],
   ): Promise<ApiResponse<any>> {
-    return this.makeRequest('/ingredients/batch-sync-usda', {
-      method: 'POST',
-      body: JSON.stringify({ingredientNames}),
+    return this.makeRequest("/ingredients/batch-sync-usda", {
+      method: "POST",
+      body: JSON.stringify({ ingredientNames }),
     });
   }
 
   async searchUSDADirect(
     query: string,
-    dataType = 'Foundation',
+    dataType = "Foundation",
     pageSize = 25,
   ): Promise<ApiResponse<any>> {
     return this.makeRequest(
@@ -552,7 +562,7 @@ class ApiClient {
   }
 
   async getIngredientCategories(): Promise<ApiResponse<any>> {
-    return this.makeRequest('/ingredients/meta/categories');
+    return this.makeRequest("/ingredients/meta/categories");
   }
 
   async getIngredientSuggestions(
@@ -567,9 +577,9 @@ class ApiClient {
   }
 
   async batchSearchIngredients(queries: string[]): Promise<ApiResponse<any>> {
-    return this.makeRequest('/ingredients/batch-search', {
-      method: 'POST',
-      body: JSON.stringify({queries}),
+    return this.makeRequest("/ingredients/batch-search", {
+      method: "POST",
+      body: JSON.stringify({ queries }),
     });
   }
 

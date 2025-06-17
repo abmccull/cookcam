@@ -1,14 +1,14 @@
-import React, {useEffect, useRef} from 'react';
-import {View, StyleSheet, SafeAreaView, Animated} from 'react-native';
-import {NativeStackNavigationProp} from '@react-navigation/native-stack';
-import {RootStackParamList} from '../App';
-import AIChefIcon from '../components/AIChefIcon';
+import React, { useEffect, useRef } from "react";
+import { View, StyleSheet, SafeAreaView, Animated } from "react-native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { RootStackParamList } from "../App";
+import AIChefIcon from "../components/AIChefIcon";
 
 interface ColdOpenScreenProps {
   navigation: NativeStackNavigationProp<RootStackParamList>;
 }
 
-const ColdOpenScreen: React.FC<ColdOpenScreenProps> = ({navigation}) => {
+const ColdOpenScreen: React.FC<ColdOpenScreenProps> = ({ navigation }) => {
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
@@ -32,7 +32,7 @@ const ColdOpenScreen: React.FC<ColdOpenScreenProps> = ({navigation}) => {
 
     // Navigate to welcome screen after splash animation
     const timer = setTimeout(() => {
-      navigation.replace('Welcome');
+      navigation.replace("Welcome");
     }, 1500);
 
     return () => {
@@ -48,9 +48,10 @@ const ColdOpenScreen: React.FC<ColdOpenScreenProps> = ({navigation}) => {
           style={[
             styles.logoContainer,
             {
-              transform: [{scale: pulseAnim}],
+              transform: [{ scale: pulseAnim }],
             },
-          ]}>
+          ]}
+        >
           <AIChefIcon size={120} />
         </Animated.View>
       </View>
@@ -61,16 +62,16 @@ const ColdOpenScreen: React.FC<ColdOpenScreenProps> = ({navigation}) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#2D1B69',
+    backgroundColor: "#2D1B69",
   },
   content: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   logoContainer: {
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
 });
 

@@ -1,16 +1,16 @@
-import React, {useState} from 'react';
+import React, { useState } from "react";
 import {
   View,
   Text,
   StyleSheet,
-  Image,
   TouchableOpacity,
   Dimensions,
-} from 'react-native';
+} from "react-native";
+import OptimizedImage from "./OptimizedImage";
 import {
   PanGestureHandler,
   PanGestureHandlerGestureEvent,
-} from 'react-native-gesture-handler';
+} from "react-native-gesture-handler";
 import Animated, {
   useAnimatedGestureHandler,
   useAnimatedStyle,
@@ -19,12 +19,14 @@ import Animated, {
   runOnJS,
   interpolate,
   Extrapolate,
-} from 'react-native-reanimated';
-import {Clock, Users, Heart, Info, ChefHat} from 'lucide-react-native';
-import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
-import {Recipe} from '../utils/recipeTypes';
+} from "react-native-reanimated";
+import { Clock, Users, Heart, Info, ChefHat } from "lucide-react-native";
+import * as Haptics from "expo-haptics";
+import { Recipe } from "../utils/recipeTypes";
+import logger from "../utils/logger";
 
-const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
+
+const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 const SWIPE_THRESHOLD = screenWidth * 0.3;
 
 interface SwipeableCardProps {
@@ -59,12 +61,12 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
   // Check if recipe has a real image (not placeholder)
   const hasRealImage =
     recipe.image &&
-    !recipe.image.includes('placeholder') &&
-    !recipe.image.includes('via.placeholder');
+    !recipe.image.includes("placeholder") &&
+    !recipe.image.includes("via.placeholder");
 
   // Debug cook time to identify the real issue
   const getCookTime = () => {
-    console.log('🐛 Cook time debug:', {
+    logger.debug("🐛 Cook time debug:", {
       cookingTime: recipe.cookingTime,
       prepTime: recipe.prepTime,
       cookTime: recipe.cookTime,
@@ -85,17 +87,20 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
     }
 
     // Show the actual issue instead of hiding it
-    return 'No time data';
+    return "No time data";
   };
 
   const gestureHandler =
     useAnimatedGestureHandler<PanGestureHandlerGestureEvent>({
       onStart: () => {
         if (isTop) {
-          runOnJS(ReactNativeHapticFeedback.trigger)('impactLight');
+          runOnJS(() => {
+            console.log("👆 Gesture started on top card:", recipe.title);
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          })();
         }
       },
-      onActive: event => {
+      onActive: (event) => {
         if (!isTop) {
           return;
         }
@@ -115,7 +120,7 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
           Extrapolate.CLAMP,
         );
       },
-      onEnd: event => {
+      onEnd: (event) => {
         if (!isTop) {
           return;
         }
@@ -128,13 +133,17 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
             velocity: event.velocityX,
           });
           runOnJS(onSwipeLeft)(recipe);
-          runOnJS(ReactNativeHapticFeedback.trigger)('notificationWarning');
+          runOnJS(() =>
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning),
+          )();
         } else if (shouldSwipeRight) {
           translateX.value = withSpring(screenWidth * 1.2, {
             velocity: event.velocityX,
           });
           runOnJS(onSwipeRight)(recipe);
-          runOnJS(ReactNativeHapticFeedback.trigger)('notificationSuccess');
+          runOnJS(() =>
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success),
+          )();
         } else {
           // Snap back
           translateX.value = withSpring(0);
@@ -159,10 +168,10 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
 
     return {
       transform: [
-        {translateX: finalTranslateX},
-        {translateY: finalTranslateY},
-        {scale: finalScale},
-        {rotateZ: `${finalRotation}deg`},
+        { translateX: finalTranslateX },
+        { translateY: finalTranslateY },
+        { scale: finalScale },
+        { rotateZ: `${finalRotation}deg` },
       ] as any,
       opacity: stackOpacity,
       zIndex: 10 - index,
@@ -171,7 +180,7 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
 
   const overlayStyle = useAnimatedStyle(() => {
     if (!isTop) {
-      return {opacity: 0};
+      return { opacity: 0 };
     }
 
     const leftOpacity = interpolate(
@@ -212,23 +221,23 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
 
   const handleFavorite = () => {
     setIsCardFavorited(!isCardFavorited);
-    ReactNativeHapticFeedback.trigger('impactMedium');
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     onFavorite(recipe);
   };
 
   const handleCardTap = () => {
     if (isTop) {
-      ReactNativeHapticFeedback.trigger('impactLight');
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       onCardTap(recipe);
     } else {
       // If not top card, bring it to front
-      ReactNativeHapticFeedback.trigger('selection');
+      Haptics.selectionAsync();
       onCardSelect(recipe);
     }
   };
 
   const handleInfoPress = () => {
-    ReactNativeHapticFeedback.trigger('impactLight');
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     onCardTap(recipe);
   };
 
@@ -238,11 +247,15 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
         <TouchableOpacity
           style={styles.cardContent}
           onPress={handleCardTap}
-          activeOpacity={0.95}>
+          activeOpacity={0.95}
+        >
           {/* Conditional Image Section */}
           {hasRealImage && (
             <View style={styles.imageContainer}>
-              <Image source={{uri: recipe.image}} style={styles.heroImage} />
+              <OptimizedImage
+                source={{ uri: recipe.image }}
+                style={styles.heroImage}
+              />
             </View>
           )}
 
@@ -251,25 +264,52 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
             style={[
               styles.recipeInfo,
               !hasRealImage && styles.recipeInfoFullHeight,
-            ]}>
+            ]}
+          >
             {/* Action Buttons - Only on top card */}
             {isTop && (
               <View style={styles.actionButtons}>
                 <TouchableOpacity
                   style={styles.infoButton}
-                  onPress={handleInfoPress}>
+                  onPress={handleInfoPress}
+                >
                   <Info size={18} color="#666" />
                 </TouchableOpacity>
 
                 <TouchableOpacity
                   style={styles.favoriteButton}
-                  onPress={handleFavorite}>
+                  onPress={handleFavorite}
+                >
                   <Heart
                     size={20}
-                    color={isCardFavorited ? '#FF6B6B' : '#CCC'}
-                    fill={isCardFavorited ? '#FF6B6B' : 'none'}
+                    color={isCardFavorited ? "#FF6B6B" : "#CCC"}
+                    fill={isCardFavorited ? "#FF6B6B" : "none"}
                     strokeWidth={2}
                   />
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {/* Temporary Debug Buttons */}
+            {isTop && (
+              <View style={styles.debugButtons}>
+                <TouchableOpacity
+                  style={styles.debugButton}
+                  onPress={() => {
+                    console.log("🍳 Debug: Cook button pressed");
+                    onSwipeRight(recipe);
+                  }}
+                >
+                  <Text style={styles.debugButtonText}>🍳 COOK</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.debugButton}
+                  onPress={() => {
+                    console.log("❌ Debug: Pass button pressed");
+                    onSwipeLeft(recipe);
+                  }}
+                >
+                  <Text style={styles.debugButtonText}>❌ PASS</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -363,12 +403,12 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
 
 const styles = StyleSheet.create({
   card: {
-    position: 'absolute',
+    position: "absolute",
     width: screenWidth - 40,
     height: screenHeight * 0.62, // Reduced height to not overlap footer
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderRadius: 20,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: {
       width: 0,
       height: 8,
@@ -380,43 +420,43 @@ const styles = StyleSheet.create({
   cardContent: {
     flex: 1,
     borderRadius: 20,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   imageContainer: {
-    height: '32%', // Smaller for more content space
-    position: 'relative',
+    height: "32%", // Smaller for more content space
+    position: "relative",
   },
   heroImage: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: '#f0f0f0',
+    width: "100%",
+    height: "100%",
+    backgroundColor: "#f0f0f0",
   },
   recipeInfo: {
     flex: 1,
     padding: 20,
-    position: 'relative',
+    position: "relative",
   },
   recipeInfoFullHeight: {
     paddingTop: 60, // Space for action buttons
   },
   actionButtons: {
-    position: 'absolute',
+    position: "absolute",
     top: 16,
     left: 16,
     right: 16,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     zIndex: 1,
   },
   favoriteButton: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
+    backgroundColor: "rgba(255, 255, 255, 0.95)",
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
@@ -425,112 +465,112 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
+    backgroundColor: "rgba(255, 255, 255, 0.95)",
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
   },
   recipeTitle: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#2D1B69',
+    fontWeight: "bold",
+    color: "#2D1B69",
     marginBottom: 10,
     lineHeight: 28,
     marginTop: 20,
   },
   recipeDescription: {
     fontSize: 15,
-    color: '#666',
+    color: "#666",
     marginBottom: 16,
     lineHeight: 22,
   },
   metaInfo: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginBottom: 16,
     paddingVertical: 8,
   },
   metaItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 6,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
-    backgroundColor: '#F8F9FA',
+    backgroundColor: "#F8F9FA",
   },
   timeItem: {
-    backgroundColor: 'rgba(255, 107, 53, 0.1)',
+    backgroundColor: "rgba(255, 107, 53, 0.1)",
   },
   servingsItem: {
-    backgroundColor: 'rgba(76, 175, 80, 0.1)',
+    backgroundColor: "rgba(76, 175, 80, 0.1)",
   },
   difficultyItem: {
-    backgroundColor: 'rgba(156, 39, 176, 0.1)',
+    backgroundColor: "rgba(156, 39, 176, 0.1)",
   },
   metaText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   timeText: {
-    color: '#FF6B35',
-    fontFamily: 'System', // Different font weight
+    color: "#FF6B35",
+    fontFamily: "System", // Different font weight
   },
   servingsText: {
-    color: '#4CAF50',
-    fontFamily: 'System',
+    color: "#4CAF50",
+    fontFamily: "System",
   },
   difficultyText: {
-    color: '#9C27B0',
-    fontFamily: 'System',
+    color: "#9C27B0",
+    fontFamily: "System",
   },
   macrosGrid: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginBottom: 16,
     paddingVertical: 12,
     paddingHorizontal: 8,
-    backgroundColor: '#F8F9FA',
+    backgroundColor: "#F8F9FA",
     borderRadius: 16,
   },
   macroItem: {
-    alignItems: 'center',
+    alignItems: "center",
     flex: 1,
   },
   macroValue: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#2D1B69',
+    fontWeight: "bold",
+    color: "#2D1B69",
     marginBottom: 2,
   },
   macroLabel: {
     fontSize: 11,
-    color: '#8E8E93',
-    fontWeight: '500',
+    color: "#8E8E93",
+    fontWeight: "500",
   },
   tagsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: 8,
-    marginTop: 'auto',
+    marginTop: "auto",
   },
   tag: {
     paddingHorizontal: 12,
     paddingVertical: 6,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: "#F5F5F5",
     borderRadius: 16,
   },
   tagText: {
     fontSize: 12,
-    color: '#666',
-    fontWeight: '600',
+    color: "#666",
+    fontWeight: "600",
   },
   overlay: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
@@ -538,34 +578,52 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   leftOverlay: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(255, 82, 82, 0.85)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(255, 82, 82, 0.85)",
+    justifyContent: "center",
+    alignItems: "center",
     borderRadius: 20,
   },
   rightOverlay: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(76, 175, 80, 0.85)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(76, 175, 80, 0.85)",
+    justifyContent: "center",
+    alignItems: "center",
     borderRadius: 20,
   },
   overlayText: {
     fontSize: 36,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
+    fontWeight: "bold",
+    color: "#FFFFFF",
+  },
+  debugButtons: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 10,
+    justifyContent: "center",
+  },
+  debugButton: {
+    backgroundColor: "#FF6B35",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  debugButtonText: {
+    color: "#FFFFFF",
+    fontWeight: "bold",
+    fontSize: 14,
+    color: "#FFFFFF",
     letterSpacing: 3,
-    textShadowColor: 'rgba(0,0,0,0.3)',
-    textShadowOffset: {width: 0, height: 2},
+    textShadowColor: "rgba(0,0,0,0.3)",
+    textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 4,
   },
 });

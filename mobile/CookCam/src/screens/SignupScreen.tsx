@@ -27,6 +27,8 @@ import {
 import { useAuth } from "../context/AuthContext";
 import DeepLinkService from "../services/DeepLinkService";
 import cookCamApi from "../services/cookCamApi";
+import logger from "../utils/logger";
+
 
 interface SignupScreenProps {
   navigation: any;
@@ -67,7 +69,7 @@ const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
     const hasUppercase = /[A-Z]/.test(pwd);
     const hasNumber = /[0-9]/.test(pwd);
     // Special characters allowed by Supabase
-    const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|<>?,./`~]/.test(pwd);
+    const hasSpecialChar = /[!@#$%^&*()_+\-=[\]{};':"\\|<>?,./`~]/.test(pwd);
     const minLength = pwd.length >= 8;
 
     const isValid =
@@ -118,24 +120,28 @@ const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
 
     try {
       await signup(email, password, name, isCreator);
-      
+
       // Check for pending referral code and link user
       try {
-        const referralCode = await DeepLinkService.getInstance().getPendingReferralCode();
+        const referralCode =
+          await DeepLinkService.getInstance().getPendingReferralCode();
         if (referralCode) {
-          console.log('🔗 Linking user to referral code:', referralCode);
-          await cookCamApi.linkUserToReferral('', referralCode); // User ID will be added by backend from JWT
+          logger.debug("🔗 Linking user to referral code:", referralCode);
+          await cookCamApi.linkUserToReferral("", referralCode); // User ID will be added by backend from JWT
           await DeepLinkService.getInstance().clearPendingReferralCode();
-          console.log('✅ User successfully linked to referral');
+          logger.debug("✅ User successfully linked to referral");
         }
       } catch (referralError) {
-        console.log('⚠️ Failed to link referral, but signup successful:', referralError);
+        logger.debug(
+          "⚠️ Failed to link referral, but signup successful:",
+          referralError,
+        );
         // Don't fail signup if referral linking fails
       }
-      
+
       // Navigation will be handled by auth state change
     } catch (error: any) {
-      console.error("Signup error:", error);
+      logger.error("Signup error:", error);
       Alert.alert("Error", error.message || "Failed to create account");
     } finally {
       setLoading(false);
@@ -144,6 +150,10 @@ const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
 
   const handleBack = () => {
     navigation.goBack();
+  };
+
+  const handleLogin = () => {
+    navigation.navigate("Login");
   };
 
   const PasswordRequirement = ({
@@ -377,7 +387,7 @@ const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
 
             {/* Login Link */}
             <TouchableOpacity
-              onPress={handleBack}
+              onPress={handleLogin}
               style={styles.loginContainer}
             >
               <Text style={styles.loginText}>

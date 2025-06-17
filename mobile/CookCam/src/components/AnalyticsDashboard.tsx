@@ -1,4 +1,4 @@
-import React, {useState, useEffect, useCallback} from 'react';
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -8,12 +8,14 @@ import {
   Dimensions,
   RefreshControl,
   ActivityIndicator,
-} from 'react-native';
-import {cookCamApi} from '../services/cookCamApi';
-import {useSubscription} from '../context/SubscriptionContext';
-import {FeatureGate} from './FeatureGate';
+} from "react-native";
+import { cookCamApi } from "../services/cookCamApi";
+import { useSubscription } from "../context/SubscriptionContext";
+import FeatureGate from "./FeatureGate";
+import logger from "../utils/logger";
 
-const {width: screenWidth} = Dimensions.get('window');
+
+const { width: screenWidth } = Dimensions.get("window");
 
 // Types for dashboard data
 interface DashboardData {
@@ -29,9 +31,9 @@ interface DashboardData {
     recipeConversionRate: number;
   };
   charts: {
-    userGrowth: Array<{date: string; count: number}>;
-    scanActivity: Array<{date: string; count: number}>;
-    revenueGrowth: Array<{date: string; amount: number}>;
+    userGrowth: Array<{ date: string; count: number }>;
+    scanActivity: Array<{ date: string; count: number }>;
+    revenueGrowth: Array<{ date: string; amount: number }>;
   };
 }
 
@@ -51,24 +53,24 @@ function MetricCard({
   subtitle,
   trend,
   icon,
-  color = '#007BFF',
+  color = "#007BFF",
 }: MetricCardProps) {
   const trendColor =
-    trend && trend > 0 ? '#28A745' : trend && trend < 0 ? '#DC3545' : '#6C757D';
+    trend && trend > 0 ? "#28A745" : trend && trend < 0 ? "#DC3545" : "#6C757D";
   const trendIcon =
-    trend && trend > 0 ? '↗️' : trend && trend < 0 ? '↘️' : '➡️';
+    trend && trend > 0 ? "↗️" : trend && trend < 0 ? "↘️" : "➡️";
 
   return (
-    <View style={[styles.metricCard, {borderLeftColor: color}]}>
+    <View style={[styles.metricCard, { borderLeftColor: color }]}>
       <View style={styles.metricHeader}>
         <Text style={styles.metricTitle}>{title}</Text>
         {icon && <Text style={styles.metricIcon}>{icon}</Text>}
       </View>
-      <Text style={[styles.metricValue, {color}]}>{value}</Text>
+      <Text style={[styles.metricValue, { color }]}>{value}</Text>
       {subtitle && <Text style={styles.metricSubtitle}>{subtitle}</Text>}
       {trend !== undefined && (
         <View style={styles.trendContainer}>
-          <Text style={[styles.trendText, {color: trendColor}]}>
+          <Text style={[styles.trendText, { color: trendColor }]}>
             {trendIcon} {Math.abs(trend).toFixed(1)}%
           </Text>
         </View>
@@ -79,16 +81,16 @@ function MetricCard({
 
 // Simple Chart Component (you could replace with a proper charting library)
 interface SimpleChartProps {
-  data: Array<{date: string; count?: number; amount?: number}>;
+  data: Array<{ date: string; count?: number; amount?: number }>;
   title: string;
   color?: string;
-  valueKey: 'count' | 'amount';
+  valueKey: "count" | "amount";
 }
 
 function SimpleChart({
   data,
   title,
-  color = '#007BFF',
+  color = "#007BFF",
   valueKey,
 }: SimpleChartProps) {
   if (!data || data.length === 0) {
@@ -102,7 +104,7 @@ function SimpleChart({
     );
   }
 
-  const maxValue = Math.max(...data.map(item => item[valueKey] || 0));
+  const maxValue = Math.max(...data.map((item) => item[valueKey] || 0));
   const chartWidth = screenWidth - 40;
   const chartHeight = 120;
 
@@ -110,7 +112,9 @@ function SimpleChart({
     <View style={styles.chartContainer}>
       <Text style={styles.chartTitle}>{title}</Text>
       <View style={styles.chartArea}>
-        <View style={[styles.chart, {width: chartWidth, height: chartHeight}]}>
+        <View
+          style={[styles.chart, { width: chartWidth, height: chartHeight }]}
+        >
           {data.map((item, index) => {
             const barHeight =
               maxValue > 0
@@ -138,9 +142,9 @@ function SimpleChart({
         <View style={styles.chartLabels}>
           {data.slice(0, 5).map((item, index) => (
             <Text key={index} style={styles.chartLabel}>
-              {new Date(item.date).toLocaleDateString('en-US', {
-                month: 'short',
-                day: 'numeric',
+              {new Date(item.date).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
               })}
             </Text>
           ))}
@@ -155,10 +159,10 @@ export function AnalyticsDashboard() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [period, setPeriod] = useState<'day' | 'week' | 'month'>('week');
+  const [period, setPeriod] = useState<"day" | "week" | "month">("week");
   const [refreshing, setRefreshing] = useState(false);
 
-  const {isSubscribed} = useSubscription();
+  const { isSubscribed } = useSubscription();
 
   const loadDashboardData = useCallback(async () => {
     try {
@@ -168,11 +172,11 @@ export function AnalyticsDashboard() {
       if (response.success && response.data) {
         setData(response.data);
       } else {
-        setError('Failed to load analytics data');
+        setError("Failed to load analytics data");
       }
     } catch (err) {
-      console.error('Failed to load dashboard data:', err);
-      setError('Failed to load analytics data');
+      logger.error("Failed to load dashboard data:", err);
+      setError("Failed to load analytics data");
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -199,9 +203,9 @@ export function AnalyticsDashboard() {
   };
 
   const formatCurrency = (amount: number): string => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
     }).format(amount);
   };
 
@@ -212,7 +216,7 @@ export function AnalyticsDashboard() {
 
   if (!isSubscribed()) {
     return (
-      <FeatureGate feature="analytics_dashboard">
+      <FeatureGate feature="analytics_dashboard" userId="current-user">
         <View style={styles.container}>
           <Text style={styles.title}>Analytics Dashboard</Text>
         </View>
@@ -238,7 +242,8 @@ export function AnalyticsDashboard() {
           <Text style={styles.errorText}>❌ {error}</Text>
           <TouchableOpacity
             style={styles.retryButton}
-            onPress={loadDashboardData}>
+            onPress={loadDashboardData}
+          >
             <Text style={styles.retryButtonText}>Retry</Text>
           </TouchableOpacity>
         </View>
@@ -251,26 +256,29 @@ export function AnalyticsDashboard() {
       style={styles.container}
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-      }>
+      }
+    >
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>📊 Analytics Dashboard</Text>
 
         {/* Period Selector */}
         <View style={styles.periodSelector}>
-          {['day', 'week', 'month'].map(p => (
+          {["day", "week", "month"].map((p) => (
             <TouchableOpacity
               key={p}
               style={[
                 styles.periodButton,
                 period === p && styles.periodButtonActive,
               ]}
-              onPress={() => setPeriod(p as 'day' | 'week' | 'month')}>
+              onPress={() => setPeriod(p as "day" | "week" | "month")}
+            >
               <Text
                 style={[
                   styles.periodButtonText,
                   period === p && styles.periodButtonTextActive,
-                ]}>
+                ]}
+              >
                 {p.charAt(0).toUpperCase() + p.slice(1)}
               </Text>
             </TouchableOpacity>
@@ -374,33 +382,33 @@ export function AnalyticsDashboard() {
             <Text style={styles.sectionTitle}>📋 Summary</Text>
             <View style={styles.summaryContainer}>
               <Text style={styles.summaryText}>
-                🎯 Your app has{' '}
+                🎯 Your app has{" "}
                 <Text style={styles.highlight}>
                   {formatNumber(data.totalUsers)}
-                </Text>{' '}
-                total users with{' '}
+                </Text>{" "}
+                total users with{" "}
                 <Text style={styles.highlight}>
                   {formatNumber(data.activeUsers)}
-                </Text>{' '}
+                </Text>{" "}
                 active this {period}.
               </Text>
               <Text style={styles.summaryText}>
-                📸 Users have completed{' '}
+                📸 Users have completed{" "}
                 <Text style={styles.highlight}>
                   {formatNumber(data.totalScans)}
-                </Text>{' '}
-                ingredient scans, generating{' '}
+                </Text>{" "}
+                ingredient scans, generating{" "}
                 <Text style={styles.highlight}>
                   {formatNumber(data.totalRecipes)}
-                </Text>{' '}
+                </Text>{" "}
                 recipes.
               </Text>
               <Text style={styles.summaryText}>
-                💵 Total revenue is{' '}
+                💵 Total revenue is{" "}
                 <Text style={styles.highlight}>
                   {formatCurrency(data.revenue)}
-                </Text>{' '}
-                with a growth rate of{' '}
+                </Text>{" "}
+                with a growth rate of{" "}
                 <Text style={styles.highlight}>
                   {data.growthRate.toFixed(1)}%
                 </Text>
@@ -417,125 +425,125 @@ export function AnalyticsDashboard() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
+    backgroundColor: "#F8F9FA",
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     padding: 40,
   },
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#6C757D',
+    color: "#6C757D",
   },
   errorContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     padding: 40,
   },
   errorText: {
     fontSize: 16,
-    color: '#DC3545',
-    textAlign: 'center',
+    color: "#DC3545",
+    textAlign: "center",
     marginBottom: 20,
   },
   retryButton: {
-    backgroundColor: '#007BFF',
+    backgroundColor: "#007BFF",
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 8,
   },
   retryButtonText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   header: {
     padding: 20,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderBottomWidth: 1,
-    borderBottomColor: '#E9ECEF',
+    borderBottomColor: "#E9ECEF",
   },
   title: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#343A40',
+    fontWeight: "bold",
+    color: "#343A40",
     marginBottom: 16,
   },
   periodSelector: {
-    flexDirection: 'row',
-    backgroundColor: '#F8F9FA',
+    flexDirection: "row",
+    backgroundColor: "#F8F9FA",
     borderRadius: 8,
     padding: 4,
   },
   periodButton: {
     flex: 1,
     paddingVertical: 8,
-    alignItems: 'center',
+    alignItems: "center",
     borderRadius: 6,
   },
   periodButtonActive: {
-    backgroundColor: '#007BFF',
+    backgroundColor: "#007BFF",
   },
   periodButtonText: {
     fontSize: 14,
-    fontWeight: '500',
-    color: '#6C757D',
+    fontWeight: "500",
+    color: "#6C757D",
   },
   periodButtonTextActive: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
   },
   metricsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     padding: 16,
     gap: 12,
   },
   metricCard: {
     width: (screenWidth - 44) / 2,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     padding: 16,
     borderRadius: 12,
     borderLeftWidth: 4,
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
   },
   metricHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 8,
   },
   metricTitle: {
     fontSize: 12,
-    fontWeight: '500',
-    color: '#6C757D',
-    textTransform: 'uppercase',
+    fontWeight: "500",
+    color: "#6C757D",
+    textTransform: "uppercase",
   },
   metricIcon: {
     fontSize: 16,
   },
   metricValue: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 4,
   },
   metricSubtitle: {
     fontSize: 10,
-    color: '#6C757D',
+    color: "#6C757D",
   },
   trendContainer: {
     marginTop: 4,
   },
   trendText: {
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   section: {
     margin: 16,
@@ -543,92 +551,92 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#343A40',
+    fontWeight: "bold",
+    color: "#343A40",
     marginBottom: 16,
   },
   engagementGrid: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 12,
   },
   engagementCard: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     padding: 20,
     borderRadius: 12,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
   },
   engagementValue: {
     fontSize: 28,
-    fontWeight: 'bold',
-    color: '#007BFF',
+    fontWeight: "bold",
+    color: "#007BFF",
     marginBottom: 4,
   },
   engagementLabel: {
     fontSize: 12,
-    color: '#6C757D',
-    textAlign: 'center',
+    color: "#6C757D",
+    textAlign: "center",
   },
   chartContainer: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
   },
   chartTitle: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#343A40',
+    fontWeight: "bold",
+    color: "#343A40",
     marginBottom: 16,
   },
   chartArea: {
-    position: 'relative',
+    position: "relative",
   },
   chart: {
-    position: 'relative',
-    backgroundColor: '#F8F9FA',
+    position: "relative",
+    backgroundColor: "#F8F9FA",
     borderRadius: 8,
   },
   chartBar: {
-    position: 'absolute',
+    position: "absolute",
     borderRadius: 2,
   },
   chartLabels: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
+    flexDirection: "row",
+    justifyContent: "space-around",
     marginTop: 8,
   },
   chartLabel: {
     fontSize: 10,
-    color: '#6C757D',
+    color: "#6C757D",
   },
   chartPlaceholder: {
     height: 120,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#F8F9FA',
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#F8F9FA",
     borderRadius: 8,
   },
   placeholderText: {
-    color: '#6C757D',
+    color: "#6C757D",
     fontSize: 14,
   },
   summaryContainer: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     padding: 20,
     borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
@@ -636,11 +644,11 @@ const styles = StyleSheet.create({
   summaryText: {
     fontSize: 14,
     lineHeight: 20,
-    color: '#495057',
+    color: "#495057",
     marginBottom: 12,
   },
   highlight: {
-    fontWeight: 'bold',
-    color: '#007BFF',
+    fontWeight: "bold",
+    color: "#007BFF",
   },
 });

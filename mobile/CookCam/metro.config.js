@@ -1,64 +1,23 @@
-const {getDefaultConfig, mergeConfig} = require('@react-native/metro-config');
+const { getDefaultConfig } = require('expo/metro-config');
+const path = require('path');
 
-/**
- * Metro configuration with essential fixes
- * https://facebook.github.io/metro/docs/configuration
- *
- * @type {import('metro-config').MetroConfig}
- */
-const config = {
-  // Explicitly set the project root to the current directory
-  projectRoot: __dirname,
-  watchFolders: [__dirname],
+// Get the project root directory
+const projectRoot = __dirname;
+// Get the workspace root directory
+const workspaceRoot = path.resolve(projectRoot, '../..');
 
-  transformer: {
-    // Enable inline requires for lazy loading of non-critical modules
-    inlineRequires: true,
-  },
+const config = getDefaultConfig(projectRoot);
 
-  resolver: {
-    // Enhanced asset and source extensions
-    assetExts: ['bin', 'txt', 'jpg', 'png', 'json', 'gif', 'webp', 'svg'],
-    sourceExts: ['js', 'json', 'ts', 'tsx', 'jsx'],
-    
-    // Ensure Metro resolves node_modules properly
-    nodeModulesPaths: [
-      `${__dirname}/node_modules`,
-    ],
-    
-    // Block unnecessary directories from Metro watching (excluding essential dist folders)
-    blockList: [
-      // Backend and documentation folders
-      /.*\/backend\/.*/,
-      /.*\/docs\/.*/,
-      /.*\/website\/.*/,
-      /.*\/Public\/.*/,
-      /.*\/scripts\/.*/,
+// 1. Watch all files in the monorepo
+config.watchFolders = [workspaceRoot];
 
-      // Node modules subdirectories that can cause issues (keeping dist folders accessible)
-      /.*\/node_modules\/.*\/docs\/.*/,
-      /.*\/node_modules\/.*\/\.git\/.*/,
-      /.*\/node_modules\/.*\/example\/.*/,
-      /.*\/node_modules\/.*\/examples\/.*/,
-      /.*\/node_modules\/.*\/test\/.*/,
-      /.*\/node_modules\/.*\/tests\/.*/,
-      /.*\/node_modules\/.*\/__tests__\/.*/,
-      /.*\/node_modules\/.*\/spec\/.*/,
-      /.*\/node_modules\/.*\/coverage\/.*/,
+// 2. Let Metro know where to resolve packages and in what order
+config.resolver.nodeModulesPaths = [
+  path.resolve(projectRoot, 'node_modules'),
+  path.resolve(workspaceRoot, 'node_modules'),
+];
 
-      // Platform-specific exclusions
-      /.*\/android\/build\/.*/,
-      /.*\/ios\/build\/.*/,
-      /.*\/ios\/Pods\/.*/,
-      /.*\/.gradle\/.*/,
-      /.*\/.idea\/.*/,
+// 3. Force Metro to resolve (sub)dependencies from a particular path
+config.resolver.disableHierarchicalLookup = true;
 
-      // Cache and temporary directories
-      /.*\/.metro-cache\/.*/,
-      /.*\/\.tmp\/.*/,
-      /.*\/tmp\/.*/,
-    ],
-  },
-};
-
-module.exports = mergeConfig(getDefaultConfig(__dirname), config);
+module.exports = config; 

@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, { useState, useEffect } from "react";
 import {
   View,
   StyleSheet,
@@ -8,71 +8,71 @@ import {
   ScrollView,
   Dimensions,
   Alert,
-} from 'react-native';
-import {NativeStackNavigationProp} from '@react-navigation/native-stack';
-import {RouteProp} from '@react-navigation/native';
-import {RootStackParamList} from '../App';
-import {Clock, Users, ChefHat} from 'lucide-react-native';
-import {useTempData} from '../context/TempDataContext';
+} from "react-native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { RouteProp } from "@react-navigation/native";
+import { RootStackParamList } from "../App";
+import { Clock, Users, ChefHat } from "lucide-react-native";
+import { useTempData } from "../context/TempDataContext";
 
 interface RecipeCarouselScreenProps {
   navigation: NativeStackNavigationProp<RootStackParamList>;
-  route: RouteProp<RootStackParamList, 'RecipeCarousel'>;
+  route: RouteProp<RootStackParamList, "RecipeCarousel">;
 }
 
-const {width: SCREEN_WIDTH} = Dimensions.get('window');
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
 // Mock recipe data for demo
 const generateMockRecipes = (ingredients: any[]) => [
   {
-    id: '1',
-    title: 'Mediterranean Vegetable Pasta',
-    description: 'A delicious pasta dish with fresh vegetables and herbs',
+    id: "1",
+    title: "Mediterranean Vegetable Pasta",
+    description: "A delicious pasta dish with fresh vegetables and herbs",
     cookTime: 25,
     servings: 4,
-    difficulty: 'Easy',
-    ingredients: ingredients.map(ing => ing.name),
-    image: 'https://via.placeholder.com/300x200/FF6B35/FFFFFF?text=Pasta',
+    difficulty: "Easy",
+    ingredients: ingredients.map((ing) => ing.name),
+    image: "https://via.placeholder.com/300x200/FF6B35/FFFFFF?text=Pasta",
     steps: [
-      'Dice the tomatoes and onions',
-      'Sauté garlic and onions until fragrant',
-      'Add tomatoes and bell peppers',
-      'Cook pasta according to package directions',
-      'Combine vegetables with pasta',
+      "Dice the tomatoes and onions",
+      "Sauté garlic and onions until fragrant",
+      "Add tomatoes and bell peppers",
+      "Cook pasta according to package directions",
+      "Combine vegetables with pasta",
     ],
   },
   {
-    id: '2',
-    title: 'Garden Fresh Stir Fry',
-    description: 'Quick and healthy stir fry with garden vegetables',
+    id: "2",
+    title: "Garden Fresh Stir Fry",
+    description: "Quick and healthy stir fry with garden vegetables",
     cookTime: 15,
     servings: 3,
-    difficulty: 'Easy',
-    ingredients: ingredients.map(ing => ing.name),
-    image: 'https://via.placeholder.com/300x200/66BB6A/FFFFFF?text=Stir+Fry',
+    difficulty: "Easy",
+    ingredients: ingredients.map((ing) => ing.name),
+    image: "https://via.placeholder.com/300x200/66BB6A/FFFFFF?text=Stir+Fry",
     steps: [
-      'Heat oil in a large pan',
-      'Add garlic and cook for 30 seconds',
-      'Add harder vegetables first',
-      'Stir fry for 5-7 minutes',
-      'Season and serve hot',
+      "Heat oil in a large pan",
+      "Add garlic and cook for 30 seconds",
+      "Add harder vegetables first",
+      "Stir fry for 5-7 minutes",
+      "Season and serve hot",
     ],
   },
   {
-    id: '3',
-    title: 'Rustic Vegetable Soup',
-    description: 'Hearty soup perfect for any season',
+    id: "3",
+    title: "Rustic Vegetable Soup",
+    description: "Hearty soup perfect for any season",
     cookTime: 35,
     servings: 6,
-    difficulty: 'Medium',
-    ingredients: ingredients.map(ing => ing.name),
-    image: 'https://via.placeholder.com/300x200/2D1B69/FFFFFF?text=Soup',
+    difficulty: "Medium",
+    ingredients: ingredients.map((ing) => ing.name),
+    image: "https://via.placeholder.com/300x200/2D1B69/FFFFFF?text=Soup",
     steps: [
-      'Chop all vegetables evenly',
-      'Sauté onions and garlic',
-      'Add remaining vegetables',
-      'Add broth and simmer',
-      'Season to taste and serve',
+      "Chop all vegetables evenly",
+      "Sauté onions and garlic",
+      "Add remaining vegetables",
+      "Add broth and simmer",
+      "Season to taste and serve",
     ],
   },
 ];
@@ -84,7 +84,7 @@ const RecipeCarouselScreen: React.FC<RecipeCarouselScreenProps> = ({
   const [recipes, setRecipes] = useState<any[]>([]);
   const [selectedRecipe, setSelectedRecipe] = useState<any>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const {tempData, addTempRecipe} = useTempData();
+  const { tempData, addTempRecipe } = useTempData();
 
   useEffect(() => {
     if (!tempData.tempScanData) {
@@ -99,12 +99,12 @@ const RecipeCarouselScreen: React.FC<RecipeCarouselScreenProps> = ({
     setSelectedRecipe(mockRecipes[0]);
 
     // Store generated recipes in temp context
-    mockRecipes.forEach(recipe => {
+    mockRecipes.forEach((recipe) => {
       addTempRecipe({
         id: recipe.id,
         title: recipe.title,
         description: recipe.description,
-        cuisineType: 'Mediterranean',
+        cuisineType: "Mediterranean",
         prepTime: 10,
         cookTime: recipe.cookTime,
         servings: recipe.servings,
@@ -118,12 +118,12 @@ const RecipeCarouselScreen: React.FC<RecipeCarouselScreenProps> = ({
 
     // Show toast message
     Alert.alert(
-      '🎉 Great Choice!',
-      'Save your streak & unlock free trial → next',
+      "🎉 Great Choice!",
+      "Save your streak & unlock free trial → next",
       [
         {
-          text: 'Continue',
-          onPress: () => navigation.navigate('PlanSelection'),
+          text: "Continue",
+          onPress: () => navigation.navigate("PlanSelection"),
         },
       ],
     );
@@ -176,7 +176,8 @@ const RecipeCarouselScreen: React.FC<RecipeCarouselScreenProps> = ({
 
         <TouchableOpacity
           style={styles.cookButton}
-          onPress={() => handleCookNow(recipe)}>
+          onPress={() => handleCookNow(recipe)}
+        >
           <Text style={styles.cookButtonText}>Cook Now</Text>
         </TouchableOpacity>
       </View>
@@ -202,7 +203,7 @@ const RecipeCarouselScreen: React.FC<RecipeCarouselScreenProps> = ({
       <View style={styles.header}>
         <Text style={styles.headerTitle}>AI Generated Recipes</Text>
         <Text style={styles.headerSubtitle}>
-          Based on your {tempData.tempScanData?.ingredients.length || 0}{' '}
+          Based on your {tempData.tempScanData?.ingredients.length || 0}{" "}
           ingredients
         </Text>
       </View>
@@ -213,7 +214,8 @@ const RecipeCarouselScreen: React.FC<RecipeCarouselScreenProps> = ({
         showsHorizontalScrollIndicator={false}
         onScroll={handleScroll}
         scrollEventThrottle={16}
-        style={styles.scrollView}>
+        style={styles.scrollView}
+      >
         {recipes.map(renderRecipeCard)}
       </ScrollView>
 
@@ -229,21 +231,21 @@ const RecipeCarouselScreen: React.FC<RecipeCarouselScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F8FF',
+    backgroundColor: "#F8F8FF",
   },
   header: {
     padding: 20,
-    alignItems: 'center',
+    alignItems: "center",
   },
   headerTitle: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#2D1B69',
+    fontWeight: "bold",
+    color: "#2D1B69",
     marginBottom: 8,
   },
   headerSubtitle: {
     fontSize: 16,
-    color: '#8E8E93',
+    color: "#8E8E93",
   },
   scrollView: {
     flex: 1,
@@ -253,12 +255,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   recipeCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderRadius: 16,
     padding: 20,
     marginVertical: 10,
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 4,
@@ -268,48 +270,48 @@ const styles = StyleSheet.create({
   },
   recipeTitle: {
     fontSize: 22,
-    fontWeight: 'bold',
-    color: '#2D1B69',
+    fontWeight: "bold",
+    color: "#2D1B69",
     marginBottom: 8,
   },
   recipeDescription: {
     fontSize: 16,
-    color: '#8E8E93',
+    color: "#8E8E93",
     lineHeight: 22,
   },
   recipeDetails: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
+    flexDirection: "row",
+    justifyContent: "space-around",
     marginBottom: 20,
     paddingVertical: 16,
-    backgroundColor: '#F8F8FF',
+    backgroundColor: "#F8F8FF",
     borderRadius: 12,
   },
   detailItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   detailText: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: "#8E8E93",
     marginLeft: 4,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   ingredientsSection: {
     marginBottom: 24,
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#2D1B69',
+    fontWeight: "600",
+    color: "#2D1B69",
     marginBottom: 12,
   },
   ingredientsList: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
   },
   ingredientChip: {
-    backgroundColor: '#66BB6A',
+    backgroundColor: "#66BB6A",
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
@@ -318,44 +320,44 @@ const styles = StyleSheet.create({
   },
   ingredientText: {
     fontSize: 14,
-    color: '#FFFFFF',
-    fontWeight: '500',
+    color: "#FFFFFF",
+    fontWeight: "500",
   },
   cookButton: {
-    backgroundColor: '#FF6B35',
+    backgroundColor: "#FF6B35",
     borderRadius: 12,
     paddingVertical: 16,
-    alignItems: 'center',
+    alignItems: "center",
   },
   cookButtonText: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
+    fontWeight: "bold",
+    color: "#FFFFFF",
   },
   pagination: {
-    flexDirection: 'row',
-    justifyContent: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
     paddingVertical: 16,
   },
   paginationDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#E5E5E7',
+    backgroundColor: "#E5E5E7",
     marginHorizontal: 4,
   },
   paginationDotActive: {
-    backgroundColor: '#FF6B35',
+    backgroundColor: "#FF6B35",
     width: 24,
   },
   bottomInfo: {
     padding: 20,
-    alignItems: 'center',
+    alignItems: "center",
   },
   swipeHint: {
     fontSize: 14,
-    color: '#8E8E93',
-    fontStyle: 'italic',
+    color: "#8E8E93",
+    fontStyle: "italic",
   },
 });
 

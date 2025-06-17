@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -6,10 +6,10 @@ import {
   ScrollView,
   TouchableOpacity,
   RefreshControl,
-} from 'react-native';
-import {TrendingUp, Eye, Star, ChefHat, Calendar} from 'lucide-react-native';
-import RecipeCreatorCard from './RecipeCreatorCard';
-import {ClaimedRecipe} from '../utils/recipeTypes';
+} from "react-native";
+import { TrendingUp, Eye, Star, ChefHat, Calendar } from "lucide-react-native";
+import RecipeCreatorCard from "./RecipeCreatorCard";
+import { ClaimedRecipe } from "../utils/recipeTypes";
 
 interface CreatorRecipesTabProps {
   userId: string;
@@ -22,26 +22,26 @@ const CreatorRecipesTab: React.FC<CreatorRecipesTabProps> = ({
 }) => {
   const [refreshing, setRefreshing] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState<
-    'all' | 'trending' | 'popular'
-  >('all');
+    "all" | "trending" | "popular"
+  >("all");
 
   // Mock data - in real app would fetch from API
   const mockRecipes: ClaimedRecipe[] = [
     {
-      id: '1',
-      title: 'Spicy Thai Noodles',
-      description: 'A fiery blend of authentic Thai flavors',
+      id: "1",
+      title: "Spicy Thai Noodles",
+      description: "A fiery blend of authentic Thai flavors",
       images: [],
       ingredients: [],
       instructions: [],
       prepTime: 30,
       cookTime: 15,
       servings: 4,
-      difficulty: 'Medium',
-      cuisine: 'Thai',
-      tags: ['spicy', 'noodles', 'thai'],
+      difficulty: "Medium",
+      cuisine: "Thai",
+      tags: ["spicy", "noodles", "thai"],
       creatorId: userId,
-      creatorName: 'You',
+      creatorName: "You",
       creatorTier: userTier,
       claimedAt: new Date().toISOString(),
       viewCount: 12543,
@@ -52,20 +52,20 @@ const CreatorRecipesTab: React.FC<CreatorRecipesTabProps> = ({
       featured: false,
     },
     {
-      id: '2',
-      title: 'Classic Margherita Pizza',
-      description: 'Traditional Italian pizza with fresh basil',
+      id: "2",
+      title: "Classic Margherita Pizza",
+      description: "Traditional Italian pizza with fresh basil",
       images: [],
       ingredients: [],
       instructions: [],
       prepTime: 20,
       cookTime: 25,
       servings: 2,
-      difficulty: 'Easy',
-      cuisine: 'Italian',
-      tags: ['pizza', 'italian', 'vegetarian'],
+      difficulty: "Easy",
+      cuisine: "Italian",
+      tags: ["pizza", "italian", "vegetarian"],
       creatorId: userId,
-      creatorName: 'You',
+      creatorName: "You",
       creatorTier: userTier,
       claimedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
       viewCount: 8234,
@@ -91,21 +91,21 @@ const CreatorRecipesTab: React.FC<CreatorRecipesTabProps> = ({
   const onRefresh = async () => {
     setRefreshing(true);
     // TODO: Fetch updated recipes from API
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 1000));
     setRefreshing(false);
   };
 
   const filters = [
-    {key: 'all', label: 'All Recipes', icon: ChefHat},
-    {key: 'trending', label: 'Trending', icon: TrendingUp},
-    {key: 'popular', label: 'Most Popular', icon: Star},
+    { key: "all", label: "All Recipes", icon: ChefHat },
+    { key: "trending", label: "Trending", icon: TrendingUp },
+    { key: "popular", label: "Most Popular", icon: Star },
   ];
 
-  const filteredRecipes = mockRecipes.filter(recipe => {
-    if (selectedFilter === 'trending') {
+  const filteredRecipes = mockRecipes.filter((recipe) => {
+    if (selectedFilter === "trending") {
       return recipe.trending;
     }
-    if (selectedFilter === 'popular') {
+    if (selectedFilter === "popular") {
       return recipe.viewCount > 10000;
     }
     return true;
@@ -121,7 +121,8 @@ const CreatorRecipesTab: React.FC<CreatorRecipesTabProps> = ({
           onRefresh={onRefresh}
           tintColor="#FF6B35"
         />
-      }>
+      }
+    >
       {/* Stats Overview */}
       <View style={styles.statsContainer}>
         <View style={styles.statCard}>
@@ -151,7 +152,7 @@ const CreatorRecipesTab: React.FC<CreatorRecipesTabProps> = ({
           <View
             style={[
               styles.limitProgress,
-              {width: `${(mockRecipes.length / 120) * 100}%`},
+              { width: `${(mockRecipes.length / 120) * 100}%` },
             ]}
           />
         </View>
@@ -165,24 +166,27 @@ const CreatorRecipesTab: React.FC<CreatorRecipesTabProps> = ({
         horizontal
         showsHorizontalScrollIndicator={false}
         style={styles.filterContainer}
-        contentContainerStyle={styles.filterContent}>
-        {filters.map(filter => (
+        contentContainerStyle={styles.filterContent}
+      >
+        {filters.map((filter) => (
           <TouchableOpacity
             key={filter.key}
             style={[
               styles.filterButton,
               selectedFilter === filter.key && styles.filterButtonActive,
             ]}
-            onPress={() => setSelectedFilter(filter.key as any)}>
+            onPress={() => setSelectedFilter(filter.key as any)}
+          >
             <filter.icon
               size={16}
-              color={selectedFilter === filter.key ? '#FFFFFF' : '#8E8E93'}
+              color={selectedFilter === filter.key ? "#FFFFFF" : "#8E8E93"}
             />
             <Text
               style={[
                 styles.filterText,
                 selectedFilter === filter.key && styles.filterTextActive,
-              ]}>
+              ]}
+            >
               {filter.label}
             </Text>
           </TouchableOpacity>
@@ -192,7 +196,7 @@ const CreatorRecipesTab: React.FC<CreatorRecipesTabProps> = ({
       {/* Recipes List */}
       <View style={styles.recipesList}>
         {filteredRecipes.length > 0 ? (
-          filteredRecipes.map(recipe => (
+          filteredRecipes.map((recipe) => (
             <RecipeCreatorCard
               key={recipe.id}
               recipe={{
@@ -229,21 +233,21 @@ const CreatorRecipesTab: React.FC<CreatorRecipesTabProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F8FF',
+    backgroundColor: "#F8F8FF",
   },
   statsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
+    flexDirection: "row",
+    justifyContent: "space-around",
     padding: 20,
     gap: 12,
   },
   statCard: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderRadius: 16,
     padding: 16,
-    alignItems: 'center',
-    shadowColor: '#000',
+    alignItems: "center",
+    shadowColor: "#000",
     shadowOffset: {
       width: 0,
       height: 2,
@@ -254,22 +258,22 @@ const styles = StyleSheet.create({
   },
   statNumber: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#2D1B69',
+    fontWeight: "bold",
+    color: "#2D1B69",
     marginTop: 8,
   },
   statLabel: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: "#8E8E93",
     marginTop: 4,
   },
   limitContainer: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     marginHorizontal: 20,
     marginBottom: 20,
     padding: 16,
     borderRadius: 16,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: {
       width: 0,
       height: 2,
@@ -279,35 +283,35 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   limitHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 12,
   },
   limitTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#2D1B69',
+    fontWeight: "600",
+    color: "#2D1B69",
   },
   limitCount: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#FF6B35',
+    fontWeight: "bold",
+    color: "#FF6B35",
   },
   limitBar: {
     height: 8,
-    backgroundColor: '#E5E5E7',
+    backgroundColor: "#E5E5E7",
     borderRadius: 4,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   limitProgress: {
-    height: '100%',
-    backgroundColor: '#FF6B35',
+    height: "100%",
+    backgroundColor: "#FF6B35",
     borderRadius: 4,
   },
   limitHint: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: "#8E8E93",
     marginTop: 8,
   },
   filterContainer: {
@@ -319,48 +323,48 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   filterButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderWidth: 1,
-    borderColor: '#E5E5E7',
+    borderColor: "#E5E5E7",
     gap: 6,
   },
   filterButtonActive: {
-    backgroundColor: '#FF6B35',
-    borderColor: '#FF6B35',
+    backgroundColor: "#FF6B35",
+    borderColor: "#FF6B35",
   },
   filterText: {
     fontSize: 14,
-    color: '#8E8E93',
-    fontWeight: '500',
+    color: "#8E8E93",
+    fontWeight: "500",
   },
   filterTextActive: {
-    color: '#FFFFFF',
-    fontWeight: '600',
+    color: "#FFFFFF",
+    fontWeight: "600",
   },
   recipesList: {
     paddingHorizontal: 20,
     paddingBottom: 20,
   },
   emptyState: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingVertical: 60,
   },
   emptyTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#2D1B69',
+    fontWeight: "600",
+    color: "#2D1B69",
     marginTop: 16,
   },
   emptyText: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: "#8E8E93",
     marginTop: 8,
-    textAlign: 'center',
+    textAlign: "center",
     paddingHorizontal: 40,
   },
 });

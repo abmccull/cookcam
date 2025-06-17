@@ -1,12 +1,12 @@
-import React from 'react';
-import {View, Text, StyleSheet} from 'react-native';
-import {Zap, Activity} from 'lucide-react-native';
+import React from "react";
+import { View, Text, StyleSheet } from "react-native";
+import { Zap, Activity } from "lucide-react-native";
 import {
   scale,
   verticalScale,
   moderateScale,
   responsive,
-} from '../utils/responsive';
+} from "../utils/responsive";
 
 interface NutritionData {
   calories: number;
@@ -20,14 +20,14 @@ interface NutritionData {
 interface NutritionBadgeProps {
   nutrition?: NutritionData;
   servings?: number;
-  variant?: 'compact' | 'detailed';
+  variant?: "compact" | "detailed";
   style?: any;
 }
 
 const NutritionBadge: React.FC<NutritionBadgeProps> = ({
   nutrition,
   servings = 1,
-  variant = 'compact',
+  variant = "compact",
   style,
 }) => {
   if (!nutrition) {
@@ -41,7 +41,7 @@ const NutritionBadge: React.FC<NutritionBadgeProps> = ({
     fat: Math.round((nutrition.fat_g / servings) * 10) / 10,
   };
 
-  if (variant === 'compact') {
+  if (variant === "compact") {
     return (
       <View style={[styles.compactContainer, style]}>
         <View style={styles.caloriesBadge}>
@@ -87,13 +87,13 @@ const NutritionBadge: React.FC<NutritionBadgeProps> = ({
 
 const styles = StyleSheet.create({
   compactContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   caloriesBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 107, 53, 0.1)',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(255, 107, 53, 0.1)",
     paddingHorizontal: scale(8),
     paddingVertical: scale(4),
     borderRadius: responsive.borderRadius.medium,
@@ -101,49 +101,49 @@ const styles = StyleSheet.create({
   },
   caloriesText: {
     fontSize: responsive.fontSize.small,
-    fontWeight: '700',
-    color: '#FF6B35',
+    fontWeight: "700",
+    color: "#FF6B35",
   },
   caloriesLabel: {
     fontSize: responsive.fontSize.tiny,
-    fontWeight: '500',
-    color: '#FF6B35',
+    fontWeight: "500",
+    color: "#FF6B35",
     opacity: 0.8,
   },
   detailedContainer: {
-    backgroundColor: '#F8F9FA',
+    backgroundColor: "#F8F9FA",
     borderRadius: responsive.borderRadius.medium,
     padding: scale(12),
     marginTop: verticalScale(8),
   },
   nutritionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: scale(6),
     marginBottom: verticalScale(8),
   },
   nutritionTitle: {
     fontSize: responsive.fontSize.regular,
-    fontWeight: '600',
-    color: '#4CAF50',
+    fontWeight: "600",
+    color: "#4CAF50",
   },
   nutritionGrid: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
   },
   nutritionItem: {
-    alignItems: 'center',
+    alignItems: "center",
     flex: 1,
   },
   nutritionValue: {
     fontSize: responsive.fontSize.regular,
-    fontWeight: '700',
-    color: '#2D1B69',
+    fontWeight: "700",
+    color: "#2D1B69",
   },
   nutritionLabel: {
     fontSize: responsive.fontSize.tiny,
-    fontWeight: '500',
-    color: '#666',
+    fontWeight: "500",
+    color: "#666",
     marginTop: verticalScale(2),
   },
 });

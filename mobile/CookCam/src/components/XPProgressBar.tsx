@@ -1,6 +1,6 @@
-import React, {useEffect, useRef} from 'react';
-import {View, StyleSheet, Text, Animated} from 'react-native';
-import {useGamification} from '../context/GamificationContext';
+import React, { useEffect, useRef } from "react";
+import { View, StyleSheet, Text, Animated } from "react-native";
+import { useGamification } from "../context/GamificationContext";
 
 interface XPProgressBarProps {
   showLabels?: boolean;
@@ -13,7 +13,7 @@ const XPProgressBar: React.FC<XPProgressBarProps> = ({
   height = 24,
   style,
 }) => {
-  const {xp, level, levelProgress, nextLevelXP} = useGamification();
+  const { xp, level, levelProgress, nextLevelXP } = useGamification();
   const animatedWidth = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -26,7 +26,7 @@ const XPProgressBar: React.FC<XPProgressBarProps> = ({
 
   const widthInterpolated = animatedWidth.interpolate({
     inputRange: [0, 100],
-    outputRange: ['0%', '100%'],
+    outputRange: ["0%", "100%"],
   });
 
   return (
@@ -40,7 +40,7 @@ const XPProgressBar: React.FC<XPProgressBarProps> = ({
         </View>
       )}
 
-      <View style={[styles.progressBar, {height}]}>
+      <View style={[styles.progressBar, { height }]}>
         <Animated.View
           style={[
             styles.progressFill,
@@ -72,42 +72,42 @@ const XPProgressBar: React.FC<XPProgressBarProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    width: '100%',
+    width: "100%",
   },
   labelContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginBottom: 8,
   },
   levelText: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#2D1B69',
+    fontWeight: "bold",
+    color: "#2D1B69",
   },
   xpText: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: "#8E8E93",
   },
   progressBar: {
-    backgroundColor: '#E5E5E7',
+    backgroundColor: "#E5E5E7",
     borderRadius: 12,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   progressFill: {
-    backgroundColor: '#FF6B35',
+    backgroundColor: "#FF6B35",
     borderRadius: 12,
   },
   shimmer: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    backgroundColor: "rgba(255, 255, 255, 0.3)",
     borderRadius: 12,
   },
   progressText: {
     fontSize: 12,
-    color: '#8E8E93',
-    textAlign: 'center',
+    color: "#8E8E93",
+    textAlign: "center",
     marginTop: 4,
   },
 });

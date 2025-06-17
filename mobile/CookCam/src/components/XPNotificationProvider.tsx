@@ -1,7 +1,7 @@
-import React from 'react';
-import {View} from 'react-native';
-import XPNotification from './XPNotification';
-import {useGamification} from '../context/GamificationContext';
+import React from "react";
+import { View } from "react-native";
+import XPNotification from "./XPNotification";
+import { useGamification } from "../context/GamificationContext";
 
 interface XPNotificationProviderProps {
   children: React.ReactNode;

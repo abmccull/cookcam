@@ -1,57 +1,57 @@
-import React from 'react';
-import {View, Text, StyleSheet} from 'react-native';
-import {ChefHat, Star, Crown, Flame} from 'lucide-react-native';
-import {scale, moderateScale, responsive} from '../utils/responsive';
+import React from "react";
+import { View, Text, StyleSheet } from "react-native";
+import { ChefHat, Star, Crown, Flame } from "lucide-react-native";
+import { scale, moderateScale, responsive } from "../utils/responsive";
 
 interface ChefBadgeProps {
   tier: 1 | 2 | 3 | 4 | 5;
-  size?: 'small' | 'medium' | 'large';
+  size?: "small" | "medium" | "large";
   showLabel?: boolean;
 }
 
 const ChefBadge: React.FC<ChefBadgeProps> = ({
   tier,
-  size = 'medium',
+  size = "medium",
   showLabel = false,
 }) => {
   const tiers = {
     1: {
-      title: 'Sous Chef',
-      color: '#4CAF50',
-      bgColor: '#E8F5E9',
-      borderColor: '#81C784',
+      title: "Sous Chef",
+      color: "#4CAF50",
+      bgColor: "#E8F5E9",
+      borderColor: "#81C784",
       icon: ChefHat,
       stars: 1,
     },
     2: {
-      title: 'Pastry Chef',
-      color: '#2196F3',
-      bgColor: '#E3F2FD',
-      borderColor: '#64B5F6',
+      title: "Pastry Chef",
+      color: "#2196F3",
+      bgColor: "#E3F2FD",
+      borderColor: "#64B5F6",
       icon: ChefHat,
       stars: 2,
     },
     3: {
-      title: 'Head Chef',
-      color: '#9C27B0',
-      bgColor: '#F3E5F5',
-      borderColor: '#BA68C8',
+      title: "Head Chef",
+      color: "#9C27B0",
+      bgColor: "#F3E5F5",
+      borderColor: "#BA68C8",
       icon: ChefHat,
       stars: 3,
     },
     4: {
-      title: 'Executive Chef',
-      color: '#FF6B35',
-      bgColor: '#FFF3E0',
-      borderColor: '#FFB74D',
+      title: "Executive Chef",
+      color: "#FF6B35",
+      bgColor: "#FFF3E0",
+      borderColor: "#FFB74D",
       icon: Crown,
       stars: 4,
     },
     5: {
-      title: 'Master Chef',
-      color: '#FFB800',
-      bgColor: '#FFFDE7',
-      borderColor: '#FFD54F',
+      title: "Master Chef",
+      color: "#FFB800",
+      bgColor: "#FFFDE7",
+      borderColor: "#FFD54F",
       icon: Crown,
       stars: 5,
     },
@@ -98,7 +98,8 @@ const ChefBadge: React.FC<ChefBadgeProps> = ({
             borderColor: currentTier.borderColor,
             borderWidth: currentSize.borderWidth,
           },
-        ]}>
+        ]}
+      >
         {/* Special effects for higher tiers */}
         {tier >= 4 && (
           <View style={styles.glowEffect}>
@@ -149,7 +150,8 @@ const ChefBadge: React.FC<ChefBadgeProps> = ({
               fontSize: currentSize.fontSize,
               color: currentTier.color,
             },
-          ]}>
+          ]}
+        >
           {currentTier.title}
         </Text>
       )}
@@ -159,14 +161,14 @@ const ChefBadge: React.FC<ChefBadgeProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    alignItems: 'center',
+    alignItems: "center",
   },
   badge: {
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     borderRadius: moderateScale(100),
-    position: 'relative',
-    shadowColor: '#000',
+    position: "relative",
+    shadowColor: "#000",
     shadowOffset: {
       width: 0,
       height: 2,
@@ -176,12 +178,12 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   glowEffect: {
-    position: 'absolute',
-    width: '100%',
-    height: '100%',
+    position: "absolute",
+    width: "100%",
+    height: "100%",
   },
   sparkle: {
-    position: 'absolute',
+    position: "absolute",
   },
   sparkleTopLeft: {
     top: -scale(4),
@@ -192,22 +194,22 @@ const styles = StyleSheet.create({
     right: -scale(4),
   },
   starContainer: {
-    position: 'absolute',
+    position: "absolute",
     bottom: scale(2),
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: scale(1),
   },
   star: {
     marginHorizontal: scale(0.5),
   },
   flame: {
-    position: 'absolute',
+    position: "absolute",
     top: -scale(6),
     right: -scale(6),
   },
   label: {
     marginTop: scale(4),
-    fontWeight: '600',
+    fontWeight: "600",
   },
 });
 

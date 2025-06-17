@@ -1,9 +1,9 @@
-import React, {useRef, useEffect} from 'react';
-import {View, StyleSheet, Text, Modal, Animated} from 'react-native';
-import AIChefIcon from './AIChefIcon';
-import {moderateScale} from '../utils/responsive';
+import React, { useRef, useEffect } from "react";
+import { View, StyleSheet, Text, Modal, Animated } from "react-native";
+import AIChefIcon from "./AIChefIcon";
+import { moderateScale } from "../utils/responsive";
 
-export type LoadingVariant = 'scanning' | 'previews' | 'detailed';
+export type LoadingVariant = "scanning" | "previews" | "detailed";
 
 interface LoadingAnimationProps {
   visible: boolean;
@@ -12,38 +12,38 @@ interface LoadingAnimationProps {
 
 const getContentForVariant = (variant: LoadingVariant) => {
   switch (variant) {
-    case 'scanning':
+    case "scanning":
       return {
-        title: 'AI Chef Analyzing...',
-        subtitle: 'Identifying ingredients with computer vision',
+        title: "AI Chef Analyzing...",
+        subtitle: "Identifying ingredients with computer vision",
         steps: [
-          {icon: '🔍', text: 'Scanning image patterns'},
-          {icon: '🧠', text: 'Processing with neural networks'},
-          {icon: '✨', text: 'Matching to ingredient database'},
+          { icon: "🔍", text: "Scanning image patterns" },
+          { icon: "🧠", text: "Processing with neural networks" },
+          { icon: "✨", text: "Matching to ingredient database" },
         ],
       };
-    case 'previews':
+    case "previews":
       return {
-        title: '👨‍🍳 Crafting Recipe Ideas...',
-        subtitle: 'Creating 3 unique dishes just for you',
+        title: "👨‍🍳 Crafting Recipe Ideas...",
+        subtitle: "Creating 3 unique dishes just for you",
         steps: [
-          {icon: '🥘', text: 'Exploring flavor combinations'},
-          {icon: '🌟', text: 'Personalizing to your taste'},
-          {icon: '🎯', text: 'Curating diverse options'},
+          { icon: "🥘", text: "Exploring flavor combinations" },
+          { icon: "🌟", text: "Personalizing to your taste" },
+          { icon: "🎯", text: "Curating diverse options" },
         ],
       };
-    case 'detailed':
+    case "detailed":
       return {
-        title: '📝 Perfecting Your Recipe...',
-        subtitle: 'Crafting step-by-step cooking instructions',
+        title: "📝 Perfecting Your Recipe...",
+        subtitle: "Crafting step-by-step cooking instructions",
         steps: [
-          {icon: '⏱️', text: 'Calculating optimal timing'},
-          {icon: '🔥', text: 'Detailing cooking techniques'},
-          {icon: '📋', text: 'Organizing clear steps'},
+          { icon: "⏱️", text: "Calculating optimal timing" },
+          { icon: "🔥", text: "Detailing cooking techniques" },
+          { icon: "📋", text: "Organizing clear steps" },
         ],
       };
     default:
-      return getContentForVariant('scanning');
+      return getContentForVariant("scanning");
   }
 };
 
@@ -106,16 +106,18 @@ const LoadingAnimation: React.FC<LoadingAnimationProps> = ({
           style={[
             styles.modal,
             {
-              transform: [{scale: aiPulseAnim}],
+              transform: [{ scale: aiPulseAnim }],
               opacity: aiOpacityAnim,
             },
-          ]}>
+          ]}
+        >
           <View style={styles.content}>
             <Animated.View
               style={[
                 styles.iconContainer,
-                {transform: [{scale: aiPulseAnim}]},
-              ]}>
+                { transform: [{ scale: aiPulseAnim }] },
+              ]}
+            >
               <AIChefIcon size={moderateScale(64)} variant="analyzing" />
             </Animated.View>
 
@@ -139,16 +141,16 @@ const LoadingAnimation: React.FC<LoadingAnimationProps> = ({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(139, 69, 19, 0.4)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(139, 69, 19, 0.4)",
+    justifyContent: "center",
+    alignItems: "center",
   },
   modal: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderRadius: 20,
     padding: 30,
     margin: 40,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: {
       width: 0,
       height: 4,
@@ -157,37 +159,37 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 8,
     borderWidth: 2,
-    borderColor: '#FFB800',
+    borderColor: "#FFB800",
   },
   content: {
-    alignItems: 'center',
+    alignItems: "center",
   },
   iconContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: 20,
   },
   title: {
     fontSize: 22,
-    fontWeight: 'bold',
-    color: '#2D1B69',
+    fontWeight: "bold",
+    color: "#2D1B69",
     marginBottom: 8,
-    textAlign: 'center',
+    textAlign: "center",
   },
   subtitle: {
     fontSize: 16,
-    color: '#8E8E93',
+    color: "#8E8E93",
     marginBottom: 20,
-    textAlign: 'center',
+    textAlign: "center",
   },
   stepsContainer: {
-    alignItems: 'flex-start',
+    alignItems: "flex-start",
   },
   stepText: {
     fontSize: 14,
-    color: '#2D1B69',
+    color: "#2D1B69",
     marginBottom: 5,
-    fontWeight: '500',
+    fontWeight: "500",
   },
 });
 

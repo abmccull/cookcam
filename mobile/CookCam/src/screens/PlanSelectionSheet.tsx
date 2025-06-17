@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import {
   View,
   StyleSheet,
@@ -6,35 +6,35 @@ import {
   TouchableOpacity,
   SafeAreaView,
   ScrollView,
-} from 'react-native';
-import {NativeStackNavigationProp} from '@react-navigation/native-stack';
-import {RouteProp} from '@react-navigation/native';
-import {RootStackParamList} from '../App';
+} from "react-native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { RouteProp } from "@react-navigation/native";
+import { RootStackParamList } from "../App";
 import {
   ChefHat,
   DollarSign,
   Users,
   Star,
   TrendingUp,
-} from 'lucide-react-native';
-import {useTempData} from '../context/TempDataContext';
+} from "lucide-react-native";
+import { useTempData } from "../context/TempDataContext";
 
 interface PlanSelectionSheetProps {
   navigation: NativeStackNavigationProp<RootStackParamList>;
-  route: RouteProp<RootStackParamList, 'PlanSelection'>;
+  route: RouteProp<RootStackParamList, "PlanSelection">;
 }
 
 const PlanSelectionSheet: React.FC<PlanSelectionSheetProps> = ({
   navigation,
   route,
 }) => {
-  const {tempData, setSelectedPlan, exportTempData} = useTempData();
+  const { tempData, setSelectedPlan, exportTempData } = useTempData();
 
-  const handlePlanSelection = (planType: 'consumer' | 'creator') => {
+  const handlePlanSelection = (planType: "consumer" | "creator") => {
     // Store selected plan in temp context
     setSelectedPlan(planType);
 
-    navigation.navigate('AccountGate', {
+    navigation.navigate("AccountGate", {
       intendedPlan: planType,
       tempData: exportTempData(),
     });
@@ -43,7 +43,8 @@ const PlanSelectionSheet: React.FC<PlanSelectionSheetProps> = ({
   const renderConsumerPlan = () => (
     <TouchableOpacity
       style={[styles.planCard, styles.consumerCard]}
-      onPress={() => handlePlanSelection('consumer')}>
+      onPress={() => handlePlanSelection("consumer")}
+    >
       <View style={styles.planContent}>
         <View style={styles.planHeader}>
           <View style={styles.planIconContainer}>
@@ -91,7 +92,8 @@ const PlanSelectionSheet: React.FC<PlanSelectionSheetProps> = ({
   const renderCreatorPlan = () => (
     <TouchableOpacity
       style={[styles.planCard, styles.creatorCard]}
-      onPress={() => handlePlanSelection('creator')}>
+      onPress={() => handlePlanSelection("creator")}
+    >
       <View style={styles.planContent}>
         <View style={styles.planHeader}>
           <View style={styles.planIconContainer}>
@@ -165,23 +167,23 @@ const PlanSelectionSheet: React.FC<PlanSelectionSheetProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F8FF',
+    backgroundColor: "#F8F8FF",
   },
   header: {
     padding: 16,
-    alignItems: 'center',
+    alignItems: "center",
   },
   headerTitle: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#2D1B69',
+    fontWeight: "bold",
+    color: "#2D1B69",
     marginBottom: 6,
-    textAlign: 'center',
+    textAlign: "center",
   },
   headerSubtitle: {
     fontSize: 14,
-    color: '#8E8E93',
-    textAlign: 'center',
+    color: "#8E8E93",
+    textAlign: "center",
     lineHeight: 18,
   },
   plansContainer: {
@@ -190,42 +192,42 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   planCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderRadius: 16,
     padding: 16,
     marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 4,
     borderWidth: 2,
-    borderColor: 'transparent',
+    borderColor: "transparent",
     height: 280,
-    justifyContent: 'space-between',
+    justifyContent: "space-between",
   },
   planContent: {
     flex: 1,
   },
   consumerCard: {
-    borderColor: '#FF6B35',
+    borderColor: "#FF6B35",
   },
   creatorCard: {
-    borderColor: '#FFD700',
-    position: 'relative',
+    borderColor: "#FFD700",
+    position: "relative",
   },
   planHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 8,
   },
   planIconContainer: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#F8F8FF',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "#F8F8FF",
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: 12,
   },
   planTitleContainer: {
@@ -233,77 +235,77 @@ const styles = StyleSheet.create({
   },
   planTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#2D1B69',
+    fontWeight: "bold",
+    color: "#2D1B69",
     marginBottom: 4,
   },
   planSubtitle: {
     fontSize: 14,
-    color: '#66BB6A',
-    fontWeight: '600',
+    color: "#66BB6A",
+    fontWeight: "600",
     marginBottom: 2,
   },
   planPrice: {
     fontSize: 14,
-    color: '#8E8E93',
-    fontWeight: '500',
+    color: "#8E8E93",
+    fontWeight: "500",
   },
   revenueCallout: {
-    backgroundColor: '#FFD700',
+    backgroundColor: "#FFD700",
     paddingHorizontal: 12,
     paddingVertical: 4,
     borderRadius: 12,
-    alignSelf: 'flex-start',
+    alignSelf: "flex-start",
     marginVertical: 6,
   },
   revenueCalloutText: {
     fontSize: 14,
-    fontWeight: 'bold',
-    color: '#2D1B69',
+    fontWeight: "bold",
+    color: "#2D1B69",
   },
   planFeatures: {
     marginBottom: 12,
   },
   featureItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 6,
   },
   bulletPoint: {
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#FF6B35',
+    backgroundColor: "#FF6B35",
     marginRight: 12,
   },
   creatorBullet: {
-    backgroundColor: '#FFD700',
+    backgroundColor: "#FFD700",
   },
   featureText: {
     fontSize: 14,
-    color: '#2D1B69',
+    color: "#2D1B69",
     flex: 1,
     lineHeight: 18,
   },
   planCTA: {
-    backgroundColor: '#FF6B35',
+    backgroundColor: "#FF6B35",
     borderRadius: 12,
     paddingVertical: 12,
-    alignItems: 'center',
+    alignItems: "center",
   },
   ctaText: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
+    fontWeight: "bold",
+    color: "#FFFFFF",
   },
   footer: {
     padding: 20,
-    alignItems: 'center',
+    alignItems: "center",
   },
   footerText: {
     fontSize: 12,
-    color: '#8E8E93',
-    textAlign: 'center',
+    color: "#8E8E93",
+    textAlign: "center",
   },
 });
 

@@ -1,7 +1,7 @@
 # 🍳 CookCam - AI-Powered Cooking Game
 
 [![Production Ready](https://img.shields.io/badge/Production-85%25%20Ready-green.svg)](./docs/status/PRODUCTION_READINESS_FINAL_REPORT.md)
-[![Tech Stack](https://img.shields.io/badge/Stack-React%20Native%20%2B%20Supabase-blue.svg)](#technology-stack)
+[![Tech Stack](https://img.shields.io/badge/Stack-Expo%20%2B%20Supabase-blue.svg)](#technology-stack)
 [![Revenue Model](https://img.shields.io/badge/Revenue-%243.99%2Fmonth-purple.svg)](./docs/setup/subscription-setup-guide.md)
 
 #coderabbit Badge
@@ -14,16 +14,15 @@
 Get CookCam running in 15 minutes:
 
 ```bash
-# 1. Clone and setup backend
-cd backend/api && npm install
+# 1. Setup mobile app (Expo)
+npm run install:mobile
 
-# 2. Setup mobile app  
-cd mobile/CookCam && npm install
-cd ios && pod install  # iOS only
+# 2. Setup backend
+npm run install:backend
 
 # 3. Start development
-npm run dev  # Backend
-npx react-native start  # Mobile
+npm run mobile      # Start Expo development server
+npm run backend     # Start backend (in another terminal)
 ```
 
 **👉 [Complete Setup Guide](./docs/setup/QUICK_START.md)**
@@ -53,11 +52,12 @@ npx react-native start  # Mobile
 
 ## 🏗️ **Architecture Overview**
 
-### **Frontend: React Native 0.73.9**
+### **Frontend: Expo + React Native 0.79.3**
 - TypeScript for type safety
 - 10 fully implemented screens
 - 30+ custom components
-- Offline-first architecture
+- Expo managed workflow
+- Hot reload and OTA updates
 - 60 FPS animations
 
 ### **Backend: Supabase + PostgreSQL**
@@ -139,7 +139,7 @@ npx react-native start  # Mobile
 
 | Component | Technology | Purpose |
 |-----------|------------|---------|
-| **Mobile** | React Native 0.73.9 | Cross-platform app |
+| **Mobile** | Expo + React Native 0.79.3 | Cross-platform app |
 | **Language** | TypeScript | Type safety |
 | **Backend** | Supabase | Database + Auth |
 | **Database** | PostgreSQL | Relational data |

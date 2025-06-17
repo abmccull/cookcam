@@ -1,4 +1,9 @@
-import {Platform} from 'react-native';
+import { Platform } from "react-native";
+import logger from "../utils/logger";
+
+
+// Declare __DEV__ global
+declare const __DEV__: boolean;
 
 export interface CreatorAccountStatus {
   isConnected: boolean;
@@ -32,8 +37,8 @@ class StripeConnectService {
   private constructor() {
     // TODO: Replace with your actual backend URL
     this.baseURL = __DEV__
-      ? 'http://localhost:3000/api'
-      : 'https://your-backend.com/api';
+      ? "http://localhost:3000/api"
+      : "https://your-backend.com/api";
   }
 
   public static getInstance(): StripeConnectService {
@@ -51,21 +56,21 @@ class StripeConnectService {
     email: string;
     firstName?: string;
     lastName?: string;
-    businessType?: 'individual' | 'company';
+    businessType?: "individual" | "company";
     country?: string;
-  }): Promise<{accountId: string; success: boolean}> {
+  }): Promise<{ accountId: string; success: boolean }> {
     try {
-      console.log(
-        '🏦 Creating Stripe Connect account for creator:',
+      logger.debug(
+        "🏦 Creating Stripe Connect account for creator:",
         creatorData.userId,
       );
 
       const response = await fetch(
         `${this.baseURL}/stripe/create-connect-account`,
         {
-          method: 'POST',
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
             // TODO: Add Authorization header with JWT token
           },
           body: JSON.stringify({
@@ -73,8 +78,8 @@ class StripeConnectService {
             email: creatorData.email,
             first_name: creatorData.firstName,
             last_name: creatorData.lastName,
-            business_type: creatorData.businessType || 'individual',
-            country: creatorData.country || 'US',
+            business_type: creatorData.businessType || "individual",
+            country: creatorData.country || "US",
             platform: Platform.OS,
           }),
         },
@@ -83,17 +88,17 @@ class StripeConnectService {
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || 'Failed to create Connect account');
+        throw new Error(result.error || "Failed to create Connect account");
       }
 
-      console.log('✅ Connect account created:', result.account_id);
+      logger.debug("✅ Connect account created:", result.account_id);
       return {
         accountId: result.account_id,
         success: true,
       };
     } catch (error) {
-      console.error('❌ Failed to create Connect account:', error);
-      throw new Error('Failed to create creator account');
+      logger.error("❌ Failed to create Connect account:", error);
+      throw new Error("Failed to create creator account");
     }
   }
 
@@ -105,21 +110,21 @@ class StripeConnectService {
     returnUrl?: string,
   ): Promise<ConnectAccountLink> {
     try {
-      console.log('🔗 Creating account link for:', accountId);
+      logger.debug("🔗 Creating account link for:", accountId);
 
       const response = await fetch(
         `${this.baseURL}/stripe/create-account-link`,
         {
-          method: 'POST',
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
             // TODO: Add Authorization header
           },
           body: JSON.stringify({
             account_id: accountId,
-            return_url: returnUrl || 'cookcam://creator-onboarding-complete',
-            refresh_url: 'cookcam://creator-onboarding-refresh',
-            type: 'account_onboarding',
+            return_url: returnUrl || "cookcam://creator-onboarding-complete",
+            refresh_url: "cookcam://creator-onboarding-refresh",
+            type: "account_onboarding",
           }),
         },
       );
@@ -127,7 +132,7 @@ class StripeConnectService {
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || 'Failed to create account link');
+        throw new Error(result.error || "Failed to create account link");
       }
 
       return {
@@ -135,8 +140,8 @@ class StripeConnectService {
         expiresAt: result.expires_at,
       };
     } catch (error) {
-      console.error('❌ Failed to create account link:', error);
-      throw new Error('Failed to create onboarding link');
+      logger.error("❌ Failed to create account link:", error);
+      throw new Error("Failed to create onboarding link");
     }
   }
 
@@ -145,12 +150,12 @@ class StripeConnectService {
    */
   async getAccountStatus(accountId: string): Promise<CreatorAccountStatus> {
     try {
-      console.log('📊 Getting account status for:', accountId);
+      logger.debug("📊 Getting account status for:", accountId);
 
       const response = await fetch(
         `${this.baseURL}/stripe/account-status/${accountId}`,
         {
-          method: 'GET',
+          method: "GET",
           headers: {
             // TODO: Add Authorization header
           },
@@ -160,7 +165,7 @@ class StripeConnectService {
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || 'Failed to get account status');
+        throw new Error(result.error || "Failed to get account status");
       }
 
       return {
@@ -174,8 +179,8 @@ class StripeConnectService {
         pendingVerification: result.requirements.pending_verification,
       };
     } catch (error) {
-      console.error('❌ Failed to get account status:', error);
-      throw new Error('Failed to get account status');
+      logger.error("❌ Failed to get account status:", error);
+      throw new Error("Failed to get account status");
     }
   }
 
@@ -184,12 +189,12 @@ class StripeConnectService {
    */
   async getCreatorEarnings(accountId: string): Promise<CreatorEarnings> {
     try {
-      console.log('💰 Getting earnings for:', accountId);
+      logger.debug("💰 Getting earnings for:", accountId);
 
       const response = await fetch(
         `${this.baseURL}/stripe/creator-earnings/${accountId}`,
         {
-          method: 'GET',
+          method: "GET",
           headers: {
             // TODO: Add Authorization header
           },
@@ -199,7 +204,7 @@ class StripeConnectService {
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || 'Failed to get earnings');
+        throw new Error(result.error || "Failed to get earnings");
       }
 
       return {
@@ -215,8 +220,8 @@ class StripeConnectService {
         revenueShare: 0.3, // 30% revenue share
       };
     } catch (error) {
-      console.error('❌ Failed to get earnings:', error);
-      throw new Error('Failed to get earnings information');
+      logger.error("❌ Failed to get earnings:", error);
+      throw new Error("Failed to get earnings information");
     }
   }
 
@@ -226,33 +231,33 @@ class StripeConnectService {
   async createInstantPayout(
     accountId: string,
     amount: number,
-  ): Promise<{success: boolean; payoutId?: string}> {
+  ): Promise<{ success: boolean; payoutId?: string }> {
     try {
-      console.log(
-        '⚡ Creating instant payout for:',
+      logger.debug(
+        "⚡ Creating instant payout for:",
         accountId,
-        'Amount:',
+        "Amount:",
         amount,
       );
 
       const response = await fetch(`${this.baseURL}/stripe/create-payout`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
           // TODO: Add Authorization header
         },
         body: JSON.stringify({
           account_id: accountId,
           amount: Math.round(amount * 100), // Convert to cents
-          currency: 'usd',
-          method: 'instant',
+          currency: "usd",
+          method: "instant",
         }),
       });
 
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || 'Failed to create payout');
+        throw new Error(result.error || "Failed to create payout");
       }
 
       return {
@@ -260,8 +265,8 @@ class StripeConnectService {
         payoutId: result.payout_id,
       };
     } catch (error) {
-      console.error('❌ Failed to create payout:', error);
-      throw new Error('Failed to process payout');
+      logger.error("❌ Failed to create payout:", error);
+      throw new Error("Failed to process payout");
     }
   }
 
@@ -270,47 +275,47 @@ class StripeConnectService {
    */
   async handleWebhookEvent(event: any): Promise<void> {
     try {
-      console.log('🔔 Handling Stripe Connect webhook:', event.type);
+      logger.debug("🔔 Handling Stripe Connect webhook:", event.type);
 
       switch (event.type) {
-        case 'account.updated':
+        case "account.updated":
           await this.handleAccountUpdate(event.data.object);
           break;
-        case 'account.application.deauthorized':
+        case "account.application.deauthorized":
           await this.handleAccountDeauthorized(event.data.object);
           break;
-        case 'payout.paid':
+        case "payout.paid":
           await this.handlePayoutPaid(event.data.object);
           break;
-        case 'payout.failed':
+        case "payout.failed":
           await this.handlePayoutFailed(event.data.object);
           break;
         default:
-          console.log('⚠️ Unhandled webhook event:', event.type);
+          logger.debug("⚠️ Unhandled webhook event:", event.type);
       }
     } catch (error) {
-      console.error('❌ Failed to handle webhook:', error);
+      logger.error("❌ Failed to handle webhook:", error);
     }
   }
 
   private async handleAccountUpdate(account: any): Promise<void> {
-    console.log('📋 Account updated:', account.id);
+    logger.debug("📋 Account updated:", account.id);
     // TODO: Update local database with account status
     // You might want to emit events here for the UI to react to
   }
 
   private async handleAccountDeauthorized(account: any): Promise<void> {
-    console.log('🚫 Account deauthorized:', account.id);
+    logger.debug("🚫 Account deauthorized:", account.id);
     // TODO: Handle account disconnection
   }
 
   private async handlePayoutPaid(payout: any): Promise<void> {
-    console.log('💸 Payout completed:', payout.id);
+    logger.debug("💸 Payout completed:", payout.id);
     // TODO: Update creator earnings and notify them
   }
 
   private async handlePayoutFailed(payout: any): Promise<void> {
-    console.log('❌ Payout failed:', payout.id);
+    logger.debug("❌ Payout failed:", payout.id);
     // TODO: Notify creator of failed payout
   }
 
@@ -319,11 +324,11 @@ class StripeConnectService {
    */
   async mockCreateAccount(
     creatorData: any,
-  ): Promise<{accountId: string; success: boolean}> {
-    console.log('🧪 Mock: Creating Connect account');
+  ): Promise<{ accountId: string; success: boolean }> {
+    logger.debug("🧪 Mock: Creating Connect account");
 
     // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise((resolve) => setTimeout(resolve, 2000));
 
     return {
       accountId: `acct_mock_${Date.now()}`,
@@ -332,16 +337,16 @@ class StripeConnectService {
   }
 
   async mockCreateAccountLink(accountId: string): Promise<ConnectAccountLink> {
-    console.log('🧪 Mock: Creating account link');
+    logger.debug("🧪 Mock: Creating account link");
 
     return {
-      url: 'https://connect.stripe.com/setup/e/acct_mock_123',
+      url: "https://connect.stripe.com/setup/e/acct_mock_123",
       expiresAt: Date.now() + 60 * 60 * 1000, // 1 hour from now
     };
   }
 
   async mockGetAccountStatus(accountId: string): Promise<CreatorAccountStatus> {
-    console.log('🧪 Mock: Getting account status');
+    logger.debug("🧪 Mock: Getting account status");
 
     return {
       isConnected: true,
@@ -361,7 +366,7 @@ class StripeConnectService {
 
   async calculateEarnings(_accountId: string) {
     // Implementation needed
-    return {success: false, error: 'Not implemented'};
+    return { success: false, error: "Not implemented" };
   }
 }
 

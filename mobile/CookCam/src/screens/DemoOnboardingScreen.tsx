@@ -1,4 +1,4 @@
-import React, {useState, useRef} from 'react';
+import React, { useState, useRef } from "react";
 import {
   View,
   StyleSheet,
@@ -6,15 +6,17 @@ import {
   TouchableOpacity,
   SafeAreaView,
   Alert,
-} from 'react-native';
-import {Camera} from 'react-native-vision-camera';
-import {NativeStackNavigationProp} from '@react-navigation/native-stack';
-import {RootStackParamList} from '../App';
-import {Scan, X} from 'lucide-react-native';
-import {useTempData} from '../context/TempDataContext';
+} from "react-native";
+import { CameraView, Camera } from "expo-camera";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+// import {RootStackParamList} from '../App';
+import { Scan, X } from "lucide-react-native";
+import { useTempData } from "../context/TempDataContext";
+import logger from "../utils/logger";
+
 
 interface DemoOnboardingScreenProps {
-  navigation: NativeStackNavigationProp<RootStackParamList>;
+  navigation: NativeStackNavigationProp<any>;
 }
 
 const DemoOnboardingScreen: React.FC<DemoOnboardingScreenProps> = ({
@@ -22,9 +24,9 @@ const DemoOnboardingScreen: React.FC<DemoOnboardingScreenProps> = ({
 }) => {
   const [hasPermission, setHasPermission] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
-  const [hasValidDevice, setHasValidDevice] = useState(false);
-  const cameraRef = useRef<Camera>(null);
-  const {setTempScanData} = useTempData();
+  const [hasValidDevice, setHasValidDevice] = useState(true); // Always true for expo-camera
+  const cameraRef = useRef<CameraView>(null);
+  const { setTempScanData } = useTempData();
 
   React.useEffect(() => {
     checkCameraPermission();
@@ -32,59 +34,44 @@ const DemoOnboardingScreen: React.FC<DemoOnboardingScreenProps> = ({
 
   const checkCameraPermission = async () => {
     try {
-      // First check if any camera devices are available
-      const devices = Camera.getAvailableCameraDevices();
-      if (devices.length === 0) {
-        // No camera devices available (simulator case)
-        Alert.alert(
-          'Camera Not Available',
-          'No camera devices found. This is normal in the simulator.\n\nWould you like to try the mock demo instead?',
-          [
-            {
-              text: 'Skip Demo',
-              onPress: () => navigation.navigate('PlanSelection', {}),
-            },
-            {text: 'Mock Demo', onPress: () => handleMockScan()},
-          ],
-        );
-        return;
-      }
-
-      setHasValidDevice(true);
-
-      const permission = await Camera.getCameraPermissionStatus();
-      if (permission === 'granted') {
+      const { status } = await Camera.getCameraPermissionsAsync();
+      if (status === "granted") {
         setHasPermission(true);
-      } else if (permission === 'not-determined') {
-        const newPermission = await Camera.requestCameraPermission();
-        setHasPermission(newPermission === 'granted');
+        setHasValidDevice(true);
       } else {
-        // Permission denied
-        Alert.alert(
-          'Camera Permission Denied',
-          'Camera access is required for ingredient scanning.',
-          [
-            {
-              text: 'Skip Demo',
-              onPress: () => navigation.navigate('PlanSelection', {}),
-            },
-            {text: 'Use Mock Demo', onPress: () => handleMockScan()},
-            {text: 'Try Again', onPress: checkCameraPermission},
-          ],
-        );
+        const { status: newStatus } =
+          await Camera.requestCameraPermissionsAsync();
+        if (newStatus === "granted") {
+          setHasPermission(true);
+          setHasValidDevice(true);
+        } else {
+          // Permission denied
+          Alert.alert(
+            "Camera Permission Denied",
+            "Camera access is required for ingredient scanning.",
+            [
+              {
+                text: "Skip Demo",
+                onPress: () => navigation.navigate("PlanSelection", {}),
+              },
+              { text: "Use Mock Demo", onPress: () => handleMockScan() },
+              { text: "Try Again", onPress: checkCameraPermission },
+            ],
+          );
+        }
       }
     } catch (error) {
-      console.error('Camera permission error:', error);
+      logger.error("Camera permission error:", error);
       // Fallback for simulator or camera issues
       Alert.alert(
-        'Camera Error',
-        'Camera functionality not available. Would you like to try a mock demo instead?',
+        "Camera Error",
+        "Camera functionality not available. Would you like to try a mock demo instead?",
         [
           {
-            text: 'Skip Demo',
-            onPress: () => navigation.navigate('PlanSelection', {}),
+            text: "Skip Demo",
+            onPress: () => navigation.navigate("PlanSelection", {}),
           },
-          {text: 'Mock Demo', onPress: () => handleMockScan()},
+          { text: "Mock Demo", onPress: () => handleMockScan() },
         ],
       );
     }
@@ -99,21 +86,21 @@ const DemoOnboardingScreen: React.FC<DemoOnboardingScreenProps> = ({
       setIsScanning(true);
 
       // Take photo for scanning
-      const photo = await cameraRef.current.takePhoto({
-        flash: 'off',
+      const photo = await cameraRef.current.takePictureAsync({
+        quality: 0.7,
       });
 
       // Mock ingredient detection for demo
       const mockIngredients = [
-        {name: 'Tomatoes', confidence: 0.95},
-        {name: 'Onions', confidence: 0.87},
-        {name: 'Garlic', confidence: 0.92},
-        {name: 'Bell Peppers', confidence: 0.78},
+        { name: "Tomatoes", confidence: 0.95 },
+        { name: "Onions", confidence: 0.87 },
+        { name: "Garlic", confidence: 0.92 },
+        { name: "Bell Peppers", confidence: 0.78 },
       ];
 
       // Store scan data in temp context
       const scanData = {
-        imageUrl: `file://${photo.path}`,
+        imageUrl: photo.uri,
         ingredients: mockIngredients,
         scanDate: new Date(),
       };
@@ -121,10 +108,10 @@ const DemoOnboardingScreen: React.FC<DemoOnboardingScreenProps> = ({
       setTempScanData(scanData);
 
       // Navigate to recipe carousel
-      navigation.navigate('RecipeCarousel');
+      navigation.navigate("RecipeCarousel");
     } catch (error) {
-      console.error('Scan error:', error);
-      Alert.alert('Scan Failed', 'Please try again or skip the demo.');
+      logger.error("Scan error:", error);
+      Alert.alert("Scan Failed", "Please try again or skip the demo.");
     } finally {
       setIsScanning(false);
     }
@@ -133,16 +120,16 @@ const DemoOnboardingScreen: React.FC<DemoOnboardingScreenProps> = ({
   const handleMockScan = () => {
     // Mock scan without camera for testing/simulator
     const mockIngredients = [
-      {name: 'Tomatoes', confidence: 0.95},
-      {name: 'Onions', confidence: 0.87},
-      {name: 'Garlic', confidence: 0.92},
-      {name: 'Bell Peppers', confidence: 0.78},
-      {name: 'Carrots', confidence: 0.89},
+      { name: "Tomatoes", confidence: 0.95 },
+      { name: "Onions", confidence: 0.87 },
+      { name: "Garlic", confidence: 0.92 },
+      { name: "Bell Peppers", confidence: 0.78 },
+      { name: "Carrots", confidence: 0.89 },
     ];
 
     // Store scan data in temp context
     const scanData = {
-      imageUrl: 'mock://demo-ingredients.jpg',
+      imageUrl: "mock://demo-ingredients.jpg",
       ingredients: mockIngredients,
       scanDate: new Date(),
     };
@@ -150,11 +137,11 @@ const DemoOnboardingScreen: React.FC<DemoOnboardingScreenProps> = ({
     setTempScanData(scanData);
 
     // Navigate to recipe carousel
-    navigation.navigate('RecipeCarousel');
+    navigation.navigate("RecipeCarousel");
   };
 
   const handleSkip = () => {
-    navigation.navigate('PlanSelection', {});
+    navigation.navigate("PlanSelection", {});
   };
 
   if (!hasPermission || !hasValidDevice) {
@@ -166,12 +153,13 @@ const DemoOnboardingScreen: React.FC<DemoOnboardingScreenProps> = ({
             CookCam uses your camera to identify ingredients and suggest amazing
             recipes.
             {!hasValidDevice &&
-              '\n\nSimulator detected - try the mock demo below!'}
+              "\n\nSimulator detected - try the mock demo below!"}
           </Text>
           {hasValidDevice && (
             <TouchableOpacity
               style={styles.permissionButton}
-              onPress={checkCameraPermission}>
+              onPress={checkCameraPermission}
+            >
               <Text style={styles.permissionButtonText}>Enable Camera</Text>
             </TouchableOpacity>
           )}
@@ -189,17 +177,7 @@ const DemoOnboardingScreen: React.FC<DemoOnboardingScreenProps> = ({
   return (
     <SafeAreaView style={styles.container}>
       {hasValidDevice && (
-        <Camera
-          ref={cameraRef}
-          style={styles.camera}
-          device={
-            Camera.getAvailableCameraDevices().find(
-              d => d.position === 'back',
-            ) || Camera.getAvailableCameraDevices()[0]
-          }
-          isActive={true}
-          photo={true}
-        />
+        <CameraView ref={cameraRef} style={styles.camera} facing="back" />
       )}
 
       {!hasValidDevice && (
@@ -229,11 +207,12 @@ const DemoOnboardingScreen: React.FC<DemoOnboardingScreenProps> = ({
           <TouchableOpacity
             style={[styles.scanButton, isScanning && styles.scanButtonScanning]}
             onPress={handleScan}
-            disabled={isScanning}>
+            disabled={isScanning}
+          >
             <Scan size={32} color="#F8F8FF" />
           </TouchableOpacity>
           <Text style={styles.scanText}>
-            {isScanning ? 'Scanning...' : 'Tap to scan'}
+            {isScanning ? "Scanning..." : "Tap to scan"}
           </Text>
         </View>
       </View>
@@ -244,111 +223,111 @@ const DemoOnboardingScreen: React.FC<DemoOnboardingScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000000',
+    backgroundColor: "#000000",
   },
   camera: {
     flex: 1,
   },
   mockCameraView: {
-    backgroundColor: '#1a1a1a',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "#1a1a1a",
+    justifyContent: "center",
+    alignItems: "center",
   },
   mockCameraText: {
     fontSize: 24,
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     marginBottom: 8,
   },
   mockCameraSubtext: {
     fontSize: 16,
-    color: '#888888',
+    color: "#888888",
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
-    justifyContent: 'space-between',
+    backgroundColor: "rgba(0, 0, 0, 0.3)",
+    justifyContent: "space-between",
     padding: 20,
   },
   topSkipButton: {
-    alignSelf: 'flex-end',
+    alignSelf: "flex-end",
     marginTop: 10,
     padding: 12,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
     borderRadius: 20,
   },
   guidanceContainer: {
-    alignItems: 'center',
+    alignItems: "center",
     marginTop: 100,
   },
   guidanceTitle: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#F8F8FF',
-    textAlign: 'center',
+    fontWeight: "bold",
+    color: "#F8F8FF",
+    textAlign: "center",
     marginBottom: 8,
-    textShadowColor: 'rgba(0, 0, 0, 0.8)',
-    textShadowOffset: {width: 1, height: 1},
+    textShadowColor: "rgba(0, 0, 0, 0.8)",
+    textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 3,
   },
   guidanceSubtitle: {
     fontSize: 16,
-    color: '#F8F8FF',
-    textAlign: 'center',
-    textShadowColor: 'rgba(0, 0, 0, 0.8)',
-    textShadowOffset: {width: 1, height: 1},
+    color: "#F8F8FF",
+    textAlign: "center",
+    textShadowColor: "rgba(0, 0, 0, 0.8)",
+    textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 3,
   },
   scanContainer: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 40,
   },
   scanButton: {
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#FF6B35',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "#FF6B35",
+    justifyContent: "center",
+    alignItems: "center",
     marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 4},
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 8,
   },
   scanButtonScanning: {
-    backgroundColor: '#666',
+    backgroundColor: "#666",
   },
   scanText: {
     fontSize: 16,
-    color: '#F8F8FF',
-    fontWeight: '600',
-    textShadowColor: 'rgba(0, 0, 0, 0.8)',
-    textShadowOffset: {width: 1, height: 1},
+    color: "#F8F8FF",
+    fontWeight: "600",
+    textShadowColor: "rgba(0, 0, 0, 0.8)",
+    textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 3,
   },
   permissionContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     padding: 40,
   },
   permissionTitle: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#2D1B69',
-    textAlign: 'center',
+    fontWeight: "bold",
+    color: "#2D1B69",
+    textAlign: "center",
     marginBottom: 16,
   },
   permissionText: {
     fontSize: 16,
-    color: '#8E8E93',
-    textAlign: 'center',
+    color: "#8E8E93",
+    textAlign: "center",
     lineHeight: 24,
     marginBottom: 32,
   },
   permissionButton: {
-    backgroundColor: '#FF6B35',
+    backgroundColor: "#FF6B35",
     paddingHorizontal: 32,
     paddingVertical: 16,
     borderRadius: 28,
@@ -356,11 +335,11 @@ const styles = StyleSheet.create({
   },
   permissionButtonText: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#F8F8FF',
+    fontWeight: "600",
+    color: "#F8F8FF",
   },
   mockButton: {
-    backgroundColor: '#66BB6A',
+    backgroundColor: "#66BB6A",
     paddingHorizontal: 32,
     paddingVertical: 16,
     borderRadius: 28,
@@ -368,15 +347,15 @@ const styles = StyleSheet.create({
   },
   mockButtonText: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#F8F8FF',
+    fontWeight: "600",
+    color: "#F8F8FF",
   },
   skipButton: {
     padding: 16,
   },
   skipButtonText: {
     fontSize: 16,
-    color: '#8E8E93',
+    color: "#8E8E93",
   },
 });
 

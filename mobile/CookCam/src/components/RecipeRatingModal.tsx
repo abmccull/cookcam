@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -10,9 +10,9 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
-} from 'react-native';
-import {Star, X, Camera} from 'lucide-react-native';
-import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
+} from "react-native";
+import { Star, X, Camera } from "lucide-react-native";
+import * as Haptics from "expo-haptics";
 
 interface RecipeRatingModalProps {
   visible: boolean;
@@ -51,14 +51,11 @@ const RecipeRatingModal: React.FC<RecipeRatingModalProps> = ({
     accuracy: 0,
     value: 0,
   });
-  const [review, setReview] = useState('');
+  const [review, setReview] = useState("");
   const [showSubRatings, setShowSubRatings] = useState(false);
 
   const triggerHaptic = () => {
-    ReactNativeHapticFeedback.trigger('impactLight', {
-      enableVibrateFallback: true,
-      ignoreAndroidSystemSettings: false,
-    });
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
   const renderStars = (
@@ -68,18 +65,19 @@ const RecipeRatingModal: React.FC<RecipeRatingModalProps> = ({
   ) => {
     return (
       <View style={styles.starsContainer}>
-        {[1, 2, 3, 4, 5].map(value => (
+        {[1, 2, 3, 4, 5].map((value) => (
           <TouchableOpacity
             key={value}
             onPress={() => {
               triggerHaptic();
               onPress(value);
             }}
-            style={styles.starButton}>
+            style={styles.starButton}
+          >
             <Star
               size={size}
-              color={value <= rating ? '#FFB800' : '#E5E5E7'}
-              fill={value <= rating ? '#FFB800' : 'transparent'}
+              color={value <= rating ? "#FFB800" : "#E5E5E7"}
+              fill={value <= rating ? "#FFB800" : "transparent"}
             />
           </TouchableOpacity>
         ))}
@@ -89,7 +87,7 @@ const RecipeRatingModal: React.FC<RecipeRatingModalProps> = ({
 
   const handleSubmit = () => {
     if (overallRating === 0) {
-      Alert.alert('Rating Required', 'Please provide an overall rating');
+      Alert.alert("Rating Required", "Please provide an overall rating");
       return;
     }
 
@@ -105,17 +103,23 @@ const RecipeRatingModal: React.FC<RecipeRatingModalProps> = ({
 
   const resetForm = () => {
     setOverallRating(0);
-    setSubRatings({taste: 0, ease: 0, presentation: 0, accuracy: 0, value: 0});
-    setReview('');
+    setSubRatings({
+      taste: 0,
+      ease: 0,
+      presentation: 0,
+      accuracy: 0,
+      value: 0,
+    });
+    setReview("");
     setShowSubRatings(false);
   };
 
   const subRatingCategories = [
-    {key: 'taste', label: 'Taste', emoji: '🍽️'},
-    {key: 'ease', label: 'Ease', emoji: '⚡'},
-    {key: 'presentation', label: 'Presentation', emoji: '📸'},
-    {key: 'accuracy', label: 'Accuracy', emoji: '✅'},
-    {key: 'value', label: 'Value', emoji: '💰'},
+    { key: "taste", label: "Taste", emoji: "🍽️" },
+    { key: "ease", label: "Ease", emoji: "⚡" },
+    { key: "presentation", label: "Presentation", emoji: "📸" },
+    { key: "accuracy", label: "Accuracy", emoji: "✅" },
+    { key: "value", label: "Value", emoji: "💰" },
   ];
 
   return (
@@ -123,10 +127,12 @@ const RecipeRatingModal: React.FC<RecipeRatingModalProps> = ({
       visible={visible}
       animationType="slide"
       transparent={true}
-      onRequestClose={onClose}>
+      onRequestClose={onClose}
+    >
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.modalContainer}>
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={styles.modalContainer}
+      >
         <View style={styles.modalContent}>
           {/* Header */}
           <View style={styles.header}>
@@ -146,8 +152,8 @@ const RecipeRatingModal: React.FC<RecipeRatingModalProps> = ({
               {renderStars(overallRating, setOverallRating)}
               <Text style={styles.ratingText}>
                 {overallRating === 0
-                  ? 'Tap to rate'
-                  : ['Poor', 'Fair', 'Good', 'Very Good', 'Excellent'][
+                  ? "Tap to rate"
+                  : ["Poor", "Fair", "Good", "Very Good", "Excellent"][
                       overallRating - 1
                     ]}
               </Text>
@@ -156,9 +162,10 @@ const RecipeRatingModal: React.FC<RecipeRatingModalProps> = ({
             {/* Toggle Sub-Ratings */}
             <TouchableOpacity
               style={styles.toggleButton}
-              onPress={() => setShowSubRatings(!showSubRatings)}>
+              onPress={() => setShowSubRatings(!showSubRatings)}
+            >
               <Text style={styles.toggleText}>
-                {showSubRatings ? 'Hide' : 'Add'} detailed ratings
+                {showSubRatings ? "Hide" : "Add"} detailed ratings
               </Text>
             </TouchableOpacity>
 
@@ -166,7 +173,7 @@ const RecipeRatingModal: React.FC<RecipeRatingModalProps> = ({
             {showSubRatings && (
               <View style={styles.subRatingsSection}>
                 <Text style={styles.sectionTitle}>Rate Each Aspect</Text>
-                {subRatingCategories.map(category => (
+                {subRatingCategories.map((category) => (
                   <View key={category.key} style={styles.subRatingItem}>
                     <View style={styles.subRatingLabel}>
                       <Text style={styles.subRatingEmoji}>
@@ -176,8 +183,8 @@ const RecipeRatingModal: React.FC<RecipeRatingModalProps> = ({
                     </View>
                     {renderStars(
                       subRatings[category.key as keyof typeof subRatings],
-                      value =>
-                        setSubRatings({...subRatings, [category.key]: value}),
+                      (value) =>
+                        setSubRatings({ ...subRatings, [category.key]: value }),
                       24,
                     )}
                   </View>
@@ -214,7 +221,8 @@ const RecipeRatingModal: React.FC<RecipeRatingModalProps> = ({
               overallRating === 0 && styles.submitButtonDisabled,
             ]}
             onPress={handleSubmit}
-            disabled={overallRating === 0}>
+            disabled={overallRating === 0}
+          >
             <Text style={styles.submitButtonText}>Submit Rating</Text>
           </TouchableOpacity>
         </View>
@@ -226,53 +234,53 @@ const RecipeRatingModal: React.FC<RecipeRatingModalProps> = ({
 const styles = StyleSheet.create({
   modalContainer: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "flex-end",
   },
   modalContent: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    maxHeight: '90%',
+    maxHeight: "90%",
     paddingBottom: 20,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E7',
+    borderBottomColor: "#E5E5E7",
   },
   title: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#2D1B69',
+    fontWeight: "bold",
+    color: "#2D1B69",
   },
   closeButton: {
     padding: 4,
   },
   recipeName: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#2D1B69',
-    textAlign: 'center',
+    fontWeight: "600",
+    color: "#2D1B69",
+    textAlign: "center",
     marginTop: 16,
     marginBottom: 24,
     paddingHorizontal: 20,
   },
   ratingSection: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 24,
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#2D1B69',
+    fontWeight: "600",
+    color: "#2D1B69",
     marginBottom: 12,
   },
   starsContainer: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 8,
   },
   starButton: {
@@ -280,33 +288,33 @@ const styles = StyleSheet.create({
   },
   ratingText: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: "#8E8E93",
     marginTop: 8,
   },
   toggleButton: {
-    alignSelf: 'center',
+    alignSelf: "center",
     paddingVertical: 8,
     paddingHorizontal: 16,
     marginBottom: 16,
   },
   toggleText: {
     fontSize: 14,
-    color: '#FF6B35',
-    fontWeight: '500',
+    color: "#FF6B35",
+    fontWeight: "500",
   },
   subRatingsSection: {
     paddingHorizontal: 20,
     marginBottom: 24,
   },
   subRatingItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 16,
   },
   subRatingLabel: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
     flex: 1,
   },
@@ -315,7 +323,7 @@ const styles = StyleSheet.create({
   },
   subRatingText: {
     fontSize: 14,
-    color: '#2D1B69',
+    color: "#2D1B69",
   },
   reviewSection: {
     paddingHorizontal: 20,
@@ -323,52 +331,52 @@ const styles = StyleSheet.create({
   },
   reviewInput: {
     borderWidth: 1,
-    borderColor: '#E5E5E7',
+    borderColor: "#E5E5E7",
     borderRadius: 12,
     padding: 16,
     minHeight: 100,
     fontSize: 16,
-    color: '#2D1B69',
-    textAlignVertical: 'top',
+    color: "#2D1B69",
+    textAlignVertical: "top",
   },
   characterCount: {
     fontSize: 12,
-    color: '#8E8E93',
-    textAlign: 'right',
+    color: "#8E8E93",
+    textAlign: "right",
     marginTop: 4,
   },
   addPhotoButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     gap: 8,
     paddingVertical: 12,
     marginHorizontal: 20,
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: '#FF6B35',
+    borderColor: "#FF6B35",
     borderRadius: 12,
-    borderStyle: 'dashed',
+    borderStyle: "dashed",
   },
   addPhotoText: {
     fontSize: 14,
-    color: '#FF6B35',
-    fontWeight: '500',
+    color: "#FF6B35",
+    fontWeight: "500",
   },
   submitButton: {
-    backgroundColor: '#FF6B35',
+    backgroundColor: "#FF6B35",
     marginHorizontal: 20,
     paddingVertical: 16,
     borderRadius: 12,
-    alignItems: 'center',
+    alignItems: "center",
   },
   submitButtonDisabled: {
-    backgroundColor: '#E5E5E7',
+    backgroundColor: "#E5E5E7",
   },
   submitButtonText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
+    fontWeight: "600",
+    color: "#FFFFFF",
   },
 });
 

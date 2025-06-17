@@ -4,13 +4,15 @@ import React, {
   useState,
   useEffect,
   ReactNode,
-} from 'react';
+} from "react";
 import {
   secureStorage,
   SECURE_KEYS,
   STORAGE_KEYS,
-} from '../services/secureStorage';
-import {supabase} from '../services/supabaseClient';
+} from "../services/secureStorage";
+import { supabase } from "../services/supabaseClient";
+import logger from "../utils/logger";
+
 
 interface User {
   id: string;
@@ -51,7 +53,7 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
-export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
+export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreatingProfile, setIsCreatingProfile] = useState(false);
@@ -62,9 +64,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
 
     // Listen for auth state changes
     const {
-      data: {subscription},
+      data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('🔐 Auth state changed:', event, session?.user?.id);
+      logger.debug("🔐 Auth state changed:", event, session?.user?.id);
 
       try {
         if (session?.user) {
@@ -74,7 +76,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
           await secureStorage.removeSecureItem(TOKEN_KEY).catch(console.error);
         }
       } catch (error) {
-        console.error('Error handling auth state change:', error);
+        logger.error("Error handling auth state change:", error);
       } finally {
         setIsLoading(false);
       }
@@ -88,12 +90,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
   const checkSession = async () => {
     try {
       const {
-        data: {session},
+        data: { session },
         error,
       } = await supabase.auth.getSession();
 
       if (error) {
-        console.error('Session check error:', error);
+        logger.error("Session check error:", error);
         setIsLoading(false);
         return;
       }
@@ -102,7 +104,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
         await loadUserProfile(session.user.id, session.access_token);
       }
     } catch (error) {
-      console.error('Session check failed:', error);
+      logger.error("Session check failed:", error);
     } finally {
       setIsLoading(false);
     }
@@ -114,26 +116,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
       await secureStorage.setSecureItem(TOKEN_KEY, accessToken);
 
       // Get user profile from our users table
-      const {data: userData, error} = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', userId)
+      const { data: userData, error } = await supabase
+        .from("users")
+        .select("*")
+        .eq("id", userId)
         .single();
 
       if (error) {
         // If user profile doesn't exist (PGRST116), create it
-        if (error.code === 'PGRST116') {
-          console.log('🔄 User profile not found, creating...');
+        if (error.code === "PGRST116") {
+          logger.debug("🔄 User profile not found, creating...");
           try {
             await createUserProfile(userId);
           } catch (createError) {
-            console.error('Failed to create user profile:', createError);
+            logger.error("Failed to create user profile:", createError);
             // Set loading to false since we're done trying
             setIsLoading(false);
           }
           return;
         }
-        console.error('Error loading user profile:', error);
+        logger.error("Error loading user profile:", error);
         return;
       }
 
@@ -156,31 +158,31 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
         setUser(formattedUser);
       }
     } catch (error) {
-      console.error('Failed to load user profile:', error);
+      logger.error("Failed to load user profile:", error);
     }
   };
 
   const createUserProfile = async (userId: string) => {
     try {
       setIsCreatingProfile(true);
-      console.log('🔄 Creating user profile for:', userId);
+      logger.debug("🔄 Creating user profile for:", userId);
 
       // Get the user's auth data first
       const {
-        data: {user: authUser},
+        data: { user: authUser },
         error: authError,
       } = await supabase.auth.getUser();
 
       if (authError || !authUser) {
-        console.error('Error getting auth user:', authError);
-        throw new Error('Could not get user authentication data');
+        logger.error("Error getting auth user:", authError);
+        throw new Error("Could not get user authentication data");
       }
 
-      console.log('📝 Creating profile for user:', authUser.email);
+      logger.debug("📝 Creating profile for user:", authUser.email);
 
       // Create user profile in our users table
-      const {data: newUser, error: profileError} = await supabase
-        .from('users')
+      const { data: newUser, error: profileError } = await supabase
+        .from("users")
         .insert([
           {
             id: userId,
@@ -197,12 +199,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
         .single();
 
       if (profileError) {
-        console.error('Profile creation error:', profileError);
+        logger.error("Profile creation error:", profileError);
         throw new Error(`Failed to create profile: ${profileError.message}`);
       }
 
       if (newUser) {
-        console.log('✅ User profile created successfully');
+        logger.debug("✅ User profile created successfully");
         const formattedUser: User = {
           id: newUser.id,
           email: newUser.email,
@@ -221,7 +223,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
         setUser(formattedUser);
       }
     } catch (error) {
-      console.error('Failed to create user profile:', error);
+      logger.error("Failed to create user profile:", error);
       // You might want to show an error alert here
       throw error;
     } finally {
@@ -232,7 +234,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
   const login = async (email: string, password: string) => {
     try {
       setIsLoading(true);
-      const {data, error} = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
@@ -245,7 +247,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
         await loadUserProfile(data.session.user.id, data.session.access_token);
       }
     } catch (error) {
-      console.error('Login error:', error);
+      logger.error("Login error:", error);
       throw error;
     } finally {
       setIsLoading(false);
@@ -260,7 +262,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
   ) => {
     try {
       setIsLoading(true);
-      const {data, error} = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -277,7 +279,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
       // If signup is successful and user is confirmed
       if (data.user && data.session) {
         // Create user profile in our users table
-        const {error: profileError} = await supabase.from('users').insert([
+        const { error: profileError } = await supabase.from("users").insert([
           {
             id: data.user.id,
             email: data.user.email,
@@ -291,15 +293,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
         ]);
 
         if (profileError) {
-          console.error('Profile creation error:', profileError);
+          logger.error("Profile creation error:", profileError);
         }
 
         await loadUserProfile(data.user.id, data.session.access_token);
       } else {
-        console.log('User created, but email confirmation may be required');
+        logger.debug("User created, but email confirmation may be required");
       }
     } catch (error) {
-      console.error('Signup error:', error);
+      logger.error("Signup error:", error);
       throw error;
     } finally {
       setIsLoading(false);
@@ -319,11 +321,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
       if (navigation) {
         navigation.reset({
           index: 0,
-          routes: [{name: 'Auth'}],
+          routes: [{ name: "Auth" }],
         });
       }
     } catch (error) {
-      console.error('Logout error:', error);
+      logger.error("Logout error:", error);
       setUser(null);
       // Ensure data is cleared even if logout fails
       await secureStorage.clearAllSecureData();
@@ -333,7 +335,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
       if (navigation) {
         navigation.reset({
           index: 0,
-          routes: [{name: 'Auth'}],
+          routes: [{ name: "Auth" }],
         });
       }
     }
@@ -341,7 +343,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
 
   const updateUser = (updates: Partial<User>) => {
     if (user) {
-      setUser({...user, ...updates});
+      // Only update if values actually changed
+      const hasChanges = Object.keys(updates).some(key => {
+        return user[key as keyof User] !== updates[key as keyof Partial<User>];
+      });
+      
+      if (hasChanges) {
+        setUser({ ...user, ...updates });
+      }
     }
   };
 
@@ -355,7 +364,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
         signup,
         logout,
         updateUser,
-      }}>
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
@@ -364,7 +374,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
 export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 };

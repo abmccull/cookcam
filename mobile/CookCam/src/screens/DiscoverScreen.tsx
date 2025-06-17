@@ -1,4 +1,4 @@
-import React, {useState, useEffect, useRef} from 'react';
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -9,7 +9,7 @@ import {
   TextInput,
   Animated,
   Alert,
-} from 'react-native';
+} from "react-native";
 import {
   Search,
   TrendingUp,
@@ -20,10 +20,12 @@ import {
   Star,
   Gift,
   Brain,
-} from 'lucide-react-native';
-import {useGamification, XP_VALUES} from '../context/GamificationContext';
-import {recipeService, ingredientService} from '../services/api';
-import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
+} from "lucide-react-native";
+import { useGamification, XP_VALUES } from "../context/GamificationContext";
+import { recipeService, ingredientService } from "../services/api";
+import * as Haptics from "expo-haptics";
+import logger from "../utils/logger";
+
 
 interface TrendingRecipe {
   id: string;
@@ -36,9 +38,9 @@ interface TrendingRecipe {
   difficulty?: string;
 }
 
-const DiscoverScreen = ({navigation}: {navigation: any}) => {
-  const [searchQuery, setSearchQuery] = useState('');
-  const {addXP, unlockBadge} = useGamification();
+const DiscoverScreen = ({ navigation }: { navigation: any }) => {
+  const [searchQuery, setSearchQuery] = useState("");
+  const { addXP, unlockBadge } = useGamification();
   const [dailyBonusClaimed, setDailyBonusClaimed] = useState(false);
   const [selectedCuisine, setSelectedCuisine] = useState<string | null>(null);
   const [trendingRecipes, setTrendingRecipes] = useState<TrendingRecipe[]>([]);
@@ -112,18 +114,18 @@ const DiscoverScreen = ({navigation}: {navigation: any}) => {
 
   const loadTrendingRecipes = async () => {
     try {
-      console.log('🔥 Loading trending recipes...');
+      logger.debug("🔥 Loading trending recipes...");
       setLoading(true);
       setError(null);
 
       // Fetch trending/popular recipes from API
       const response = await recipeService.getRecipes({
         limit: 10,
-        search: 'trending',
+        search: "trending",
       });
 
       if (response.success && response.data) {
-        console.log('✅ Trending recipes loaded:', response.data);
+        logger.debug("✅ Trending recipes loaded:", response.data);
 
         // Transform API data to our format
         const transformedRecipes = response.data.map(
@@ -134,22 +136,22 @@ const DiscoverScreen = ({navigation}: {navigation: any}) => {
             views: recipe.view_count || 0,
             prepTime: recipe.prep_time || 0,
             trending: recipe.is_trending || false,
-            cuisine: recipe.cuisine || 'International',
-            difficulty: recipe.difficulty || 'Easy',
+            cuisine: recipe.cuisine || "International",
+            difficulty: recipe.difficulty || "Easy",
           }),
         );
 
         setTrendingRecipes(transformedRecipes);
       } else {
-        console.error('❌ Failed to load trending recipes:', response.error);
+        logger.error("❌ Failed to load trending recipes:", response.error);
         setError(
           response.error ||
-            'Failed to load trending recipes. Please try again.',
+            "Failed to load trending recipes. Please try again.",
         );
       }
     } catch (error) {
-      console.error('❌ Error loading trending recipes:', error);
-      setError('Network error. Please check your connection and try again.');
+      logger.error("❌ Error loading trending recipes:", error);
+      setError("Network error. Please check your connection and try again.");
     } finally {
       setLoading(false);
     }
@@ -161,12 +163,12 @@ const DiscoverScreen = ({navigation}: {navigation: any}) => {
     }
 
     try {
-      console.log(`🔍 Searching for: ${searchQuery}`);
+      logger.debug(`🔍 Searching for: ${searchQuery}`);
       setError(null);
 
       // Search both recipes and ingredients
       const [recipeResponse, ingredientResponse] = await Promise.all([
-        recipeService.getRecipes({search: searchQuery, limit: 5}),
+        recipeService.getRecipes({ search: searchQuery, limit: 5 }),
         ingredientService.searchIngredients(searchQuery, 5),
       ]);
 
@@ -176,7 +178,7 @@ const DiscoverScreen = ({navigation}: {navigation: any}) => {
         results.push(
           ...recipeResponse.data.recipes.map((r: any) => ({
             ...r,
-            type: 'recipe',
+            type: "recipe",
           })),
         );
       }
@@ -185,7 +187,7 @@ const DiscoverScreen = ({navigation}: {navigation: any}) => {
         results.push(
           ...ingredientResponse.data.map((i: any) => ({
             ...i,
-            type: 'ingredient',
+            type: "ingredient",
           })),
         );
       }
@@ -197,10 +199,10 @@ const DiscoverScreen = ({navigation}: {navigation: any}) => {
       }
 
       setSearchResults(results);
-      console.log(`✅ Search found ${results.length} results`);
+      logger.debug(`✅ Search found ${results.length} results`);
     } catch (error) {
-      console.error('❌ Search error:', error);
-      setError('Search failed. Please try again.');
+      logger.error("❌ Search error:", error);
+      setError("Search failed. Please try again.");
     }
   };
 
@@ -212,10 +214,10 @@ const DiscoverScreen = ({navigation}: {navigation: any}) => {
 
   const claimDailyBonus = async () => {
     if (!dailyBonusClaimed) {
-      ReactNativeHapticFeedback.trigger('notificationSuccess');
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       await addXP(
         XP_VALUES.DAILY_DISCOVERY_BONUS || 25,
-        'DAILY_DISCOVERY_BONUS',
+        "DAILY_DISCOVERY_BONUS",
       );
       setDailyBonusClaimed(true);
 
@@ -224,25 +226,25 @@ const DiscoverScreen = ({navigation}: {navigation: any}) => {
   };
 
   const handleTrendingRecipePress = async (recipe: TrendingRecipe) => {
-    ReactNativeHapticFeedback.trigger('impactMedium');
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     // Award discovery XP if it's a new cuisine
     if (recipe.cuisine && recipe.cuisine !== selectedCuisine) {
-      await addXP(10, 'DISCOVER_NEW_CUISINE');
+      await addXP(10, "DISCOVER_NEW_CUISINE");
       setSelectedCuisine(recipe.cuisine);
     }
 
     // Navigate to recipe
-    navigation.navigate('Home', {
-      screen: 'CookMode',
-      params: {recipe},
+    navigation.navigate("Home", {
+      screen: "CookMode",
+      params: { recipe },
     });
   };
 
   const showErrorAlert = () => {
-    Alert.alert('Error', error || 'Something went wrong', [
-      {text: 'Try Again', onPress: loadTrendingRecipes},
-      {text: 'Cancel', style: 'cancel'},
+    Alert.alert("Error", error || "Something went wrong", [
+      { text: "Try Again", onPress: loadTrendingRecipes },
+      { text: "Cancel", style: "cancel" },
     ]);
   };
 
@@ -262,12 +264,14 @@ const DiscoverScreen = ({navigation}: {navigation: any}) => {
           <Animated.View
             style={[
               styles.dailyBonusCard,
-              {transform: [{scale: dailyBonusScale}]},
-            ]}>
+              { transform: [{ scale: dailyBonusScale }] },
+            ]}
+          >
             <TouchableOpacity
               style={styles.dailyBonusContent}
               onPress={claimDailyBonus}
-              activeOpacity={0.8}>
+              activeOpacity={0.8}
+            >
               <Gift size={24} color="#FFB800" />
               <View style={styles.dailyBonusText}>
                 <Text style={styles.dailyBonusTitle}>
@@ -302,7 +306,8 @@ const DiscoverScreen = ({navigation}: {navigation: any}) => {
             <Text style={styles.errorText}>{error}</Text>
             <TouchableOpacity
               style={styles.retryButton}
-              onPress={loadTrendingRecipes}>
+              onPress={loadTrendingRecipes}
+            >
               <Text style={styles.retryButtonText}>Retry</Text>
             </TouchableOpacity>
           </View>
@@ -343,7 +348,8 @@ const DiscoverScreen = ({navigation}: {navigation: any}) => {
           ) : error ? (
             <TouchableOpacity
               style={styles.errorRetryContainer}
-              onPress={showErrorAlert}>
+              onPress={showErrorAlert}
+            >
               <Text style={styles.errorRetryText}>
                 Tap to retry loading recipes
               </Text>
@@ -352,21 +358,24 @@ const DiscoverScreen = ({navigation}: {navigation: any}) => {
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.trendingList}>
-              {trendingRecipes.map(recipe => (
+              contentContainerStyle={styles.trendingList}
+            >
+              {trendingRecipes.map((recipe) => (
                 <TouchableOpacity
                   key={recipe.id}
                   style={styles.trendingCard}
                   onPress={() => handleTrendingRecipePress(recipe)}
-                  activeOpacity={0.8}>
+                  activeOpacity={0.8}
+                >
                   <View style={styles.trendingImagePlaceholder}>
                     <ChefHat size={32} color="#E5E5E7" />
                     {recipe.trending && (
                       <Animated.View
                         style={[
                           styles.trendingBadge,
-                          {transform: [{scale: pulseAnim}]},
-                        ]}>
+                          { transform: [{ scale: pulseAnim }] },
+                        ]}
+                      >
                         <Flame size={12} color="#FF6B35" fill="#FF6B35" />
                         <Text style={styles.trendingBadgeText}>HOT</Text>
                       </Animated.View>
@@ -410,7 +419,7 @@ const DiscoverScreen = ({navigation}: {navigation: any}) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F8FF',
+    backgroundColor: "#F8F8FF",
   },
   header: {
     paddingHorizontal: 20,
@@ -419,25 +428,25 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 28,
-    fontWeight: 'bold',
-    color: '#2D1B69',
+    fontWeight: "bold",
+    color: "#2D1B69",
     marginBottom: 4,
   },
   headerSubtitle: {
     fontSize: 16,
-    color: '#8E8E93',
+    color: "#8E8E93",
   },
   dailyBonusCard: {
     marginHorizontal: 20,
     marginBottom: 16,
-    backgroundColor: 'rgba(255, 184, 0, 0.1)',
+    backgroundColor: "rgba(255, 184, 0, 0.1)",
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255, 184, 0, 0.3)',
+    borderColor: "rgba(255, 184, 0, 0.3)",
   },
   dailyBonusContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     padding: 16,
     gap: 12,
   },
@@ -446,112 +455,112 @@ const styles = StyleSheet.create({
   },
   dailyBonusTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#FFB800',
+    fontWeight: "600",
+    color: "#FFB800",
     marginBottom: 2,
   },
   dailyBonusSubtitle: {
     fontSize: 13,
-    color: '#FFB800',
+    color: "#FFB800",
     opacity: 0.8,
   },
   searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
     marginHorizontal: 20,
     marginBottom: 24,
     paddingHorizontal: 16,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#E5E5E7',
+    borderColor: "#E5E5E7",
   },
   searchInput: {
     flex: 1,
     paddingVertical: 12,
     paddingLeft: 12,
     fontSize: 16,
-    color: '#2D1B69',
+    color: "#2D1B69",
   },
   errorContainer: {
-    backgroundColor: '#FFE5E5',
+    backgroundColor: "#FFE5E5",
     marginHorizontal: 20,
     marginBottom: 16,
     padding: 16,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#FFB3B3',
-    alignItems: 'center',
+    borderColor: "#FFB3B3",
+    alignItems: "center",
   },
   errorText: {
-    color: '#D32F2F',
+    color: "#D32F2F",
     fontSize: 14,
-    textAlign: 'center',
+    textAlign: "center",
     marginBottom: 8,
   },
   retryButton: {
-    backgroundColor: '#D32F2F',
+    backgroundColor: "#D32F2F",
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
   },
   retryButtonText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   errorRetryContainer: {
     padding: 40,
-    alignItems: 'center',
-    backgroundColor: '#F5F5F5',
+    alignItems: "center",
+    backgroundColor: "#F5F5F5",
     marginHorizontal: 20,
     borderRadius: 12,
   },
   errorRetryText: {
-    color: '#666',
+    color: "#666",
     fontSize: 16,
-    textAlign: 'center',
+    textAlign: "center",
   },
   section: {
     marginBottom: 32,
   },
   sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingHorizontal: 20,
     marginBottom: 16,
   },
   sectionTitle: {
     fontSize: 22,
-    fontWeight: '700',
-    color: '#2D1B69',
+    fontWeight: "700",
+    color: "#2D1B69",
   },
   seeAllText: {
     fontSize: 14,
-    color: '#FF6B35',
-    fontWeight: '600',
+    color: "#FF6B35",
+    fontWeight: "600",
   },
   searchResultCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderRadius: 12,
     padding: 16,
     marginLeft: 20,
     marginRight: 12,
     width: 150,
     borderWidth: 1,
-    borderColor: '#E5E5E7',
+    borderColor: "#E5E5E7",
   },
   searchResultTitle: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#2D1B69',
+    fontWeight: "600",
+    color: "#2D1B69",
     marginBottom: 4,
   },
   searchResultType: {
     fontSize: 12,
-    color: '#8E8E93',
-    textTransform: 'capitalize',
+    color: "#8E8E93",
+    textTransform: "capitalize",
   },
   trendingList: {
     paddingHorizontal: 20,
@@ -559,9 +568,9 @@ const styles = StyleSheet.create({
   },
   trendingCard: {
     width: 200,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderRadius: 12,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: {
       width: 0,
       height: 2,
@@ -573,20 +582,20 @@ const styles = StyleSheet.create({
   },
   trendingImagePlaceholder: {
     height: 140,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: "#F5F5F5",
     borderTopLeftRadius: 12,
     borderTopRightRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    position: 'relative',
+    justifyContent: "center",
+    alignItems: "center",
+    position: "relative",
   },
   trendingBadge: {
-    position: 'absolute',
+    position: "absolute",
     top: 8,
     right: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(255, 255, 255, 0.9)",
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
@@ -594,59 +603,59 @@ const styles = StyleSheet.create({
   },
   trendingBadgeText: {
     fontSize: 10,
-    fontWeight: '700',
-    color: '#FF6B35',
+    fontWeight: "700",
+    color: "#FF6B35",
   },
   cuisineBadge: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 8,
     left: 8,
-    backgroundColor: 'rgba(45, 27, 105, 0.8)',
+    backgroundColor: "rgba(45, 27, 105, 0.8)",
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
   },
   cuisineBadgeText: {
     fontSize: 11,
-    fontWeight: '600',
-    color: '#FFFFFF',
+    fontWeight: "600",
+    color: "#FFFFFF",
   },
   trendingInfo: {
     padding: 12,
   },
   trendingTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#2D1B69',
+    fontWeight: "600",
+    color: "#2D1B69",
     marginBottom: 4,
   },
   trendingCreator: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: "#8E8E93",
     marginBottom: 8,
   },
   trendingStats: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 12,
   },
   stat: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 4,
   },
   statText: {
     fontSize: 11,
-    color: '#666',
+    color: "#666",
   },
   loadingContainer: {
     paddingVertical: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   loadingText: {
     fontSize: 16,
-    color: '#8E8E93',
-    fontStyle: 'italic',
+    color: "#8E8E93",
+    fontStyle: "italic",
   },
 });
 

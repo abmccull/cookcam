@@ -9,9 +9,23 @@ import { DetailedRecipeService } from '../services/detailedRecipeService';
 
 const router = Router();
 
-// Initialize services for two-step recipe generation
-const previewService = new RecipePreviewService();
-const detailedService = new DetailedRecipeService();
+// Lazy service initialization to avoid module load time errors
+let previewServiceInstance: RecipePreviewService | null = null;
+let detailedServiceInstance: DetailedRecipeService | null = null;
+
+const getPreviewService = (): RecipePreviewService => {
+  if (!previewServiceInstance) {
+    previewServiceInstance = new RecipePreviewService();
+  }
+  return previewServiceInstance;
+};
+
+const getDetailedService = (): DetailedRecipeService => {
+  if (!detailedServiceInstance) {
+    detailedServiceInstance = new DetailedRecipeService();
+  }
+  return detailedServiceInstance;
+};
 
 // Interfaces for better type safety
 interface RecipeIngredient {
@@ -438,7 +452,7 @@ router.post('/generate-previews', authenticateUser, async (req: Request, res: Re
     const finalSessionId = sessionId || `session_${Date.now()}_${userId}`;
 
     // Generate recipe previews
-    const previewResult = await previewService.generatePreviews({
+    const previewResult = await getPreviewService().generatePreviews({
       detectedIngredients,
       userPreferences,
       sessionId: finalSessionId
@@ -620,7 +634,7 @@ router.post('/generate-detailed', authenticateUser, async (req: Request, res: Re
     }
 
     // Generate detailed recipe
-    const detailedResult = await detailedService.generateDetailedRecipe({
+    const detailedResult = await getDetailedService().generateDetailedRecipe({
       selectedPreview,
       originalIngredients: session.original_ingredients,
       userPreferences: session.user_preferences,

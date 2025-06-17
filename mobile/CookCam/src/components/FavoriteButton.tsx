@@ -1,12 +1,17 @@
-import React, {useState, useRef} from 'react';
-import {TouchableOpacity, StyleSheet, ViewStyle, Animated} from 'react-native';
-import {Heart} from 'lucide-react-native';
-import LottieView from 'lottie-react-native';
+import React, { useState, useRef } from "react";
+import {
+  TouchableOpacity,
+  StyleSheet,
+  ViewStyle,
+  Animated,
+} from "react-native";
+import { Heart } from "lucide-react-native";
+import LottieView from "lottie-react-native";
 
 interface FavoriteButtonProps {
   recipeId: string;
   initialFavorited?: boolean;
-  onToggle?: (recipeId: string, isFavorited: boolean) => void;
+  onToggle?: (_recipeId: string, _isFavorited: boolean) => void;
   size?: number;
   style?: ViewStyle;
 }
@@ -63,15 +68,16 @@ const FavoriteButton: React.FC<FavoriteButtonProps> = ({
 
   return (
     <>
-      <Animated.View style={{transform: [{scale: scaleValue}]}}>
+      <Animated.View style={{ transform: [{ scale: scaleValue }] }}>
         <TouchableOpacity
           style={[styles.button, style]}
           onPress={handlePress}
-          activeOpacity={0.7}>
+          activeOpacity={0.7}
+        >
           <Heart
             size={size}
-            color={isFavorited ? '#FF6B35' : '#8E8E93'} // Spice Orange : Pepper Gray
-            fill={isFavorited ? '#FF6B35' : 'transparent'}
+            color={isFavorited ? "#FF6B35" : "#8E8E93"} // Spice Orange : Pepper Gray
+            fill={isFavorited ? "#FF6B35" : "transparent"}
           />
         </TouchableOpacity>
       </Animated.View>
@@ -83,13 +89,13 @@ const FavoriteButton: React.FC<FavoriteButtonProps> = ({
           source={{
             // Using a simple heart animation JSON
             // In a real app, you'd import a proper Lottie file
-            v: '5.7.4',
+            v: "5.7.4",
             fr: 30,
             ip: 0,
             op: 60,
             w: 100,
             h: 100,
-            nm: 'Heart Animation',
+            nm: "Heart Animation",
             ddd: 0,
             assets: [],
             layers: [
@@ -97,35 +103,35 @@ const FavoriteButton: React.FC<FavoriteButtonProps> = ({
                 ddd: 0,
                 ind: 1,
                 ty: 4,
-                nm: 'Heart',
+                nm: "Heart",
                 sr: 1,
                 ks: {
-                  o: {a: 0, k: 100, ix: 11},
-                  r: {a: 0, k: 0, ix: 10},
-                  p: {a: 0, k: [50, 50, 0], ix: 2},
-                  a: {a: 0, k: [0, 0, 0], ix: 1},
+                  o: { a: 0, k: 100, ix: 11 },
+                  r: { a: 0, k: 0, ix: 10 },
+                  p: { a: 0, k: [50, 50, 0], ix: 2 },
+                  a: { a: 0, k: [0, 0, 0], ix: 1 },
                   s: {
                     a: 1,
                     k: [
                       {
-                        i: {x: [0.833], y: [0.833]},
-                        o: {x: [0.167], y: [0.167]},
+                        i: { x: [0.833], y: [0.833] },
+                        o: { x: [0.167], y: [0.167] },
                         t: 0,
                         s: [0],
                       },
                       {
-                        i: {x: [0.833], y: [0.833]},
-                        o: {x: [0.167], y: [0.167]},
+                        i: { x: [0.833], y: [0.833] },
+                        o: { x: [0.167], y: [0.167] },
                         t: 15,
                         s: [120],
                       },
                       {
-                        i: {x: [0.833], y: [0.833]},
-                        o: {x: [0.167], y: [0.167]},
+                        i: { x: [0.833], y: [0.833] },
+                        o: { x: [0.167], y: [0.167] },
                         t: 30,
                         s: [100],
                       },
-                      {t: 60, s: [100]},
+                      { t: 60, s: [100] },
                     ],
                     ix: 6,
                   },
@@ -133,18 +139,18 @@ const FavoriteButton: React.FC<FavoriteButtonProps> = ({
                 ao: 0,
                 shapes: [
                   {
-                    ty: 'gr',
+                    ty: "gr",
                     it: [
                       {
                         d: 1,
-                        ty: 'el',
-                        s: {a: 0, k: [20, 20], ix: 2},
-                        p: {a: 0, k: [0, 0], ix: 3},
+                        ty: "el",
+                        s: { a: 0, k: [20, 20], ix: 2 },
+                        p: { a: 0, k: [0, 0], ix: 3 },
                       },
                       {
-                        ty: 'fl',
-                        c: {a: 0, k: [1, 0.42, 0.21, 1], ix: 4}, // Spice Orange
-                        o: {a: 0, k: 100, ix: 5},
+                        ty: "fl",
+                        c: { a: 0, k: [1, 0.42, 0.21, 1], ix: 4 }, // Spice Orange
+                        o: { a: 0, k: 100, ix: 5 },
                       },
                     ],
                   },
@@ -169,17 +175,17 @@ const styles = StyleSheet.create({
   button: {
     padding: 8,
     borderRadius: 20,
-    backgroundColor: 'transparent',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "transparent",
+    justifyContent: "center",
+    alignItems: "center",
   },
   lottieAnimation: {
-    position: 'absolute',
+    position: "absolute",
     width: 60,
     height: 60,
     top: -18,
     left: -18,
-    pointerEvents: 'none',
+    pointerEvents: "none",
     zIndex: 1000,
   },
 });

@@ -1,16 +1,18 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import {Alert} from 'react-native';
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Alert } from "react-native";
+import logger from "../utils/logger";
+
 
 export type SubscriptionStatus =
-  | 'active'
-  | 'trialing'
-  | 'canceled'
-  | 'expired'
-  | 'past_due'
-  | 'paused'
-  | 'unpaid';
+  | "active"
+  | "trialing"
+  | "canceled"
+  | "expired"
+  | "past_due"
+  | "paused"
+  | "unpaid";
 
-export type UserTier = 'free' | 'consumer' | 'creator';
+export type UserTier = "free" | "consumer" | "creator";
 
 export interface SubscriptionState {
   status: SubscriptionStatus;
@@ -76,7 +78,7 @@ class SubscriptionLifecycleService {
         gracePeriodEnd = new Date(
           canceledAt.getTime() + this.gracePeriodDays * 24 * 60 * 60 * 1000,
         );
-      } else if (expiresAt && response.status === 'expired') {
+      } else if (expiresAt && response.status === "expired") {
         gracePeriodEnd = new Date(
           expiresAt.getTime() + this.gracePeriodDays * 24 * 60 * 60 * 1000,
         );
@@ -92,12 +94,12 @@ class SubscriptionLifecycleService {
         gracePeriodEnd,
         isInGracePeriod,
         paymentFailed:
-          response.status === 'past_due' || response.status === 'unpaid',
+          response.status === "past_due" || response.status === "unpaid",
         canReactivate:
-          response.status === 'canceled' || response.status === 'expired',
+          response.status === "canceled" || response.status === "expired",
       };
     } catch (error) {
-      console.error('Error getting subscription state:', error);
+      logger.error("Error getting subscription state:", error);
       // Default to free tier on error
       return this.getFreeTierState();
     }
@@ -107,10 +109,10 @@ class SubscriptionLifecycleService {
    * Determine feature access based on subscription state
    */
   getFeatureAccess(subscriptionState: SubscriptionState): FeatureAccess {
-    const {status, tier, isInGracePeriod, paymentFailed} = subscriptionState;
+    const { status, tier, isInGracePeriod, paymentFailed } = subscriptionState;
 
     // Active subscriptions get full access
-    if (status === 'active' || status === 'trialing') {
+    if (status === "active" || status === "trialing") {
       return this.getFullAccess(tier);
     }
 
@@ -136,18 +138,18 @@ class SubscriptionLifecycleService {
     cancelReason?: string,
   ): Promise<void> {
     try {
-      console.log(
+      logger.debug(
         `🚫 Subscription canceled for user ${userId}. Reason: ${
-          cancelReason || 'Not specified'
+          cancelReason || "Not specified"
         }`,
       );
 
       // Store cancellation info locally
       await AsyncStorage.setItem(
-        'subscription_canceled_at',
+        "subscription_canceled_at",
         new Date().toISOString(),
       );
-      await AsyncStorage.setItem('cancel_reason', cancelReason || '');
+      await AsyncStorage.setItem("cancel_reason", cancelReason || "");
 
       // Update user state in backend
       // TODO: Call your backend API to update user status
@@ -158,7 +160,7 @@ class SubscriptionLifecycleService {
       // Track cancellation for analytics
       this.trackCancellation(userId, cancelReason);
     } catch (error) {
-      console.error('Error handling subscription cancellation:', error);
+      logger.error("Error handling subscription cancellation:", error);
     }
   }
 
@@ -167,11 +169,11 @@ class SubscriptionLifecycleService {
    */
   async handleSubscriptionExpired(userId: string): Promise<void> {
     try {
-      console.log(`⏰ Subscription expired for user ${userId}`);
+      logger.debug(`⏰ Subscription expired for user ${userId}`);
 
       // Store expiration info
       await AsyncStorage.setItem(
-        'subscription_expired_at',
+        "subscription_expired_at",
         new Date().toISOString(),
       );
 
@@ -181,7 +183,7 @@ class SubscriptionLifecycleService {
       // Track expiration
       this.trackExpiration(userId);
     } catch (error) {
-      console.error('Error handling subscription expiration:', error);
+      logger.error("Error handling subscription expiration:", error);
     }
   }
 
@@ -193,30 +195,30 @@ class SubscriptionLifecycleService {
     failureReason?: string,
   ): Promise<void> {
     try {
-      console.log(
+      logger.debug(
         `💳 Payment failed for user ${userId}. Reason: ${
-          failureReason || 'Not specified'
+          failureReason || "Not specified"
         }`,
       );
 
       // Store payment failure info
-      await AsyncStorage.setItem('payment_failed_at', new Date().toISOString());
-      await AsyncStorage.setItem('payment_failure_reason', failureReason || '');
+      await AsyncStorage.setItem("payment_failed_at", new Date().toISOString());
+      await AsyncStorage.setItem("payment_failure_reason", failureReason || "");
 
       // Immediate notification to user
       Alert.alert(
-        'Payment Failed',
-        'We had trouble processing your payment. Please update your payment method to continue enjoying CookCam.',
+        "Payment Failed",
+        "We had trouble processing your payment. Please update your payment method to continue enjoying CookCam.",
         [
-          {text: 'Update Payment', onPress: () => this.openPaymentUpdate()},
-          {text: 'Later', style: 'cancel'},
+          { text: "Update Payment", onPress: () => this.openPaymentUpdate() },
+          { text: "Later", style: "cancel" },
         ],
       );
 
       // Track payment failure
       this.trackPaymentFailure(userId, failureReason);
     } catch (error) {
-      console.error('Error handling payment failure:', error);
+      logger.error("Error handling payment failure:", error);
     }
   }
 
@@ -225,20 +227,20 @@ class SubscriptionLifecycleService {
    */
   shouldShowReengagementPrompt(subscriptionState: SubscriptionState): {
     show: boolean;
-    type: 'grace_period' | 'win_back' | 'payment_failed' | null;
+    type: "grace_period" | "win_back" | "payment_failed" | null;
     message: string;
     cta: string;
   } {
-    const {status, isInGracePeriod, gracePeriodEnd, paymentFailed} =
+    const { status, isInGracePeriod, gracePeriodEnd, paymentFailed } =
       subscriptionState;
 
     // Payment failed - urgent
     if (paymentFailed) {
       return {
         show: true,
-        type: 'payment_failed',
-        message: 'Payment failed. Update your payment method to continue.',
-        cta: 'Update Payment',
+        type: "payment_failed",
+        message: "Payment failed. Update your payment method to continue.",
+        cta: "Update Payment",
       };
     }
 
@@ -249,30 +251,30 @@ class SubscriptionLifecycleService {
       );
       return {
         show: true,
-        type: 'grace_period',
+        type: "grace_period",
         message: `You have ${daysLeft} day${
-          daysLeft !== 1 ? 's' : ''
+          daysLeft !== 1 ? "s" : ""
         } left to reactivate your subscription.`,
-        cta: 'Reactivate',
+        cta: "Reactivate",
       };
     }
 
     // Fully expired - win back
-    if (status === 'expired' || status === 'canceled') {
+    if (status === "expired" || status === "canceled") {
       return {
         show: true,
-        type: 'win_back',
+        type: "win_back",
         message:
-          'Miss unlimited recipes? Get back to cooking with a special offer!',
-        cta: 'See Offers',
+          "Miss unlimited recipes? Get back to cooking with a special offer!",
+        cta: "See Offers",
       };
     }
 
     return {
       show: false,
       type: null,
-      message: '',
-      cta: '',
+      message: "",
+      cta: "",
     };
   }
 
@@ -290,10 +292,10 @@ class SubscriptionLifecycleService {
     expiresAt?: Date;
   }> {
     try {
-      const {tier, canceledAt} = subscriptionState;
+      const { tier, canceledAt } = subscriptionState;
 
       if (!canceledAt) {
-        return {hasOffer: false};
+        return { hasOffer: false };
       }
 
       const daysSinceCancellation = Math.floor(
@@ -306,7 +308,7 @@ class SubscriptionLifecycleService {
         return {
           hasOffer: true,
           discountPercent: 20,
-          offerText: '20% off your first month back',
+          offerText: "20% off your first month back",
           expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
         };
       } else if (daysSinceCancellation <= 30) {
@@ -315,7 +317,7 @@ class SubscriptionLifecycleService {
           hasOffer: true,
           discountPercent: 50,
           trialDays: 7,
-          offerText: '50% off + 7 days free trial',
+          offerText: "50% off + 7 days free trial",
           expiresAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 14 days
         };
       } else if (daysSinceCancellation <= 90) {
@@ -324,7 +326,7 @@ class SubscriptionLifecycleService {
           hasOffer: true,
           discountPercent: 70,
           trialDays: 14,
-          offerText: '70% off + 2 weeks free',
+          offerText: "70% off + 2 weeks free",
           expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
         };
       }
@@ -333,12 +335,12 @@ class SubscriptionLifecycleService {
       return {
         hasOffer: true,
         trialDays: 30,
-        offerText: '30 days free - welcome back!',
+        offerText: "30 days free - welcome back!",
         expiresAt: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000), // 60 days
       };
     } catch (error) {
-      console.error('Error generating win-back offer:', error);
-      return {hasOffer: false};
+      logger.error("Error generating win-back offer:", error);
+      return { hasOffer: false };
     }
   }
 
@@ -348,11 +350,11 @@ class SubscriptionLifecycleService {
   async reactivateSubscription(
     userId: string,
     offerCode?: string,
-  ): Promise<{success: boolean; message: string}> {
+  ): Promise<{ success: boolean; message: string }> {
     try {
-      console.log(
+      logger.debug(
         `🔄 Reactivating subscription for user ${userId} with offer: ${
-          offerCode || 'none'
+          offerCode || "none"
         }`,
       );
 
@@ -360,37 +362,37 @@ class SubscriptionLifecycleService {
       // This would involve calling Stripe to resume/create new subscription
 
       // Clear cancellation flags
-      await AsyncStorage.removeItem('subscription_canceled_at');
-      await AsyncStorage.removeItem('subscription_expired_at');
-      await AsyncStorage.removeItem('payment_failed_at');
+      await AsyncStorage.removeItem("subscription_canceled_at");
+      await AsyncStorage.removeItem("subscription_expired_at");
+      await AsyncStorage.removeItem("payment_failed_at");
 
       // Track reactivation
       this.trackReactivation(userId, offerCode);
 
       return {
         success: true,
-        message: 'Welcome back! Your subscription has been reactivated.',
+        message: "Welcome back! Your subscription has been reactivated.",
       };
     } catch (error) {
-      console.error('Error reactivating subscription:', error);
+      logger.error("Error reactivating subscription:", error);
       return {
         success: false,
-        message: 'Failed to reactivate subscription. Please try again.',
+        message: "Failed to reactivate subscription. Please try again.",
       };
     }
   }
 
   // Private helper methods
   private determineTier(status: SubscriptionStatus, planId?: string): UserTier {
-    if (status === 'active' || status === 'trialing') {
-      if (planId?.includes('creator')) {
-        return 'creator';
+    if (status === "active" || status === "trialing") {
+      if (planId?.includes("creator")) {
+        return "creator";
       }
-      if (planId?.includes('consumer')) {
-        return 'consumer';
+      if (planId?.includes("consumer")) {
+        return "consumer";
       }
     }
-    return 'free';
+    return "free";
   }
 
   private getFullAccess(tier: UserTier): FeatureAccess {
@@ -405,7 +407,7 @@ class SubscriptionLifecycleService {
       hasAds: false,
     };
 
-    if (tier === 'creator') {
+    if (tier === "creator") {
       return {
         ...baseAccess,
         canCreateRecipes: true,
@@ -430,8 +432,8 @@ class SubscriptionLifecycleService {
       canAccessCookMode: true,
       canFavoriteRecipes: true,
       canAccessLeaderboard: true,
-      canCreateRecipes: tier === 'creator',
-      canEarnRevenue: tier === 'creator', // Keep earning during grace period
+      canCreateRecipes: tier === "creator",
+      canEarnRevenue: tier === "creator", // Keep earning during grace period
       hasAds: true, // Show ads during grace period
     };
   }
@@ -468,8 +470,8 @@ class SubscriptionLifecycleService {
 
   private getFreeTierState(): SubscriptionState {
     return {
-      status: 'expired',
-      tier: 'free',
+      status: "expired",
+      tier: "free",
       expiresAt: null,
       canceledAt: null,
       gracePeriodEnd: null,
@@ -481,7 +483,7 @@ class SubscriptionLifecycleService {
 
   private async scheduleGracePeriodReminder(userId: string): Promise<void> {
     // TODO: Schedule push notifications for grace period reminders
-    console.log(`📅 Scheduled grace period reminders for user ${userId}`);
+    logger.debug(`📅 Scheduled grace period reminders for user ${userId}`);
   }
 
   private async startGracePeriod(userId: string): Promise<void> {
@@ -489,34 +491,34 @@ class SubscriptionLifecycleService {
       Date.now() + this.gracePeriodDays * 24 * 60 * 60 * 1000,
     );
     await AsyncStorage.setItem(
-      'grace_period_end',
+      "grace_period_end",
       gracePeriodEnd.toISOString(),
     );
-    console.log(
+    logger.debug(
       `⏳ Started grace period for user ${userId} until ${gracePeriodEnd.toLocaleDateString()}`,
     );
   }
 
   private openPaymentUpdate(): void {
     // TODO: Navigate to payment update screen or open subscription management
-    console.log('🔄 Opening payment update flow');
+    logger.debug("🔄 Opening payment update flow");
   }
 
   private trackCancellation(userId: string, reason?: string): void {
     // TODO: Track with your analytics service
-    console.log(`📊 Tracked cancellation for user ${userId}: ${reason}`);
+    logger.debug(`📊 Tracked cancellation for user ${userId}: ${reason}`);
   }
 
   private trackExpiration(userId: string): void {
-    console.log(`📊 Tracked expiration for user ${userId}`);
+    logger.debug(`📊 Tracked expiration for user ${userId}`);
   }
 
   private trackPaymentFailure(userId: string, reason?: string): void {
-    console.log(`📊 Tracked payment failure for user ${userId}: ${reason}`);
+    logger.debug(`📊 Tracked payment failure for user ${userId}: ${reason}`);
   }
 
   private trackReactivation(userId: string, offerCode?: string): void {
-    console.log(
+    logger.debug(
       `📊 Tracked reactivation for user ${userId} with offer: ${offerCode}`,
     );
   }
@@ -526,23 +528,23 @@ class SubscriptionLifecycleService {
     // Simulate different subscription states for testing
     const mockStates = [
       {
-        status: 'active',
-        plan_id: 'consumer_monthly',
+        status: "active",
+        plan_id: "consumer_monthly",
         current_period_end: Date.now() + 30 * 24 * 60 * 60 * 1000,
       },
       {
-        status: 'canceled',
-        plan_id: 'creator_monthly',
+        status: "canceled",
+        plan_id: "creator_monthly",
         canceled_at: Date.now() - 3 * 24 * 60 * 60 * 1000,
       },
       {
-        status: 'past_due',
-        plan_id: 'consumer_monthly',
+        status: "past_due",
+        plan_id: "consumer_monthly",
         current_period_end: Date.now() - 2 * 24 * 60 * 60 * 1000,
       },
       {
-        status: 'expired',
-        plan_id: 'creator_monthly',
+        status: "expired",
+        plan_id: "creator_monthly",
         current_period_end: Date.now() - 10 * 24 * 60 * 60 * 1000,
       },
     ];
@@ -551,7 +553,11 @@ class SubscriptionLifecycleService {
     return mockStates[Math.floor(Math.random() * mockStates.length)];
   }
 
-  private async processUserDowngrade(_userId: string, _fromTier: string, _toTier: string) {
+  private async processUserDowngrade(
+    _userId: string,
+    _fromTier: string,
+    _toTier: string,
+  ) {
     // Implementation of processUserDowngrade method
   }
 }

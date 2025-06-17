@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, { useState, useEffect } from "react";
 import {
   View,
   StyleSheet,
@@ -9,10 +9,10 @@ import {
   ActivityIndicator,
   Linking,
   ScrollView,
-} from 'react-native';
-import {NativeStackNavigationProp} from '@react-navigation/native-stack';
-import {RouteProp} from '@react-navigation/native';
-import {RootStackParamList} from '../App';
+} from "react-native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { RouteProp } from "@react-navigation/native";
+import { RootStackParamList } from "../App";
 import {
   Building2,
   DollarSign,
@@ -20,15 +20,17 @@ import {
   Clock,
   ExternalLink,
   CheckCircle,
-} from 'lucide-react-native';
+} from "lucide-react-native";
 import StripeConnectService, {
   CreatorAccountStatus,
-} from '../services/StripeConnectService';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+} from "../services/StripeConnectService";
+import * as SecureStore from "expo-secure-store";
+import logger from "../utils/logger";
+
 
 interface CreatorKYCScreenProps {
   navigation: NativeStackNavigationProp<RootStackParamList>;
-  route: RouteProp<RootStackParamList, 'CreatorKYC'>;
+  route: RouteProp<RootStackParamList, "CreatorKYC">;
 }
 
 const CreatorKYCScreen: React.FC<CreatorKYCScreenProps> = ({
@@ -40,8 +42,8 @@ const CreatorKYCScreen: React.FC<CreatorKYCScreenProps> = ({
   const [accountStatus, setAccountStatus] =
     useState<CreatorAccountStatus | null>(null);
   const [kycStep, setKycStep] = useState<
-    'intro' | 'creating' | 'onboarding' | 'complete' | 'error'
-  >('intro');
+    "intro" | "creating" | "onboarding" | "complete" | "error"
+  >("intro");
   const stripeConnectService = StripeConnectService.getInstance();
 
   useEffect(() => {
@@ -51,15 +53,15 @@ const CreatorKYCScreen: React.FC<CreatorKYCScreenProps> = ({
   const checkExistingAccount = async () => {
     try {
       // Check if user already has a Connect account
-      const existingAccountId = await AsyncStorage.getItem(
-        'stripe_connect_account_id',
+      const existingAccountId = await SecureStore.getItemAsync(
+        "stripe_connect_account_id",
       );
       if (existingAccountId) {
         setConnectAccountId(existingAccountId);
         await checkAccountStatus(existingAccountId);
       }
     } catch (error) {
-      console.error('Error checking existing account:', error);
+      logger.error("Error checking existing account:", error);
     }
   };
 
@@ -72,13 +74,13 @@ const CreatorKYCScreen: React.FC<CreatorKYCScreenProps> = ({
       setAccountStatus(status);
 
       if (status.isConnected && status.hasCompletedKYC) {
-        setKycStep('complete');
+        setKycStep("complete");
       } else if (status.requiresVerification) {
-        setKycStep('onboarding');
+        setKycStep("onboarding");
       }
     } catch (error) {
-      console.error('Error checking account status:', error);
-      setKycStep('error');
+      logger.error("Error checking account status:", error);
+      setKycStep("error");
     } finally {
       setIsLoading(false);
     }
@@ -87,22 +89,22 @@ const CreatorKYCScreen: React.FC<CreatorKYCScreenProps> = ({
   const startKYCProcess = async () => {
     try {
       setIsLoading(true);
-      setKycStep('creating');
+      setKycStep("creating");
 
       // Create Stripe Connect account
       const result = await stripeConnectService.mockCreateAccount({
-        userId: 'mock_user_123', // TODO: Get from auth context
-        email: 'creator@example.com', // TODO: Get from auth context
-        firstName: 'John',
-        lastName: 'Creator',
-        businessType: 'individual',
-        country: 'US',
+        userId: "mock_user_123", // TODO: Get from auth context
+        email: "creator@example.com", // TODO: Get from auth context
+        firstName: "John",
+        lastName: "Creator",
+        businessType: "individual",
+        country: "US",
       });
 
       if (result.success) {
         setConnectAccountId(result.accountId);
-        await AsyncStorage.setItem(
-          'stripe_connect_account_id',
+        await SecureStore.setItemAsync(
+          "stripe_connect_account_id",
           result.accountId,
         );
 
@@ -111,18 +113,18 @@ const CreatorKYCScreen: React.FC<CreatorKYCScreenProps> = ({
           result.accountId,
         );
 
-        setKycStep('onboarding');
+        setKycStep("onboarding");
 
         // Open Stripe Connect onboarding
         await openStripeOnboarding(accountLink.url);
       }
     } catch (error) {
-      console.error('Error starting KYC:', error);
-      setKycStep('error');
+      logger.error("Error starting KYC:", error);
+      setKycStep("error");
       Alert.alert(
-        'Setup Failed',
-        'We had trouble setting up your creator account. Please try again.',
-        [{text: 'Retry', onPress: () => setKycStep('intro')}],
+        "Setup Failed",
+        "We had trouble setting up your creator account. Please try again.",
+        [{ text: "Retry", onPress: () => setKycStep("intro") }],
       );
     } finally {
       setIsLoading(false);
@@ -140,14 +142,14 @@ const CreatorKYCScreen: React.FC<CreatorKYCScreenProps> = ({
           handleOnboardingComplete();
         }, 5000);
       } else {
-        throw new Error('Cannot open onboarding URL');
+        throw new Error("Cannot open onboarding URL");
       }
     } catch (error) {
-      console.error('Error opening Stripe onboarding:', error);
+      logger.error("Error opening Stripe onboarding:", error);
       Alert.alert(
-        'Browser Error',
-        'Unable to open the verification process. Please try again.',
-        [{text: 'OK'}],
+        "Browser Error",
+        "Unable to open the verification process. Please try again.",
+        [{ text: "OK" }],
       );
     }
   };
@@ -164,12 +166,12 @@ const CreatorKYCScreen: React.FC<CreatorKYCScreenProps> = ({
       await checkAccountStatus(connectAccountId);
 
       // Mark creator onboarding as complete
-      await AsyncStorage.setItem('creator_kyc_completed', 'true');
+      await SecureStore.setItemAsync("creator_kyc_completed", "true");
 
-      setKycStep('complete');
+      setKycStep("complete");
     } catch (error) {
-      console.error('Error handling onboarding completion:', error);
-      setKycStep('error');
+      logger.error("Error handling onboarding completion:", error);
+      setKycStep("error");
     } finally {
       setIsLoading(false);
     }
@@ -180,15 +182,15 @@ const CreatorKYCScreen: React.FC<CreatorKYCScreenProps> = ({
       setIsLoading(true);
 
       // Complete onboarding and navigate to main app
-      await AsyncStorage.setItem('onboardingCompleted', 'true');
+      await SecureStore.setItemAsync("onboardingCompleted", "true");
 
       navigation.reset({
         index: 0,
-        routes: [{name: 'Main'}],
+        routes: [{ name: "Main" }],
       });
     } catch (error) {
-      console.error('Error completing setup:', error);
-      Alert.alert('Error', 'Failed to complete setup. Please try again.');
+      logger.error("Error completing setup:", error);
+      Alert.alert("Error", "Failed to complete setup. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -260,7 +262,8 @@ const CreatorKYCScreen: React.FC<CreatorKYCScreenProps> = ({
         <TouchableOpacity
           style={styles.startButton}
           onPress={startKYCProcess}
-          disabled={isLoading}>
+          disabled={isLoading}
+        >
           {isLoading ? (
             <ActivityIndicator color="#FFFFFF" size="small" />
           ) : (
@@ -309,7 +312,7 @@ const CreatorKYCScreen: React.FC<CreatorKYCScreenProps> = ({
 
         <View style={styles.statusInfo}>
           <Text style={styles.statusText}>
-            ✓ Creator account created{'\n'}⏳ Waiting for verification
+            ✓ Creator account created{"\n"}⏳ Waiting for verification
             completion
           </Text>
         </View>
@@ -319,7 +322,8 @@ const CreatorKYCScreen: React.FC<CreatorKYCScreenProps> = ({
           onPress={() =>
             connectAccountId && checkAccountStatus(connectAccountId)
           }
-          disabled={isLoading}>
+          disabled={isLoading}
+        >
           {isLoading ? (
             <ActivityIndicator color="#FF6B35" size="small" />
           ) : (
@@ -345,7 +349,7 @@ const CreatorKYCScreen: React.FC<CreatorKYCScreenProps> = ({
           <View style={styles.accountInfo}>
             <Text style={styles.accountInfoTitle}>Account Status:</Text>
             <Text style={styles.accountInfoText}>
-              ✅ Identity verified{'\n'}✅ Payouts enabled{'\n'}✅ Ready to earn
+              ✅ Identity verified{"\n"}✅ Payouts enabled{"\n"}✅ Ready to earn
               revenue
             </Text>
           </View>
@@ -354,7 +358,8 @@ const CreatorKYCScreen: React.FC<CreatorKYCScreenProps> = ({
         <TouchableOpacity
           style={styles.completeButton}
           onPress={completeCreatorSetup}
-          disabled={isLoading}>
+          disabled={isLoading}
+        >
           {isLoading ? (
             <ActivityIndicator color="#FFFFFF" size="small" />
           ) : (
@@ -376,7 +381,8 @@ const CreatorKYCScreen: React.FC<CreatorKYCScreenProps> = ({
 
         <TouchableOpacity
           style={styles.retryButton}
-          onPress={() => setKycStep('intro')}>
+          onPress={() => setKycStep("intro")}
+        >
           <Text style={styles.retryButtonText}>Try Again</Text>
         </TouchableOpacity>
       </View>
@@ -385,11 +391,11 @@ const CreatorKYCScreen: React.FC<CreatorKYCScreenProps> = ({
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      {kycStep === 'intro' && renderIntroStep()}
-      {kycStep === 'creating' && renderCreatingStep()}
-      {kycStep === 'onboarding' && renderOnboardingStep()}
-      {kycStep === 'complete' && renderCompleteStep()}
-      {kycStep === 'error' && renderErrorStep()}
+      {kycStep === "intro" && renderIntroStep()}
+      {kycStep === "creating" && renderCreatingStep()}
+      {kycStep === "onboarding" && renderOnboardingStep()}
+      {kycStep === "complete" && renderCompleteStep()}
+      {kycStep === "error" && renderErrorStep()}
     </SafeAreaView>
   );
 };
@@ -397,7 +403,7 @@ const CreatorKYCScreen: React.FC<CreatorKYCScreenProps> = ({
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#F8F8FF',
+    backgroundColor: "#F8F8FF",
   },
   container: {
     flex: 1,
@@ -409,37 +415,37 @@ const styles = StyleSheet.create({
   },
   centerContent: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     paddingHorizontal: 24,
   },
   header: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 32,
   },
   iconContainer: {
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#FFF3F0',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: "#FFF3F0",
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: 16,
   },
   successIcon: {
-    backgroundColor: '#E8F5E8',
+    backgroundColor: "#E8F5E8",
   },
   title: {
     fontSize: 28,
-    fontWeight: 'bold',
-    color: '#2D1B69',
+    fontWeight: "bold",
+    color: "#2D1B69",
     marginBottom: 8,
-    textAlign: 'center',
+    textAlign: "center",
   },
   subtitle: {
     fontSize: 16,
-    color: '#8E8E93',
-    textAlign: 'center',
+    color: "#8E8E93",
+    textAlign: "center",
     lineHeight: 22,
   },
   benefitsSection: {
@@ -447,13 +453,13 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#2D1B69',
+    fontWeight: "600",
+    color: "#2D1B69",
     marginBottom: 16,
   },
   benefitItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    alignItems: "flex-start",
     marginBottom: 16,
   },
   benefitContent: {
@@ -462,30 +468,30 @@ const styles = StyleSheet.create({
   },
   benefitTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#2D1B69',
+    fontWeight: "600",
+    color: "#2D1B69",
     marginBottom: 4,
   },
   benefitText: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: "#8E8E93",
     lineHeight: 20,
   },
   kycInfo: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     padding: 20,
     borderRadius: 12,
     marginBottom: 24,
   },
   kycTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#2D1B69',
+    fontWeight: "600",
+    color: "#2D1B69",
     marginBottom: 8,
   },
   kycText: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: "#8E8E93",
     lineHeight: 20,
     marginBottom: 16,
   },
@@ -494,7 +500,7 @@ const styles = StyleSheet.create({
   },
   kycStepText: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: "#8E8E93",
     marginBottom: 4,
   },
   footer: {
@@ -502,18 +508,18 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
   },
   startButton: {
-    backgroundColor: '#FF6B35',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: "#FF6B35",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     paddingVertical: 16,
     borderRadius: 12,
     marginBottom: 12,
   },
   startButtonText: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#FFFFFF',
+    fontWeight: "600",
+    color: "#FFFFFF",
     marginRight: 8,
   },
   startButtonIcon: {
@@ -521,107 +527,107 @@ const styles = StyleSheet.create({
   },
   footerNote: {
     fontSize: 12,
-    color: '#8E8E93',
-    textAlign: 'center',
+    color: "#8E8E93",
+    textAlign: "center",
     lineHeight: 16,
   },
   loadingTitle: {
     fontSize: 20,
-    fontWeight: '600',
-    color: '#2D1B69',
+    fontWeight: "600",
+    color: "#2D1B69",
     marginTop: 16,
     marginBottom: 8,
-    textAlign: 'center',
+    textAlign: "center",
   },
   loadingText: {
     fontSize: 16,
-    color: '#8E8E93',
-    textAlign: 'center',
+    color: "#8E8E93",
+    textAlign: "center",
     lineHeight: 22,
   },
   statusInfo: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     padding: 20,
     borderRadius: 12,
     marginVertical: 24,
-    width: '100%',
+    width: "100%",
   },
   statusText: {
     fontSize: 16,
-    color: '#2D1B69',
-    textAlign: 'center',
+    color: "#2D1B69",
+    textAlign: "center",
     lineHeight: 24,
   },
   checkStatusButton: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderWidth: 2,
-    borderColor: '#FF6B35',
+    borderColor: "#FF6B35",
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 12,
   },
   checkStatusText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#FF6B35',
+    fontWeight: "600",
+    color: "#FF6B35",
   },
   accountInfo: {
-    backgroundColor: '#E8F5E8',
+    backgroundColor: "#E8F5E8",
     padding: 20,
     borderRadius: 12,
     marginVertical: 24,
-    width: '100%',
+    width: "100%",
   },
   accountInfoTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#2D1B69',
+    fontWeight: "600",
+    color: "#2D1B69",
     marginBottom: 8,
-    textAlign: 'center',
+    textAlign: "center",
   },
   accountInfoText: {
     fontSize: 14,
-    color: '#66BB6A',
-    textAlign: 'center',
+    color: "#66BB6A",
+    textAlign: "center",
     lineHeight: 22,
   },
   completeButton: {
-    backgroundColor: '#66BB6A',
+    backgroundColor: "#66BB6A",
     paddingVertical: 16,
     paddingHorizontal: 32,
     borderRadius: 12,
-    width: '100%',
-    alignItems: 'center',
+    width: "100%",
+    alignItems: "center",
   },
   completeButtonText: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#FFFFFF',
+    fontWeight: "600",
+    color: "#FFFFFF",
   },
   errorTitle: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#FF3B30',
+    fontWeight: "bold",
+    color: "#FF3B30",
     marginBottom: 16,
-    textAlign: 'center',
+    textAlign: "center",
   },
   errorText: {
     fontSize: 16,
-    color: '#8E8E93',
-    textAlign: 'center',
+    color: "#8E8E93",
+    textAlign: "center",
     lineHeight: 22,
     marginBottom: 32,
   },
   retryButton: {
-    backgroundColor: '#FF6B35',
+    backgroundColor: "#FF6B35",
     paddingVertical: 16,
     paddingHorizontal: 32,
     borderRadius: 12,
   },
   retryButtonText: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#FFFFFF',
+    fontWeight: "600",
+    color: "#FFFFFF",
   },
 });
 

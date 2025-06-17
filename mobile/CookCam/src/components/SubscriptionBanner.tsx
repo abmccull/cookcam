@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -7,11 +7,12 @@ import {
   Alert,
   ActivityIndicator,
   Animated,
-} from 'react-native';
-import {AlertTriangle, CreditCard, Gift, X} from 'lucide-react-native';
+} from "react-native";
+import { AlertTriangle, CreditCard, Gift, X } from "lucide-react-native";
 import SubscriptionLifecycleService, {
   SubscriptionState,
-} from '../services/SubscriptionLifecycleService';
+} from "../services/SubscriptionLifecycleService";
+import logger from "../utils/logger";
 
 interface SubscriptionBannerProps {
   userId: string;
@@ -58,7 +59,7 @@ const SubscriptionBanner: React.FC<SubscriptionBannerProps> = ({
       const state = await lifecycleService.getSubscriptionState(userId);
       setSubscriptionState(state);
     } catch (error) {
-      console.error('Error loading subscription state:', error);
+      logger.error("Error loading subscription state:", error);
     } finally {
       setIsLoading(false);
     }
@@ -80,12 +81,12 @@ const SubscriptionBanner: React.FC<SubscriptionBannerProps> = ({
 
       if (offer.hasOffer) {
         Alert.alert(
-          'Special Offer!',
-          offer.offerText || 'We have a special offer for you!',
+          "Special Offer!",
+          offer.offerText || "We have a special offer for you!",
           [
-            {text: 'Not Now', style: 'cancel'},
+            { text: "Not Now", style: "cancel" },
             {
-              text: 'Accept Offer',
+              text: "Accept Offer",
               onPress: () =>
                 processReactivation(offer.discountPercent?.toString()),
             },
@@ -95,8 +96,8 @@ const SubscriptionBanner: React.FC<SubscriptionBannerProps> = ({
         await processReactivation();
       }
     } catch (error) {
-      console.error('Error handling reactivation:', error);
-      Alert.alert('Error', 'Failed to process reactivation. Please try again.');
+      logger.error("Error handling reactivation:", error);
+      Alert.alert("Error", "Failed to process reactivation. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -110,18 +111,18 @@ const SubscriptionBanner: React.FC<SubscriptionBannerProps> = ({
       );
 
       if (result.success) {
-        Alert.alert('Success!', result.message);
+        Alert.alert("Success!", result.message);
         setIsDismissed(true);
         onReactivate?.();
         await loadSubscriptionState(); // Refresh state
       } else {
-        Alert.alert('Failed', result.message);
+        Alert.alert("Failed", result.message);
       }
     } catch (error) {
-      console.error('Error reactivating subscription:', error);
+      logger.error("Error reactivating subscription:", error);
       Alert.alert(
-        'Error',
-        'Failed to reactivate subscription. Please try again.',
+        "Error",
+        "Failed to reactivate subscription. Please try again.",
       );
     }
   };
@@ -157,32 +158,32 @@ const SubscriptionBanner: React.FC<SubscriptionBannerProps> = ({
 
   const getBannerStyle = () => {
     switch (prompt.type) {
-      case 'payment_failed':
+      case "payment_failed":
         return {
-          backgroundColor: '#FFE5E5',
-          borderColor: '#FF3B30',
-          iconColor: '#FF3B30',
+          backgroundColor: "#FFE5E5",
+          borderColor: "#FF3B30",
+          iconColor: "#FF3B30",
           icon: CreditCard,
         };
-      case 'grace_period':
+      case "grace_period":
         return {
-          backgroundColor: '#FFF3CD',
-          borderColor: '#FF8C00',
-          iconColor: '#FF8C00',
+          backgroundColor: "#FFF3CD",
+          borderColor: "#FF8C00",
+          iconColor: "#FF8C00",
           icon: AlertTriangle,
         };
-      case 'win_back':
+      case "win_back":
         return {
-          backgroundColor: '#E8F5E8',
-          borderColor: '#66BB6A',
-          iconColor: '#66BB6A',
+          backgroundColor: "#E8F5E8",
+          borderColor: "#66BB6A",
+          iconColor: "#66BB6A",
           icon: Gift,
         };
       default:
         return {
-          backgroundColor: '#F0F8FF',
-          borderColor: '#007AFF',
-          iconColor: '#007AFF',
+          backgroundColor: "#F0F8FF",
+          borderColor: "#007AFF",
+          iconColor: "#007AFF",
           icon: AlertTriangle,
         };
     }
@@ -193,11 +194,11 @@ const SubscriptionBanner: React.FC<SubscriptionBannerProps> = ({
 
   const getActionHandler = () => {
     switch (prompt.type) {
-      case 'payment_failed':
+      case "payment_failed":
         return handleUpdatePayment;
-      case 'grace_period':
+      case "grace_period":
         return handleReactivate;
-      case 'win_back':
+      case "win_back":
         return handleViewOffers;
       default:
         return handleReactivate;
@@ -213,21 +214,22 @@ const SubscriptionBanner: React.FC<SubscriptionBannerProps> = ({
           borderColor: bannerStyle.borderColor,
           opacity: fadeAnim,
         },
-      ]}>
+      ]}
+    >
       <View style={styles.content}>
         <View style={styles.iconContainer}>
           <IconComponent size={20} color={bannerStyle.iconColor} />
         </View>
 
         <View style={styles.textContainer}>
-          <Text style={[styles.message, {color: bannerStyle.iconColor}]}>
+          <Text style={[styles.message, { color: bannerStyle.iconColor }]}>
             {prompt.message}
           </Text>
 
           {subscriptionState.isInGracePeriod &&
             subscriptionState.gracePeriodEnd && (
               <Text style={styles.subMessage}>
-                Grace period ends{' '}
+                Grace period ends{" "}
                 {subscriptionState.gracePeriodEnd.toLocaleDateString()}
               </Text>
             )}
@@ -237,10 +239,11 @@ const SubscriptionBanner: React.FC<SubscriptionBannerProps> = ({
           <TouchableOpacity
             style={[
               styles.actionButton,
-              {backgroundColor: bannerStyle.iconColor},
+              { backgroundColor: bannerStyle.iconColor },
             ]}
             onPress={getActionHandler()}
-            disabled={isLoading}>
+            disabled={isLoading}
+          >
             {isLoading ? (
               <ActivityIndicator size="small" color="#FFFFFF" />
             ) : (
@@ -250,7 +253,8 @@ const SubscriptionBanner: React.FC<SubscriptionBannerProps> = ({
 
           <TouchableOpacity
             style={styles.dismissButton}
-            onPress={handleDismiss}>
+            onPress={handleDismiss}
+          >
             <X size={16} color="#8E8E93" />
           </TouchableOpacity>
         </View>
@@ -265,15 +269,15 @@ const styles = StyleSheet.create({
     marginVertical: 8,
     borderRadius: 12,
     borderWidth: 1,
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
   },
   content: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     padding: 16,
   },
   iconContainer: {
@@ -285,16 +289,16 @@ const styles = StyleSheet.create({
   },
   message: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
     marginBottom: 2,
   },
   subMessage: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: "#8E8E93",
   },
   actions: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   actionButton: {
     paddingHorizontal: 16,
@@ -304,8 +308,8 @@ const styles = StyleSheet.create({
   },
   actionButtonText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#FFFFFF',
+    fontWeight: "600",
+    color: "#FFFFFF",
   },
   dismissButton: {
     padding: 4,
