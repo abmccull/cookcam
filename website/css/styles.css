@@ -1042,10 +1042,18 @@ section {
 
 .download-btn img {
     height: 60px;
-    width: 180px;
-    object-fit: contain;
     display: block;
     border-radius: 8px;
+}
+
+.download-btn.apple img {
+    width: 155px;
+    object-fit: contain;
+}
+
+.download-btn.google img {
+    width: 175px;
+    object-fit: contain;
 }
 
 .download-stats {
@@ -1273,7 +1281,14 @@ section {
     
     .download-btn img {
         height: 50px;
-        width: 150px;
+    }
+    
+    .download-btn.apple img {
+        width: 130px;
+    }
+    
+    .download-btn.google img {
+        width: 145px;
     }
 }
 
