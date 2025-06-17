@@ -81,16 +81,21 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
               text: "Enable",
               onPress: async () => {
                 try {
-                  // Get the current session token
-                  const token = await secureStorage.getSecureItem('access_token');
-                  if (token) {
-                    await enableBiometricLogin(email, token);
-                    // Trigger refresh of biometric component
-                    setBiometricRefreshTrigger(prev => prev + 1);
-                    Alert.alert("Success", "Biometric login has been enabled! You can now use it to sign in quickly.");
-                  }
+                  logger.debug("🔐 User clicked Enable biometric login");
+                  
+                  // Use the enableBiometricLogin method which gets the session directly
+                  // We don't need to manually get the token
+                  await enableBiometricLogin(email, ""); // Empty token since enableBiometricLogin gets session internally
+                  
+                  // Trigger refresh of biometric component
+                  setBiometricRefreshTrigger(prev => prev + 1);
+                  
+                  logger.debug("✅ Biometric login setup completed successfully");
+                  Alert.alert("Success", "Biometric login has been enabled! You can now use it to sign in quickly.");
                 } catch (error) {
-                  Alert.alert("Error", "Failed to enable biometric login. You can enable it later in settings.");
+                  logger.error("❌ Failed to enable biometric login:", error);
+                  const errorMessage = error instanceof Error ? error.message : "Failed to enable biometric login";
+                  Alert.alert("Error", `${errorMessage}. You can enable it later in settings.`);
                 }
               },
             },

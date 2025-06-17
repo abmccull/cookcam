@@ -69,7 +69,7 @@ const BiometricLogin: React.FC<BiometricLoginProps> = ({
   useEffect(() => {
     const intervalId = setInterval(() => {
       checkBiometricAvailability();
-    }, 3000); // Check every 3 seconds
+    }, 10000); // Check every 10 seconds instead of 3
 
     return () => clearInterval(intervalId);
   }, []);

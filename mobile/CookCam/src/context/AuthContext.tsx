@@ -434,13 +434,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       await secureStorage.removeItem(STORAGE_KEYS.ONBOARDING_COMPLETED);
       await secureStorage.removeItem(STORAGE_KEYS.LAST_CHECK_IN);
 
-      // Optionally reset navigation to Auth/Login screen
-      if (navigation) {
-        navigation.reset({
-          index: 0,
-          routes: [{ name: "Auth" }],
-        });
-      }
+      // Note: Navigation will be handled automatically by the auth state change
+      // in App.tsx, so we don't need to manually reset here
+      logger.debug("✅ Logout successful, auth state will handle navigation");
     } catch (error) {
       logger.error("Logout error:", error);
       setUser(null);
@@ -448,13 +444,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       await secureStorage.clearAllSecureData();
       await secureStorage.removeItem(STORAGE_KEYS.ONBOARDING_COMPLETED);
       await secureStorage.removeItem(STORAGE_KEYS.LAST_CHECK_IN);
-
-      if (navigation) {
-        navigation.reset({
-          index: 0,
-          routes: [{ name: "Auth" }],
-        });
-      }
     }
   };
 
