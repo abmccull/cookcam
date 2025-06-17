@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   Animated,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { User, Star } from "lucide-react-native";
 import { useAuth } from "../context/AuthContext";
 import { useGamification } from "../context/GamificationContext";
@@ -17,7 +16,6 @@ import ChefBadge from "./ChefBadge";
 
 const XPHeader: React.FC = () => {
   const navigation = useNavigation();
-  const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const { xp, level, levelProgress, nextLevelXP } = useGamification();
 
@@ -76,7 +74,7 @@ const XPHeader: React.FC = () => {
   const creatorTier = getCreatorTier();
 
   return (
-    <View style={[styles.wrapper, { paddingTop: insets.top }]}>
+    <View style={styles.wrapper}>
       <View style={styles.container}>
         <TouchableOpacity
           style={styles.profileSection}

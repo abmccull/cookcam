@@ -43,6 +43,8 @@ import AccountGateScreen from './screens/AccountGateScreen';
 import ExampleFeatureGateScreen from './screens/ExampleFeatureGateScreen';
 import ColdOpenScreen from './screens/ColdOpenScreen';
 import DeepLinkService from './services/DeepLinkService';
+import AppShell from './components/AppShell';
+import XPNotificationProvider from './components/XPNotificationProvider';
 
 // Navigation Types
 export type RootStackParamList = {
@@ -150,6 +152,12 @@ function HomeStackNavigator() {
   );
 }
 
+// Wrapped screen components that correctly pass navigation props
+const WrappedHomeStack = (props: any) => <AppShell><HomeStackNavigator {...props} /></AppShell>;
+const WrappedFavorites = (props: any) => <AppShell><FavoritesScreen {...props} /></AppShell>;
+const WrappedLeaderboard = (props: any) => <AppShell><LeaderboardScreen {...props} /></AppShell>;
+const WrappedProfile = (props: any) => <AppShell><ProfileScreen {...props} /></AppShell>;
+
 // Main Tab Navigator
 function MainTabs() {
   return (
@@ -189,13 +197,13 @@ function MainTabs() {
     >
       <Tab.Screen
         name="HomeStack"
-        component={HomeStackNavigator}
+        component={WrappedHomeStack}
         options={{ title: 'Home' }}
       />
       <Tab.Screen name="Camera" component={CameraScreen} />
-      <Tab.Screen name="Favorites" component={FavoritesScreen} />
-      <Tab.Screen name="Leaderboard" component={LeaderboardScreen} />
-      <Tab.Screen name="Profile" component={ProfileScreen} />
+      <Tab.Screen name="Favorites" component={WrappedFavorites} />
+      <Tab.Screen name="Leaderboard" component={WrappedLeaderboard} />
+      <Tab.Screen name="Profile" component={WrappedProfile} />
     </Tab.Navigator>
   );
 }
@@ -297,7 +305,9 @@ function RootNavigator() {
 
   return (
     <NavigationContainer ref={navigationRef} linking={linking}>
-      {user ? <AppNavigator /> : <AuthNavigator />}
+      <XPNotificationProvider>
+        {user ? <AppNavigator /> : <AuthNavigator />}
+      </XPNotificationProvider>
     </NavigationContainer>
   );
 }
