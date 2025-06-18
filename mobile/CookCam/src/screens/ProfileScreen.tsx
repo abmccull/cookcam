@@ -43,7 +43,9 @@ import {
   Crown,
   Calendar,
   Gift,
+  ImageIcon,
 } from "lucide-react-native";
+import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from "../context/AuthContext";
 import { useGamification } from "../context/GamificationContext";
 import {
@@ -58,12 +60,11 @@ import * as Haptics from "expo-haptics";
 import StreakCalendar from "../components/StreakCalendar";
 import { cookCamApi } from "../services/cookCamApi";
 import * as SecureStore from "expo-secure-store";
-import { gamificationService } from "../services/api";
 import logger from "../utils/logger";
 
 
 const ProfileScreen = ({ navigation }: { navigation: any }) => {
-  const { user, logout } = useAuth();
+  const { user, logout, updateUser } = useAuth();
   const { level, xp, streak, badges } = useGamification();
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [showAnalytics, setShowAnalytics] = useState(false);
@@ -74,6 +75,7 @@ const ProfileScreen = ({ navigation }: { navigation: any }) => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [showBadgeModal, setShowBadgeModal] = useState(false);
   const [selectedBadge, setSelectedBadge] = useState<any | null>(null);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
 
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -92,31 +94,107 @@ const ProfileScreen = ({ navigation }: { navigation: any }) => {
   const requiredXP = nextLevelXP - currentLevelXP;
   const progressPercentage = (progressXP / requiredXP) * 100;
 
-  // Debug function to test gamification API
-  const testGamificationAPI = async () => {
-    logger.debug("🧪 Testing gamification API...");
+  const handleProfilePhotoPress = () => {
+    Alert.alert(
+      "Update Profile Photo",
+      "Choose how you'd like to update your profile photo",
+      [
+        {
+          text: "Take Photo",
+          onPress: () => takePhoto(),
+        },
+        {
+          text: "Choose from Library",
+          onPress: () => pickImage(),
+        },
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+      ]
+    );
+  };
+
+  const takePhoto = async () => {
     try {
-      const token = await SecureStore.getItemAsync("@cookcam_token");
-      logger.debug("🔍 Debug - Token check:", {
-        hasToken: !!token,
-        tokenLength: token?.length,
-        tokenPrefix: token?.substring(0, 30),
-        userState: user,
-        isAuthenticated: user,
+      const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+      
+      if (permissionResult.granted === false) {
+        Alert.alert("Permission Required", "Camera permission is required to take photos.");
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
       });
 
-      // Test the Supabase function directly
-      const response = await gamificationService.addXP(1, "TEST_DEBUG");
-      logger.debug("🧪 Test Supabase function response:", response);
-
-      if (!response.success) {
-        Alert.alert("API Test Failed", `Error: ${response.error}`);
-      } else {
-        Alert.alert("API Test Success", "Gamification API is working!");
+      if (!result.canceled && result.assets[0]) {
+        await uploadProfilePhoto(result.assets[0].uri);
       }
     } catch (error) {
-      logger.error("🧪 Test failed:", error);
-      Alert.alert("API Test Error", `Exception: ${error}`);
+      logger.error("Error taking photo:", error);
+      Alert.alert("Error", "Failed to take photo. Please try again.");
+    }
+  };
+
+  const pickImage = async () => {
+    try {
+      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      
+      if (permissionResult.granted === false) {
+        Alert.alert("Permission Required", "Photo library permission is required to select images.");
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        await uploadProfilePhoto(result.assets[0].uri);
+      }
+    } catch (error) {
+      logger.error("Error picking image:", error);
+      Alert.alert("Error", "Failed to select image. Please try again.");
+    }
+  };
+
+  const uploadProfilePhoto = async (imageUri: string) => {
+    try {
+      setIsUploadingPhoto(true);
+      
+      // Create form data
+      const formData = new FormData();
+      formData.append('photo', {
+        uri: imageUri,
+        type: 'image/jpeg',
+        name: 'profile-photo.jpg',
+      } as any);
+
+      // Upload to backend
+      const response = await cookCamApi.uploadProfilePhoto(formData);
+      
+      if (response.success && response.data?.avatarUrl) {
+        // Update user context with new avatar URL
+        updateUser({ avatarUrl: response.data.avatarUrl });
+        
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        Alert.alert("Success", "Profile photo updated successfully!");
+      } else {
+        throw new Error(response.error || "Failed to upload photo");
+      }
+    } catch (error) {
+      logger.error("Error uploading profile photo:", error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to upload profile photo. Please try again.";
+      Alert.alert("Error", errorMessage);
+    } finally {
+      setIsUploadingPhoto(false);
     }
   };
 
@@ -173,7 +251,7 @@ const ProfileScreen = ({ navigation }: { navigation: any }) => {
         title: "My CookCam Stats",
       });
     } catch (error) {
-      logger.error(error);
+      logger.error("Error sharing stats:", error);
     }
   };
 
@@ -264,14 +342,35 @@ const ProfileScreen = ({ navigation }: { navigation: any }) => {
             { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
           ]}
         >
-          <TouchableOpacity style={styles.avatarContainer}>
+          <TouchableOpacity 
+            style={styles.avatarContainer}
+            onPress={handleProfilePhotoPress}
+            disabled={isUploadingPhoto}
+          >
             <View style={styles.avatar}>
-              <Text style={styles.avatarText}>
-                {user?.name?.charAt(0).toUpperCase() || "U"}
-              </Text>
+              {user?.avatarUrl ? (
+                <Image 
+                  source={{ uri: user.avatarUrl }} 
+                  style={styles.avatarImage}
+                  resizeMode="cover"
+                />
+              ) : (
+                <Text style={styles.avatarText}>
+                  {user?.name?.charAt(0).toUpperCase() || "U"}
+                </Text>
+              )}
+              {isUploadingPhoto && (
+                <View style={styles.uploadingOverlay}>
+                  <ActivityIndicator color="#FFFFFF" size="small" />
+                </View>
+              )}
             </View>
             <View style={styles.cameraIcon}>
-              <Camera size={16} color="#F8F8FF" />
+              {isUploadingPhoto ? (
+                <ActivityIndicator color="#F8F8FF" size={12} />
+              ) : (
+                <Camera size={16} color="#F8F8FF" />
+              )}
             </View>
           </TouchableOpacity>
 
@@ -321,14 +420,6 @@ const ProfileScreen = ({ navigation }: { navigation: any }) => {
             <Text style={styles.statLabel}>Day Streak</Text>
           </View>
         </Animated.View>
-
-        {/* Debug Test Button */}
-        <TouchableOpacity
-          style={styles.debugButton}
-          onPress={testGamificationAPI}
-        >
-          <Text style={styles.debugButtonText}>🧪 Test Gamification API</Text>
-        </TouchableOpacity>
 
         {/* Streak Calendar */}
         <View style={styles.streakCalendarContainer}>
@@ -413,32 +504,6 @@ const ProfileScreen = ({ navigation }: { navigation: any }) => {
         {/* Settings Section */}
         <View style={styles.settingsContainer}>
           <Text style={styles.sectionTitle}>Settings ⚙️</Text>
-          {/* settingsOptions.map((option, index) => {
-            const Icon = option.icon;
-            return (
-              <TouchableOpacity
-                key={index}
-                style={styles.settingItem}
-                onPress={option.onPress}>
-                <View style={styles.settingLeft}>
-                  <View style={styles.settingIconContainer}>
-                    <Icon size={20} color="#666" />
-                  </View>
-                  <Text style={styles.settingLabel}>{option.label}</Text>
-                </View>
-                {option.hasToggle ? (
-                  <Switch
-                    value={notificationsEnabled}
-                    onValueChange={setNotificationsEnabled}
-                    trackColor={{false: '#E5E5E7', true: '#FF6B35'}}
-                    thumbColor="#FFFFFF"
-                  />
-                ) : (
-                  <ChevronRight size={20} color="#8E8E93" />
-                )}
-              </TouchableOpacity>
-            );
-          })} */}
 
           {/* Basic settings options */}
           <TouchableOpacity
@@ -666,6 +731,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 6,
+  },
+  avatarImage: {
+    width: "100%",
+    height: "100%",
+    borderRadius: moderateScale(50),
   },
   avatarText: {
     fontSize: responsive.fontSize.xxxlarge + scale(8),
@@ -1081,18 +1151,16 @@ const styles = StyleSheet.create({
   disabledButton: {
     backgroundColor: "#E5E5E7",
   },
-  debugButton: {
-    backgroundColor: "#007AFF",
-    marginHorizontal: responsive.spacing.m,
-    marginBottom: responsive.spacing.m,
-    padding: responsive.spacing.m,
-    borderRadius: responsive.borderRadius.medium,
+  uploadingOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    width: "100%",
+    height: "100%",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    borderRadius: moderateScale(50),
+    justifyContent: "center",
     alignItems: "center",
-  },
-  debugButtonText: {
-    fontSize: responsive.fontSize.medium,
-    fontWeight: "600",
-    color: "#FFFFFF",
   },
 });
 

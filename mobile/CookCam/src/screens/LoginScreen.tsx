@@ -15,6 +15,7 @@ import { Mail, Lock, Eye, EyeOff, ChefHat } from "lucide-react-native";
 import { useAuth } from "../context/AuthContext";
 import { secureStorage } from "../services/secureStorage";
 import BiometricLogin from "../components/BiometricLogin";
+import BiometricEnablementModal from "../components/BiometricEnablementModal";
 import BiometricAuthService from "../services/biometricAuth";
 import logger from "../utils/logger";
 // import Animated, {
@@ -35,6 +36,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [biometricRefreshTrigger, setBiometricRefreshTrigger] = useState(0);
+  const [showBiometricModal, setShowBiometricModal] = useState(false);
   const { login, loginWithBiometrics, enableBiometricLogin } = useAuth();
 
   // Animation for the chef hat - TEMPORARILY DISABLED
@@ -72,35 +74,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
       // After successful login, offer to enable biometric authentication
       // This will be shown only once per session
       setTimeout(() => {
-        Alert.alert(
-          "Enable Biometric Login",
-          "Would you like to enable biometric authentication for faster login next time?",
-          [
-            { text: "Maybe Later", style: "cancel" },
-            {
-              text: "Enable",
-              onPress: async () => {
-                try {
-                  logger.debug("🔐 User clicked Enable biometric login");
-                  
-                  // Use the enableBiometricLogin method which gets the session directly
-                  // We don't need to manually get the token
-                  await enableBiometricLogin(email, ""); // Empty token since enableBiometricLogin gets session internally
-                  
-                  // Trigger refresh of biometric component
-                  setBiometricRefreshTrigger(prev => prev + 1);
-                  
-                  logger.debug("✅ Biometric login setup completed successfully");
-                  Alert.alert("Success", "Biometric login has been enabled! You can now use it to sign in quickly.");
-                } catch (error) {
-                  logger.error("❌ Failed to enable biometric login:", error);
-                  const errorMessage = error instanceof Error ? error.message : "Failed to enable biometric login";
-                  Alert.alert("Error", `${errorMessage}. You can enable it later in settings.`);
-                }
-              },
-            },
-          ]
-        );
+        setShowBiometricModal(true);
       }, 1000);
       
       // Navigation will be handled by the auth state change in App.tsx
@@ -131,6 +105,35 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 
   const handleBiometricError = (error: string) => {
     Alert.alert("Authentication Error", error);
+  };
+
+  const handleEnableBiometric = async () => {
+    try {
+      logger.debug("🔐 User clicked Enable biometric login");
+      
+      // Use the enableBiometricLogin method which gets the session directly
+      // We don't need to manually get the token
+      await enableBiometricLogin(email, ""); // Empty token since enableBiometricLogin gets session internally
+      
+      // Trigger refresh of biometric component
+      setBiometricRefreshTrigger(prev => prev + 1);
+      
+      logger.debug("✅ Biometric login setup completed successfully");
+    } catch (error) {
+      logger.error("❌ Failed to enable biometric login:", error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to enable biometric login";
+      Alert.alert("Error", `${errorMessage}. You can enable it later in settings.`);
+      throw error; // Re-throw so modal can handle it
+    }
+  };
+
+  const handleBiometricModalSuccess = () => {
+    // Called when biometric setup is successful
+    logger.debug("✅ Biometric modal success callback");
+  };
+
+  const handleCloseBiometricModal = () => {
+    setShowBiometricModal(false);
   };
 
   // Debug function to check biometric status
@@ -282,6 +285,14 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
+
+      {/* Biometric Enablement Modal */}
+      <BiometricEnablementModal
+        visible={showBiometricModal}
+        onClose={handleCloseBiometricModal}
+        onEnable={handleEnableBiometric}
+        onSuccess={handleBiometricModalSuccess}
+      />
     </SafeAreaView>
   );
 };

@@ -249,6 +249,28 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       if (data.session?.user) {
         await loadUserProfile(data.session.user.id, data.session.access_token);
+        
+        // Check if user had biometric login enabled and refresh the stored credentials
+        const biometricService = BiometricAuthService.getInstance();
+        const wasEnabled = await biometricService.isBiometricEnabled();
+        const storedCredentials = await biometricService.getStoredCredentials();
+        const hasStoredCredentials = !!storedCredentials;
+        
+        if (wasEnabled && hasStoredCredentials) {
+          logger.debug("🔐 Refreshing biometric credentials after password login");
+          try {
+            // Update stored credentials with fresh tokens
+            await biometricService.storeCredentialsForBiometric(
+              email,
+              data.session.access_token,
+              data.session.refresh_token
+            );
+            logger.debug("✅ Biometric credentials refreshed successfully");
+          } catch (biometricError) {
+            logger.error("Failed to refresh biometric credentials:", biometricError);
+            // Don't fail the login if biometric refresh fails
+          }
+        }
       }
     } catch (error) {
       logger.error("Login error:", error);
@@ -261,28 +283,35 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const loginWithBiometrics = async (credentials: { email: string; token: string; refreshToken?: string }) => {
     try {
       setIsLoading(true);
-      logger.debug("🔐 Attempting biometric login with stored credentials");
+      logger.debug("🔐 Attempting biometric login with stored credentials", {
+        hasToken: !!credentials.token,
+        hasRefreshToken: !!credentials.refreshToken,
+        tokenLength: credentials.token?.length,
+        refreshTokenLength: credentials.refreshToken?.length,
+        email: credentials.email
+      });
 
-      // First try to validate the current access token
-      const { data: userData, error: userError } = await supabase.auth.getUser(credentials.token);
-
-      if (userError || !userData.user) {
-        logger.debug("🔐 Access token invalid, trying refresh token...");
+      // First, try to use the refresh token to get a new session
+      if (credentials.refreshToken) {
+        logger.debug("🔐 Using refresh token to get new session");
         
-        // If we have a refresh token, try to refresh the session
-        if (credentials.refreshToken) {
-          const { data: refreshData, error: refreshError } = await supabase.auth.setSession({
-            access_token: credentials.token,
-            refresh_token: credentials.refreshToken,
-          });
+        const { data: refreshData, error: refreshError } = await supabase.auth.setSession({
+          access_token: credentials.token,
+          refresh_token: credentials.refreshToken,
+        });
 
-          if (refreshError || !refreshData.session) {
-            logger.debug("🔐 Refresh token also invalid, clearing credentials");
-            const biometricService = BiometricAuthService.getInstance();
-            await biometricService.clearStoredCredentials();
-            throw new Error("Stored credentials are no longer valid. Please log in again to re-enable biometric authentication.");
-          }
+        logger.debug("🔐 setSession response:", {
+          hasSession: !!refreshData.session,
+          hasUser: !!refreshData.session?.user,
+          hasAccessToken: !!refreshData.session?.access_token,
+          hasRefreshToken: !!refreshData.session?.refresh_token,
+          errorMessage: refreshError?.message,
+          errorCode: refreshError?.name,
+        });
 
+        if (refreshData.session && !refreshError) {
+          logger.debug("✅ Successfully refreshed session with biometric credentials");
+          
           // Update stored credentials with new tokens
           const biometricService = BiometricAuthService.getInstance();
           await biometricService.storeCredentialsForBiometric(
@@ -296,29 +325,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           logger.debug("✅ Biometric login successful with refreshed token");
           return;
         } else {
-          logger.debug("🔐 No refresh token available, clearing credentials");
-          const biometricService = BiometricAuthService.getInstance();
-          await biometricService.clearStoredCredentials();
-          throw new Error("Stored credentials are no longer valid. Please log in again to re-enable biometric authentication.");
+          logger.debug("🔐 Refresh token failed, tokens have expired", {
+            refreshError: refreshError?.message
+          });
         }
       }
 
-      // Access token is still valid, set the session
-      const { error: sessionError } = await supabase.auth.setSession({
-        access_token: credentials.token,
-        refresh_token: credentials.refreshToken || credentials.token,
-      });
-
-      if (sessionError) {
-        logger.debug("🔐 Session setting failed, clearing credentials");
-        const biometricService = BiometricAuthService.getInstance();
-        await biometricService.clearStoredCredentials();
-        throw new Error("Could not restore session. Please log in again.");
-      }
-
-      // Load user profile
-      await loadUserProfile(userData.user.id, credentials.token);
-      logger.debug("✅ Biometric login successful with existing token");
+      // If we get here, the stored tokens are expired (normal after logout)
+      // Instead of clearing credentials, inform user they need to sign in once to refresh
+      logger.debug("🔐 Stored biometric tokens have expired after logout");
+      throw new Error("Your session has expired. Please sign in with your password once to refresh your biometric login.");
       
     } catch (error) {
       logger.error("Biometric login error:", error);
@@ -341,8 +357,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Get current session to access both access and refresh tokens
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
+      logger.debug("🔐 enableBiometricLogin - session data:", {
+        hasSession: !!session,
+        hasAccessToken: !!session?.access_token,
+        hasRefreshToken: !!session?.refresh_token,
+        accessTokenLength: session?.access_token?.length,
+        refreshTokenLength: session?.refresh_token?.length,
+        sessionError: sessionError?.message,
+        userId: session?.user?.id,
+        userEmail: session?.user?.email,
+      });
+      
       if (sessionError || !session) {
         throw new Error("Could not access current session for biometric setup");
+      }
+
+      // Verify the session is still valid before storing
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      if (userError || !userData.user) {
+        throw new Error("Session is no longer valid. Please log in again.");
       }
 
       // Store both access and refresh tokens
@@ -352,6 +385,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         session.refresh_token
       );
       await biometricService.setBiometricEnabled(true);
+      
+      // Verify the credentials were stored correctly
+      const storedCredentials = await biometricService.getStoredCredentials();
+      logger.debug("🔐 enableBiometricLogin - verification:", {
+        credentialsStored: !!storedCredentials,
+        storedEmail: storedCredentials?.email,
+        storedTokenLength: storedCredentials?.token?.length,
+        storedRefreshTokenLength: storedCredentials?.refreshToken?.length,
+        tokensMatch: storedCredentials?.token === session.access_token,
+        refreshTokensMatch: storedCredentials?.refreshToken === session.refresh_token,
+      });
       
       logger.debug("✅ Biometric login enabled successfully with refresh token");
     } catch (error) {
@@ -429,21 +473,37 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       await supabase.auth.signOut();
       setUser(null);
-      // Clear sensitive data securely and non-sensitive separately
-      await secureStorage.clearAllSecureData();
+      
+      // Clear all auth-related secure data including biometric credentials
+      // since logout invalidates refresh tokens on the server
+      await secureStorage.removeSecureItem(TOKEN_KEY);
+      
+      // Clear biometric credentials since tokens are now invalid
+      const biometricService = BiometricAuthService.getInstance();
+      await biometricService.clearStoredCredentials();
+      
+      // Clear non-sensitive data
       await secureStorage.removeItem(STORAGE_KEYS.ONBOARDING_COMPLETED);
       await secureStorage.removeItem(STORAGE_KEYS.LAST_CHECK_IN);
 
       // Note: Navigation will be handled automatically by the auth state change
       // in App.tsx, so we don't need to manually reset here
-      logger.debug("✅ Logout successful, auth state will handle navigation");
+      logger.debug("✅ Logout successful, all credentials cleared");
     } catch (error) {
       logger.error("Logout error:", error);
       setUser(null);
-      // Ensure data is cleared even if logout fails
-      await secureStorage.clearAllSecureData();
-      await secureStorage.removeItem(STORAGE_KEYS.ONBOARDING_COMPLETED);
-      await secureStorage.removeItem(STORAGE_KEYS.LAST_CHECK_IN);
+      // Ensure all data is cleared even if logout fails
+      await secureStorage.removeSecureItem(TOKEN_KEY).catch(() => {});
+      await secureStorage.removeItem(STORAGE_KEYS.ONBOARDING_COMPLETED).catch(() => {});
+      await secureStorage.removeItem(STORAGE_KEYS.LAST_CHECK_IN).catch(() => {});
+      
+      // Also clear biometric credentials on error
+      try {
+        const biometricService = BiometricAuthService.getInstance();
+        await biometricService.clearStoredCredentials();
+      } catch (biometricError) {
+        logger.error("Error clearing biometric credentials:", biometricError);
+      }
     }
   };
 

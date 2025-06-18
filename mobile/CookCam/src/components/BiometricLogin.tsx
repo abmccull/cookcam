@@ -149,7 +149,14 @@ const BiometricLogin: React.FC<BiometricLoginProps> = ({
     } catch (error) {
       logger.error('❌ Biometric login error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Biometric login failed';
-      onError?.(errorMessage);
+      
+      // Show user-friendly message for expired sessions
+      if (errorMessage.includes('session has expired')) {
+        onError?.('Please sign in with your password once to refresh biometric login');
+      } else {
+        onError?.(errorMessage);
+      }
+      
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } finally {
       setIsLoading(false);

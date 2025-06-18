@@ -395,6 +395,43 @@ router.get('/me', authenticateUser, async (req: Request, res: Response) => {
   }
 });
 
+// Upload profile photo
+router.post('/profile/photo', authenticateUser, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as AuthenticatedRequest).user.id;
+    
+    logger.debug('📸 Profile photo upload request received', {
+      userId,
+      contentType: req.headers['content-type'],
+      hasBody: !!req.body,
+    });
+    
+    // For now, return a proper JSON response since we don't have file storage set up yet
+    // TODO: Implement actual file upload to Supabase Storage
+    return res.status(501).json({ 
+      success: false,
+      error: 'Profile photo upload not implemented yet',
+      message: 'This feature will be available soon. We need to set up Supabase Storage first.',
+      code: 'NOT_IMPLEMENTED'
+    });
+
+    /* Future implementation would look like:
+    // 1. Validate file type and size
+    // 2. Upload to Supabase Storage
+    // 3. Get public URL
+    // 4. Update user's avatar_url in database
+    // 5. Return new avatar URL
+    */
+  } catch (error: unknown) {
+    logger.error('Upload profile photo error:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Internal server error',
+      code: 'INTERNAL_ERROR'
+    });
+  }
+});
+
 // Update user profile
 router.put('/profile', authenticateUser, async (req: Request, res: Response) => {
   try {

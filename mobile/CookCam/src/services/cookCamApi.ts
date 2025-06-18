@@ -218,6 +218,17 @@ class CookCamApi {
     return apiService.put<User>(API_ENDPOINTS.auth.profile, updates);
   }
 
+  async uploadProfilePhoto(formData: FormData): Promise<ApiResponse<{ avatarUrl: string }>> {
+    // Call the backend endpoint (which currently returns not implemented)
+    return apiService.post<{ avatarUrl: string }>(
+      `${API_ENDPOINTS.auth.profile}/photo`,
+      formData,
+      {
+        'Content-Type': 'multipart/form-data',
+      }
+    );
+  }
+
   async deleteAccount(confirmPassword: string): Promise<
     ApiResponse<{
       message: string;
