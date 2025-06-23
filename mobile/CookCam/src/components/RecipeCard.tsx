@@ -11,8 +11,8 @@ import {
   scale,
   verticalScale,
   moderateScale,
-  responsive,
 } from "../utils/responsive";
+import { tokens, mixins, styleUtils } from "../styles";
 import ChefBadge from "./ChefBadge";
 import NutritionBadge from "./NutritionBadge";
 import { cookCamApi } from "../services/cookCamApi";
@@ -62,14 +62,9 @@ const RecipeCard: React.FC<RecipeCardProps> = React.memo(({
   const [nutrition, setNutrition] = useState<NutritionData | null>(null);
   const [nutritionLoading, setNutritionLoading] = useState(false);
 
-  // Memoize expensive calculations
+  // Memoize expensive calculations using design tokens
   const difficultyColor = useMemo(() => {
-    const difficultyColors = {
-      Easy: "#4CAF50",
-      Medium: "#FF9800",
-      Hard: "#F44336",
-    };
-    return difficultyColors[recipe.difficulty as keyof typeof difficultyColors];
+    return tokens.colors.difficulty[recipe.difficulty.toLowerCase() as keyof typeof tokens.colors.difficulty] || tokens.colors.difficulty.medium;
   }, [recipe.difficulty]);
 
   const creatorInitial = useMemo(() => {
@@ -126,11 +121,11 @@ const RecipeCard: React.FC<RecipeCardProps> = React.memo(({
     onShare?.();
   }, [onShare]);
 
-  // Memoize style objects that depend on props
-  const difficultyBadgeStyle = useMemo(() => [
+  // Memoize style objects using design tokens
+  const difficultyBadgeStyle = useMemo(() => styleUtils.combine(
     styles.difficultyBadge,
     { backgroundColor: difficultyColor }
-  ], [difficultyColor]);
+  ), [difficultyColor]);
 
   return (
     <TouchableOpacity
@@ -141,7 +136,7 @@ const RecipeCard: React.FC<RecipeCardProps> = React.memo(({
       {/* Recipe Image */}
       <View style={styles.imageContainer}>
         <View style={styles.imagePlaceholder}>
-          <Flame size={moderateScale(48)} color="#FF6B35" />
+          <Flame size={moderateScale(48)} color={tokens.colors.brand.chef} />
         </View>
 
         {/* Creator info overlay */}
@@ -160,7 +155,7 @@ const RecipeCard: React.FC<RecipeCardProps> = React.memo(({
         {/* Recipe info badges */}
         <View style={styles.recipeInfoBadges}>
           <View style={styles.timeBadge}>
-            <Clock size={moderateScale(14)} color="#F8F8FF" />
+            <Clock size={moderateScale(14)} color={tokens.colors.text.inverse} />
             <Text style={styles.timeText}>{recipe.cookTime} min</Text>
           </View>
           <View style={difficultyBadgeStyle}>
@@ -195,17 +190,17 @@ const RecipeCard: React.FC<RecipeCardProps> = React.memo(({
         {/* Action buttons */}
         <View style={styles.actionsContainer}>
           <TouchableOpacity style={styles.actionButton} onPress={handleLike}>
-            <Heart size={moderateScale(20)} color="#E91E63" />
+            <Heart size={moderateScale(20)} color={tokens.colors.interactive.favorite} />
             <Text style={styles.actionText}>{recipe.likes}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.actionButton} onPress={handleComment}>
-            <MessageCircle size={moderateScale(20)} color="#666" />
+            <MessageCircle size={moderateScale(20)} color={tokens.colors.text.secondary} />
             <Text style={styles.actionText}>{recipe.comments}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.actionButton} onPress={handleShare}>
-            <Share2 size={moderateScale(20)} color="#666" />
+            <Share2 size={moderateScale(20)} color={tokens.colors.text.secondary} />
             <Text style={styles.actionText}>Share</Text>
           </TouchableOpacity>
         </View>
@@ -219,124 +214,104 @@ RecipeCard.displayName = 'RecipeCard';
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: responsive.borderRadius.large,
-    marginBottom: responsive.spacing.m,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    ...mixins.cards.base,
+    marginBottom: tokens.spacing.md,
   },
   imageContainer: {
     position: "relative",
     height: verticalScale(200),
-    borderTopLeftRadius: responsive.borderRadius.large,
-    borderTopRightRadius: responsive.borderRadius.large,
+    borderTopLeftRadius: tokens.borderRadius.large,
+    borderTopRightRadius: tokens.borderRadius.large,
     overflow: "hidden",
   },
   imagePlaceholder: {
-    flex: 1,
-    backgroundColor: "#FFF3E0",
-    justifyContent: "center",
-    alignItems: "center",
+    ...mixins.layout.flex1,
+    backgroundColor: tokens.colors.background.accent,
+    ...mixins.layout.centerContent,
   },
   creatorOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
+    ...mixins.layout.absoluteTopLeft,
     right: 0,
-    backgroundColor: "rgba(0,0,0,0.3)",
+    backgroundColor: tokens.colors.background.overlay,
     paddingTop: scale(12),
     paddingHorizontal: scale(12),
     paddingBottom: scale(24),
   },
   creatorInfo: {
-    flexDirection: "row",
-    alignItems: "center",
+    ...mixins.layout.flexRow,
+    ...mixins.layout.centerHorizontal,
     gap: scale(8),
   },
   avatarContainer: {
-    width: moderateScale(32),
-    height: moderateScale(32),
-    borderRadius: moderateScale(16),
-    backgroundColor: "#FF6B35",
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 2,
-    borderColor: "#F8F8FF",
+    ...mixins.avatars.small,
   },
   avatarText: {
-    fontSize: responsive.fontSize.regular,
-    fontWeight: "bold",
-    color: "#F8F8FF",
+    fontSize: tokens.fontSize.base,
+    fontWeight: tokens.fontWeight.bold,
+    color: tokens.colors.text.inverse,
   },
   creatorName: {
-    fontSize: responsive.fontSize.regular,
-    fontWeight: "600",
-    color: "#F8F8FF",
+    fontSize: tokens.fontSize.base,
+    fontWeight: tokens.fontWeight.semibold,
+    color: tokens.colors.text.inverse,
     flex: 1,
   },
   recipeInfoBadges: {
-    position: "absolute",
-    bottom: scale(12),
-    right: scale(12),
-    flexDirection: "row",
+    ...mixins.layout.absoluteBottomRight,
+    ...mixins.layout.flexRow,
     gap: scale(8),
+    margin: scale(12),
   },
   timeBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.6)",
-    paddingHorizontal: scale(10),
-    paddingVertical: scale(6),
-    borderRadius: responsive.borderRadius.medium,
-    gap: scale(4),
+    ...mixins.layout.flexRow,
+    ...mixins.layout.centerHorizontal,
+    backgroundColor: tokens.colors.background.overlayLight,
+    paddingHorizontal: tokens.spacing.sm,
+    paddingVertical: tokens.spacing.xs,
+    borderRadius: tokens.borderRadius.medium,
+    gap: tokens.spacing.xs,
   },
   timeText: {
-    fontSize: responsive.fontSize.small,
-    fontWeight: "600",
-    color: "#F8F8FF",
+    fontSize: tokens.fontSize.sm,
+    fontWeight: tokens.fontWeight.semibold,
+    color: tokens.colors.text.inverse,
   },
   difficultyBadge: {
-    paddingHorizontal: scale(10),
-    paddingVertical: scale(6),
-    borderRadius: responsive.borderRadius.medium,
+    paddingHorizontal: tokens.spacing.sm,
+    paddingVertical: tokens.spacing.xs,
+    borderRadius: tokens.borderRadius.medium,
   },
   difficultyText: {
-    fontSize: responsive.fontSize.small,
-    fontWeight: "600",
-    color: "#F8F8FF",
+    fontSize: tokens.fontSize.sm,
+    fontWeight: tokens.fontWeight.semibold,
+    color: tokens.colors.text.inverse,
   },
   detailsContainer: {
-    padding: responsive.spacing.m,
+    padding: tokens.spacing.md,
   },
   recipeTitle: {
-    fontSize: responsive.fontSize.large,
-    fontWeight: "700",
-    color: "#2D1B69",
+    fontSize: tokens.fontSize.lg,
+    fontWeight: tokens.fontWeight.bold,
+    color: tokens.colors.text.primary,
     marginBottom: verticalScale(12),
   },
   actionsContainer: {
-    flexDirection: "row",
+    ...mixins.layout.flexRow,
     justifyContent: "space-around",
     borderTopWidth: 1,
-    borderTopColor: "#E5E5E7",
+    borderTopColor: tokens.colors.border.primary,
     paddingTop: verticalScale(12),
     marginTop: verticalScale(8),
   },
   actionButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: scale(6),
+    ...mixins.layout.flexRow,
+    ...mixins.layout.centerHorizontal,
+    gap: tokens.spacing.xs,
   },
   actionText: {
-    fontSize: responsive.fontSize.regular,
-    color: "#666",
-    fontWeight: "500",
+    fontSize: tokens.fontSize.base,
+    color: tokens.colors.text.secondary,
+    fontWeight: tokens.fontWeight.medium,
   },
 });
 
