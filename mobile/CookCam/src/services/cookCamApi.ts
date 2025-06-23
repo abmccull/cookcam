@@ -278,6 +278,23 @@ class CookCamApi {
     });
   }
 
+  // Generate recipe previews (Stage 1)
+  async generatePreviews(data: {
+    detectedIngredients: string[];
+    userPreferences: any;
+    sessionId?: string;
+  }): Promise<ApiResponse<any>> {
+    return apiService.post<any>("/api/v1/recipes/generate-previews", data);
+  }
+
+  // Generate detailed recipe (Stage 2)
+  async generateDetailedRecipe(data: {
+    selectedPreview: any;
+    sessionId: string;
+  }): Promise<ApiResponse<any>> {
+    return apiService.post<any>("/api/v1/recipes/generate-detailed", data);
+  }
+
   async saveRecipe(recipe: Partial<Recipe>): Promise<ApiResponse<Recipe>> {
     return apiService.post<Recipe>(API_ENDPOINTS.recipes.save, recipe);
   }

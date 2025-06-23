@@ -24,7 +24,7 @@ import {
   Zap,
 } from "lucide-react-native";
 import { useAuth } from "../context/AuthContext";
-import { gamificationService } from "../services/api";
+import { cookCamApi } from "../services/cookCamApi";
 import * as Haptics from "expo-haptics";
 import logger from "../utils/logger";
 
@@ -122,10 +122,7 @@ const LeaderboardScreen: React.FC = () => {
       );
 
       // Call actual API endpoint
-      const response = await gamificationService.getLeaderboard(
-        leaderboardType,
-        selectedPeriod,
-      );
+      const response = await cookCamApi.getLeaderboard(50);
 
       if (response.success && response.data) {
         try {

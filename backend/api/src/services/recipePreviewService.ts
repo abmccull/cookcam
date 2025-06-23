@@ -23,6 +23,7 @@ interface PreviewRequest {
     skillLevel: string;
     mealPrepEnabled: boolean;
     mealPrepPortions?: number;
+    mealType?: string;
   };
   sessionId: string;
 }
@@ -129,10 +130,12 @@ export class RecipePreviewService {
     const dietary = (request.userPreferences?.dietaryTags?.length || 0) > 0 
       ? request.userPreferences.dietaryTags.join(', ') 
       : 'none';
+    const mealType = request.userPreferences?.mealType || 'main dish';
 
-    return `Generate 3 diverse recipe previews using these ingredients: ${ingredients}
+    return `Generate 3 diverse ${mealType} recipe previews using these ingredients: ${ingredients}
 
 User Preferences:
+- Meal type: ${mealType}
 - Serving size: ${request.userPreferences?.servingSize || 0}
 - Cuisine preferences: ${cuisines}
 - Available appliances: ${appliances}

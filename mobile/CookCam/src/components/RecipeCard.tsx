@@ -15,7 +15,7 @@ import {
 } from "../utils/responsive";
 import ChefBadge from "./ChefBadge";
 import NutritionBadge from "./NutritionBadge";
-import { recipeService } from "../services/api";
+import { cookCamApi } from "../services/cookCamApi";
 import logger from "../utils/logger";
 
 
@@ -78,13 +78,19 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
   const fetchNutritionData = async () => {
     try {
       setNutritionLoading(true);
-      const response = await recipeService.getRecipeNutrition(
-        recipe.id,
-        recipe.servings,
-      );
+      const response = await cookCamApi.getRecipeNutrition(recipe.id);
 
-      if (response.success && response.data?.data?.per_serving) {
-        setNutrition(response.data.data.per_serving);
+      if (response.success && response.data) {
+        // Convert NutritionInfo to NutritionData format
+        const nutritionData: NutritionData = {
+          calories: response.data.calories,
+          protein_g: response.data.protein,
+          carbs_g: response.data.carbs,
+          fat_g: response.data.fat,
+          fiber_g: response.data.fiber,
+          sodium_mg: response.data.sodium,
+        };
+        setNutrition(nutritionData);
       }
     } catch (error) {
       logger.debug("Failed to fetch nutrition data:", error);

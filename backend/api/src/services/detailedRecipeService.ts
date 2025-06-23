@@ -59,6 +59,7 @@ interface DetailedRequest {
     skillLevel: string;
     mealPrepEnabled: boolean;
     mealPrepPortions?: number;
+    mealType?: string;
   };
   sessionId: string;
 }

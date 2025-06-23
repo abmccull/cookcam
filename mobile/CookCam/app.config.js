@@ -41,15 +41,29 @@ export default {
       adaptiveIcon: {
         foregroundImage: './assets/adaptive-icon.png',
         backgroundColor: '#FFFFFF'
-      }
+      },
+      permissions: [
+        'USE_FINGERPRINT',
+        'USE_BIOMETRIC'
+      ]
     },
     ios: {
       bundleIdentifier: 'com.abmccull.cookcamexpo',
-      supportsTablet: true
+      supportsTablet: true,
+      infoPlist: {
+        'NSFaceIDUsageDescription': 'Allow CookCam to use Face ID for secure and convenient authentication.'
+      }
     },
     owner: 'abmccull',
     plugins: [
-      'react-native-iap'
+      'react-native-iap',
+      'expo-web-browser',
+      [
+        'expo-local-authentication',
+        {
+          faceIDPermission: 'Allow CookCam to use Face ID for secure and convenient authentication.'
+        }
+      ]
     ],
     web: {
       favicon: './assets/favicon.png'

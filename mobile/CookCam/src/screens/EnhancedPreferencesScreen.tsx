@@ -5,13 +5,15 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  SafeAreaView,
   Alert,
   TextInput,
   Modal,
   Animated,
   Dimensions,
+  StatusBar,
+  Platform,
 } from "react-native";
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   Users,
   ChefHat,
@@ -124,6 +126,9 @@ const EnhancedPreferencesScreen: React.FC<EnhancedPreferencesScreenProps> = ({
   const [mealPrepPortions, setMealPrepPortions] = useState(4);
   const [showMealPrepInput, setShowMealPrepInput] = useState(false);
 
+  // Meal type selection
+  const [mealType, setMealType] = useState("dinner");
+
   // Kitchen appliances - All 12 from database
   const [appliances, setAppliances] = useState<Appliance[]>([
     {
@@ -232,6 +237,44 @@ const EnhancedPreferencesScreen: React.FC<EnhancedPreferencesScreenProps> = ({
 
   // Quiz steps definition
   const steps = [
+    {
+      id: "mealtype",
+      title: "What are we cooking?",
+      subtitle: "Choose the type of meal you want to make",
+      type: "single",
+      options: [
+        {
+          label: "🍳 Breakfast",
+          subtitle: "Start your day right",
+          value: "breakfast",
+        },
+        {
+          label: "🥙 Lunch", 
+          subtitle: "Midday fuel",
+          value: "lunch",
+        },
+        {
+          label: "🍽️ Dinner",
+          subtitle: "Main evening meal", 
+          value: "dinner",
+        },
+        {
+          label: "🍰 Dessert",
+          subtitle: "Sweet treats",
+          value: "dessert",
+        },
+        {
+          label: "🍿 Snacks",
+          subtitle: "Light bites",
+          value: "snacks",
+        },
+        {
+          label: "🥗 Appetizer",
+          subtitle: "Start the meal",
+          value: "appetizer",
+        },
+      ],
+    },
     {
       id: "serving",
       title: "How many people are you cooking for?",
@@ -515,7 +558,9 @@ const EnhancedPreferencesScreen: React.FC<EnhancedPreferencesScreenProps> = ({
 
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
-    if (step.id === "time") {
+    if (step.id === "mealtype") {
+      setMealType(value);
+    } else if (step.id === "time") {
       setCookingTime(value);
     } else if (step.id === "difficulty") {
       setDifficulty(value);
@@ -528,7 +573,9 @@ const EnhancedPreferencesScreen: React.FC<EnhancedPreferencesScreenProps> = ({
   const isOptionSelected = (option: any): boolean => {
     const step = steps[currentStep];
 
-    if (step.id === "dietary") {
+    if (step.id === "mealtype") {
+      return mealType === option.value;
+    } else if (step.id === "dietary") {
       return dietary.includes(option);
     } else if (step.id === "cuisine") {
       return cuisine.includes(option);
@@ -620,6 +667,7 @@ const EnhancedPreferencesScreen: React.FC<EnhancedPreferencesScreenProps> = ({
     await checkForBadges();
 
     const preferences = {
+      mealType,
       servingSize: selectedServing.value,
       mealPrepEnabled,
       mealPrepPortions: mealPrepEnabled ? mealPrepPortions : null,
@@ -811,22 +859,22 @@ const EnhancedPreferencesScreen: React.FC<EnhancedPreferencesScreenProps> = ({
       <View style={styles.optionsGrid}>
         {step.options?.map((option, index) => (
           <TouchableOpacity
-            key={`${step.id}-${index}-${option}`}
+            key={`${step.id}-${index}-${option as string}`}
             style={[
               styles.optionChip,
-              isOptionSelected(option) && styles.selectedChip,
+              isOptionSelected(option as string) && styles.selectedChip,
             ]}
-            onPress={() => toggleOption(option)}
+            onPress={() => toggleOption(option as string)}
           >
             <Text
               style={[
                 styles.chipText,
-                isOptionSelected(option) && styles.selectedChipText,
+                isOptionSelected(option as string) && styles.selectedChipText,
               ]}
             >
-              {option}
+              {option as string}
             </Text>
-            {isOptionSelected(option) && (
+            {isOptionSelected(option as string) && (
               <Check size={14} color="#F8F8FF" style={styles.checkIcon} />
             )}
           </TouchableOpacity>
@@ -882,7 +930,12 @@ const EnhancedPreferencesScreen: React.FC<EnhancedPreferencesScreenProps> = ({
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+      <StatusBar 
+        barStyle="dark-content" 
+        backgroundColor="#F8F8FF" 
+        translucent={false}
+      />
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
@@ -1057,10 +1110,19 @@ const styles = StyleSheet.create({
   header: {
     backgroundColor: "#FFFFFF",
     paddingHorizontal: 20,
-    paddingTop: 20,
+    paddingTop: 16,
     paddingBottom: 12,
     borderBottomWidth: 1,
     borderBottomColor: "#E5E5E7",
+    zIndex: 1,
+    elevation: 4, // Android shadow
+    shadowColor: "#000", // iOS shadow
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
   },
   backButton: {
     flexDirection: "row",
@@ -1529,76 +1591,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "700",
     color: "#FFFFFF",
-  },
-  header: {
-    paddingHorizontal: responsive.spacing.m,
-    paddingTop: responsive.spacing.s,
-    paddingBottom: responsive.spacing.m,
-    backgroundColor: "#FFFFFF",
-    borderBottomWidth: 1,
-    borderBottomColor: "#E5E5E7",
-    alignItems: "center",
-  },
-  title: {
-    fontSize: responsive.fontSize.large,
-    fontWeight: "bold",
-    color: "#2D1B69",
-    marginBottom: verticalScale(4),
-  },
-  subtitle: {
-    fontSize: responsive.fontSize.regular,
-    color: "#8E8E93",
-  },
-  scrollView: {
-    flex: 1,
-  },
-  section: {
-    backgroundColor: "#FFFFFF",
-    marginHorizontal: responsive.spacing.m,
-    marginTop: responsive.spacing.m,
-    borderRadius: responsive.borderRadius.medium,
-    padding: responsive.spacing.m,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  sectionHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: responsive.spacing.m,
-  },
-  sectionTitle: {
-    fontSize: responsive.fontSize.medium,
-    fontWeight: "600",
-    color: "#2D1B69",
-    marginLeft: scale(8),
-    flex: 1,
-  },
-  applianceCount: {
-    fontSize: responsive.fontSize.small,
-    color: "#4CAF50",
-    fontWeight: "600",
-  },
-  servingGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: scale(12),
-  },
-  servingOption: {
-    width: "45%",
-    backgroundColor: "#F8F9FA",
-    borderRadius: responsive.borderRadius.medium,
-    padding: responsive.spacing.m,
-    alignItems: "center",
-    borderWidth: 2,
-    borderColor: "transparent",
-  },
-  servingOptionSelected: {
-    backgroundColor: "rgba(45, 27, 105, 0.1)",
-    borderColor: "#2D1B69",
-  },
+    },
   servingIconContainer: {
     alignItems: "center",
     justifyContent: "center",
@@ -1606,156 +1599,12 @@ const styles = StyleSheet.create({
     height: moderateScale(40),
     width: moderateScale(40),
   },
-  servingLabel: {
-    fontSize: responsive.fontSize.regular,
-    color: "#666",
-    fontWeight: "500",
-    textAlign: "center",
-  },
-  servingLabelSelected: {
-    color: "#2D1B69",
-    fontWeight: "600",
-  },
-  customValue: {
-    fontSize: responsive.fontSize.small,
-    color: "#4CAF50",
-    fontWeight: "600",
-    marginTop: verticalScale(4),
-  },
-  mealPrepSection: {
-    marginTop: responsive.spacing.l,
-  },
-  mealPrepToggle: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#F8F9FA",
-    borderRadius: responsive.borderRadius.medium,
-    padding: responsive.spacing.m,
-    borderWidth: 2,
-    borderColor: "transparent",
-  },
-  mealPrepToggleActive: {
-    backgroundColor: "rgba(76, 175, 80, 0.1)",
-    borderColor: "#4CAF50",
-  },
-  mealPrepContent: {
-    flex: 1,
-  },
-  mealPrepText: {
-    fontSize: responsive.fontSize.medium,
-    fontWeight: "600",
-    color: "#666",
-  },
-  mealPrepTextActive: {
-    color: "#4CAF50",
-  },
-  mealPrepSubtext: {
-    fontSize: responsive.fontSize.small,
-    color: "#8E8E93",
-    marginTop: verticalScale(2),
-  },
-  mealPrepSubtextActive: {
-    color: "#4CAF50",
-  },
-  checkbox: {
-    width: moderateScale(24),
-    height: moderateScale(24),
-    borderRadius: moderateScale(12),
-    backgroundColor: "#E0E0E0",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  checkboxActive: {
-    backgroundColor: "#4CAF50",
-  },
-  mealPrepPortions: {
-    marginTop: responsive.spacing.m,
-  },
-  portionsLabel: {
-    fontSize: responsive.fontSize.regular,
-    fontWeight: "600",
-    color: "#2D1B69",
-    marginBottom: responsive.spacing.s,
-  },
-  portionsRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: scale(8),
-  },
-  portionOption: {
-    backgroundColor: "#F8F9FA",
-    borderRadius: responsive.borderRadius.small,
-    paddingVertical: verticalScale(8),
-    paddingHorizontal: scale(16),
-    borderWidth: 2,
-    borderColor: "transparent",
-  },
-  portionOptionSelected: {
-    backgroundColor: "rgba(76, 175, 80, 0.1)",
-    borderColor: "#4CAF50",
-  },
-  portionText: {
-    fontSize: responsive.fontSize.regular,
-    fontWeight: "600",
-    color: "#666",
-  },
-  portionTextSelected: {
-    color: "#4CAF50",
-  },
-  applianceGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: scale(12),
-  },
-  applianceCard: {
-    width: "45%",
-    backgroundColor: "#F8F9FA",
-    borderRadius: responsive.borderRadius.medium,
-    padding: responsive.spacing.m,
-    alignItems: "center",
-    position: "relative",
-    borderWidth: 2,
-    borderColor: "transparent",
-  },
-  applianceCardSelected: {
-    backgroundColor: "rgba(76, 175, 80, 0.1)",
-    borderColor: "#4CAF50",
-  },
   applianceIconContainer: {
     alignItems: "center",
     justifyContent: "center",
     marginBottom: verticalScale(8),
     height: moderateScale(48),
     width: moderateScale(48),
-  },
-  applianceName: {
-    fontSize: responsive.fontSize.regular,
-    fontWeight: "600",
-    color: "#2D1B69",
-    textAlign: "center",
-    marginBottom: verticalScale(4),
-  },
-  applianceNameSelected: {
-    color: "#4CAF50",
-  },
-  applianceDescription: {
-    fontSize: responsive.fontSize.small,
-    color: "#8E8E93",
-    textAlign: "center",
-  },
-  applianceDescriptionSelected: {
-    color: "#4CAF50",
-  },
-  applianceCheckbox: {
-    position: "absolute",
-    top: 8,
-    right: 8,
-    width: moderateScale(20),
-    height: moderateScale(20),
-    borderRadius: moderateScale(10),
-    backgroundColor: "#4CAF50",
-    justifyContent: "center",
-    alignItems: "center",
   },
   footer: {
     backgroundColor: "#FFFFFF",

@@ -6,11 +6,13 @@ import {
   ScrollView,
   TouchableOpacity,
   Image,
-  SafeAreaView,
   Alert,
   Animated,
   Modal,
+  StatusBar,
+  Platform,
 } from "react-native";
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   Check,
   X,
@@ -30,7 +32,6 @@ import {
 import * as Haptics from "expo-haptics";
 import { useGamification, XP_VALUES } from "../context/GamificationContext";
 import { useAuth } from "../context/AuthContext";
-import { ingredientService } from "../services/api";
 import cookCamApi from "../services/cookCamApi";
 import MysteryBox from "../components/MysteryBox";
 import AIChefIcon from "../components/AIChefIcon";
@@ -142,7 +143,7 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
         for (let i = 0; i < simulatedDetectedNames.length; i++) {
           const name = simulatedDetectedNames[i];
           try {
-            const response = await ingredientService.searchIngredients(name, 1);
+            const response = await cookCamApi.searchIngredients(name, 1);
 
             if (response.success && response.data && response.data.length > 0) {
               const ingredient = response.data[0];
@@ -241,7 +242,7 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
       for (let i = 0; i < simulatedDetectedNames.length; i++) {
         const name = simulatedDetectedNames[i];
         try {
-          const response = await ingredientService.searchIngredients(name, 1);
+          const response = await cookCamApi.searchIngredients(name, 1);
 
           if (response.success && response.data && response.data.length > 0) {
             const ingredient = response.data[0];
@@ -479,7 +480,7 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
             logger.debug(`🔍 Searching for ingredient: ${text}`);
 
             // Search for the ingredient in USDA database
-            const response = await ingredientService.searchIngredients(text, 1);
+            const response = await cookCamApi.searchIngredients(text, 1);
 
             let newIngredient: Ingredient;
 
@@ -699,7 +700,12 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+      <StatusBar 
+        barStyle="dark-content" 
+        backgroundColor="#F8F8FF" 
+        translucent={false}
+      />
       <View style={styles.mainContainer}>
         {/* Header with AI detection info */}
         <View style={styles.headerContainer}>
@@ -958,11 +964,20 @@ const styles = StyleSheet.create({
   headerContainer: {
     alignItems: "center",
     padding: responsive.spacing.m,
-    paddingTop: verticalScale(24),
+    paddingTop: responsive.spacing.m,
     paddingBottom: responsive.spacing.s,
     backgroundColor: "#FFFFFF",
     borderBottomWidth: 1,
     borderBottomColor: "#E5E5E7",
+    zIndex: 1,
+    elevation: 4, // Android shadow
+    shadowColor: "#000", // iOS shadow
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
   },
   headerTitle: {
     fontSize: responsive.fontSize.large,

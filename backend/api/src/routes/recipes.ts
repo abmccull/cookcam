@@ -274,7 +274,8 @@ router.post('/generate', authenticateUser, async (req: Request, res: Response) =
       servingSize,
       mealPrepEnabled,
       mealPrepPortions,
-      selectedAppliances
+      selectedAppliances,
+      mealType
     } = req.body;
     
     // Handle both 'ingredients' and 'detectedIngredients' field names for compatibility
@@ -318,7 +319,7 @@ router.post('/generate', authenticateUser, async (req: Request, res: Response) =
     const multipleRecipesResult = await enhancedRecipeService.generateMultipleRecipes({
       ingredients: ingredientsList,
       userPreferences: userPreferences,
-      recipeType,
+      recipeType: mealType || recipeType, // Use mealType from frontend or fallback to recipeType
       nutritionGoals,
       context
     });

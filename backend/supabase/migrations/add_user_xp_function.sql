@@ -44,8 +44,32 @@ BEGIN
   new_total_xp := COALESCE(current_user.total_xp, 0) + p_xp_amount;
   old_level := COALESCE(current_user.level, 1);
   
-  -- Calculate new level (simple formula: level = floor(total_xp / 100) + 1, max level 100)
-  new_level := LEAST(FLOOR(new_total_xp / 100.0) + 1, 100);
+  -- Calculate new level using progressive formula: 100 + (level * 50) + (level^2 * 10)
+  -- This matches the frontend calculation for consistency
+  new_level := 1;
+  FOR potential_level IN 1..100 LOOP
+    DECLARE
+      base_xp INTEGER := 100;
+      linear_mult INTEGER := 50;
+      quad_mult INTEGER := 10;
+      xp_for_level INTEGER;
+      total_xp_needed INTEGER := 0;
+    BEGIN
+      -- Calculate cumulative XP needed for this level
+      FOR calc_level IN 1..potential_level LOOP
+        xp_for_level := base_xp + (calc_level * linear_mult) + (calc_level * calc_level * quad_mult);
+        total_xp_needed := total_xp_needed + xp_for_level;
+      END LOOP;
+      
+      IF new_total_xp >= total_xp_needed THEN
+        new_level := potential_level + 1;
+      ELSE
+        EXIT;
+      END IF;
+    END;
+  END LOOP;
+  
+  new_level := LEAST(new_level, 100);
   level_changed := new_level > old_level;
   
   -- Update user stats

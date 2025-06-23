@@ -21,7 +21,6 @@ import {
   Flame,
 } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
-import { recipeService } from "../services/api";
 import { cookCamApi } from "../services/cookCamApi";
 import LoadingAnimation from "../components/LoadingAnimation";
 import CardStack from "../components/CardStack";
@@ -77,6 +76,7 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
         timeAvailable: preferences.cookingTime || "any",
         mealPrepEnabled: preferences.mealPrepEnabled || false,
         mealPrepPortions: preferences.mealPrepPortions || null,
+        mealType: preferences.mealType || "dinner",
       };
 
       logger.debug("🚀 Sending to backend API:", {
@@ -84,7 +84,7 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
         userPreferences: apiPreferences,
       });
 
-      const response = await recipeService.generatePreviews({
+      const response = await cookCamApi.generatePreviews({
         detectedIngredients,
         userPreferences: apiPreferences,
       });
@@ -140,7 +140,7 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
       setIsGeneratingDetailed(true);
       logger.debug("🍳 Generating detailed recipe for:", recipe.title);
       
-      const detailedResponse = await recipeService.generateDetailedRecipe({
+      const detailedResponse = await cookCamApi.generateDetailedRecipe({
         selectedPreview: recipePreviewData,
         sessionId: sessionId,
       });
@@ -193,7 +193,7 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
 
         logger.debug("🔄 Generating detailed recipe to save as favorite...");
         
-        const detailedResponse = await recipeService.generateDetailedRecipe({
+        const detailedResponse = await cookCamApi.generateDetailedRecipe({
           selectedPreview: recipePreviewData,
           sessionId: sessionId,
         });

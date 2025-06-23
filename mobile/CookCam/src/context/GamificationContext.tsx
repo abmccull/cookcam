@@ -108,15 +108,22 @@ export const XP_VALUES = {
   CREATOR_MILESTONE_10K_FOLLOWERS: 5000,
 };
 
-// Exponential level system: 100 XP for level 1, then each level is 2x more
-// Level 1: 100 XP, Level 2: 200 XP, Level 3: 400 XP, Level 4: 800 XP, etc.
+// Enhanced level system: Progressive but achievable
+// Uses formula: baseXP + (level * multiplier) + (level^2 * quadratic)
+// This creates steady growth that's challenging but fair
 const generateLevelThresholds = (): number[] => {
   const thresholds = [0]; // Level 0 baseline
   let totalXP = 0;
   
   for (let level = 1; level <= 100; level++) {
-    const xpForThisLevel = 100 * Math.pow(2, level - 1);
-    totalXP += xpForThisLevel;
+    // Progressive formula: 100 + (level * 50) + (level^2 * 10)
+    // This creates a nice curve that's challenging but achievable
+    const baseXP = 100;
+    const linearMultiplier = 50;
+    const quadraticMultiplier = 10;
+    
+    const xpForThisLevel = baseXP + (level * linearMultiplier) + Math.pow(level, 2) * quadraticMultiplier;
+    totalXP += Math.round(xpForThisLevel);
     thresholds.push(totalXP);
   }
   

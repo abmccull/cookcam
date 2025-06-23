@@ -22,7 +22,7 @@ import {
 } from "lucide-react-native";
 import { useGamification } from "../context/GamificationContext";
 import { useAuth } from "../context/AuthContext";
-import { apiClient } from "../services/api";
+import { cookCamApi } from "../services/cookCamApi";
 import * as Haptics from "expo-haptics";
 import logger from "../utils/logger";
 
@@ -86,13 +86,10 @@ const FavoritesScreen = ({ navigation }: { navigation: any }) => {
 
     try {
       setIsLoading(true);
-      const response = await apiClient.getSavedRecipes({
-        limit: 50,
-        offset: 0,
-      });
+      const response = await cookCamApi.getUserRecipes(50, 0);
 
       if (response.success && response.data) {
-        setSavedRecipes(response.data.saved_recipes || []);
+        setSavedRecipes(response.data || []);
       } else {
         logger.error("Failed to fetch saved recipes:", response.error);
       }
@@ -257,7 +254,7 @@ const FavoritesScreen = ({ navigation }: { navigation: any }) => {
   const handleUnsaveRecipe = async (recipeId: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
-      const response = await apiClient.unsaveRecipe(recipeId);
+      const response = await cookCamApi.toggleFavoriteRecipe(recipeId);
       if (response.success) {
         // Remove from local state
         setSavedRecipes((prev) =>
