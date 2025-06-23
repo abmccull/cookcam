@@ -37,12 +37,20 @@ export interface ApiError {
 // };
 
 class ApiService {
+  private static instance: ApiService;
   private baseURL: string;
   private defaultHeaders: Record<string, string>;
 
-  constructor() {
+  private constructor() {
     this.baseURL = API_CONFIG.baseURL;
     this.defaultHeaders = API_CONFIG.headers;
+  }
+
+  public static getInstance(): ApiService {
+    if (!ApiService.instance) {
+      ApiService.instance = new ApiService();
+    }
+    return ApiService.instance;
   }
 
   // Get stored authentication token
@@ -301,5 +309,5 @@ class ApiService {
 }
 
 // Export singleton instance
-export const apiService = new ApiService();
-export default apiService;
+export const apiService = ApiService.getInstance();
+export default ApiService;

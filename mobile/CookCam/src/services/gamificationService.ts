@@ -34,6 +34,19 @@ interface LeaderboardResponse {
 }
 
 class GamificationService {
+  private static instance: GamificationService;
+
+  private constructor() {
+    // Private constructor to prevent direct instantiation
+  }
+
+  public static getInstance(): GamificationService {
+    if (!GamificationService.instance) {
+      GamificationService.instance = new GamificationService();
+    }
+    return GamificationService.instance;
+  }
+
   private lastXPCall: { [key: string]: number } = {};
   private readonly XP_COOLDOWN = 5000; // 5 seconds between same action XP calls
 
@@ -311,5 +324,5 @@ class GamificationService {
   }
 }
 
-export const gamificationService = new GamificationService();
-export default gamificationService;
+// Export singleton instance
+export default GamificationService;

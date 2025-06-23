@@ -7,7 +7,7 @@ import React, {
   useRef,
 } from "react";
 import { useAuth } from "./AuthContext";
-import { gamificationService } from "../services/gamificationService";
+import GamificationService from "../services/gamificationService";
 import * as SecureStore from "expo-secure-store";
 import logger from "../utils/logger";
 
@@ -315,7 +315,7 @@ export const GamificationProvider: React.FC<GamificationProviderProps> = ({
       setLastChecked(now);
       logger.debug("🎮 Loading gamification progress for user:", user.id);
 
-      const response = await gamificationService.getProgress();
+      const response = await GamificationService.getInstance().getProgress();
 
       if (response.success && response.data) {
         const user_stats = response.data;
@@ -459,7 +459,7 @@ export const GamificationProvider: React.FC<GamificationProviderProps> = ({
     // Add XP to backend
     try {
       logger.debug(`🎯 Attempting to add ${amount} XP for ${reason}...`);
-      const response = await gamificationService.addXP(
+      const response = await GamificationService.getInstance().addXP(
         user?.id || "default",
         amount,
         reason,

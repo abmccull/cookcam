@@ -36,7 +36,19 @@ export const STORAGE_KEYS = {
 } as const;
 
 class SecureStorage {
+  private static instance: SecureStorage;
   private keychainAvailable: boolean | null = null;
+
+  private constructor() {
+    // Private constructor to prevent direct instantiation
+  }
+
+  public static getInstance(): SecureStorage {
+    if (!SecureStorage.instance) {
+      SecureStorage.instance = new SecureStorage();
+    }
+    return SecureStorage.instance;
+  }
 
   /**
    * Check if Keychain is available and cache the result
@@ -286,5 +298,5 @@ class SecureStorage {
 }
 
 // Export singleton instance
-export const secureStorage = new SecureStorage();
-export default secureStorage;
+export const secureStorage = SecureStorage.getInstance();
+export default SecureStorage;

@@ -34,7 +34,7 @@ import { useGamification } from "../context/GamificationContext";
 import FeatureGate from "../components/FeatureGate";
 import DailyCheckIn from "../components/DailyCheckIn";
 import SafeScreen from "../components/SafeScreen";
-import { gamificationService } from "../services/gamificationService";
+import GamificationService from "../services/gamificationService";
 import logger from "../utils/logger";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
@@ -92,7 +92,7 @@ const MainScreen: React.FC<MainScreenProps> = ({ navigation }) => {
   const checkAndUpdateStreak = async () => {
     try {
       logger.debug("🔥 Checking user streak...");
-      const response = await gamificationService.checkStreak();
+      const response = await GamificationService.getInstance().checkStreak();
       if (response.success) {
         logger.debug("✅ Streak check response:", response.data);
         // The streak will be updated through the gamification context
