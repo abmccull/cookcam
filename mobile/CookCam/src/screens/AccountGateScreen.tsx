@@ -28,7 +28,7 @@ const AccountGateScreen: React.FC<AccountGateScreenProps> = ({
   const [loadingType, setLoadingType] = useState<
     "apple" | "google" | "email" | null
   >(null);
-  const { intendedPlan, tempData } = route.params;
+  const { intendedPlan = "cooking", tempData } = route.params || {};
 
   const handleAppleSignIn = async () => {
     try {
@@ -36,30 +36,20 @@ const AccountGateScreen: React.FC<AccountGateScreenProps> = ({
       setLoadingType("apple");
 
       // TODO: Implement Apple Sign-In
-      // 1. Apple Sign-In → Get Apple ID + email
-      // 2. Create Supabase account with Apple auth
-      // 3. Start Apple subscription trial
-      // 4. Merge temp data
-
-      logger.debug("🍎 Apple Sign-In for plan:", intendedPlan);
-
-      // For now, simulate the flow
-      setTimeout(() => {
-        navigation.navigate("PlanPaywall", {
-          selectedPlan: intendedPlan,
-          tempData,
-        });
-        setIsLoading(false);
-        setLoadingType(null);
-      }, 2000);
+      logger.debug("🍎 Apple Sign-In initiated");
+      
+      // Simulate successful auth
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Navigate to plan selection after successful auth
+      navigation.navigate("PlanSelection");
+      
     } catch (error) {
       logger.error("Apple Sign-In error:", error);
+      Alert.alert("Sign-In Failed", "There was a problem with Apple Sign-In. Please try again.");
+    } finally {
       setIsLoading(false);
       setLoadingType(null);
-      Alert.alert(
-        "Sign-In Failed",
-        "Please try again or use a different method.",
-      );
     }
   };
 
@@ -69,37 +59,26 @@ const AccountGateScreen: React.FC<AccountGateScreenProps> = ({
       setLoadingType("google");
 
       // TODO: Implement Google Sign-In
-      // Similar flow to Apple but with Google
-
-      logger.debug("🔍 Google Sign-In for plan:", intendedPlan);
-
-      // For now, simulate the flow
-      setTimeout(() => {
-        navigation.navigate("PlanPaywall", {
-          selectedPlan: intendedPlan,
-          tempData,
-        });
-        setIsLoading(false);
-        setLoadingType(null);
-      }, 2000);
+      logger.debug("🔍 Google Sign-In initiated");
+      
+      // Simulate successful auth
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Navigate to plan selection after successful auth
+      navigation.navigate("PlanSelection");
+      
     } catch (error) {
       logger.error("Google Sign-In error:", error);
+      Alert.alert("Sign-In Failed", "There was a problem with Google Sign-In. Please try again.");
+    } finally {
       setIsLoading(false);
       setLoadingType(null);
-      Alert.alert(
-        "Sign-In Failed",
-        "Please try again or use a different method.",
-      );
     }
   };
 
   const handleEmailSignUp = () => {
-    // Navigate to existing signup screen with plan context
-    Alert.alert(
-      "Email Signup",
-      "Email signup flow would go to existing signup screen with plan context.",
-      [{ text: "OK", onPress: () => logger.debug("Email signup selected") }],
-    );
+    // Navigate to existing signup screen
+    navigation.navigate("Signup");
   };
 
   return (

@@ -114,7 +114,12 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
   };
 
   const navigateToMain = () => {
-    navigation.navigate("Signup");
+    navigation.navigate("AccountGate", {
+      requiredFeature: "onboarding_complete",
+      onContinue: () => {
+        // This will be handled by AccountGateScreen
+      }
+    });
   };
 
   const renderPage = (item: typeof onboardingData[0], index: number) => {

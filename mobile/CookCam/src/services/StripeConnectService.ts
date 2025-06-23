@@ -1,5 +1,6 @@
 import { Platform } from "react-native";
 import logger from "../utils/logger";
+import { secureStorage } from "./secureStorage";
 
 
 // Declare __DEV__ global
@@ -35,10 +36,10 @@ class StripeConnectService {
   private baseURL: string;
 
   private constructor() {
-    // TODO: Replace with your actual backend URL
+    // Use the correct API base URL with v1 versioning
     this.baseURL = __DEV__
-      ? "http://localhost:3000/api"
-      : "https://your-backend.com/api";
+      ? "http://localhost:3000/api/v1"
+      : "https://api.cookcam.ai/api/v1";
   }
 
   public static getInstance(): StripeConnectService {
@@ -46,6 +47,17 @@ class StripeConnectService {
       StripeConnectService.instance = new StripeConnectService();
     }
     return StripeConnectService.instance;
+  }
+
+  /**
+   * Get authorization headers with JWT token
+   */
+  private async getAuthHeaders(): Promise<Record<string, string>> {
+    const token = await secureStorage.getSecureItem('auth_token');
+    return {
+      "Content-Type": "application/json",
+      ...(token && { "Authorization": `Bearer ${token}` }),
+    };
   }
 
   /**
@@ -58,28 +70,22 @@ class StripeConnectService {
     lastName?: string;
     businessType?: "individual" | "company";
     country?: string;
-  }): Promise<{ accountId: string; success: boolean }> {
+  }): Promise<{ accountId: string; success: boolean; onboardingUrl?: string }> {
     try {
       logger.debug(
         "🏦 Creating Stripe Connect account for creator:",
         creatorData.userId,
       );
 
+      const headers = await this.getAuthHeaders();
       const response = await fetch(
-        `${this.baseURL}/stripe/create-connect-account`,
+        `${this.baseURL}/subscription/creator/stripe/onboard`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            // TODO: Add Authorization header with JWT token
-          },
+          headers,
           body: JSON.stringify({
-            user_id: creatorData.userId,
-            email: creatorData.email,
-            first_name: creatorData.firstName,
-            last_name: creatorData.lastName,
-            business_type: creatorData.businessType || "individual",
             country: creatorData.country || "US",
+            business_type: creatorData.businessType || "individual",
             platform: Platform.OS,
           }),
         },
@@ -91,9 +97,10 @@ class StripeConnectService {
         throw new Error(result.error || "Failed to create Connect account");
       }
 
-      logger.debug("✅ Connect account created:", result.account_id);
+      logger.debug("✅ Connect account created:", result.accountId);
       return {
-        accountId: result.account_id,
+        accountId: result.accountId,
+        onboardingUrl: result.onboardingUrl,
         success: true,
       };
     } catch (error) {
@@ -103,28 +110,26 @@ class StripeConnectService {
   }
 
   /**
-   * Generate an account link for creator onboarding
+   * Create an account link for onboarding
    */
   async createAccountLink(
     accountId: string,
-    returnUrl?: string,
+    returnUrl: string,
+    refreshUrl: string,
   ): Promise<ConnectAccountLink> {
     try {
       logger.debug("🔗 Creating account link for:", accountId);
 
+      const headers = await this.getAuthHeaders();
       const response = await fetch(
-        `${this.baseURL}/stripe/create-account-link`,
+        `${this.baseURL}/subscription/creator/stripe/account-link`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            // TODO: Add Authorization header
-          },
+          headers,
           body: JSON.stringify({
             account_id: accountId,
-            return_url: returnUrl || "cookcam://creator-onboarding-complete",
-            refresh_url: "cookcam://creator-onboarding-refresh",
-            type: "account_onboarding",
+            return_url: returnUrl,
+            refresh_url: refreshUrl,
           }),
         },
       );
@@ -148,17 +153,16 @@ class StripeConnectService {
   /**
    * Get the current status of a creator's Connect account
    */
-  async getAccountStatus(accountId: string): Promise<CreatorAccountStatus> {
+  async getAccountStatus(): Promise<CreatorAccountStatus> {
     try {
-      logger.debug("📊 Getting account status for:", accountId);
+      logger.debug("📊 Getting account status");
 
+      const headers = await this.getAuthHeaders();
       const response = await fetch(
-        `${this.baseURL}/stripe/account-status/${accountId}`,
+        `${this.baseURL}/subscription/creator/stripe/status`,
         {
           method: "GET",
-          headers: {
-            // TODO: Add Authorization header
-          },
+          headers,
         },
       );
 
@@ -168,15 +172,29 @@ class StripeConnectService {
         throw new Error(result.error || "Failed to get account status");
       }
 
+      // Handle case where no account exists yet
+      if (!result.hasAccount) {
+        return {
+          isConnected: false,
+          accountId: null,
+          hasCompletedKYC: false,
+          canReceivePayouts: false,
+          requiresVerification: true,
+          verificationFields: [],
+          currentlyDue: [],
+          pendingVerification: [],
+        };
+      }
+
       return {
-        isConnected: result.charges_enabled && result.payouts_enabled,
-        accountId: result.id,
-        hasCompletedKYC: result.details_submitted,
-        canReceivePayouts: result.payouts_enabled,
-        requiresVerification: result.requirements.currently_due.length > 0,
-        verificationFields: result.requirements.currently_due,
-        currentlyDue: result.requirements.currently_due,
-        pendingVerification: result.requirements.pending_verification,
+        isConnected: result.account.chargesEnabled && result.account.payoutsEnabled,
+        accountId: result.account.stripe_account_id,
+        hasCompletedKYC: result.account.detailsSubmitted,
+        canReceivePayouts: result.account.payoutsEnabled,
+        requiresVerification: result.account.status === 'pending',
+        verificationFields: [],
+        currentlyDue: [],
+        pendingVerification: [],
       };
     } catch (error) {
       logger.error("❌ Failed to get account status:", error);
@@ -187,17 +205,16 @@ class StripeConnectService {
   /**
    * Get creator earnings and payout information
    */
-  async getCreatorEarnings(accountId: string): Promise<CreatorEarnings> {
+  async getCreatorEarnings(): Promise<CreatorEarnings> {
     try {
-      logger.debug("💰 Getting earnings for:", accountId);
+      logger.debug("💰 Getting creator earnings");
 
+      const headers = await this.getAuthHeaders();
       const response = await fetch(
-        `${this.baseURL}/stripe/creator-earnings/${accountId}`,
+        `${this.baseURL}/subscription/creator/balance`,
         {
           method: "GET",
-          headers: {
-            // TODO: Add Authorization header
-          },
+          headers,
         },
       );
 
@@ -208,9 +225,9 @@ class StripeConnectService {
       }
 
       return {
-        totalEarnings: result.total_earnings / 100, // Convert cents to dollars
-        currentBalance: result.available_balance / 100,
-        pendingBalance: result.pending_balance / 100,
+        totalEarnings: result.total_earnings || 0,
+        currentBalance: result.available_balance || 0,
+        pendingBalance: result.pending_balance || 0,
         lastPayoutDate: result.last_payout_date
           ? new Date(result.last_payout_date)
           : null,
@@ -229,28 +246,18 @@ class StripeConnectService {
    * Create an instant payout (if eligible)
    */
   async createInstantPayout(
-    accountId: string,
     amount: number,
   ): Promise<{ success: boolean; payoutId?: string }> {
     try {
-      logger.debug(
-        "⚡ Creating instant payout for:",
-        accountId,
-        "Amount:",
-        amount,
-      );
+      logger.debug("⚡ Creating instant payout. Amount:", amount);
 
-      const response = await fetch(`${this.baseURL}/stripe/create-payout`, {
+      const headers = await this.getAuthHeaders();
+      const response = await fetch(`${this.baseURL}/subscription/creator/payout`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          // TODO: Add Authorization header
-        },
+        headers,
         body: JSON.stringify({
-          account_id: accountId,
-          amount: Math.round(amount * 100), // Convert to cents
-          currency: "usd",
-          method: "instant",
+          amount: amount,
+          method: "stripe",
         }),
       });
 
@@ -262,7 +269,7 @@ class StripeConnectService {
 
       return {
         success: true,
-        payoutId: result.payout_id,
+        payoutId: result.payout?.id,
       };
     } catch (error) {
       logger.error("❌ Failed to create payout:", error);
@@ -271,102 +278,137 @@ class StripeConnectService {
   }
 
   /**
-   * Handle webhook events from Stripe Connect
+   * Get Stripe dashboard URL for creators
    */
-  async handleWebhookEvent(event: any): Promise<void> {
+  async getDashboardUrl(): Promise<{ success: boolean; dashboardUrl?: string }> {
     try {
-      logger.debug("🔔 Handling Stripe Connect webhook:", event.type);
+      logger.debug("📊 Getting Stripe dashboard URL");
 
-      switch (event.type) {
-        case "account.updated":
-          await this.handleAccountUpdate(event.data.object);
-          break;
-        case "account.application.deauthorized":
-          await this.handleAccountDeauthorized(event.data.object);
-          break;
-        case "payout.paid":
-          await this.handlePayoutPaid(event.data.object);
-          break;
-        case "payout.failed":
-          await this.handlePayoutFailed(event.data.object);
-          break;
-        default:
-          logger.debug("⚠️ Unhandled webhook event:", event.type);
+      const headers = await this.getAuthHeaders();
+      const response = await fetch(
+        `${this.baseURL}/subscription/creator/stripe/dashboard`,
+        {
+          method: "GET",
+          headers,
+        },
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Failed to get dashboard URL");
       }
+
+      return {
+        success: true,
+        dashboardUrl: result.dashboardUrl,
+      };
     } catch (error) {
-      logger.error("❌ Failed to handle webhook:", error);
+      logger.error("❌ Failed to get dashboard URL:", error);
+      throw new Error("Failed to get dashboard URL");
     }
   }
 
-  private async handleAccountUpdate(account: any): Promise<void> {
-    logger.debug("📋 Account updated:", account.id);
-    // TODO: Update local database with account status
-    // You might want to emit events here for the UI to react to
-  }
-
-  private async handleAccountDeauthorized(account: any): Promise<void> {
-    logger.debug("🚫 Account deauthorized:", account.id);
-    // TODO: Handle account disconnection
-  }
-
-  private async handlePayoutPaid(payout: any): Promise<void> {
-    logger.debug("💸 Payout completed:", payout.id);
-    // TODO: Update creator earnings and notify them
-  }
-
-  private async handlePayoutFailed(payout: any): Promise<void> {
-    logger.debug("❌ Payout failed:", payout.id);
-    // TODO: Notify creator of failed payout
+  /**
+   * Refresh account status from Stripe
+   */
+  async refreshAccountStatus(accountId: string): Promise<void> {
+    try {
+      logger.debug("🔄 Refreshing account status:", accountId);
+      
+      const headers = await this.getAuthHeaders();
+      await fetch(
+        `${this.baseURL}/subscription/creator/stripe/refresh-status`,
+        {
+          method: "POST",
+          headers,
+          body: JSON.stringify({ account_id: accountId }),
+        },
+      );
+      
+      // Just trigger the refresh, don't wait for response
+    } catch (error) {
+      logger.error("❌ Failed to refresh status:", error);
+      // Don't throw here, this is a background operation
+    }
   }
 
   /**
-   * Mock implementation for development/testing
+   * Check if creator has minimum balance for payout
+   */
+  async canRequestPayout(): Promise<{ canPayout: boolean; balance: number; minimum: number }> {
+    try {
+      const earnings = await this.getCreatorEarnings();
+      const minimumPayout = 10.00; // $10 minimum
+      
+      return {
+        canPayout: earnings.currentBalance >= minimumPayout,
+        balance: earnings.currentBalance,
+        minimum: minimumPayout,
+      };
+    } catch (error) {
+      logger.error("❌ Failed to check payout eligibility:", error);
+      return {
+        canPayout: false,
+        balance: 0,
+        minimum: 10.00,
+      };
+    }
+  }
+
+  /**
+   * Clear stored credentials (for logout)
+   */
+  async clearStoredCredentials(): Promise<void> {
+    try {
+      // Clear any cached Stripe account data if stored locally
+      await secureStorage.removeItem('stripe_account_id');
+      await secureStorage.removeItem('stripe_onboarding_complete');
+      
+      logger.debug("🧹 Stripe Connect credentials cleared");
+    } catch (error) {
+      logger.error("❌ Failed to clear Stripe credentials:", error);
+    }
+  }
+
+  // --- Legacy methods for backward compatibility ---
+  
+  /**
+   * @deprecated Use createConnectAccount instead
    */
   async mockCreateAccount(
     creatorData: any,
   ): Promise<{ accountId: string; success: boolean }> {
     logger.debug("🧪 Mock: Creating Connect account");
-
     // Simulate API delay
     await new Promise((resolve) => setTimeout(resolve, 2000));
-
     return {
       accountId: `acct_mock_${Date.now()}`,
       success: true,
     };
   }
 
-  async mockCreateAccountLink(accountId: string): Promise<ConnectAccountLink> {
+  /**
+   * @deprecated Use createAccountLink instead
+   */
+  async mockCreateAccountLink(): Promise<ConnectAccountLink> {
     logger.debug("🧪 Mock: Creating account link");
-
+    await new Promise((resolve) => setTimeout(resolve, 1000));
     return {
-      url: "https://connect.stripe.com/setup/e/acct_mock_123",
-      expiresAt: Date.now() + 60 * 60 * 1000, // 1 hour from now
-    };
-  }
-
-  async mockGetAccountStatus(accountId: string): Promise<CreatorAccountStatus> {
-    logger.debug("🧪 Mock: Getting account status");
-
-    return {
-      isConnected: true,
-      accountId: accountId,
-      hasCompletedKYC: true,
-      canReceivePayouts: true,
-      requiresVerification: false,
-      verificationFields: [],
-      currentlyDue: [],
-      pendingVerification: [],
+      url: "https://connect.stripe.com/setup/test",
+      expiresAt: Date.now() + 30 * 60 * 1000, // 30 minutes
     };
   }
 
   async setupInstantPayouts(_creatorData: any) {
-    // Implementation needed
+    // Implementation needed - this would configure instant payouts
+    // if the creator's account supports it
+    logger.debug("⚡ Setup instant payouts (not yet implemented)");
   }
 
   async calculateEarnings(_accountId: string) {
-    // Implementation needed
-    return { success: false, error: "Not implemented" };
+    // Use getCreatorEarnings instead
+    return { success: false, error: "Use getCreatorEarnings method instead" };
   }
 }
 

@@ -44,6 +44,7 @@ import {
   Calendar,
   Gift,
   ImageIcon,
+  DollarSign,
 } from "lucide-react-native";
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from "../context/AuthContext";
@@ -377,23 +378,48 @@ const ProfileScreen = ({ navigation }: { navigation: any }) => {
           <Text style={styles.userName}>{user?.name || "Chef"}</Text>
           <Text style={styles.userEmail}>{user?.email}</Text>
 
-          {isCreator && (
-            <View style={styles.creatorSection}>
-              <ChefBadge
-                tier={creatorTier as 1 | 2 | 3 | 4 | 5}
-                size="medium"
-                showLabel={true}
-              />
-              <TouchableOpacity
-                style={styles.creatorDashboardButton}
-                onPress={() => navigation.navigate("Creator")}
-              >
-                <Text style={styles.creatorDashboardText}>
-                  View Creator Dashboard
-                </Text>
-              </TouchableOpacity>
-            </View>
-          )}
+          {/* Creator Section - Always visible with different content */}
+          <View style={styles.creatorSection}>
+            {isCreator ? (
+              <>
+                <ChefBadge
+                  tier={creatorTier as 1 | 2 | 3 | 4 | 5}
+                  size="medium"
+                  showLabel={true}
+                />
+                <TouchableOpacity
+                  style={styles.creatorDashboardButton}
+                  onPress={() => navigation.navigate("Creator")}
+                >
+                  <Text style={styles.creatorDashboardText}>
+                    View Creator Dashboard
+                  </Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <>
+                <View style={styles.becomeCreatorCard}>
+                  <View style={styles.becomeCreatorHeader}>
+                    <DollarSign size={24} color="#FF6B35" />
+                    <View style={styles.becomeCreatorText}>
+                      <Text style={styles.becomeCreatorTitle}>Become a Creator</Text>
+                      <Text style={styles.becomeCreatorSubtitle}>
+                        Share recipes and earn up to 30% commission
+                      </Text>
+                    </View>
+                  </View>
+                  <TouchableOpacity
+                    style={styles.becomeCreatorButton}
+                    onPress={() => navigation.navigate("Creator")}
+                  >
+                    <Text style={styles.becomeCreatorButtonText}>
+                      Start Earning 💰
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </>
+            )}
+          </View>
         </Animated.View>
 
         {/* Stats Overview */}
@@ -781,6 +807,52 @@ const styles = StyleSheet.create({
     fontSize: responsive.fontSize.regular,
     fontWeight: "600",
     color: "#FF6B35",
+  },
+  becomeCreatorCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: responsive.borderRadius.large,
+    padding: responsive.spacing.m,
+    marginHorizontal: responsive.spacing.m,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  becomeCreatorHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: scale(12),
+    marginBottom: responsive.spacing.m,
+  },
+  becomeCreatorText: {
+    flex: 1,
+  },
+  becomeCreatorTitle: {
+    fontSize: responsive.fontSize.medium,
+    fontWeight: "600",
+    color: "#2D1B69",
+    marginBottom: verticalScale(4),
+  },
+  becomeCreatorSubtitle: {
+    fontSize: responsive.fontSize.small,
+    color: "#8E8E93",
+    lineHeight: moderateScale(18),
+  },
+  becomeCreatorButton: {
+    backgroundColor: "#FF6B35",
+    paddingHorizontal: responsive.spacing.m,
+    paddingVertical: responsive.spacing.s,
+    borderRadius: responsive.borderRadius.large,
+    alignItems: "center",
+  },
+  becomeCreatorButtonText: {
+    fontSize: responsive.fontSize.regular,
+    fontWeight: "600",
+    color: "#F8F8FF",
   },
   statsContainer: {
     flexDirection: "row",

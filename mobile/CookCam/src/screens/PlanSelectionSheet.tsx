@@ -1,163 +1,185 @@
-import React from "react";
+import React, { useState } from 'react';
 import {
   View,
-  StyleSheet,
   Text,
+  StyleSheet,
   TouchableOpacity,
   SafeAreaView,
   ScrollView,
-} from "react-native";
-import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { RouteProp } from "@react-navigation/native";
-import { RootStackParamList } from "../App";
+  Dimensions,
+} from 'react-native';
 import {
-  ChefHat,
+  Camera,
   DollarSign,
   Users,
   Star,
+  Check,
   TrendingUp,
-} from "lucide-react-native";
-import { useTempData } from "../context/TempDataContext";
+  ChefHat,
+} from 'lucide-react-native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RouteProp } from '@react-navigation/native';
+import { RootStackParamList } from '../App';
+import logger from '../utils/logger';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 interface PlanSelectionSheetProps {
   navigation: NativeStackNavigationProp<RootStackParamList>;
-  route: RouteProp<RootStackParamList, "PlanSelection">;
+  route: RouteProp<RootStackParamList, 'PlanSelection'>;
 }
 
 const PlanSelectionSheet: React.FC<PlanSelectionSheetProps> = ({
   navigation,
-  route,
 }) => {
-  const { tempData, setSelectedPlan, exportTempData } = useTempData();
+  const [selectedPlan, setSelectedPlan] = useState<'consumer' | 'creator'>('consumer');
 
-  const handlePlanSelection = (planType: "consumer" | "creator") => {
-    // Store selected plan in temp context
-    setSelectedPlan(planType);
+  const planOptions = [
+    {
+      id: 'consumer',
+      name: 'Get Cooking',
+      price: '$3.99',
+      period: 'month',
+      description: 'Perfect for home cooks who want AI-powered recipes',
+      icon: Camera,
+      color: '#66BB6A',
+      features: [
+        'Unlimited ingredient scanning',
+        'AI recipe generation',
+        'Step-by-step cook mode',
+        'Save favorite recipes',
+        'Nutrition information',
+      ],
+    },
+    {
+      id: 'creator',
+      name: 'Creator Pro',
+      price: '$9.99',
+      period: 'month',
+      description: 'For food creators who want to monetize their content',
+      icon: DollarSign,
+      color: '#FF6B35',
+      features: [
+        'Everything in Get Cooking',
+        'Creator dashboard & analytics',
+        'Publish premium recipes',
+        'Earn 30% revenue share',
+        'Referral tracking & bonuses',
+        'Priority support',
+      ],
+    },
+  ];
 
-    navigation.navigate("AccountGate", {
-      intendedPlan: planType,
-      tempData: exportTempData(),
+  const handlePlanSelect = (planId: 'consumer' | 'creator') => {
+    setSelectedPlan(planId);
+  };
+
+  const handleContinue = () => {
+    logger.debug('🎯 Selected plan:', selectedPlan);
+    
+    // Navigate to paywall with selected plan
+    navigation.navigate('PlanPaywall', {
+      selectedPlan,
+      source: 'plan_selection',
     });
   };
 
-  const renderConsumerPlan = () => (
-    <TouchableOpacity
-      style={[styles.planCard, styles.consumerCard]}
-      onPress={() => handlePlanSelection("consumer")}
-    >
-      <View style={styles.planContent}>
+  const renderPlanCard = (plan: typeof planOptions[0]) => {
+    const isSelected = selectedPlan === plan.id;
+    const IconComponent = plan.icon;
+
+    return (
+      <TouchableOpacity
+        key={plan.id}
+        style={[
+          styles.planCard,
+          isSelected && styles.selectedPlanCard,
+          { borderColor: isSelected ? plan.color : '#E0E0E0' },
+        ]}
+        onPress={() => handlePlanSelect(plan.id as 'consumer' | 'creator')}
+      >
         <View style={styles.planHeader}>
-          <View style={styles.planIconContainer}>
-            <ChefHat size={24} color="#FF6B35" />
+          <View style={[styles.planIcon, { backgroundColor: plan.color }]}>
+            <IconComponent size={24} color="#FFFFFF" />
           </View>
-          <View style={styles.planTitleContainer}>
-            <Text style={styles.planTitle}>Get Cooking</Text>
-            <Text style={styles.planSubtitle}>Free 3-day trial</Text>
-            <Text style={styles.planPrice}>$3.99/mo after trial</Text>
-          </View>
-        </View>
-
-        <View style={styles.planFeatures}>
-          <View style={styles.featureItem}>
-            <View style={styles.bulletPoint} />
-            <Text style={styles.featureText}>
-              Unlimited ingredient scanning
-            </Text>
-          </View>
-          <View style={styles.featureItem}>
-            <View style={styles.bulletPoint} />
-            <Text style={styles.featureText}>AI-powered recipe generation</Text>
-          </View>
-          <View style={styles.featureItem}>
-            <View style={styles.bulletPoint} />
-            <Text style={styles.featureText}>Step-by-step cook mode</Text>
-          </View>
-          <View style={styles.featureItem}>
-            <View style={styles.bulletPoint} />
-            <Text style={styles.featureText}>XP tracking & achievements</Text>
-          </View>
-          <View style={styles.featureItem}>
-            <View style={styles.bulletPoint} />
-            <Text style={styles.featureText}>Recipe favorites & history</Text>
-          </View>
-        </View>
-      </View>
-
-      <View style={styles.planCTA}>
-        <Text style={styles.ctaText}>Start Free Trial →</Text>
-      </View>
-    </TouchableOpacity>
-  );
-
-  const renderCreatorPlan = () => (
-    <TouchableOpacity
-      style={[styles.planCard, styles.creatorCard]}
-      onPress={() => handlePlanSelection("creator")}
-    >
-      <View style={styles.planContent}>
-        <View style={styles.planHeader}>
-          <View style={styles.planIconContainer}>
-            <Star size={24} color="#FFD700" />
-          </View>
-          <View style={styles.planTitleContainer}>
-            <Text style={styles.planTitle}>Earn with CookCam</Text>
-            <Text style={styles.planSubtitle}>Free 3-day Creator trial</Text>
-            <View style={styles.revenueCallout}>
-              <Text style={styles.revenueCalloutText}>30% Revenue Share</Text>
+          <View style={styles.planInfo}>
+            <Text style={styles.planName}>{plan.name}</Text>
+            <View style={styles.priceContainer}>
+              <Text style={styles.planPrice}>{plan.price}</Text>
+              <Text style={styles.planPeriod}>/{plan.period}</Text>
             </View>
-            <Text style={styles.planPrice}>
-              $9.99/mo + earn from every view
+          </View>
+          {isSelected && (
+            <View style={[styles.checkmark, { backgroundColor: plan.color }]}>
+              <Check size={16} color="#FFFFFF" />
+            </View>
+          )}
+        </View>
+
+        <Text style={styles.planDescription}>{plan.description}</Text>
+
+        <View style={styles.featuresContainer}>
+          {plan.features.map((feature, index) => (
+            <View key={index} style={styles.featureRow}>
+              <Check size={16} color={plan.color} />
+              <Text style={styles.featureText}>{feature}</Text>
+            </View>
+          ))}
+        </View>
+
+        {plan.id === 'creator' && (
+          <View style={styles.revenueHighlight}>
+            <Star size={16} color="#FFC107" />
+            <Text style={styles.revenueText}>
+              Earn money sharing recipes you love!
             </Text>
           </View>
-        </View>
-
-        <View style={styles.planFeatures}>
-          <View style={styles.featureItem}>
-            <View style={[styles.bulletPoint, styles.creatorBullet]} />
-            <Text style={styles.featureText}>Everything in Get Cooking</Text>
-          </View>
-          <View style={styles.featureItem}>
-            <View style={[styles.bulletPoint, styles.creatorBullet]} />
-            <Text style={styles.featureText}>Publish premium recipes</Text>
-          </View>
-          <View style={styles.featureItem}>
-            <View style={[styles.bulletPoint, styles.creatorBullet]} />
-            <Text style={styles.featureText}>Creator analytics dashboard</Text>
-          </View>
-          <View style={styles.featureItem}>
-            <View style={[styles.bulletPoint, styles.creatorBullet]} />
-            <Text style={styles.featureText}>Monetize your cooking skills</Text>
-          </View>
-          <View style={styles.featureItem}>
-            <View style={[styles.bulletPoint, styles.creatorBullet]} />
-            <Text style={styles.featureText}>Build your follower base</Text>
-          </View>
-        </View>
-      </View>
-
-      <View style={styles.planCTA}>
-        <Text style={styles.ctaText}>Start Creator Trial →</Text>
-      </View>
-    </TouchableOpacity>
-  );
+        )}
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Choose Your Journey</Text>
-        <Text style={styles.headerSubtitle}>
-          Unlock the full CookCam experience with a plan that fits your goals
+        <Text style={styles.title}>Choose Your Plan</Text>
+        <Text style={styles.subtitle}>
+          Start your 3-day free trial, cancel anytime
         </Text>
       </View>
 
-      <View style={styles.plansContainer}>
-        {renderConsumerPlan()}
-        {renderCreatorPlan()}
-      </View>
+      <ScrollView
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.plansContainer}>
+          {planOptions.map(renderPlanCard)}
+        </View>
+
+        <View style={styles.trialInfo}>
+          <ChefHat size={20} color="#FF6B35" />
+          <Text style={styles.trialText}>
+            3-day free trial • No commitment • Cancel anytime
+          </Text>
+        </View>
+      </ScrollView>
 
       <View style={styles.footer}>
-        <Text style={styles.footerText}>
-          • Cancel anytime • No commitment • Full access during trial
+        <TouchableOpacity
+          style={[
+            styles.continueButton,
+            { backgroundColor: planOptions.find(p => p.id === selectedPlan)?.color },
+          ]}
+          onPress={handleContinue}
+        >
+          <Text style={styles.continueButtonText}>
+            Start Free Trial
+          </Text>
+        </TouchableOpacity>
+
+        <Text style={styles.footerNote}>
+          You won't be charged until after your free trial ends.
+          Cancel anytime in your device settings.
         </Text>
       </View>
     </SafeAreaView>
@@ -167,145 +189,166 @@ const PlanSelectionSheet: React.FC<PlanSelectionSheetProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8F8FF",
+    backgroundColor: '#F8F8FF',
   },
   header: {
-    padding: 16,
-    alignItems: "center",
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    paddingBottom: 16,
+    alignItems: 'center',
   },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#2D1B69",
-    marginBottom: 6,
-    textAlign: "center",
+  title: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#2D1B69',
+    marginBottom: 8,
+    textAlign: 'center',
   },
-  headerSubtitle: {
-    fontSize: 14,
-    color: "#8E8E93",
-    textAlign: "center",
-    lineHeight: 18,
+  subtitle: {
+    fontSize: 16,
+    color: '#8E8E93',
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  scrollView: {
+    flex: 1,
   },
   plansContainer: {
-    flex: 1,
-    paddingHorizontal: 16,
-    paddingBottom: 20,
+    paddingHorizontal: 24,
+    paddingTop: 16,
   },
   planCard: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: '#FFFFFF',
     borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    padding: 20,
+    marginBottom: 16,
     borderWidth: 2,
-    borderColor: "transparent",
-    height: 280,
-    justifyContent: "space-between",
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  planContent: {
-    flex: 1,
-  },
-  consumerCard: {
-    borderColor: "#FF6B35",
-  },
-  creatorCard: {
-    borderColor: "#FFD700",
-    position: "relative",
+  selectedPlanCard: {
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 6,
   },
   planHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
   },
-  planIconContainer: {
+  planIcon: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: "#F8F8FF",
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 16,
   },
-  planTitleContainer: {
+  planInfo: {
     flex: 1,
   },
-  planTitle: {
+  planName: {
     fontSize: 20,
-    fontWeight: "bold",
-    color: "#2D1B69",
+    fontWeight: 'bold',
+    color: '#2D1B69',
     marginBottom: 4,
   },
-  planSubtitle: {
-    fontSize: 14,
-    color: "#66BB6A",
-    fontWeight: "600",
-    marginBottom: 2,
+  priceContainer: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
   },
   planPrice: {
-    fontSize: 14,
-    color: "#8E8E93",
-    fontWeight: "500",
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#2D1B69',
   },
-  revenueCallout: {
-    backgroundColor: "#FFD700",
-    paddingHorizontal: 12,
-    paddingVertical: 4,
+  planPeriod: {
+    fontSize: 16,
+    color: '#8E8E93',
+    marginLeft: 2,
+  },
+  checkmark: {
+    width: 24,
+    height: 24,
     borderRadius: 12,
-    alignSelf: "flex-start",
-    marginVertical: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  revenueCalloutText: {
-    fontSize: 14,
-    fontWeight: "bold",
-    color: "#2D1B69",
+  planDescription: {
+    fontSize: 16,
+    color: '#8E8E93',
+    lineHeight: 22,
+    marginBottom: 16,
   },
-  planFeatures: {
-    marginBottom: 12,
+  featuresContainer: {
+    marginBottom: 16,
   },
-  featureItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 6,
-  },
-  bulletPoint: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: "#FF6B35",
-    marginRight: 12,
-  },
-  creatorBullet: {
-    backgroundColor: "#FFD700",
+  featureRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
   },
   featureText: {
-    fontSize: 14,
-    color: "#2D1B69",
-    flex: 1,
-    lineHeight: 18,
-  },
-  planCTA: {
-    backgroundColor: "#FF6B35",
-    borderRadius: 12,
-    paddingVertical: 12,
-    alignItems: "center",
-  },
-  ctaText: {
     fontSize: 16,
-    fontWeight: "bold",
-    color: "#FFFFFF",
+    color: '#2D1B69',
+    marginLeft: 12,
+    flex: 1,
+  },
+  revenueHighlight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF8E1',
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 8,
+  },
+  revenueText: {
+    fontSize: 14,
+    color: '#F57C00',
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  trialInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+  },
+  trialText: {
+    fontSize: 16,
+    color: '#FF6B35',
+    fontWeight: '600',
+    marginLeft: 8,
+    textAlign: 'center',
   },
   footer: {
-    padding: 20,
-    alignItems: "center",
+    paddingHorizontal: 24,
+    paddingBottom: 34,
+    paddingTop: 16,
   },
-  footerText: {
-    fontSize: 12,
-    color: "#8E8E93",
-    textAlign: "center",
+  continueButton: {
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  continueButtonText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+  },
+  footerNote: {
+    fontSize: 14,
+    color: '#8E8E93',
+    textAlign: 'center',
+    lineHeight: 20,
   },
 });
 

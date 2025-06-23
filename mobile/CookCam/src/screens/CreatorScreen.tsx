@@ -11,9 +11,11 @@ import {
   Alert,
   Clipboard,
   Platform,
+  Linking,
+  ActivityIndicator,
+  RefreshControl,
 } from "react-native";
 import {
-  TrendingUp,
   Users,
   DollarSign,
   Copy,
@@ -29,8 +31,14 @@ import {
   BookOpen,
   Zap,
   Clock,
+  ExternalLink,
+  RefreshCw,
+  Crown,
+  Sparkles,
+  TrendingUp,
 } from "lucide-react-native";
 import { useAuth } from "../context/AuthContext";
+import { useSubscription } from "../context/SubscriptionContext";
 import {
   scale,
   verticalScale,
@@ -42,7 +50,8 @@ import * as Haptics from "expo-haptics";
 import ChefBadge from "../components/ChefBadge";
 import { useGamification, XP_VALUES } from "../context/GamificationContext";
 import logger from "../utils/logger";
-
+import StripeConnectService from "../services/StripeConnectService";
+import cookCamApi from "../services/cookCamApi";
 
 interface CreatorTier {
   id: number;
@@ -63,34 +72,54 @@ interface CreatorTip {
   category: "content" | "growth" | "monetization";
 }
 
+interface CreatorAnalytics {
+  revenue: {
+    total_earnings: number;
+    affiliate_earnings: number;
+    tips_earnings: number;
+    collections_earnings: number;
+    active_referrals: number;
+  };
+  referrals: {
+    total: number;
+    active: number;
+    data: any[];
+  };
+  recipes: any[];
+  recentTips: any[];
+  stripeAccount?: {
+    isConnected: boolean;
+    canReceivePayouts: boolean;
+    accountId: string | null;
+  };
+}
+
+interface CreatorEarnings {
+  total_earnings: number;
+  available_balance: number;
+  pending_balance: number;
+  last_payout_date: string | null;
+  next_payout_date: string | null;
+}
+
 const CreatorScreen = ({ navigation }: { navigation: any }) => {
   const { user } = useAuth();
   const { addXP } = useGamification();
+  const { state: subscriptionState, isCreator } = useSubscription();
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const progressAnim = useRef(new Animated.Value(0)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
-  // Mock creator data (would come from API)
-  const [creatorStats] = useState({
-    creatorCode: user?.isCreator ? "CHEF_ALEX_2024" : null,
-    totalClicks: 1250,
-    signUps: 89,
-    paidSubscribers: 45,
-    monthlyRevenue: 225.5,
-    currentTier: 1,
-    totalSubscribers: 45,
-  });
+  // Real API data state
+  const [analytics, setAnalytics] = useState<CreatorAnalytics | null>(null);
+  const [earnings, setEarnings] = useState<CreatorEarnings | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Recipe performance predictions
-  const [recipePredictions] = useState([
-    { title: "Viral Pasta Recipe", predictedViews: "10K-15K", confidence: 92 },
-    { title: "Quick Breakfast Bowl", predictedViews: "5K-8K", confidence: 87 },
-    { title: "Healthy Smoothie", predictedViews: "3K-5K", confidence: 81 },
-  ]);
-
-  // Creator tips
+  // Static creator tips (these can remain hardcoded as educational content)
   const creatorTips: CreatorTip[] = [
     {
       id: "1",
@@ -104,7 +133,7 @@ const CreatorScreen = ({ navigation }: { navigation: any }) => {
       id: "2",
       title: "Use Trending Ingredients",
       description: "Recipes with trending ingredients get 3x more views",
-      icon: TrendingUp,
+      icon: Star,
       category: "content",
     },
     {
@@ -123,7 +152,7 @@ const CreatorScreen = ({ navigation }: { navigation: any }) => {
     },
   ];
 
-  // Chef-themed tiers
+  // Chef-themed tiers with 30% flat revenue share + gamified benefits
   const tiers: CreatorTier[] = [
     {
       id: 1,
@@ -131,7 +160,7 @@ const CreatorScreen = ({ navigation }: { navigation: any }) => {
       emoji: "👨‍🍳",
       minSubscribers: 0,
       maxSubscribers: 100,
-      revenueShare: 10,
+      revenueShare: 30, // Flat 30% for all tiers
       color: "#4CAF50",
       unlocked: true,
     },
@@ -141,9 +170,9 @@ const CreatorScreen = ({ navigation }: { navigation: any }) => {
       emoji: "🧁",
       minSubscribers: 100,
       maxSubscribers: 1000,
-      revenueShare: 15,
+      revenueShare: 30, // Flat 30% for all tiers
       color: "#2196F3",
-      unlocked: creatorStats.totalSubscribers >= 100,
+      unlocked: (analytics?.referrals.active || 0) >= 100,
     },
     {
       id: 3,
@@ -151,9 +180,9 @@ const CreatorScreen = ({ navigation }: { navigation: any }) => {
       emoji: "👨‍🍳",
       minSubscribers: 1000,
       maxSubscribers: 10000,
-      revenueShare: 20,
+      revenueShare: 30, // Flat 30% for all tiers
       color: "#9C27B0",
-      unlocked: creatorStats.totalSubscribers >= 1000,
+      unlocked: (analytics?.referrals.active || 0) >= 1000,
     },
     {
       id: 4,
@@ -161,9 +190,9 @@ const CreatorScreen = ({ navigation }: { navigation: any }) => {
       emoji: "⭐",
       minSubscribers: 10000,
       maxSubscribers: 100000,
-      revenueShare: 25,
+      revenueShare: 30, // Flat 30% for all tiers
       color: "#FF6B35",
-      unlocked: creatorStats.totalSubscribers >= 10000,
+      unlocked: (analytics?.referrals.active || 0) >= 10000,
     },
     {
       id: 5,
@@ -171,108 +200,299 @@ const CreatorScreen = ({ navigation }: { navigation: any }) => {
       emoji: "🏆",
       minSubscribers: 100000,
       maxSubscribers: null,
-      revenueShare: 30,
+      revenueShare: 30, // Flat 30% for all tiers
       color: "#FFB800",
-      unlocked: creatorStats.totalSubscribers >= 100000,
+      unlocked: (analytics?.referrals.active || 0) >= 100000,
     },
   ];
 
-  const currentTierData =
-    tiers.find((t) => t.id === creatorStats.currentTier) || tiers[0];
-  const nextTier = tiers.find((t) => t.id === creatorStats.currentTier + 1);
+  // Calculate current tier based on real subscriber count
+  const getCurrentTier = () => {
+    const subscriberCount = analytics?.referrals.active || 0;
+    return tiers.find(tier => 
+      subscriberCount >= tier.minSubscribers && 
+      (tier.maxSubscribers === null || subscriberCount < tier.maxSubscribers)
+    ) || tiers[0];
+  };
+
+  const currentTierData = getCurrentTier();
+  const nextTier = tiers.find((t) => t.id === currentTierData.id + 1);
 
   // Calculate progress to next tier
-  const progressToNext = nextTier
-    ? ((creatorStats.totalSubscribers - currentTierData.minSubscribers) /
+  const progressToNext = nextTier && analytics
+    ? Math.min(((analytics.referrals.active - currentTierData.minSubscribers) /
         (nextTier.minSubscribers - currentTierData.minSubscribers)) *
-      100
+      100, 100)
     : 100;
 
+  // Generate proper shareable creator link
+  const getCreatorShareableLink = () => {
+    const creatorCode = `CHEF_${user?.id?.slice(-8)?.toUpperCase()}`;
+    return `https://cookcam.ai/ref/${creatorCode}`;
+  };
+
+  // Load creator data from APIs
+  const loadCreatorData = async () => {
+    try {
+      setError(null);
+      logger.debug("📊 Loading creator analytics and earnings");
+
+      // Load analytics and earnings in parallel
+      const [analyticsResponse, earningsResponse] = await Promise.all([
+        cookCamApi.getCreatorAnalytics(),
+        StripeConnectService.getInstance().getCreatorEarnings(),
+      ]);
+
+      if (analyticsResponse.success && analyticsResponse.data) {
+        setAnalytics(analyticsResponse.data);
+        logger.debug("✅ Creator analytics loaded", analyticsResponse.data);
+      } else {
+        logger.warn("⚠️ Failed to load analytics", analyticsResponse);
+      }
+
+      // Handle earnings response - StripeConnectService returns CreatorEarnings directly
+      if (earningsResponse) {
+        setEarnings({
+          total_earnings: earningsResponse.totalEarnings,
+          available_balance: earningsResponse.currentBalance,
+          pending_balance: earningsResponse.pendingBalance,
+          last_payout_date: earningsResponse.lastPayoutDate?.toISOString() || null,
+          next_payout_date: earningsResponse.nextPayoutDate?.toISOString() || null,
+        });
+        logger.debug("✅ Creator earnings loaded", earningsResponse);
+      }
+
+    } catch (error) {
+      logger.error("❌ Failed to load creator data:", error);
+      setError("Failed to load creator data. Please try again.");
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
   useEffect(() => {
-    // Start animations
+    if (user?.isCreator) {
+      loadCreatorData();
+    }
+
+    // Animate entrance
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
-        duration: 800,
+        duration: 600,
         useNativeDriver: true,
       }),
-      Animated.spring(slideAnim, {
+      Animated.timing(slideAnim, {
         toValue: 0,
-        tension: 40,
-        friction: 8,
+        duration: 600,
         useNativeDriver: true,
       }),
     ]).start();
 
-    // Pulse animation
-    Animated.loop(
+    // Animate progress bar to actual value
+    if (progressToNext !== undefined) {
+      Animated.timing(progressAnim, {
+        toValue: progressToNext,
+        duration: 1000,
+        useNativeDriver: false,
+      }).start();
+    }
+
+    // Pulse effect for tier card
+    const pulseAnimation = Animated.loop(
       Animated.sequence([
         Animated.timing(pulseAnim, {
-          toValue: 1.1,
-          duration: 1500,
+          toValue: 1.02,
+          duration: 2000,
           useNativeDriver: true,
         }),
         Animated.timing(pulseAnim, {
           toValue: 1,
-          duration: 1500,
+          duration: 2000,
           useNativeDriver: true,
         }),
       ]),
-    ).start();
+    );
+    pulseAnimation.start();
 
-    // Animate progress bar
-    Animated.timing(progressAnim, {
-      toValue: progressToNext,
-      duration: 1000,
-      useNativeDriver: false,
-    }).start();
-  }, [progressToNext]);
+    return () => {
+      pulseAnimation.stop();
+    };
+  }, [analytics, progressToNext]);
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    loadCreatorData();
+  };
 
   const handleCopyCode = () => {
-    if (creatorStats.creatorCode) {
-      Clipboard.setString(creatorStats.creatorCode);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      Alert.alert("Copied!", "Your creator code has been copied to clipboard");
-    }
+    const shareableLink = getCreatorShareableLink();
+    Clipboard.setString(shareableLink);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    Alert.alert("Copied!", "Your creator link has been copied to clipboard.");
   };
 
   const handleShare = async () => {
     try {
+      const shareableLink = getCreatorShareableLink();
+      const creatorCode = `CHEF_${user?.id?.slice(-8)?.toUpperCase()}`;
+      
       await Share.share({
-        message: `Join CookCam with my creator code: ${creatorStats.creatorCode} 🍳\n\nDiscover amazing recipes and cook like a pro!\n\nhttps://cookcam.app/join/${creatorStats.creatorCode}`,
-        title: "Join CookCam!",
+        message: `Join me on CookCam AI! 🍳✨ Get AI-powered recipes from your ingredients and discover amazing dishes. Use my creator link to get started: ${shareableLink}`,
+        url: shareableLink,
+        title: `Join ${user?.name || 'me'} on CookCam AI!`,
       });
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     } catch (error) {
-      logger.error(error);
+      logger.error("Share error:", error);
     }
   };
 
   const handleBecomeCreator = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-
-    // Navigate to proper creator onboarding flow
     navigation.navigate("CreatorOnboarding", {
       returnToTab: "Creator",
     });
   };
 
-  const calculateConversionRate = () => {
-    if (creatorStats.totalClicks === 0) {
-      return "0";
+  const handleOpenStripeConnect = async () => {
+    try {
+      logger.debug("📊 Getting Stripe dashboard URL");
+      const dashboardResponse = await StripeConnectService.getInstance().getDashboardUrl();
+      
+      if (dashboardResponse.success && dashboardResponse.dashboardUrl) {
+        await Linking.openURL(dashboardResponse.dashboardUrl);
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      } else {
+        Alert.alert("Setup Required", "Please complete your Stripe Connect setup first.");
+        navigation.navigate("CreatorOnboarding");
+      }
+    } catch (error) {
+      logger.error("Failed to open Stripe dashboard:", error);
+      Alert.alert("Error", "Failed to open dashboard. Please try again.");
     }
-    return ((creatorStats.signUps / creatorStats.totalClicks) * 100).toFixed(1);
   };
 
-  const calculatePaidRate = () => {
-    if (creatorStats.signUps === 0) {
+  const calculateConversionRate = () => {
+    if (!analytics?.referrals.total || analytics.referrals.total === 0) {
       return "0";
     }
-    return (
-      (creatorStats.paidSubscribers / creatorStats.signUps) *
-      100
-    ).toFixed(1);
+    return ((analytics.referrals.active / analytics.referrals.total) * 100).toFixed(1);
   };
+
+  const calculateActiveRate = () => {
+    if (!analytics?.referrals.total || analytics.referrals.total === 0) {
+      return "0";
+    }
+    return ((analytics.referrals.active / analytics.referrals.total) * 100).toFixed(1);
+  };
+
+  // Check subscription access first
+  const hasCreatorSubscription = isCreator() || subscriptionState.currentSubscription?.tier_slug === "creator";
+
+  // If no creator subscription, show upgrade prompt
+  if (!hasCreatorSubscription) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <ScrollView showsVerticalScrollIndicator={false}>
+          <Animated.View
+            style={{
+              opacity: fadeAnim,
+              transform: [{ translateY: slideAnim }],
+            }}
+          >
+            {/* Header */}
+            <View style={styles.header}>
+              <Crown size={moderateScale(48)} color="#FFB800" />
+              <Text style={styles.headerTitle}>Creator Subscription Required</Text>
+              <Text style={styles.headerSubtitle}>
+                Unlock creator features and start earning
+              </Text>
+            </View>
+
+            {/* Subscription Required Card */}
+            <View style={styles.subscriptionCard}>
+              <View style={styles.subscriptionHeader}>
+                <Sparkles size={moderateScale(32)} color="#FF6B35" />
+                <Text style={styles.subscriptionTitle}>Upgrade to Creator Plan</Text>
+                <Text style={styles.subscriptionDescription}>
+                  Access all creator features and start earning revenue from your recipes
+                </Text>
+              </View>
+
+              <View style={styles.subscriptionBenefits}>
+                <Text style={styles.benefitsTitle}>What you get with Creator:</Text>
+                
+                <View style={styles.benefitItem}>
+                  <CheckCircle size={moderateScale(20)} color="#4CAF50" />
+                  <Text style={styles.benefitText}>Publish premium recipes</Text>
+                </View>
+                
+                <View style={styles.benefitItem}>
+                  <CheckCircle size={moderateScale(20)} color="#4CAF50" />
+                  <Text style={styles.benefitText}>Earn 30% revenue share</Text>
+                </View>
+                
+                <View style={styles.benefitItem}>
+                  <CheckCircle size={moderateScale(20)} color="#4CAF50" />
+                  <Text style={styles.benefitText}>Creator analytics dashboard</Text>
+                </View>
+                
+                <View style={styles.benefitItem}>
+                  <CheckCircle size={moderateScale(20)} color="#4CAF50" />
+                  <Text style={styles.benefitText}>Build your follower base</Text>
+                </View>
+                
+                <View style={styles.benefitItem}>
+                  <CheckCircle size={moderateScale(20)} color="#4CAF50" />
+                  <Text style={styles.benefitText}>Professional creator tools</Text>
+                </View>
+              </View>
+
+              <TouchableOpacity
+                style={styles.upgradeButton}
+                onPress={() => navigation.navigate("Subscription")}
+              >
+                <Crown size={moderateScale(20)} color="#FFFFFF" />
+                <Text style={styles.upgradeButtonText}>Upgrade to Creator</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.learnMoreButton}
+                onPress={() => navigation.navigate("CreatorOnboarding")}
+              >
+                <Text style={styles.learnMoreText}>Learn More About Creating</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Success Stories */}
+            <View style={styles.successSection}>
+              <Text style={styles.sectionTitle}>Creator Success Stories 🌟</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                <View style={styles.successCard}>
+                  <TrendingUp size={moderateScale(24)} color="#4CAF50" />
+                  <Text style={styles.successQuote}>
+                    "I went from 0 to 5K subscribers in 3 months!"
+                  </Text>
+                  <Text style={styles.successAuthor}>- Chef Sarah</Text>
+                  <Text style={styles.successStats}>💰 $1,250/month</Text>
+                </View>
+                <View style={styles.successCard}>
+                  <Star size={moderateScale(24)} color="#FFB800" />
+                  <Text style={styles.successQuote}>
+                    "My pasta recipes went viral and changed my life!"
+                  </Text>
+                  <Text style={styles.successAuthor}>- Chef Marco</Text>
+                  <Text style={styles.successStats}>👥 15K subscribers</Text>
+                </View>
+              </ScrollView>
+            </View>
+          </Animated.View>
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
 
   // If not a creator, show the journey start
   if (!user?.isCreator) {
@@ -321,7 +541,7 @@ const CreatorScreen = ({ navigation }: { navigation: any }) => {
                   <View style={styles.benefitText}>
                     <Text style={styles.benefitTitle}>Earn Revenue</Text>
                     <Text style={styles.benefitDescription}>
-                      Get up to 30% commission on subscribers
+                      Get 30% commission on all subscribers
                     </Text>
                   </View>
                 </View>
@@ -388,12 +608,39 @@ const CreatorScreen = ({ navigation }: { navigation: any }) => {
   // Creator dashboard for existing creators
   return (
     <View style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            colors={["#4CAF50"]}
+            tintColor="#4CAF50"
+          />
+        }
+      >
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Creator Dashboard 💚</Text>
           <Text style={styles.headerSubtitle}>Welcome back, Creator!</Text>
+          {loading && (
+            <View style={styles.loadingIndicator}>
+              <ActivityIndicator size="small" color="#4CAF50" />
+              <Text style={styles.loadingText}>Loading analytics...</Text>
+            </View>
+          )}
         </View>
+
+        {/* Error State */}
+        {error && !loading && (
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorText}>{error}</Text>
+            <TouchableOpacity style={styles.retryButton} onPress={handleRefresh}>
+              <RefreshCw size={moderateScale(16)} color="#4CAF50" />
+              <Text style={styles.retryText}>Try Again</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* Current Tier Card */}
         <Animated.View
@@ -405,7 +652,7 @@ const CreatorScreen = ({ navigation }: { navigation: any }) => {
           <View style={styles.tierHeader}>
             <View style={styles.tierInfo}>
               <ChefBadge
-                tier={creatorStats.currentTier as 1 | 2 | 3 | 4 | 5}
+                tier={currentTierData.id as 1 | 2 | 3 | 4 | 5}
                 size="large"
               />
               <View style={styles.tierTextInfo}>
@@ -413,14 +660,14 @@ const CreatorScreen = ({ navigation }: { navigation: any }) => {
                 <Text
                   style={[styles.tierRevenue, { color: currentTierData.color }]}
                 >
-                  {currentTierData.revenueShare}% Revenue Share
+                  Revenue Share • {currentTierData.title}
                 </Text>
               </View>
             </View>
             <View style={styles.subscriberBadge}>
               <Users size={moderateScale(16)} color="#666" />
               <Text style={styles.subscriberCount}>
-                {creatorStats.totalSubscribers}
+                {analytics?.referrals.active?.toLocaleString() || "0"}
               </Text>
             </View>
           </View>
@@ -433,7 +680,7 @@ const CreatorScreen = ({ navigation }: { navigation: any }) => {
                   Progress to {nextTier.title}
                 </Text>
                 <Text style={styles.progressText}>
-                  {creatorStats.totalSubscribers} / {nextTier.minSubscribers}
+                  {analytics?.referrals.active?.toLocaleString() || "0"} / {nextTier.minSubscribers}
                 </Text>
               </View>
               <View style={styles.progressBar}>
@@ -451,48 +698,22 @@ const CreatorScreen = ({ navigation }: { navigation: any }) => {
                 />
               </View>
               <Text style={styles.progressHint}>
-                {nextTier.minSubscribers - creatorStats.totalSubscribers} more
-                subscribers to unlock {nextTier.revenueShare}% revenue share!
+                {nextTier.minSubscribers - (analytics?.referrals.active || 0)} more
+                subscribers to unlock {nextTier.title} tier and exclusive benefits!
               </Text>
             </View>
           )}
         </Animated.View>
 
-        {/* Recipe Performance Predictions */}
-        <View style={styles.predictionsSection}>
-          <Text style={styles.sectionTitle}>Recipe Predictions 🔮</Text>
-          <View style={styles.predictionsList}>
-            {recipePredictions.map((prediction, index) => (
-              <View key={index} style={styles.predictionCard}>
-                <View style={styles.predictionLeft}>
-                  <Text style={styles.predictionTitle}>{prediction.title}</Text>
-                  <View style={styles.predictionStats}>
-                    <TrendingUp size={moderateScale(14)} color="#FF6B35" />
-                    <Text style={styles.predictionViews}>
-                      {prediction.predictedViews} views
-                    </Text>
-                  </View>
-                </View>
-                <View style={styles.predictionConfidence}>
-                  <Text style={styles.confidenceValue}>
-                    {prediction.confidence}%
-                  </Text>
-                  <Text style={styles.confidenceLabel}>confidence</Text>
-                </View>
-              </View>
-            ))}
-          </View>
-        </View>
-
-        {/* Creator Link/Code Section */}
+        {/* Creator Link Section */}
         <View style={styles.codeSection}>
           <Text style={styles.sectionTitle}>Your Creator Link 🔗</Text>
           <View style={styles.codeCard}>
             <Text style={styles.codeLabel}>
-              Share this code with your audience:
+              Share this link with your audience:
             </Text>
             <View style={styles.codeContainer}>
-              <Text style={styles.codeText}>{creatorStats.creatorCode}</Text>
+              <Text style={styles.codeText}>{getCreatorShareableLink()}</Text>
               <TouchableOpacity
                 style={styles.copyButton}
                 onPress={handleCopyCode}
@@ -507,17 +728,54 @@ const CreatorScreen = ({ navigation }: { navigation: any }) => {
           </View>
         </View>
 
+        {/* Payout Status Section */}
+        <View style={styles.payoutSection}>
+          <Text style={styles.sectionTitle}>Payout Status 💳</Text>
+          <View style={styles.payoutCard}>
+            <View style={styles.payoutStatus}>
+              <View style={styles.payoutStatusIcon}>
+                <CheckCircle size={20} color="#66BB6A" />
+              </View>
+              <View style={styles.payoutStatusText}>
+                <Text style={styles.payoutStatusTitle}>
+                  {analytics?.stripeAccount?.isConnected ? "Bank Account Connected" : "Setup Required"}
+                </Text>
+                <Text style={styles.payoutStatusSubtitle}>
+                  {earnings?.next_payout_date 
+                    ? `Next payout: ${new Date(earnings.next_payout_date).toLocaleDateString()}`
+                    : "Complete Stripe setup to enable payouts"
+                  }
+                </Text>
+                {earnings?.available_balance && earnings.available_balance > 0 && (
+                  <Text style={styles.availableBalance}>
+                    Available: ${earnings.available_balance.toFixed(2)}
+                  </Text>
+                )}
+              </View>
+            </View>
+            <TouchableOpacity 
+              style={styles.manageBankButton}
+              onPress={handleOpenStripeConnect}
+            >
+              <ExternalLink size={16} color="#007AFF" />
+              <Text style={styles.manageBankText}>
+                {analytics?.stripeAccount?.isConnected ? "Manage" : "Setup"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
         {/* Analytics Section */}
         <View style={styles.analyticsSection}>
           <Text style={styles.sectionTitle}>Your Performance 📊</Text>
           <View style={styles.statsGrid}>
             <View style={styles.statCard}>
               <View style={styles.statHeader}>
-                <TrendingUp size={moderateScale(20)} color="#FF6B35" />
+                <ExternalLink size={moderateScale(20)} color="#FF6B35" />
                 <Text style={styles.statLabel}>Total Clicks</Text>
               </View>
               <Text style={styles.statValue}>
-                {creatorStats.totalClicks.toLocaleString()}
+                {analytics?.referrals.total?.toLocaleString() || "0"}
               </Text>
             </View>
             <View style={styles.statCard}>
@@ -525,7 +783,9 @@ const CreatorScreen = ({ navigation }: { navigation: any }) => {
                 <Users size={moderateScale(20)} color="#9C27B0" />
                 <Text style={styles.statLabel}>Sign-ups</Text>
               </View>
-              <Text style={styles.statValue}>{creatorStats.signUps}</Text>
+              <Text style={styles.statValue}>
+                {analytics?.referrals.active?.toLocaleString() || "0"}
+              </Text>
               <Text style={styles.statSubtext}>
                 {calculateConversionRate()}% conversion
               </Text>
@@ -533,13 +793,13 @@ const CreatorScreen = ({ navigation }: { navigation: any }) => {
             <View style={styles.statCard}>
               <View style={styles.statHeader}>
                 <Award size={moderateScale(20)} color="#4CAF50" />
-                <Text style={styles.statLabel}>Paid Subs</Text>
+                <Text style={styles.statLabel}>Active Subs</Text>
               </View>
               <Text style={styles.statValue}>
-                {creatorStats.paidSubscribers}
+                {analytics?.referrals.active?.toLocaleString() || "0"}
               </Text>
               <Text style={styles.statSubtext}>
-                {calculatePaidRate()}% paid
+                {calculateActiveRate()}% active
               </Text>
             </View>
             <View style={[styles.statCard, styles.revenueCard]}>
@@ -548,7 +808,7 @@ const CreatorScreen = ({ navigation }: { navigation: any }) => {
                 <Text style={styles.statLabel}>Monthly Revenue</Text>
               </View>
               <Text style={[styles.statValue, styles.revenueValue]}>
-                ${creatorStats.monthlyRevenue.toFixed(2)}
+                ${earnings?.total_earnings?.toFixed(2) || "0.00"}
               </Text>
               <Text style={styles.statSubtext}>This month</Text>
             </View>
@@ -562,8 +822,8 @@ const CreatorScreen = ({ navigation }: { navigation: any }) => {
             <TouchableOpacity
               onPress={() =>
                 Alert.alert(
-                  "Revenue Share Program",
-                  "Earn commission on every subscriber you bring to CookCam! The more subscribers you bring, the higher your revenue share percentage.",
+                  "Creator Tier System",
+                  "All creators earn 30% commission on subscribers! Tiers unlock recognition, badges, exclusive features, and special perks as you grow your audience.",
                 )
               }
             >
@@ -594,14 +854,15 @@ const CreatorScreen = ({ navigation }: { navigation: any }) => {
                 </View>
               </View>
               <View style={styles.tierItemRight}>
-                <Text style={[styles.tierItemRevenue, { color: tier.color }]}>
-                  {tier.revenueShare}%
-                </Text>
                 {tier.id === currentTierData.id ? (
                   <CheckCircle size={moderateScale(20)} color={tier.color} />
                 ) : !tier.unlocked ? (
                   <Lock size={moderateScale(20)} color="#C7C7CC" />
-                ) : null}
+                ) : (
+                  <Text style={[styles.tierUnlockedText, { color: tier.color }]}>
+                    Unlocked
+                  </Text>
+                )}
               </View>
             </View>
           ))}
@@ -646,6 +907,41 @@ const styles = StyleSheet.create({
   headerSubtitle: {
     fontSize: responsive.fontSize.medium,
     color: "#8E8E93",
+  },
+  loadingIndicator: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: verticalScale(8),
+  },
+  loadingText: {
+    fontSize: responsive.fontSize.small,
+    color: "#8E8E93",
+    marginLeft: scale(8),
+  },
+  errorContainer: {
+    backgroundColor: "#FFF5F5",
+    marginHorizontal: responsive.spacing.m,
+    marginBottom: responsive.spacing.m,
+    padding: responsive.spacing.m,
+    borderRadius: 12,
+    borderLeftWidth: 3,
+    borderLeftColor: "#EF4444",
+  },
+  errorText: {
+    fontSize: responsive.fontSize.medium,
+    color: "#DC2626",
+    marginBottom: verticalScale(8),
+  },
+  retryButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+  },
+  retryText: {
+    fontSize: responsive.fontSize.small,
+    color: "#4CAF50",
+    marginLeft: scale(4),
+    fontWeight: "500",
   },
   heroCard: {
     marginHorizontal: responsive.spacing.m,
@@ -760,57 +1056,7 @@ const styles = StyleSheet.create({
     fontSize: responsive.fontSize.regular,
     color: "#666",
   },
-  predictionsSection: {
-    marginBottom: responsive.spacing.l,
-  },
-  predictionsList: {
-    paddingHorizontal: responsive.spacing.m,
-  },
-  predictionCard: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    backgroundColor: "#FFFFFF",
-    borderRadius: responsive.borderRadius.medium,
-    padding: responsive.spacing.m,
-    marginBottom: responsive.spacing.s,
-    borderWidth: 1,
-    borderColor: "#E5E5E7",
-  },
-  predictionLeft: {
-    flex: 1,
-  },
-  predictionTitle: {
-    fontSize: responsive.fontSize.medium,
-    fontWeight: "600",
-    color: "#2D1B69",
-    marginBottom: verticalScale(4),
-  },
-  predictionStats: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: scale(6),
-  },
-  predictionViews: {
-    fontSize: responsive.fontSize.regular,
-    color: "#FF6B35",
-  },
-  predictionConfidence: {
-    alignItems: "center",
-    backgroundColor: "#F5F5F5",
-    paddingHorizontal: scale(12),
-    paddingVertical: verticalScale(8),
-    borderRadius: responsive.borderRadius.medium,
-  },
-  confidenceValue: {
-    fontSize: responsive.fontSize.large,
-    fontWeight: "bold",
-    color: "#4CAF50",
-  },
-  confidenceLabel: {
-    fontSize: responsive.fontSize.tiny,
-    color: "#666",
-  },
+
   tierCard: {
     marginHorizontal: responsive.spacing.m,
     marginBottom: responsive.spacing.l,
@@ -1026,6 +1272,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     borderRadius: responsive.borderRadius.medium,
     padding: responsive.spacing.m,
+    paddingRight: responsive.spacing.xl,
     borderWidth: 1,
     borderColor: "#E5E5E7",
   },
@@ -1041,6 +1288,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: scale(16),
+    flex: 1,
   },
   tierItemInfo: {
     flex: 1,
@@ -1056,13 +1304,18 @@ const styles = StyleSheet.create({
     marginTop: verticalScale(2),
   },
   tierItemRight: {
-    flexDirection: "row",
     alignItems: "center",
-    gap: scale(12),
+    justifyContent: "center",
+    minWidth: scale(32),
   },
   tierItemRevenue: {
     fontSize: responsive.fontSize.large,
     fontWeight: "bold",
+  },
+  tierUnlockedText: {
+    fontSize: responsive.fontSize.small,
+    fontWeight: "600",
+    marginTop: verticalScale(2),
   },
   tipsSection: {
     paddingHorizontal: responsive.spacing.m,
@@ -1094,6 +1347,136 @@ const styles = StyleSheet.create({
     color: "#8E8E93",
     textAlign: "center",
     lineHeight: moderateScale(20),
+  },
+  // Payout Section Styles
+  payoutSection: {
+    marginBottom: responsive.spacing.l,
+  },
+  payoutCard: {
+    marginHorizontal: responsive.spacing.m,
+    backgroundColor: "#FFFFFF",
+    borderRadius: responsive.borderRadius.large,
+    padding: responsive.spacing.m,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 3,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  payoutStatus: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+  },
+  payoutStatusIcon: {
+    marginRight: responsive.spacing.s,
+  },
+  payoutStatusText: {
+    flex: 1,
+  },
+  payoutStatusTitle: {
+    fontSize: responsive.fontSize.medium,
+    fontWeight: "600",
+    color: "#2D1B69",
+    marginBottom: verticalScale(2),
+  },
+  payoutStatusSubtitle: {
+    fontSize: responsive.fontSize.small,
+    color: "#8E8E93",
+  },
+  availableBalance: {
+    fontSize: responsive.fontSize.small,
+    color: "#4CAF50",
+    fontWeight: "600",
+    marginTop: verticalScale(2),
+  },
+  manageBankButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 122, 255, 0.1)",
+    paddingHorizontal: responsive.spacing.s,
+    paddingVertical: responsive.spacing.xs,
+    borderRadius: responsive.borderRadius.medium,
+    gap: scale(4),
+  },
+  manageBankText: {
+    fontSize: responsive.fontSize.regular,
+    fontWeight: "600",
+    color: "#007AFF",
+  },
+  // Subscription Protection Styles
+  subscriptionCard: {
+    marginHorizontal: responsive.spacing.m,
+    marginBottom: responsive.spacing.l,
+    backgroundColor: "#FFFFFF",
+    borderRadius: responsive.borderRadius.large,
+    padding: responsive.spacing.l,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  subscriptionHeader: {
+    alignItems: "center",
+    marginBottom: responsive.spacing.l,
+  },
+  subscriptionTitle: {
+    fontSize: responsive.fontSize.xlarge,
+    fontWeight: "bold",
+    color: "#2D1B69",
+    textAlign: "center",
+    marginTop: responsive.spacing.m,
+    marginBottom: responsive.spacing.s,
+  },
+  subscriptionDescription: {
+    fontSize: responsive.fontSize.medium,
+    color: "#8E8E93",
+    textAlign: "center",
+    lineHeight: moderateScale(20),
+  },
+  subscriptionBenefits: {
+    marginBottom: responsive.spacing.l,
+  },
+  benefitsTitle: {
+    fontSize: responsive.fontSize.large,
+    fontWeight: "600",
+    color: "#2D1B69",
+    marginBottom: responsive.spacing.m,
+  },
+  upgradeButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#FF6B35",
+    borderRadius: responsive.borderRadius.large,
+    paddingVertical: responsive.spacing.m,
+    paddingHorizontal: responsive.spacing.l,
+    marginBottom: responsive.spacing.m,
+    gap: scale(8),
+  },
+  upgradeButtonText: {
+    fontSize: responsive.fontSize.medium,
+    fontWeight: "600",
+    color: "#FFFFFF",
+  },
+  learnMoreButton: {
+    alignItems: "center",
+    paddingVertical: responsive.spacing.s,
+  },
+  learnMoreText: {
+    fontSize: responsive.fontSize.medium,
+    color: "#FF6B35",
+    fontWeight: "500",
   },
 });
 

@@ -11,6 +11,7 @@ import {
   flushFailedPurchasesCachedAsPendingAndroid,
 } from "react-native-iap";
 import logger from "../utils/logger";
+import { cookCamApi } from "./cookCamApi";
 
 const itemSkus = Platform.select({
   ios: ["com.cookcam.pro.monthly", "com.cookcam.creator.monthly"],
@@ -49,30 +50,81 @@ class SubscriptionService {
 
       this.purchaseUpdateSubscription = purchaseUpdatedListener(
         async (purchase: SubscriptionPurchase | ProductPurchase) => {
-          const receipt = purchase.transactionReceipt;
-          if (receipt) {
-            try {
-              // By calling finishTransaction, you are acknowledging that you have fulfilled the purchased item.
-              // Failure to do this will result in refunds.
+          try {
+            logger.debug("🛒 Purchase completed, validating receipt...", {
+              productId: purchase.productId,
+              platform: Platform.OS
+            });
+
+            // Validate receipt with backend
+            const validationResult = await this.validateReceiptWithBackend(purchase);
+            
+            if (validationResult.success) {
+              // Receipt validated successfully, finish transaction
               await finishTransaction({ purchase, isConsumable: false });
-              logger.debug("Purchase successful", purchase);
-              // Here, you would typically validate the receipt with your backend
-              // and update the user's subscription status in your database.
-            } catch (ackErr) {
-              logger.warn("Error acknowledging purchase", ackErr);
+              logger.debug("✅ Purchase validated and completed successfully");
+              
+              // Notify app about successful purchase
+              // You could emit an event here or call a callback
+            } else {
+              logger.error("❌ Receipt validation failed:", validationResult.error);
+              // Don't finish transaction if validation failed
             }
+          } catch (error) {
+            logger.error("❌ Error processing purchase:", error);
           }
         },
       );
 
       this.purchaseErrorSubscription = purchaseErrorListener((error) => {
-        logger.error("Purchase error", error);
+        logger.error("❌ Purchase error:", error);
       });
       
       logger.debug("✅ IAP connection initialized successfully");
     } catch (e) {
       // Don't treat this as a critical error - just log it
       logger.debug("ℹ️ IAP connection not available (expected in Expo Go):", e);
+    }
+  }
+
+  private async validateReceiptWithBackend(purchase: SubscriptionPurchase | ProductPurchase) {
+    try {
+      let validationData;
+
+      if (Platform.OS === 'ios') {
+        // For iOS, send the receipt data
+        validationData = {
+          platform: 'ios' as const,
+          productId: purchase.productId,
+          receipt: purchase.transactionReceipt
+        };
+      } else {
+        // For Android, send the purchase token
+        validationData = {
+          platform: 'android' as const,
+          productId: purchase.productId,
+          purchaseToken: purchase.purchaseToken
+        };
+      }
+
+      // Call backend validation API
+      const response = await fetch(`${process.env.EXPO_PUBLIC_API_BASE_URL}/api/v1/iap/validate-receipt`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          // Add auth header here
+        },
+        body: JSON.stringify(validationData)
+      });
+
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      logger.error("❌ Backend validation failed:", error);
+      return {
+        success: false,
+        error: 'Failed to validate receipt with backend'
+      };
     }
   }
 
@@ -97,9 +149,11 @@ class SubscriptionService {
 
   async purchaseProduct(sku: string) {
     try {
+      logger.debug("🛒 Initiating purchase for:", sku);
       await requestPurchase({ skus: [sku] });
     } catch (err) {
-      logger.warn("Failed to purchase product", err);
+      logger.error("❌ Failed to initiate purchase:", err);
+      throw err;
     }
   }
 
@@ -115,4 +169,4 @@ class SubscriptionService {
   }
 }
 
-export default SubscriptionService.getInstance();
+export default SubscriptionService;

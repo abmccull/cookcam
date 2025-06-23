@@ -117,6 +117,10 @@ app.use('/api/v1/analytics', analyticsRoutes);
 import subscriptionRoutes from './routes/subscription';
 app.use('/api/v1/subscription', subscriptionRoutes);
 
+// IAP validation routes
+import iapValidationRoutes from './routes/iap-validation';
+app.use('/api/v1/iap', iapValidationRoutes);
+
 // Health check routes
 import healthRoutes from './routes/health';
 app.use('/api/v1/health', healthRoutes);

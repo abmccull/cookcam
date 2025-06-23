@@ -139,7 +139,8 @@ const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
         // Don't fail signup if referral linking fails
       }
 
-      // Navigation will be handled by auth state change
+      // Navigate to plan selection after successful signup
+      navigation.navigate("PlanSelection");
     } catch (error: any) {
       logger.error("Signup error:", error);
       Alert.alert("Error", error.message || "Failed to create account");

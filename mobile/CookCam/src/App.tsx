@@ -6,7 +6,7 @@ import { StatusBar } from 'expo-status-bar';
 import { View, ActivityIndicator } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { Camera, Heart, Trophy, User, Home } from 'lucide-react-native';
+import { Camera, Heart, Trophy, User, Home, DollarSign } from 'lucide-react-native';
 
 // Context Providers
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -106,6 +106,8 @@ export type RootStackParamList = {
   PlanPaywall: {
     source?: string;
     feature?: string;
+    selectedPlan?: string;
+    tempData?: any;
   };
   Preferences: undefined;
   EnhancedPreferences: undefined;
@@ -122,8 +124,10 @@ export type RootStackParamList = {
     initialIndex?: number;
   };
   AccountGate: {
-    requiredFeature: string;
-    onContinue: () => void;
+    requiredFeature?: string;
+    onContinue?: () => void;
+    intendedPlan?: string;
+    tempData?: any;
   };
   ExampleFeatureGate: undefined;
   ColdOpen: undefined;
@@ -134,6 +138,7 @@ export type TabParamList = {
   Camera: undefined;
   Favorites: undefined;
   Leaderboard: undefined;
+  Creator?: undefined;
   Profile: undefined;
 };
 
@@ -158,8 +163,14 @@ const WrappedFavorites = (props: any) => <AppShell><FavoritesScreen {...props} /
 const WrappedLeaderboard = (props: any) => <AppShell><LeaderboardScreen {...props} /></AppShell>;
 const WrappedProfile = (props: any) => <AppShell><ProfileScreen {...props} /></AppShell>;
 
+// Wrapped Creator screen
+const WrappedCreator = (props: any) => <AppShell><CreatorScreen {...props} /></AppShell>;
+
 // Main Tab Navigator
 function MainTabs() {
+  const { user } = useAuth();
+  const showCreatorTab = user?.isCreator || false;
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -174,6 +185,8 @@ function MainTabs() {
             IconComponent = Heart;
           } else if (route.name === 'Leaderboard') {
             IconComponent = Trophy;
+          } else if (route.name === 'Creator') {
+            IconComponent = DollarSign;
           } else if (route.name === 'Profile') {
             IconComponent = User;
           }
@@ -203,6 +216,13 @@ function MainTabs() {
       <Tab.Screen name="Camera" component={CameraScreen} />
       <Tab.Screen name="Favorites" component={WrappedFavorites} />
       <Tab.Screen name="Leaderboard" component={WrappedLeaderboard} />
+      {showCreatorTab && (
+        <Tab.Screen 
+          name="Creator" 
+          component={WrappedCreator}
+          options={{ title: 'Creator' }}
+        />
+      )}
       <Tab.Screen name="Profile" component={WrappedProfile} />
     </Tab.Navigator>
   );
@@ -217,8 +237,12 @@ function AuthNavigator() {
     >
       <Stack.Screen name="Welcome" component={WelcomeScreen} />
       <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+      <Stack.Screen name="AccountGate" component={AccountGateScreen} />
       <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="Signup" component={SignupScreen} />
+      <Stack.Screen name="PlanSelection" component={PlanSelectionSheet} />
+      <Stack.Screen name="PlanPaywall" component={PlanPaywallScreen} />
+      <Stack.Screen name="CreatorKYC" component={CreatorKYCScreen} />
     </Stack.Navigator>
   );
 }

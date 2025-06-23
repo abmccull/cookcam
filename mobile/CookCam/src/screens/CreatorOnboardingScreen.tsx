@@ -10,6 +10,8 @@ import {
   TextInput,
   Animated,
   Dimensions,
+  ActivityIndicator,
+  Linking,
 } from "react-native";
 import {
   ChefHat,
@@ -25,10 +27,15 @@ import {
   Heart,
   TrendingUp,
   Clock,
+  Shield,
+  ExternalLink,
+  Building2,
 } from "lucide-react-native";
 import { useAuth } from "../context/AuthContext";
 import { useGamification, XP_VALUES } from "../context/GamificationContext";
 import { authService } from "../services/api";
+import StripeConnectService from "../services/StripeConnectService";
+import * as SecureStore from "expo-secure-store";
 import * as Haptics from "expo-haptics";
 import logger from "../utils/logger";
 
@@ -66,6 +73,10 @@ const CreatorOnboardingScreen: React.FC<CreatorOnboardingScreenProps> = ({
   const [specialty, setSpecialty] = useState("");
   const [loading, setLoading] = useState(false);
   const [completed, setCompleted] = useState(false);
+  const [stripeAccountId, setStripeAccountId] = useState<string | null>(null);
+  const [kycStatus, setKycStatus] = useState<'none' | 'creating' | 'onboarding' | 'complete' | 'error'>('none');
+
+  const stripeConnectService = StripeConnectService.getInstance();
 
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -112,6 +123,15 @@ const CreatorOnboardingScreen: React.FC<CreatorOnboardingScreenProps> = ({
     },
     {
       id: 4,
+      title: "Setup Payouts 💳",
+      subtitle: "Connect your bank account",
+      description:
+        "Verify your identity and connect a bank account to receive your creator earnings",
+      icon: Building2,
+      color: "#2196F3",
+    },
+    {
+      id: 5,
       title: "You're All Set! 🚀",
       subtitle: "Ready to create amazing content",
       description:
@@ -175,11 +195,110 @@ const CreatorOnboardingScreen: React.FC<CreatorOnboardingScreenProps> = ({
   const handleNext = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
-    if (currentStep < onboardingSteps.length - 1) {
+    if (currentStep === 4) {
+      // Step 4 is Stripe Connect KYC - handle this specially
+      await startStripeKYC();
+    } else if (currentStep < onboardingSteps.length - 1) {
       setCurrentStep(currentStep + 1);
     } else {
       // Complete onboarding
       await completeOnboarding();
+    }
+  };
+
+  const startStripeKYC = async () => {
+    try {
+      setLoading(true);
+      setKycStatus('creating');
+
+      // Check if already has Stripe account
+      const stripeService = StripeConnectService.getInstance();
+      
+      try {
+        const existingStatus = await stripeService.getAccountStatus();
+        if (existingStatus.isConnected) {
+          // Already connected, skip to completion
+          setKycStatus('complete');
+          setLoading(false);
+          return;
+        }
+      } catch (error) {
+        // No existing account, continue with creation
+        logger.debug('No existing Stripe account found, creating new one');
+      }
+
+      // Create new Stripe Connect account
+      const result = await stripeService.createConnectAccount({
+        userId: user?.id || '',
+        email: user?.email || '',
+        country: 'US',
+      });
+
+      if (!result.success) {
+        throw new Error('Failed to create Stripe account');
+      }
+
+      // Store account ID for status checking
+      setStripeAccountId(result.accountId);
+      
+      // If we got an onboarding URL directly, use it
+      if (result.onboardingUrl) {
+        setKycStatus('onboarding');
+        
+        // Open onboarding URL in browser
+        await Linking.openURL(result.onboardingUrl);
+        
+        // Start polling for completion
+        const pollInterval = setInterval(async () => {
+          try {
+            const status = await stripeService.getAccountStatus();
+            if (status.isConnected) {
+              clearInterval(pollInterval);
+              setKycStatus('complete');
+              setLoading(false);
+              
+              // Show success and auto-advance
+              setTimeout(() => {
+                handleNext();
+              }, 2000);
+            }
+          } catch (error) {
+            logger.error('Error polling Stripe status:', error);
+          }
+        }, 3000); // Poll every 3 seconds
+
+        // Stop polling after 10 minutes
+        setTimeout(() => {
+          clearInterval(pollInterval);
+          if (kycStatus !== 'complete') {
+            setKycStatus('error');
+            setLoading(false);
+          }
+        }, 10 * 60 * 1000);
+        
+      } else {
+        // Fallback: Create account link manually
+        setKycStatus('onboarding');
+        
+        const accountLink = await stripeService.createAccountLink(
+          result.accountId,
+          'cookcam://creator-onboarding-complete',
+          'cookcam://creator-onboarding-refresh'
+        );
+        
+        await Linking.openURL(accountLink.url);
+      }
+
+    } catch (error: unknown) {
+      logger.error('Stripe KYC setup failed:', error);
+      setKycStatus('error');
+      setLoading(false);
+      
+      Alert.alert(
+        'Setup Failed',
+        error instanceof Error ? error.message : 'Failed to setup Stripe account. Please try again.',
+        [{ text: 'OK' }]
+      );
     }
   };
 
@@ -296,11 +415,11 @@ const CreatorOnboardingScreen: React.FC<CreatorOnboardingScreenProps> = ({
           throw new Error("Failed to activate creator account");
         }
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Creator onboarding error:", error);
 
       // Enhanced error handling for development vs production
-      const errorMessage = error.message || "Unknown error";
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
       const isDevelopmentContext =
         __DEV__ || errorMessage.includes("subscription");
 
@@ -427,6 +546,105 @@ const CreatorOnboardingScreen: React.FC<CreatorOnboardingScreenProps> = ({
     </View>
   );
 
+  const renderStripeKYC = () => (
+    <View style={styles.kycContainer}>
+      <Text style={styles.kycTitle}>Setup Creator Payouts</Text>
+      
+      {kycStatus === 'none' && (
+        <>
+          <View style={styles.kycBenefits}>
+            <View style={styles.benefitRow}>
+              <DollarSign size={20} color="#66BB6A" />
+              <Text style={styles.benefitText}>30% revenue share on subscriptions</Text>
+            </View>
+            <View style={styles.benefitRow}>
+              <Shield size={20} color="#66BB6A" />
+              <Text style={styles.benefitText}>Secure payments via Stripe Connect</Text>
+            </View>
+            <View style={styles.benefitRow}>
+              <Clock size={20} color="#66BB6A" />
+              <Text style={styles.benefitText}>Weekly automatic payouts</Text>
+            </View>
+          </View>
+          
+          <View style={styles.kycInfo}>
+            <Text style={styles.kycInfoTitle}>What's Required:</Text>
+            <Text style={styles.kycInfoText}>• Basic personal information{'\n'}• Government-issued ID{'\n'}• Bank account details</Text>
+          </View>
+        </>
+      )}
+      
+      {kycStatus === 'creating' && (
+        <View style={styles.kycLoading}>
+          <ActivityIndicator size="large" color="#FF6B35" />
+          <Text style={styles.kycLoadingText}>Setting up your payout account...</Text>
+        </View>
+      )}
+      
+      {kycStatus === 'onboarding' && (
+        <View style={styles.kycOnboarding}>
+          <ExternalLink size={32} color="#FF6B35" />
+          <Text style={styles.kycOnboardingTitle}>Complete Verification</Text>
+          <Text style={styles.kycOnboardingText}>
+            Please complete the identity verification process in your browser
+          </Text>
+          <TouchableOpacity
+            style={styles.checkStatusButton}
+            onPress={async () => {
+              if (stripeAccountId) {
+                setLoading(true);
+                try {
+                  const stripeService = StripeConnectService.getInstance();
+                  const status = await stripeService.getAccountStatus();
+                  if (status.isConnected) {
+                    setKycStatus('complete');
+                  } else {
+                    setKycStatus('onboarding');
+                  }
+                } catch (error) {
+                  logger.error('Error checking status:', error);
+                  setKycStatus('error');
+                } finally {
+                  setLoading(false);
+                }
+              }
+            }}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color="#FF6B35" size="small" />
+            ) : (
+              <Text style={styles.checkStatusText}>Check Status</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      )}
+      
+      {kycStatus === 'complete' && (
+        <View style={styles.kycComplete}>
+          <CheckCircle size={32} color="#66BB6A" />
+          <Text style={styles.kycCompleteTitle}>Verification Complete!</Text>
+          <Text style={styles.kycCompleteText}>Your payout account is ready to receive earnings</Text>
+        </View>
+      )}
+      
+      {kycStatus === 'error' && (
+        <View style={styles.kycError}>
+          <Text style={styles.kycErrorTitle}>Setup Error</Text>
+          <Text style={styles.kycErrorText}>
+            We encountered an issue setting up your payout account. Please try again.
+          </Text>
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={() => setKycStatus('none')}
+          >
+            <Text style={styles.retryButtonText}>Try Again</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+    </View>
+  );
+
   const currentStepData = onboardingSteps[currentStep];
 
   if (completed) {
@@ -499,6 +717,9 @@ const CreatorOnboardingScreen: React.FC<CreatorOnboardingScreenProps> = ({
 
           {/* Profile setup form for step 3 */}
           {currentStep === 3 && renderProfileSetup()}
+
+          {/* Stripe KYC setup for step 4 */}
+          {currentStep === 4 && renderStripeKYC()}
 
           {/* Features showcase for relevant steps */}
           {currentStep === 1 && (
@@ -799,6 +1020,138 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 16,
     gap: 16,
+  },
+  // KYC Styles
+  kycContainer: {
+    width: "100%",
+    marginTop: 16,
+  },
+  kycTitle: {
+    fontSize: 20,
+    fontWeight: "600",
+    color: "#2D1B69",
+    marginBottom: 24,
+    textAlign: "center",
+  },
+  kycBenefits: {
+    marginBottom: 24,
+  },
+  benefitRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 12,
+    gap: 12,
+  },
+  benefitText: {
+    fontSize: 14,
+    color: "#2D1B69",
+    fontWeight: "500",
+  },
+  kycInfo: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 24,
+  },
+  kycInfoTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#2D1B69",
+    marginBottom: 8,
+  },
+  kycInfoText: {
+    fontSize: 14,
+    color: "#8E8E93",
+    lineHeight: 20,
+  },
+  kycLoading: {
+    alignItems: "center",
+    padding: 32,
+  },
+  kycLoadingText: {
+    fontSize: 16,
+    color: "#8E8E93",
+    marginTop: 16,
+    textAlign: "center",
+  },
+  kycOnboarding: {
+    alignItems: "center",
+    padding: 32,
+  },
+  kycOnboardingTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#2D1B69",
+    marginTop: 16,
+    marginBottom: 8,
+    textAlign: "center",
+  },
+  kycOnboardingText: {
+    fontSize: 14,
+    color: "#8E8E93",
+    textAlign: "center",
+    marginBottom: 24,
+    lineHeight: 20,
+  },
+  checkStatusButton: {
+    backgroundColor: "#FFFFFF",
+    borderWidth: 2,
+    borderColor: "#FF6B35",
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+  },
+  checkStatusText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#FF6B35",
+  },
+  kycComplete: {
+    alignItems: "center",
+    padding: 32,
+  },
+  kycCompleteTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#66BB6A",
+    marginTop: 16,
+    marginBottom: 8,
+    textAlign: "center",
+  },
+  kycCompleteText: {
+    fontSize: 14,
+    color: "#8E8E93",
+    textAlign: "center",
+    lineHeight: 20,
+  },
+  kycError: {
+    alignItems: "center",
+    padding: 32,
+  },
+  kycErrorTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#FF3B30",
+    marginBottom: 8,
+    textAlign: "center",
+  },
+  kycErrorText: {
+    fontSize: 14,
+    color: "#8E8E93",
+    textAlign: "center",
+    marginBottom: 24,
+    lineHeight: 20,
+  },
+  retryButton: {
+    backgroundColor: "#FF6B35",
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+  },
+  retryButtonText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#FFFFFF",
   },
 });
 

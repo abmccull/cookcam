@@ -108,19 +108,33 @@ export const XP_VALUES = {
   CREATOR_MILESTONE_10K_FOLLOWERS: 5000,
 };
 
-// Level thresholds
-const LEVEL_THRESHOLDS = [
-  0, // Level 1
-  50, // Level 2
-  150, // Level 3
-  300, // Level 4
-  500, // Level 5
-  750, // Level 6
-  1100, // Level 7
-  1500, // Level 8
-  2000, // Level 9
-  2600, // Level 10
-];
+// Exponential level system: 100 XP for level 1, then each level is 2x more
+// Level 1: 100 XP, Level 2: 200 XP, Level 3: 400 XP, Level 4: 800 XP, etc.
+const generateLevelThresholds = (): number[] => {
+  const thresholds = [0]; // Level 0 baseline
+  let totalXP = 0;
+  
+  for (let level = 1; level <= 100; level++) {
+    const xpForThisLevel = 100 * Math.pow(2, level - 1);
+    totalXP += xpForThisLevel;
+    thresholds.push(totalXP);
+  }
+  
+  return thresholds;
+};
+
+// Generate level thresholds dynamically
+const LEVEL_THRESHOLDS = generateLevelThresholds();
+
+// Debug: Log first few levels to verify exponential growth
+if (__DEV__) {
+  logger.debug("📊 XP Level Thresholds (first 15 levels):");
+  for (let i = 1; i <= Math.min(15, LEVEL_THRESHOLDS.length - 1); i++) {
+    const xpForLevel = LEVEL_THRESHOLDS[i] - LEVEL_THRESHOLDS[i - 1];
+    logger.debug(`Level ${i}: ${xpForLevel} XP (Total: ${LEVEL_THRESHOLDS[i]})`);
+  }
+  logger.debug(`...Level 100: Total XP needed: ${LEVEL_THRESHOLDS[100]?.toLocaleString()}`);
+}
 
 // Available badges
 const ALL_BADGES: Badge[] = [
@@ -161,6 +175,30 @@ const ALL_BADGES: Badge[] = [
     icon: "👑",
   },
   {
+    id: "level_25",
+    name: "Culinary Expert",
+    description: "Reached level 25",
+    icon: "🏆",
+  },
+  {
+    id: "level_50",
+    name: "Kitchen Legend",
+    description: "Reached level 50",
+    icon: "🌟",
+  },
+  {
+    id: "level_75",
+    name: "Cooking Virtuoso",
+    description: "Reached level 75",
+    icon: "💫",
+  },
+  {
+    id: "level_100",
+    name: "Ultimate Chef",
+    description: "Reached the maximum level 100!",
+    icon: "🚀",
+  },
+  {
     id: "recipes_10",
     name: "Recipe Explorer",
     description: "Completed 10 recipes",
@@ -189,6 +227,8 @@ export const BADGES = {
   LEVEL_10: "level_10",
   LEVEL_25: "level_25",
   LEVEL_50: "level_50",
+  LEVEL_75: "level_75",
+  LEVEL_100: "level_100",
   COMPETITION_WINNER: "competition_winner",
 
   // New recipe creator badges
@@ -328,28 +368,45 @@ export const GamificationProvider: React.FC<GamificationProviderProps> = ({
   };
 
   const calculateLevel = (totalXP: number): number => {
-    for (let i = LEVEL_THRESHOLDS.length - 1; i >= 0; i--) {
-      if (totalXP >= LEVEL_THRESHOLDS[i]) {
-        return i + 1;
+    // Handle edge cases
+    if (totalXP < 0) return 1;
+    if (totalXP >= LEVEL_THRESHOLDS[LEVEL_THRESHOLDS.length - 1]) return 100;
+    
+    // Find the current level based on total XP
+    for (let level = 1; level < LEVEL_THRESHOLDS.length; level++) {
+      if (totalXP < LEVEL_THRESHOLDS[level]) {
+        return level; // Return the level they're currently working towards
       }
     }
-    return 1;
+    
+    return 100; // Max level
   };
 
   const getLevelProgress = (totalXP: number, currentLevel: number): number => {
+    // Handle edge cases
+    if (currentLevel >= 100) return 100; // Max level reached
+    if (currentLevel < 1) return 0;
+    
     const currentLevelThreshold = LEVEL_THRESHOLDS[currentLevel - 1] || 0;
-    const nextLevelThreshold =
-      LEVEL_THRESHOLDS[currentLevel] || currentLevelThreshold + 100;
-    const levelXP = totalXP - currentLevelThreshold;
-    const levelRange = nextLevelThreshold - currentLevelThreshold;
-    return (levelXP / levelRange) * 100;
+    const nextLevelThreshold = LEVEL_THRESHOLDS[currentLevel];
+    
+    if (!nextLevelThreshold) return 100; // If no next level, show complete
+    
+    const xpInCurrentLevel = totalXP - currentLevelThreshold;
+    const xpNeededForNextLevel = nextLevelThreshold - currentLevelThreshold;
+    
+    const progress = Math.min((xpInCurrentLevel / xpNeededForNextLevel) * 100, 100);
+    return Math.max(progress, 0);
   };
 
   const getNextLevelXP = (currentLevel: number): number => {
-    return (
-      LEVEL_THRESHOLDS[currentLevel] ||
-      LEVEL_THRESHOLDS[LEVEL_THRESHOLDS.length - 1] + 100
-    );
+    // If at max level, return current threshold
+    if (currentLevel >= 100) {
+      return LEVEL_THRESHOLDS[100] || LEVEL_THRESHOLDS[LEVEL_THRESHOLDS.length - 1];
+    }
+    
+    // Return XP needed for next level
+    return LEVEL_THRESHOLDS[currentLevel] || LEVEL_THRESHOLDS[LEVEL_THRESHOLDS.length - 1];
   };
 
   const addXP = async (amount: number, reason: string) => {
@@ -364,11 +421,19 @@ export const GamificationProvider: React.FC<GamificationProviderProps> = ({
 
     if (leveledUp) {
       setLevel(newLevel);
-      // Check for level-based badges
+      // Check for level-based badges at key milestones
       if (newLevel === 5) {
         await unlockBadge("level_5");
       } else if (newLevel === 10) {
         await unlockBadge("level_10");
+      } else if (newLevel === 25) {
+        await unlockBadge("level_25");
+      } else if (newLevel === 50) {
+        await unlockBadge("level_50");
+      } else if (newLevel === 75) {
+        await unlockBadge("level_75");
+      } else if (newLevel === 100) {
+        await unlockBadge("level_100");
       }
     }
 

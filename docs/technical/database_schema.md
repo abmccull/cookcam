@@ -8,11 +8,12 @@ This document outlines the complete database schema for the CookCam application,
 
 ## Schema Statistics
 
-- **Total Tables**: 47+
+- **Total Tables**: 52+
 - **Core Entities**: Users, Ingredients, Recipes, Scans
 - **Recipe Generation**: Two-Step AI Generation (Previews → Detailed), Cooking Sessions
 - **Gamification**: Achievements, Challenges, Leaderboards, Streaks, Mystery Boxes
 - **Creator Economy**: Revenue Tracking, Payouts, Affiliate Links, Premium Collections
+- **Subscription & IAP**: Receipt Validation, Purchase Tracking, Subscription Events, Webhook Logs
 - **Analytics**: Events, Metrics, Error Logs, Performance Monitoring
 - **Preferences**: Kitchen Appliances, Meal Planning, Notifications
 - **External Integration**: USDA Food Data Central
@@ -309,6 +310,181 @@ Reward system mystery boxes.
 
 ---
 
+## Subscription & In-App Purchase Tables
+
+### 30. `user_subscriptions`
+Links users to subscription tiers with provider information.
+
+| Column | Type | Nullable | Default | Description |
+|--------|------|----------|---------|-------------|
+| id | uuid | NO | gen_random_uuid() | Primary key |
+| user_id | uuid | YES | null | User ID |
+| tier_id | integer | YES | null | Subscription tier ID |
+| status | text | YES | null | Subscription status |
+| current_period_start | timestamp with time zone | YES | null | Period start date |
+| current_period_end | timestamp with time zone | YES | null | Period end date |
+| cancel_at_period_end | boolean | YES | null | Cancel flag |
+| canceled_at | timestamp with time zone | YES | null | Cancellation date |
+| provider | text | YES | null | Platform provider (ios/android) |
+| provider_subscription_id | text | YES | null | Platform subscription ID |
+| provider_customer_id | text | YES | null | Platform customer ID |
+| created_at | timestamp with time zone | YES | now() | Creation timestamp |
+| updated_at | timestamp with time zone | YES | null | Last update |
+
+### 31. `subscription_tiers`
+Available subscription tiers and their features.
+
+| Column | Type | Nullable | Default | Description |
+|--------|------|----------|---------|-------------|
+| id | integer | NO | null | Primary key |
+| name | text | YES | null | Tier name |
+| slug | text | YES | null | Tier identifier |
+| price_monthly | numeric | YES | null | Monthly price |
+| price_yearly | numeric | YES | null | Yearly price |
+| features | jsonb | YES | null | Feature list |
+| is_active | boolean | YES | null | Active status |
+| revenue_share_percentage | numeric | YES | null | Creator revenue share |
+| limits | jsonb | YES | null | Usage limits |
+| created_at | timestamp with time zone | YES | null | Creation timestamp |
+| updated_at | timestamp with time zone | YES | null | Last update |
+
+### 32. `subscriptions`
+Platform-specific subscription records.
+
+| Column | Type | Nullable | Default | Description |
+|--------|------|----------|---------|-------------|
+| id | uuid | NO | gen_random_uuid() | Primary key |
+| user_id | uuid | YES | null | User ID |
+| platform | text | YES | null | Platform (ios/android) |
+| product_id | text | YES | null | Platform product ID |
+| purchase_token | text | YES | null | Android purchase token |
+| transaction_id | text | YES | null | iOS transaction ID |
+| original_transaction_id | text | YES | null | iOS original transaction ID |
+| status | text | YES | null | Subscription status |
+| expires_at | timestamp with time zone | YES | null | Expiration date |
+| auto_renewing | boolean | YES | null | Auto-renewal status |
+| trial_end | timestamp with time zone | YES | null | Trial end date |
+| created_at | timestamp with time zone | YES | null | Creation timestamp |
+| updated_at | timestamp with time zone | YES | null | Last update |
+
+### 33. `receipt_validation_logs`
+**[NEW]** Tracks all receipt validation attempts for debugging and audit.
+
+| Column | Type | Nullable | Default | Description |
+|--------|------|----------|---------|-------------|
+| id | uuid | NO | gen_random_uuid() | Primary key |
+| user_id | uuid | NO | null | User ID |
+| platform | text | NO | null | Platform (ios/android) |
+| product_id | text | NO | null | Product ID |
+| validation_attempt_id | uuid | YES | gen_random_uuid() | Unique attempt ID |
+| receipt_data | text | YES | null | Receipt or purchase token |
+| request_payload | jsonb | NO | null | Validation request data |
+| validation_success | boolean | NO | null | Validation result |
+| validation_response | jsonb | YES | null | Platform response |
+| error_code | text | YES | null | Error code if failed |
+| error_message | text | YES | null | Error message |
+| apple_status_code | integer | YES | null | Apple App Store status |
+| google_response_code | integer | YES | null | Google Play response code |
+| response_time_ms | integer | YES | null | API response time |
+| created_at | timestamp with time zone | YES | now() | Log timestamp |
+
+### 34. `purchase_attempts`
+**[NEW]** Tracks all purchase attempts including failures for analysis.
+
+| Column | Type | Nullable | Default | Description |
+|--------|------|----------|---------|-------------|
+| id | uuid | NO | gen_random_uuid() | Primary key |
+| user_id | uuid | NO | null | User ID |
+| platform | text | NO | null | Platform (ios/android) |
+| product_id | text | NO | null | Product ID |
+| transaction_id | text | YES | null | iOS transaction ID |
+| purchase_token | text | YES | null | Android purchase token |
+| order_id | text | YES | null | Google Play order ID |
+| status | text | NO | null | Purchase status |
+| failure_reason | text | YES | null | Failure description |
+| receipt_validated | boolean | YES | false | Validation status |
+| validation_log_id | uuid | YES | null | Related validation log |
+| price_amount_micros | bigint | YES | null | Price in micros |
+| currency_code | text | YES | null | Currency code |
+| purchase_initiated_at | timestamp with time zone | YES | now() | Purchase start |
+| purchase_completed_at | timestamp with time zone | YES | null | Purchase completion |
+| validated_at | timestamp with time zone | YES | null | Validation timestamp |
+| created_at | timestamp with time zone | YES | now() | Record creation |
+| updated_at | timestamp with time zone | YES | now() | Last update |
+
+### 35. `subscription_events`
+**[NEW]** Tracks subscription lifecycle events for analytics and debugging.
+
+| Column | Type | Nullable | Default | Description |
+|--------|------|----------|---------|-------------|
+| id | uuid | NO | gen_random_uuid() | Primary key |
+| user_id | uuid | NO | null | User ID |
+| subscription_id | uuid | YES | null | Subscription ID |
+| event_type | text | NO | null | Event type (purchased, renewed, etc.) |
+| event_source | text | NO | null | Event source (app_store, google_play, etc.) |
+| platform | text | NO | null | Platform (ios/android) |
+| notification_type | text | YES | null | Webhook notification type |
+| notification_data | jsonb | YES | null | Full webhook payload |
+| amount_change_micros | bigint | YES | 0 | Financial impact |
+| currency_code | text | YES | null | Currency code |
+| effective_date | timestamp with time zone | YES | null | Event effective date |
+| expiry_date | timestamp with time zone | YES | null | New expiry date |
+| created_at | timestamp with time zone | YES | now() | Event timestamp |
+
+### 36. `receipt_storage`
+**[NEW]** Secure storage of platform receipts for audit and legal compliance.
+
+| Column | Type | Nullable | Default | Description |
+|--------|------|----------|---------|-------------|
+| id | uuid | NO | gen_random_uuid() | Primary key |
+| user_id | uuid | NO | null | User ID |
+| purchase_attempt_id | uuid | YES | null | Related purchase attempt |
+| platform | text | NO | null | Platform (ios/android) |
+| receipt_hash | text | NO | null | Receipt hash for deduplication |
+| receipt_data_encrypted | text | YES | null | Encrypted receipt data |
+| validation_response_encrypted | text | YES | null | Encrypted validation response |
+| receipt_size_bytes | integer | YES | null | Receipt size |
+| storage_format | text | YES | 'base64' | Storage format |
+| expires_at | timestamp with time zone | YES | (now() + interval '7 years') | Legal retention expiry |
+| archived | boolean | YES | false | Archive status |
+| created_at | timestamp with time zone | YES | now() | Storage timestamp |
+
+### 37. `iap_webhook_logs`
+**[NEW]** Logs incoming webhooks from Apple App Store and Google Play.
+
+| Column | Type | Nullable | Default | Description |
+|--------|------|----------|---------|-------------|
+| id | uuid | NO | gen_random_uuid() | Primary key |
+| platform | text | NO | null | Platform (ios/google_play) |
+| webhook_type | text | NO | null | Webhook type |
+| notification_id | text | YES | null | Platform notification ID |
+| headers | jsonb | YES | null | HTTP headers |
+| payload | jsonb | NO | null | Full webhook payload |
+| signature | text | YES | null | Webhook signature |
+| processed | boolean | YES | false | Processing status |
+| processing_error | text | YES | null | Processing error |
+| retry_count | integer | YES | 0 | Retry attempts |
+| user_id | uuid | YES | null | Related user ID |
+| subscription_id | uuid | YES | null | Related subscription ID |
+| received_at | timestamp with time zone | YES | now() | Receipt timestamp |
+| processed_at | timestamp with time zone | YES | null | Processing timestamp |
+
+### 38. `subscription_history`
+Tracks subscription tier changes and actions.
+
+| Column | Type | Nullable | Default | Description |
+|--------|------|----------|---------|-------------|
+| id | uuid | NO | gen_random_uuid() | Primary key |
+| user_id | uuid | YES | null | User ID |
+| subscription_id | uuid | YES | null | Subscription ID |
+| action | text | YES | null | Action performed |
+| from_tier_id | integer | YES | null | Previous tier |
+| to_tier_id | integer | YES | null | New tier |
+| metadata | jsonb | YES | null | Action metadata |
+| created_at | timestamp with time zone | YES | null | Action timestamp |
+
+---
+
 ## User Interaction Tables
 
 ### 18. `user_progress`
@@ -494,6 +670,17 @@ USDA API request logging and caching.
 - `recipes.id` → `recipe_ratings.recipe_id`
 - `users.id` → `recipe_ratings.user_id`
 
+### Subscription & IAP Relationships
+- `users.id` → `user_subscriptions.user_id`
+- `subscription_tiers.id` → `user_subscriptions.tier_id`
+- `users.id` → `subscriptions.user_id`
+- `users.id` → `receipt_validation_logs.user_id`
+- `users.id` → `purchase_attempts.user_id`
+- `purchase_attempts.id` → `receipt_storage.purchase_attempt_id`
+- `receipt_validation_logs.id` → `purchase_attempts.validation_log_id`
+- `user_subscriptions.id` → `subscription_events.subscription_id`
+- `user_subscriptions.id` → `subscription_history.subscription_id`
+
 ---
 
 ## Important Notes
@@ -524,6 +711,9 @@ USDA API request logging and caching.
 - ✅ Comprehensive RLS policies for data security
 - ✅ Performance indexes for recipe generation workflow
 - ✅ Session-based cooking experience tracking
+- ✅ **IAP Receipt Validation System** (`receipt_validation_logs`, `purchase_attempts`, `subscription_events`, `receipt_storage`, `iap_webhook_logs`)
+- ✅ **Comprehensive subscription tracking** with audit trails and webhook processing
+- ✅ **Platform-specific receipt storage** with encryption and legal compliance (7-year retention)
 
 ### Future Enhancements
 - Consider partitioning large tables like `user_progress` by date

@@ -171,6 +171,12 @@ router.post('/webhook/stripe', async (req: Request, res: Response) => {
       return res.status(400).send(`Webhook Error: ${err.message}`);
     }
 
+    logger.info('Processing Stripe webhook', { 
+      type: event.type, 
+      id: event.id,
+      created: event.created 
+    });
+
     // Handle Connect events
     if (event.type.startsWith('account.') || event.type.startsWith('payout.') || event.type === 'transfer.created') {
       await stripeConnectService.handleConnectWebhook(event);
@@ -179,10 +185,86 @@ router.post('/webhook/stripe', async (req: Request, res: Response) => {
       await subscriptionService.handleStripeWebhook(event);
     }
 
-    res.json({ received: true });
+    res.json({ received: true, processed: event.type });
   } catch (error: unknown) {
-    logger.error('Stripe webhook error', { error });
+    logger.error('Stripe webhook error', { error, type: (error as any)?.type });
     res.status(500).json({ error: 'Webhook processing failed' });
+  }
+});
+
+// Dedicated Stripe Connect webhook endpoint (for enhanced security)
+router.post('/webhook/stripe-connect', async (req: Request, res: Response) => {
+  try {
+    if (!stripe) {
+      return res.status(500).json({ error: 'Stripe not configured' });
+    }
+
+    const sig = req.headers['stripe-signature'] as string;
+    const connectWebhookSecret = process.env.STRIPE_CONNECT_WEBHOOK_SECRET || process.env.STRIPE_WEBHOOK_SECRET;
+
+    if (!connectWebhookSecret) {
+      logger.error('Stripe Connect webhook secret not configured');
+      return res.status(500).json({ error: 'Connect webhook not configured' });
+    }
+
+    let event;
+
+    try {
+      event = stripe.webhooks.constructEvent(req.body, sig, connectWebhookSecret);
+    } catch (err: any) {
+      logger.error('Stripe Connect webhook signature verification failed', { error: err.message });
+      return res.status(400).send(`Connect Webhook Error: ${err.message}`);
+    }
+
+    logger.info('Processing Stripe Connect webhook', { 
+      type: event.type, 
+      id: event.id,
+      account: event.account,
+      created: event.created 
+    });
+
+    // Process Connect-specific events
+    try {
+      await stripeConnectService.handleConnectWebhook(event);
+      
+      // Track webhook metrics
+      logger.info('Connect webhook processed successfully', {
+        type: event.type,
+        id: event.id,
+        account: event.account
+      });
+
+    } catch (processingError) {
+      logger.error('Failed to process Connect webhook', {
+        error: processingError,
+        event: {
+          type: event.type,
+          id: event.id,
+          account: event.account
+        }
+      });
+      
+      // Still return 200 to prevent retries for processing errors
+      // Log for manual investigation
+      return res.status(200).json({ 
+        received: true, 
+        processed: false, 
+        error: 'Processing failed - logged for investigation' 
+      });
+    }
+
+    res.json({ 
+      received: true, 
+      processed: true, 
+      type: event.type 
+    });
+
+  } catch (error: unknown) {
+    logger.error('Stripe Connect webhook error', { 
+      error, 
+      signature: req.headers['stripe-signature'] ? 'present' : 'missing'
+    });
+    res.status(500).json({ error: 'Connect webhook processing failed' });
   }
 });
 
@@ -536,16 +618,219 @@ router.get('/creator/stripe/dashboard', authenticateUser, isCreator, async (req:
 router.get('/creator/balance', authenticateUser, isCreator, async (req: Request, res: Response) => {
   try {
     const creatorId = (req as any).user.id;
-    const balance = await stripeConnectService.getCreatorBalance(creatorId);
+    
+    // Get unpaid balance using the database function
+    const unpaidBalance = await stripeConnectService.getCreatorBalance(creatorId);
+    const revenue = await creatorService.getCreatorRevenue(creatorId);
+
+    // Get last payout date
+    const { supabase } = await import('../index');
+    const { data: lastPayout } = await supabase
+      .from('creator_payouts')
+      .select('processed_at')
+      .eq('creator_id', creatorId)
+      .eq('status', 'completed')
+      .order('processed_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    // Calculate next payout date (weekly payouts on Fridays)
+    const nextPayout = new Date();
+    const daysUntilFriday = (5 - nextPayout.getDay() + 7) % 7;
+    nextPayout.setDate(nextPayout.getDate() + (daysUntilFriday || 7));
 
     res.json({
       success: true,
-      balance,
-      currency: 'USD'
+      total_earnings: revenue?.total_earnings || 0,
+      available_balance: unpaidBalance,
+      pending_balance: (revenue?.total_earnings || 0) - unpaidBalance,
+      last_payout_date: lastPayout?.processed_at || null,
+      next_payout_date: nextPayout.toISOString()
     });
   } catch (error: unknown) {
     logger.error('Get creator balance error', { error });
-    res.status(500).json({ error: 'Failed to get balance' });
+    res.status(500).json({ error: 'Failed to get creator balance' });
+  }
+});
+
+// Create account link for re-onboarding
+router.post('/creator/stripe/account-link', authenticateUser, isCreator, async (req: Request, res: Response) => {
+  try {
+    const creatorId = (req as any).user.id;
+    const { return_url, refresh_url } = req.body;
+
+    if (!return_url || !refresh_url) {
+      return res.status(400).json({ 
+        error: 'Missing required parameters',
+        required: ['return_url', 'refresh_url']
+      });
+    }
+
+    // Get creator's existing Stripe account
+    const { supabase } = await import('../index');
+    const { data: account } = await supabase
+      .from('creator_stripe_accounts')
+      .select('stripe_account_id')
+      .eq('creator_id', creatorId)
+      .single();
+
+    if (!account?.stripe_account_id) {
+      return res.status(404).json({ error: 'No Stripe account found. Please start onboarding first.' });
+    }
+
+    // Create account link for re-onboarding
+    const accountLinkUrl = await stripeConnectService.createAccountLink(
+      account.stripe_account_id,
+      return_url,
+      refresh_url
+    );
+
+    if (!accountLinkUrl) {
+      return res.status(500).json({ error: 'Failed to create account link' });
+    }
+
+    res.json({
+      success: true,
+      url: accountLinkUrl,
+      expires_at: Date.now() + 30 * 60 * 1000 // 30 minutes
+    });
+  } catch (error: unknown) {
+    logger.error('Create account link error', { error });
+    res.status(500).json({ error: 'Failed to create account link' });
+  }
+});
+
+// Refresh Stripe account status
+router.post('/creator/stripe/refresh-status', authenticateUser, isCreator, async (req: Request, res: Response) => {
+  try {
+    const creatorId = (req as any).user.id;
+    const { account_id } = req.body;
+
+    // Get creator's Stripe account if not provided
+    let accountId = account_id;
+    if (!accountId) {
+      const { supabase } = await import('../index');
+      const { data: account } = await supabase
+        .from('creator_stripe_accounts')
+        .select('stripe_account_id')
+        .eq('creator_id', creatorId)
+        .single();
+
+      if (!account?.stripe_account_id) {
+        return res.status(404).json({ error: 'No Stripe account found' });
+      }
+      accountId = account.stripe_account_id;
+    }
+
+    // Update account status from Stripe
+    await stripeConnectService.updateAccountStatus(accountId);
+
+    res.json({
+      success: true,
+      message: 'Account status refreshed'
+    });
+  } catch (error: unknown) {
+    logger.error('Refresh account status error', { error });
+    res.status(500).json({ error: 'Failed to refresh account status' });
+  }
+});
+
+// Get creator payout history
+router.get('/creator/payouts/history', authenticateUser, isCreator, async (req: Request, res: Response) => {
+  try {
+    const creatorId = (req as any).user.id;
+    const { limit = 20, offset = 0 } = req.query;
+
+    const { supabase } = await import('../index');
+    const { data: payouts, error } = await supabase
+      .from('creator_payouts')
+      .select('*')
+      .eq('creator_id', creatorId)
+      .order('created_at', { ascending: false })
+      .limit(parseInt(limit as string))
+      .range(parseInt(offset as string), parseInt(offset as string) + parseInt(limit as string) - 1);
+
+    if (error) {
+      throw error;
+    }
+
+    res.json({
+      success: true,
+      payouts: payouts || [],
+      pagination: {
+        limit: parseInt(limit as string),
+        offset: parseInt(offset as string),
+        total: payouts?.length || 0
+      }
+    });
+  } catch (error: unknown) {
+    logger.error('Get payout history error', { error });
+    res.status(500).json({ error: 'Failed to get payout history' });
+  }
+});
+
+// Get detailed creator earnings breakdown
+router.get('/creator/earnings/breakdown', authenticateUser, isCreator, async (req: Request, res: Response) => {
+  try {
+    const creatorId = (req as any).user.id;
+    const { month, year } = req.query;
+
+    const targetMonth = month ? parseInt(month as string) : new Date().getMonth() + 1;
+    const targetYear = year ? parseInt(year as string) : new Date().getFullYear();
+
+    // Get detailed revenue breakdown using the database function
+    const { supabase } = await import('../index');
+    const { data: breakdown, error } = await supabase
+      .rpc('calculate_creator_monthly_revenue', {
+        creator_id: creatorId,
+        target_month: targetMonth,
+        target_year: targetYear
+      });
+
+    if (error) {
+      throw error;
+    }
+
+    const result = breakdown?.[0] || {
+      affiliate_earnings: 0,
+      tips_earnings: 0,
+      collections_earnings: 0,
+      total_earnings: 0,
+      active_referrals: 0
+    };
+
+    res.json({
+      success: true,
+      breakdown: {
+        month: targetMonth,
+        year: targetYear,
+        affiliate_earnings: parseFloat(result.affiliate_earnings) || 0,
+        tips_earnings: parseFloat(result.tips_earnings) || 0,
+        collections_earnings: parseFloat(result.collections_earnings) || 0,
+        total_earnings: parseFloat(result.total_earnings) || 0,
+        active_referrals: result.active_referrals || 0,
+        revenue_sources: {
+          subscription_referrals: {
+            amount: parseFloat(result.affiliate_earnings) || 0,
+            count: result.active_referrals || 0,
+            rate: 0.30 // 30% commission
+          },
+          recipe_tips: {
+            amount: parseFloat(result.tips_earnings) || 0,
+            count: 0, // TODO: Add tip count
+            average: 0 // TODO: Calculate average tip
+          },
+          premium_collections: {
+            amount: parseFloat(result.collections_earnings) || 0,
+            count: 0, // TODO: Add collection sales count
+            rate: 0.70 // 70% revenue share
+          }
+        }
+      }
+    });
+  } catch (error: unknown) {
+    logger.error('Get earnings breakdown error', { error });
+    res.status(500).json({ error: 'Failed to get earnings breakdown' });
   }
 });
 
