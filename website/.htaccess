@@ -16,6 +16,12 @@ RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
     Header set Access-Control-Allow-Origin "*"
 </Files>
 
+# Ensure Android assetlinks.json is served with correct content type
+<Files "assetlinks.json">
+    Header set Content-Type "application/json"
+    Header set Access-Control-Allow-Origin "*"
+</Files>
+
 # Cache static assets
 <IfModule mod_expires.c>
     ExpiresActive on

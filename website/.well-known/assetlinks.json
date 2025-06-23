@@ -1,0 +1,15 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls",
+      "delegate_permission/common.get_login_creds"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.cookcam.app",
+      "sha256_cert_fingerprints": [
+        "72:08:AB:59:D0:72:FD:62:46:F2:8D:C4:17:E1:F8:C2:A5:CF:F8:DF:4A:72:0F:12:19:2B:55:46:7C:48:68:1D"
+      ]
+    }
+  }
+] 
