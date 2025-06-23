@@ -1,0 +1,47 @@
+{
+  "summary": {
+    "passed": 1,
+    "failed": 2,
+    "info": 0,
+    "skipped": 1,
+    "total": 4
+  },
+  "timestamp": "2025-06-18T22:33:44.541Z",
+  "results": [
+    {
+      "test": "Health Check",
+      "status": "PASS",
+      "message": "API is healthy and responding",
+      "timestamp": "2025-06-18T22:33:44.213Z",
+      "data": {
+        "status": "healthy",
+        "timestamp": "2025-06-18T22:33:44.266Z",
+        "environment": "production",
+        "version": "1.0.0"
+      }
+    },
+    {
+      "test": "Authentication",
+      "status": "FAIL",
+      "message": "Auth failed with status 401",
+      "timestamp": "2025-06-18T22:33:44.504Z",
+      "data": {
+        "error": "Invalid login credentials"
+      }
+    },
+    {
+      "test": "Stripe Connect",
+      "status": "SKIP",
+      "message": "No auth token - skipping authenticated tests",
+      "timestamp": "2025-06-18T22:33:44.505Z",
+      "data": null
+    },
+    {
+      "test": "Webhook Endpoint",
+      "status": "FAIL",
+      "message": "Webhook endpoint returned: 404",
+      "timestamp": "2025-06-18T22:33:44.539Z",
+      "data": null
+    }
+  ]
+}

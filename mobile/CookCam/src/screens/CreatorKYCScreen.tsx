@@ -25,6 +25,7 @@ import StripeConnectService, {
   CreatorAccountStatus,
 } from "../services/StripeConnectService";
 import * as SecureStore from "expo-secure-store";
+import { useAuth } from "../context/AuthContext";
 import logger from "../utils/logger";
 
 
@@ -37,6 +38,7 @@ const CreatorKYCScreen: React.FC<CreatorKYCScreenProps> = ({
   navigation,
   route,
 }) => {
+  const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [connectAccountId, setConnectAccountId] = useState<string | null>(null);
   const [accountStatus, setAccountStatus] =
@@ -69,8 +71,8 @@ const CreatorKYCScreen: React.FC<CreatorKYCScreenProps> = ({
     try {
       setIsLoading(true);
 
-      // For development, use mock status
-      const status = await stripeConnectService.mockGetAccountStatus(accountId);
+      // Use real API instead of mock
+      const status = await stripeConnectService.getAccountStatus();
       setAccountStatus(status);
 
       if (status.isConnected && status.hasCompletedKYC) {
@@ -91,12 +93,12 @@ const CreatorKYCScreen: React.FC<CreatorKYCScreenProps> = ({
       setIsLoading(true);
       setKycStep("creating");
 
-      // Create Stripe Connect account
-      const result = await stripeConnectService.mockCreateAccount({
-        userId: "mock_user_123", // TODO: Get from auth context
-        email: "creator@example.com", // TODO: Get from auth context
-        firstName: "John",
-        lastName: "Creator",
+      // Create Stripe Connect account using real API
+      const result = await stripeConnectService.createConnectAccount({
+        userId: user?.id || '',
+        email: user?.email || '',
+        firstName: user?.name?.split(' ')[0] || 'Creator',
+        lastName: user?.name?.split(' ')[1] || 'User',
         businessType: "individual",
         country: "US",
       });
@@ -108,15 +110,21 @@ const CreatorKYCScreen: React.FC<CreatorKYCScreenProps> = ({
           result.accountId,
         );
 
-        // Create account link for onboarding
-        const accountLink = await stripeConnectService.mockCreateAccountLink(
-          result.accountId,
-        );
-
-        setKycStep("onboarding");
-
-        // Open Stripe Connect onboarding
-        await openStripeOnboarding(accountLink.url);
+        // If onboarding URL is provided directly, use it
+        if (result.onboardingUrl) {
+          setKycStep("onboarding");
+          await openStripeOnboarding(result.onboardingUrl);
+        } else {
+          // Create account link manually
+          const accountLink = await stripeConnectService.createAccountLink(
+            result.accountId,
+            'cookcam://creator-kyc-complete',
+            'cookcam://creator-kyc-refresh'
+          );
+          
+          setKycStep("onboarding");
+          await openStripeOnboarding(accountLink.url);
+        }
       }
     } catch (error) {
       logger.error("Error starting KYC:", error);

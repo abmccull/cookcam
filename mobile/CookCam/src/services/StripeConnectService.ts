@@ -371,34 +371,8 @@ class StripeConnectService {
     }
   }
 
-  // --- Legacy methods for backward compatibility ---
-  
-  /**
-   * @deprecated Use createConnectAccount instead
-   */
-  async mockCreateAccount(
-    creatorData: any,
-  ): Promise<{ accountId: string; success: boolean }> {
-    logger.debug("🧪 Mock: Creating Connect account");
-    // Simulate API delay
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    return {
-      accountId: `acct_mock_${Date.now()}`,
-      success: true,
-    };
-  }
-
-  /**
-   * @deprecated Use createAccountLink instead
-   */
-  async mockCreateAccountLink(): Promise<ConnectAccountLink> {
-    logger.debug("🧪 Mock: Creating account link");
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    return {
-      url: "https://connect.stripe.com/setup/test",
-      expiresAt: Date.now() + 30 * 60 * 1000, // 30 minutes
-    };
-  }
+  // --- Removed deprecated mock methods ---
+  // All functionality now uses real Stripe Connect API calls
 
   async setupInstantPayouts(_creatorData: any) {
     // Implementation needed - this would configure instant payouts
