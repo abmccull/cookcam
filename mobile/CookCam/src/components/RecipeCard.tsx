@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import {
   Heart,
@@ -51,7 +51,7 @@ interface RecipeCardProps {
   showNutrition?: boolean;
 }
 
-const RecipeCard: React.FC<RecipeCardProps> = ({
+const RecipeCard: React.FC<RecipeCardProps> = React.memo(({
   recipe,
   onPress,
   onLike,
@@ -62,20 +62,22 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
   const [nutrition, setNutrition] = useState<NutritionData | null>(null);
   const [nutritionLoading, setNutritionLoading] = useState(false);
 
-  const difficultyColors = {
-    Easy: "#4CAF50",
-    Medium: "#FF9800",
-    Hard: "#F44336",
-  };
+  // Memoize expensive calculations
+  const difficultyColor = useMemo(() => {
+    const difficultyColors = {
+      Easy: "#4CAF50",
+      Medium: "#FF9800",
+      Hard: "#F44336",
+    };
+    return difficultyColors[recipe.difficulty as keyof typeof difficultyColors];
+  }, [recipe.difficulty]);
 
-  // Fetch nutrition data when component mounts
-  useEffect(() => {
-    if (showNutrition && recipe.id) {
-      fetchNutritionData();
-    }
-  }, [recipe.id, showNutrition]);
+  const creatorInitial = useMemo(() => {
+    return recipe.creator.name[0]?.toUpperCase() || '?';
+  }, [recipe.creator.name]);
 
-  const fetchNutritionData = async () => {
+  // Memoized fetch function to prevent unnecessary re-creations
+  const fetchNutritionData = useCallback(async () => {
     try {
       setNutritionLoading(true);
       const response = await cookCamApi.getRecipeNutrition(recipe.id);
@@ -98,12 +100,42 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
     } finally {
       setNutritionLoading(false);
     }
-  };
+  }, [recipe.id]); // Only depend on recipe.id
+
+  // Fetch nutrition data when component mounts or recipe.id changes
+  useEffect(() => {
+    if (showNutrition && recipe.id) {
+      fetchNutritionData();
+    }
+  }, [showNutrition, fetchNutritionData]);
+
+  // Memoized event handlers to prevent child re-renders
+  const handlePress = useCallback(() => {
+    onPress?.();
+  }, [onPress]);
+
+  const handleLike = useCallback(() => {
+    onLike?.();
+  }, [onLike]);
+
+  const handleComment = useCallback(() => {
+    onComment?.();
+  }, [onComment]);
+
+  const handleShare = useCallback(() => {
+    onShare?.();
+  }, [onShare]);
+
+  // Memoize style objects that depend on props
+  const difficultyBadgeStyle = useMemo(() => [
+    styles.difficultyBadge,
+    { backgroundColor: difficultyColor }
+  ], [difficultyColor]);
 
   return (
     <TouchableOpacity
       style={styles.container}
-      onPress={onPress}
+      onPress={handlePress}
       activeOpacity={0.9}
     >
       {/* Recipe Image */}
@@ -116,7 +148,7 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
         <View style={styles.creatorOverlay}>
           <View style={styles.creatorInfo}>
             <View style={styles.avatarContainer}>
-              <Text style={styles.avatarText}>{recipe.creator.name[0]}</Text>
+              <Text style={styles.avatarText}>{creatorInitial}</Text>
             </View>
             <Text style={styles.creatorName}>{recipe.creator.name}</Text>
             {recipe.creator.tier && (
@@ -131,17 +163,7 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
             <Clock size={moderateScale(14)} color="#F8F8FF" />
             <Text style={styles.timeText}>{recipe.cookTime} min</Text>
           </View>
-          <View
-            style={[
-              styles.difficultyBadge,
-              {
-                backgroundColor:
-                  difficultyColors[
-                    recipe.difficulty as keyof typeof difficultyColors
-                  ],
-              },
-            ]}
-          >
+          <View style={difficultyBadgeStyle}>
             <Text style={styles.difficultyText}>{recipe.difficulty}</Text>
           </View>
           {/* Nutrition badge */}
@@ -172,17 +194,17 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
 
         {/* Action buttons */}
         <View style={styles.actionsContainer}>
-          <TouchableOpacity style={styles.actionButton} onPress={onLike}>
+          <TouchableOpacity style={styles.actionButton} onPress={handleLike}>
             <Heart size={moderateScale(20)} color="#E91E63" />
             <Text style={styles.actionText}>{recipe.likes}</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.actionButton} onPress={onComment}>
+          <TouchableOpacity style={styles.actionButton} onPress={handleComment}>
             <MessageCircle size={moderateScale(20)} color="#666" />
             <Text style={styles.actionText}>{recipe.comments}</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.actionButton} onPress={onShare}>
+          <TouchableOpacity style={styles.actionButton} onPress={handleShare}>
             <Share2 size={moderateScale(20)} color="#666" />
             <Text style={styles.actionText}>Share</Text>
           </TouchableOpacity>
@@ -190,7 +212,10 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
       </View>
     </TouchableOpacity>
   );
-};
+});
+
+// Add display name for debugging
+RecipeCard.displayName = 'RecipeCard';
 
 const styles = StyleSheet.create({
   container: {

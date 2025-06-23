@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useCallback, useMemo } from "react";
 import {
   View,
   Text,
@@ -14,7 +14,7 @@ import ChefBadge from "./ChefBadge";
 
 // Remove unused screenWidth variable
 
-const XPHeader: React.FC = () => {
+const XPHeader: React.FC = React.memo(() => {
   const navigation = useNavigation();
   const { user } = useAuth();
   const { xp, level, levelProgress, nextLevelXP } = useGamification();
@@ -22,16 +22,43 @@ const XPHeader: React.FC = () => {
   const progressAnim = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
-  useEffect(() => {
-    // Animate progress bar when XP changes
+  // Memoize expensive calculations
+  const creatorTier = useMemo(() => {
+    if (!user?.isCreator) {
+      return 0;
+    }
+    // Mock tier calculation based on subscriber count
+    const subscribers = user.subscriberCount || 0;
+    if (subscribers >= 100000) return 5;
+    if (subscribers >= 10000) return 4;
+    if (subscribers >= 1000) return 3;
+    if (subscribers >= 100) return 2;
+    return 1;
+  }, [user?.isCreator, user?.subscriberCount]);
+
+  const xpToNext = useMemo(() => {
+    return nextLevelXP - xp;
+  }, [nextLevelXP, xp]);
+
+  const displayName = useMemo(() => {
+    return user?.name || "Guest";
+  }, [user?.name]);
+
+  const shouldShowCreatorBadge = useMemo(() => {
+    return user?.isCreator && creatorTier > 0 && creatorTier <= 5;
+  }, [user?.isCreator, creatorTier]);
+
+  // Memoized animation functions
+  const animateProgress = useCallback(() => {
     Animated.spring(progressAnim, {
       toValue: levelProgress,
       tension: 40,
       friction: 8,
       useNativeDriver: false,
     }).start();
+  }, [progressAnim, levelProgress]);
 
-    // Pulse animation when gaining XP
+  const animatePulse = useCallback(() => {
     Animated.sequence([
       Animated.timing(pulseAnim, {
         toValue: 1.05,
@@ -44,34 +71,29 @@ const XPHeader: React.FC = () => {
         useNativeDriver: true,
       }),
     ]).start();
-  }, [xp, levelProgress]);
+  }, [pulseAnim]);
 
-  const navigateToProfile = () => {
+  useEffect(() => {
+    animateProgress();
+    animatePulse();
+  }, [animateProgress, animatePulse, xp]); // Only trigger on actual XP changes
+
+  const navigateToProfile = useCallback(() => {
     navigation.navigate("Profile" as never);
-  };
+  }, [navigation]);
 
-  const getCreatorTier = () => {
-    if (!user?.isCreator) {
-      return 0;
-    }
-    // Mock tier calculation based on subscriber count
-    const subscribers = user.subscriberCount || 0;
-    if (subscribers >= 100000) {
-      return 5;
-    }
-    if (subscribers >= 10000) {
-      return 4;
-    }
-    if (subscribers >= 1000) {
-      return 3;
-    }
-    if (subscribers >= 100) {
-      return 2;
-    }
-    return 1;
-  };
+  // Memoized animated style
+  const pulseStyle = useMemo(() => [
+    styles.xpBarContainer,
+    { transform: [{ scale: pulseAnim }] },
+  ], [pulseAnim]);
 
-  const creatorTier = getCreatorTier();
+  const progressWidth = useMemo(() => 
+    progressAnim.interpolate({
+      inputRange: [0, 100],
+      outputRange: ["0%", "100%"],
+    }), [progressAnim]
+  );
 
   return (
     <View style={styles.wrapper}>
@@ -88,9 +110,9 @@ const XPHeader: React.FC = () => {
           <View style={styles.userInfo}>
             <View style={styles.nameRow}>
               <Text style={styles.userName} numberOfLines={1}>
-                {user?.name || "Guest"}
+                {displayName}
               </Text>
-              {user?.isCreator && creatorTier > 0 && creatorTier <= 5 && (
+              {shouldShowCreatorBadge && (
                 <ChefBadge
                   tier={creatorTier as 1 | 2 | 3 | 4 | 5}
                   size="small"
@@ -106,22 +128,12 @@ const XPHeader: React.FC = () => {
         </TouchableOpacity>
 
         <View style={styles.xpSection}>
-          <Animated.View
-            style={[
-              styles.xpBarContainer,
-              { transform: [{ scale: pulseAnim }] },
-            ]}
-          >
+          <Animated.View style={pulseStyle}>
             <View style={styles.xpBarBg}>
               <Animated.View
                 style={[
                   styles.xpBarFill,
-                  {
-                    width: progressAnim.interpolate({
-                      inputRange: [0, 100],
-                      outputRange: ["0%", "100%"],
-                    }),
-                  },
+                  { width: progressWidth },
                 ]}
               />
               <View style={styles.xpBarShine} />
@@ -133,13 +145,16 @@ const XPHeader: React.FC = () => {
           </Animated.View>
 
           <Text style={styles.xpToNext}>
-            {nextLevelXP - xp} to level {level + 1}
+            {xpToNext} to level {level + 1}
           </Text>
         </View>
       </View>
     </View>
   );
-};
+});
+
+// Add display name for debugging
+XPHeader.displayName = 'XPHeader';
 
 const styles = StyleSheet.create({
   wrapper: {

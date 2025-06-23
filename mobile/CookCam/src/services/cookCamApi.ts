@@ -1,4 +1,4 @@
-import apiService, { ApiResponse } from "./apiService";
+import { apiService, ApiResponse } from "./apiService";
 import { API_ENDPOINTS } from "../config/api";
 
 // Types for CookCam API responses
@@ -165,6 +165,19 @@ export interface AffiliateLink {
 }
 
 class CookCamApi {
+  private static instance: CookCamApi;
+
+  private constructor() {
+    // Private constructor to prevent direct instantiation
+  }
+
+  public static getInstance(): CookCamApi {
+    if (!CookCamApi.instance) {
+      CookCamApi.instance = new CookCamApi();
+    }
+    return CookCamApi.instance;
+  }
+
   // Authentication Methods
   async login(
     email: string,
@@ -605,5 +618,5 @@ class CookCamApi {
 }
 
 // Export singleton instance
-export const cookCamApi = new CookCamApi();
-export default cookCamApi;
+export const cookCamApi = CookCamApi.getInstance();
+export default CookCamApi;
