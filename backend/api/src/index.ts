@@ -10,6 +10,7 @@ import recipeRoutes from './routes/recipes';
 import gamificationRoutes from './routes/gamification';
 import scanRoutes from './routes/scan';
 import analyticsRoutes from './routes/analytics';
+import userRoutes from './routes/users';
 import { securityHeaders, rateLimiter, sanitizeInput } from './middleware/security';
 import { logger } from './utils/logger';
 import { Request, Response, NextFunction } from 'express';
@@ -112,6 +113,7 @@ app.use('/api/v1/recipes', recipeRoutes);
 app.use('/api/v1/gamification', gamificationRoutes);
 app.use('/api/v1/scan', scanRoutes);
 app.use('/api/v1/analytics', analyticsRoutes);
+app.use('/api/v1/users', userRoutes);
 
 // Subscription routes
 import subscriptionRoutes from './routes/subscription';
@@ -138,6 +140,7 @@ app.use('/api/gamification', gamificationRoutes);
 app.use('/api/scan', scanRoutes);
 app.use('/api/subscription', subscriptionRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/users', userRoutes);
 
 // Error handling middleware
 app.use((err: Error & { status?: number }, req: Request, res: Response, _next: NextFunction) => {
