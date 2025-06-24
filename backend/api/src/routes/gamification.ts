@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { supabase, createAuthenticatedClient } from '../index';
+import { createClient } from '@supabase/supabase-js';
 import { authenticateUser } from '../middleware/auth';
 import { logger } from '../utils/logger';
 
@@ -340,6 +341,62 @@ router.get('/rank/:userId?', authenticateUser, async (req: Request, res: Respons
   } catch (error: unknown) {
     logger.error('Get user rank error:', error);
     res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// TEMPORARY DEBUG ENDPOINT - Remove in production
+router.get('/debug-xp', async (req: Request, res: Response) => {
+  try {
+    console.log('🔍 Debug XP endpoint called');
+    
+    // Get recent user_progress entries
+    const { data: recentProgress, error: progressError } = await supabase
+      .from('user_progress')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(10);
+
+    // Get user's total XP
+    const { data: users, error: usersError } = await supabase
+      .from('users')
+      .select('id, name, total_xp, level')
+      .order('total_xp', { ascending: false })
+      .limit(5);
+
+    // Check today's XP specifically
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayISO = today.toISOString();
+
+    const { data: todayProgress, error: todayError } = await supabase
+      .from('user_progress')
+      .select('user_id, xp_gained, action, created_at')
+      .gte('created_at', todayISO);
+
+    res.json({
+      debug: 'XP Debug Data',
+      timestamps: {
+        now: new Date().toISOString(),
+        todayStart: todayISO,
+        weekStart: (() => {
+          const d = new Date();
+          d.setDate(d.getDate() - d.getDay());
+          d.setHours(0, 0, 0, 0);
+          return d.toISOString();
+        })()
+      },
+      recent_progress: recentProgress || [],
+      top_users: users || [],
+      today_progress: todayProgress || [],
+      errors: {
+        progressError: progressError?.message,
+        usersError: usersError?.message,
+        todayError: todayError?.message
+      }
+    });
+  } catch (error: unknown) {
+    console.error('Debug XP error:', error);
+    res.status(500).json({ error: 'Debug failed', details: error });
   }
 });
 
