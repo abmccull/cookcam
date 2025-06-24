@@ -155,14 +155,13 @@ router.get('/leaderboard', async (req: Request, res: Response) => {
       }
     } catch (funcError) {
       logger.warn('🔄 Using fallback leaderboard query:', { error: funcError });
+      logger.debug('📊 Entering fallback logic for period:', { period });
       
-      // Fallback: Direct query approach
+      // Fallback: Direct query approach (don't pre-sort for period-specific queries)
       let baseQuery = supabase
         .from('users')
         .select('id, name, avatar_url, level, total_xp, xp, is_creator, creator_tier')
-        .gt('total_xp', 0)
-        .order('total_xp', { ascending: false })
-        .limit(parseInt(limit as string));
+        .gt('total_xp', 0);
 
       const { data: users, error: queryError } = await baseQuery;
 
@@ -171,55 +170,55 @@ router.get('/leaderboard', async (req: Request, res: Response) => {
         return res.status(500).json({ error: 'Failed to fetch leaderboard' });
       }
 
-      // For weekly period, try to get period XP from user_progress
-      if (period === 'weekly') {
-        const weekStart = new Date();
-        weekStart.setDate(weekStart.getDate() - weekStart.getDay());
-        weekStart.setHours(0, 0, 0, 0);
+      // Calculate period-specific XP for all periods
+      let periodStart: Date;
+      let periodXpMap = new Map();
 
-        // Get weekly XP for each user
-        const userIds = (users || []).map(u => u.id);
-        const { data: weeklyProgress } = await supabase
+      if (period === 'daily') {
+        periodStart = new Date();
+        periodStart.setHours(0, 0, 0, 0);
+      } else if (period === 'weekly') {
+        periodStart = new Date();
+        periodStart.setDate(periodStart.getDate() - periodStart.getDay());
+        periodStart.setHours(0, 0, 0, 0);
+      } else if (period === 'monthly') {
+        periodStart = new Date();
+        periodStart.setDate(1);
+        periodStart.setHours(0, 0, 0, 0);
+      } else {
+        // allTime - no period filtering needed
+        periodStart = new Date(0); // Beginning of time
+      }
+
+      // Get period XP for each user
+      const userIds = (users || []).map(u => u.id);
+      
+      if (period !== 'allTime') {
+        logger.debug(`📊 Calculating ${period} XP since:`, { periodStart: periodStart.toISOString() });
+        
+        const { data: periodProgress } = await supabase
           .from('user_progress')
           .select('user_id, xp_gained')
           .in('user_id', userIds)
-          .gte('created_at', weekStart.toISOString());
+          .gte('created_at', periodStart.toISOString());
 
-        const weeklyXpMap = new Map();
-        (weeklyProgress || []).forEach(progress => {
-          const currentXp = weeklyXpMap.get(progress.user_id) || 0;
-          weeklyXpMap.set(progress.user_id, currentXp + progress.xp_gained);
+        logger.debug(`📊 Found ${(periodProgress || []).length} XP entries for ${period}`);
+
+        (periodProgress || []).forEach(progress => {
+          const currentXp = periodXpMap.get(progress.user_id) || 0;
+          periodXpMap.set(progress.user_id, currentXp + progress.xp_gained);
         });
-
-        // Transform with weekly XP data
-        leaderboard = (users || []).map((user, index) => ({
-          rank: index + 1,
-          xp_total: user.total_xp || 0,
-          xp_gained: weeklyXpMap.get(user.id) || 0,
-          movement: 0,
-          users: {
-            id: user.id,
-            name: user.name,
-            level: user.level,
-            avatar_url: user.avatar_url,
-            is_creator: user.is_creator,
-            creator_tier: user.creator_tier
-          }
-        }));
-
-        // Re-sort by weekly XP if available
-        leaderboard.sort((a, b) => b.xp_gained - a.xp_gained);
         
-        // Update ranks after sorting
-        leaderboard.forEach((entry, index) => {
-          entry.rank = index + 1;
-        });
-      } else {
-        // For all-time, use total_xp
-        leaderboard = (users || []).map((user, index) => ({
-          rank: index + 1,
-          xp_total: user.total_xp || 0,
-          xp_gained: user.total_xp || 0,
+        logger.debug(`📊 Period XP map:`, Object.fromEntries(periodXpMap));
+      }
+
+      // Transform with period XP data
+      leaderboard = (users || []).map((user) => {
+        const periodXp = periodXpMap.get(user.id) || 0;
+        return {
+          rank: 1, // Will be set after sorting
+          xp_total: period === 'allTime' ? (user.total_xp || 0) : periodXp,
+          xp_gained: period === 'allTime' ? (user.total_xp || 0) : periodXp,
           movement: 0,
           users: {
             id: user.id,
@@ -229,8 +228,28 @@ router.get('/leaderboard', async (req: Request, res: Response) => {
             is_creator: user.is_creator,
             creator_tier: user.creator_tier
           }
-        }));
+        };
+      });
+
+      // For period-specific leaderboards, only include users with XP in that period
+      if (period !== 'allTime') {
+        leaderboard = leaderboard.filter(entry => (entry.xp_gained || 0) > 0);
       }
+
+      // Sort by the appropriate XP value
+      if (period === 'allTime') {
+        leaderboard.sort((a, b) => (b.xp_total || 0) - (a.xp_total || 0));
+      } else {
+        leaderboard.sort((a, b) => (b.xp_gained || 0) - (a.xp_gained || 0));
+      }
+      
+      // Apply limit after sorting
+      leaderboard = leaderboard.slice(0, parseInt(limit as string));
+      
+      // Update ranks after sorting and limiting
+      leaderboard.forEach((entry, index) => {
+        entry.rank = index + 1;
+      });
     }
 
     logger.debug(`✅ Leaderboard fetched: ${leaderboard.length} entries for ${period}`);
