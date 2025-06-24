@@ -21,7 +21,7 @@ function extractNutritionalData(food) {
     const amount = nutrient.value || nutrient.amount;
     
     // Log the nutrients we're looking for
-    if ([1008, 2047, 2048, 1003, 1005, 1050, 1004, 1093].includes(nutrientId)) {
+    if ([1008, 2047, 2048, 1003, 1005, 1050, 1004, 1093, 1087, 1089, 1162, 2000, 1092, 1114, 2067, 1258, 1257, 1253, 1079].includes(nutrientId)) {
       console.log(`   Found: ${nutrientId} - ${nutrient.nutrientName} = ${amount}`);
     }
 
@@ -43,6 +43,39 @@ function extractNutritionalData(food) {
         break;
       case 1093: // Sodium, Na
         nutrition.sodium_mg_per_100g = amount;
+        break;
+      case 1087: // Calcium, Ca
+        nutrition.calcium_mg_per_100g = amount;
+        break;
+      case 1089: // Iron, Fe
+        nutrition.iron_mg_per_100g = amount;
+        break;
+      case 1162: // Vitamin C, total ascorbic acid
+        nutrition.vitamin_c_mg_per_100g = amount;
+        break;
+      case 2000: // Total Sugars
+        nutrition.sugar_g_per_100g = amount;
+        break;
+      case 1079: // Fiber, total dietary
+        nutrition.fiber_g_per_100g = amount;
+        break;
+      case 1092: // Potassium, K
+        nutrition.potassium_mg_per_100g = amount;
+        break;
+      case 1114: // Vitamin D (D2 + D3)
+        nutrition.vitamin_d_mcg_per_100g = amount;
+        break;
+      case 2067: // Vitamin A
+        nutrition.vitamin_a_mcg_per_100g = amount;
+        break;
+      case 1258: // Fatty acids, total saturated
+        nutrition.saturated_fat_g_per_100g = amount;
+        break;
+      case 1257: // Fatty acids, total trans
+        nutrition.trans_fat_g_per_100g = amount;
+        break;
+      case 1253: // Cholesterol
+        nutrition.cholesterol_mg_per_100g = amount;
         break;
     }
   });
