@@ -150,6 +150,15 @@ router.get('/leaderboard', async (req: Request, res: Response) => {
             creator_tier: entry.creator_tier
           }
         }));
+        
+        // CRITICAL FIX: Filter out users with 0 period XP for daily/weekly
+        if (period !== 'allTime') {
+          leaderboard = leaderboard.filter((entry: any) => (entry.xp_gained || 0) > 0);
+          // Re-rank after filtering
+          leaderboard.forEach((entry: any, index: number) => {
+            entry.rank = index + 1;
+          });
+        }
       } else {
         throw new Error('Function not available, using fallback');
       }

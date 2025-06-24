@@ -125,7 +125,7 @@ BEGIN
         FROM users u
         LEFT JOIN daily_xp_summary dxs ON u.id = dxs.user_id 
           AND dxs.date = CURRENT_DATE
-        WHERE u.total_xp > 0
+        WHERE COALESCE(dxs.daily_xp, 0) > 0  -- Only users with daily XP
         ORDER BY COALESCE(dxs.daily_xp, 0)::INTEGER DESC, u.total_xp DESC
         LIMIT p_limit
       )
@@ -136,7 +136,7 @@ BEGIN
         dr.avatar_url,
         dr.level,
         dr.total_xp,
-        dr.total_xp as xp_total,
+        dr.period_xp as xp_total,  -- Show period XP as total for this view
         dr.period_xp as xp_gained,
         dr.is_creator,
         dr.creator_tier
@@ -157,7 +157,7 @@ BEGIN
         FROM users u
         LEFT JOIN weekly_xp_summary wxs ON u.id = wxs.user_id 
           AND wxs.week_start = DATE_TRUNC('week', NOW())
-        WHERE u.total_xp > 0
+        WHERE COALESCE(wxs.weekly_xp, 0) > 0  -- Only users with weekly XP
         ORDER BY COALESCE(wxs.weekly_xp, 0)::INTEGER DESC, u.total_xp DESC
         LIMIT p_limit
       )
@@ -168,7 +168,7 @@ BEGIN
         wr.avatar_url,
         wr.level,
         wr.total_xp,
-        wr.total_xp as xp_total,
+        wr.period_xp as xp_total,  -- Show period XP as total for this view
         wr.period_xp as xp_gained,
         wr.is_creator,
         wr.creator_tier
@@ -189,7 +189,7 @@ BEGIN
         FROM users u
         LEFT JOIN monthly_xp_summary mxs ON u.id = mxs.user_id 
           AND mxs.month_start = DATE_TRUNC('month', NOW())
-        WHERE u.total_xp > 0
+        WHERE COALESCE(mxs.monthly_xp, 0) > 0  -- Only users with monthly XP
         ORDER BY COALESCE(mxs.monthly_xp, 0)::INTEGER DESC, u.total_xp DESC
         LIMIT p_limit
       )
@@ -200,7 +200,7 @@ BEGIN
         mr.avatar_url,
         mr.level,
         mr.total_xp,
-        mr.total_xp as xp_total,
+        mr.period_xp as xp_total,  -- Show period XP as total for this view
         mr.period_xp as xp_gained,
         mr.is_creator,
         mr.creator_tier
@@ -276,7 +276,7 @@ BEGIN
         FROM users u
         LEFT JOIN daily_xp_summary dxs ON u.id = dxs.user_id 
           AND dxs.date = CURRENT_DATE
-        WHERE u.total_xp > 0
+        WHERE COALESCE(dxs.daily_xp, 0) > 0  -- Only users with daily XP
         ORDER BY COALESCE(dxs.daily_xp, 0)::INTEGER DESC, u.total_xp DESC
       )
       SELECT 
@@ -294,7 +294,7 @@ BEGIN
         FROM users u
         LEFT JOIN weekly_xp_summary wxs ON u.id = wxs.user_id 
           AND wxs.week_start = DATE_TRUNC('week', NOW())
-        WHERE u.total_xp > 0
+        WHERE COALESCE(wxs.weekly_xp, 0) > 0  -- Only users with weekly XP
         ORDER BY COALESCE(wxs.weekly_xp, 0)::INTEGER DESC, u.total_xp DESC
       )
       SELECT 
