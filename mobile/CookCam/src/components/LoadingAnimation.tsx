@@ -2,6 +2,7 @@ import React, { useRef, useEffect } from "react";
 import { View, StyleSheet, Text, Modal, Animated } from "react-native";
 import AIChefIcon from "./AIChefIcon";
 import { moderateScale } from "../utils/responsive";
+import logger from "../utils/logger";
 
 export type LoadingVariant = "scanning" | "previews" | "detailed";
 
@@ -55,6 +56,8 @@ const LoadingAnimation: React.FC<LoadingAnimationProps> = ({
   const aiOpacityAnim = useRef(new Animated.Value(0.7)).current;
 
   useEffect(() => {
+    logger.debug(`🎬 LoadingAnimation: visible=${visible}, variant=${variant}`);
+    
     if (visible) {
       // Start pulsing animation when loading
       const pulse = Animated.loop(
@@ -95,7 +98,7 @@ const LoadingAnimation: React.FC<LoadingAnimationProps> = ({
         opacity.stop();
       };
     }
-  }, [visible]);
+  }, [visible, variant]);
 
   const content = getContentForVariant(variant);
 
@@ -144,6 +147,12 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(139, 69, 19, 0.4)",
     justifyContent: "center",
     alignItems: "center",
+    zIndex: 9999,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
   modal: {
     backgroundColor: "#FFFFFF",
@@ -157,9 +166,11 @@ const styles = StyleSheet.create({
     },
     shadowOpacity: 0.3,
     shadowRadius: 10,
-    elevation: 8,
+    elevation: 15,
     borderWidth: 2,
     borderColor: "#FFB800",
+    maxWidth: '85%',
+    minWidth: '70%',
   },
   content: {
     alignItems: "center",

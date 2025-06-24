@@ -128,6 +128,8 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
 
   // Handle cooking a recipe
   const handleCookRecipe = async (recipe: Recipe) => {
+    logger.debug("🍳 Starting cook recipe process for:", recipe.title);
+    
     // Find the original preview data using the recipe's ID
     const recipePreviewData = rawPreviews.find(p => (p.id || `preview-${p.title}`) === recipe.id);
 
@@ -137,7 +139,13 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
     }
 
     try {
+      // Set loading state FIRST and add a small delay to ensure it shows
       setIsGeneratingDetailed(true);
+      logger.debug("🔄 Loading animation should now be visible...");
+      
+      // Add a small delay to ensure loading animation renders
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
       logger.debug("🍳 Generating detailed recipe for:", recipe.title);
       
       const detailedResponse = await cookCamApi.generateDetailedRecipe({
@@ -147,6 +155,7 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
 
       if (detailedResponse.success && detailedResponse.data?.data?.recipe) {
         const detailedRecipe = detailedResponse.data.data.recipe;
+        logger.debug("✅ Detailed recipe generated successfully");
 
         const cookModeRecipe: Recipe = {
           ...recipe,
@@ -156,6 +165,9 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
           ) || [],
           tips: detailedRecipe.tips || [],
         };
+
+        // Add a small delay before navigation to show completion
+        await new Promise(resolve => setTimeout(resolve, 500));
 
         navigation.navigate("CookMode", {
           recipe: cookModeRecipe,
@@ -170,6 +182,7 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
       Alert.alert("Recipe Generation Failed", error?.message || "Please try again.");
     } finally {
       setIsGeneratingDetailed(false);
+      logger.debug("🔄 Loading animation should now be hidden");
     }
   };
 
