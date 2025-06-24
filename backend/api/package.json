@@ -7,7 +7,13 @@
     "start": "node dist/index.js",
     "dev": "nodemon --exec ts-node src/index.ts",
     "build": "tsc",
-    "test": "jest"
+    "test": "jest",
+    "seed-usda:complete": "ts-node src/scripts/complete-usda-seeder.ts run",
+    "seed-usda:complete:resume": "ts-node src/scripts/complete-usda-seeder.ts resume",
+    "seed-usda:complete:status": "ts-node src/scripts/complete-usda-seeder.ts status",
+    "monitor-usda": "ts-node src/scripts/monitor-usda-seeding.ts monitor",
+    "monitor-usda:quick": "ts-node src/scripts/monitor-usda-seeding.ts quick",
+    "seed-usda:legacy": "ts-node src/scripts/usda-bulk-seeder.ts run"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.8",

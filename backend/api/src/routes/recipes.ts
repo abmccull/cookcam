@@ -1576,4 +1576,75 @@ function calculateNutrition(recipeIngredients: RecipeIngredient[]): NutritionCal
   };
 }
 
+// Toggle favorite recipe
+router.post('/:recipeId/favorite', authenticateUser, async (req: Request, res: Response) => {
+  try {
+    const { recipeId } = req.params;
+    const userId = (req as any).user.id;
+
+    // Check if already favorited
+    const { data: existing } = await supabase
+      .from('recipe_favorites')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('recipe_id', recipeId)
+      .single();
+
+    if (existing) {
+      // Remove from favorites
+      const { error } = await supabase
+        .from('recipe_favorites')
+        .delete()
+        .eq('user_id', userId)
+        .eq('recipe_id', recipeId);
+
+      if (error) {
+        logger.error('Remove favorite error:', error);
+        return res.status(500).json({ error: 'Failed to remove recipe from favorites' });
+      }
+
+      res.json({ 
+        success: true,
+        message: 'Recipe removed from favorites', 
+        favorited: false 
+      });
+    } else {
+      // Add to favorites
+      const { error } = await supabase
+        .from('recipe_favorites')
+        .insert([{
+          user_id: userId,
+          recipe_id: recipeId
+        }]);
+
+      if (error) {
+        logger.error('Add favorite error:', error);
+        return res.status(500).json({ error: 'Failed to add recipe to favorites' });
+      }
+
+      // Award XP for favoriting
+      try {
+        await supabase.rpc('add_user_xp', {
+          p_user_id: userId,
+          p_xp_amount: 10,
+          p_action: 'recipe_favorited',
+          p_metadata: { recipe_id: recipeId }
+        });
+      } catch (xpError) {
+        logger.error('XP award error for favorite:', xpError);
+        // Continue despite XP error
+      }
+
+      res.json({ 
+        success: true,
+        message: 'Recipe added to favorites', 
+        favorited: true 
+      });
+    }
+  } catch (error: unknown) {
+    logger.error('Toggle favorite recipe error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 export default router; 

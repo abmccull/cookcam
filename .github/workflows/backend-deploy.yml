@@ -7,6 +7,21 @@ on:
       - 'backend/api/**'
       - '.github/workflows/backend-deploy.yml'
   workflow_dispatch: # Allow manual triggering
+    inputs:
+      run_usda_seeding:
+        description: 'Run USDA seeding after deployment'
+        required: false
+        default: false
+        type: boolean
+      usda_seeding_type:
+        description: 'Type of USDA seeding to run'
+        required: false
+        default: 'complete'
+        type: choice
+        options:
+          - complete
+          - resume
+          - status
 
 jobs:
   deploy:
@@ -252,6 +267,13 @@ jobs:
           echo "📝 Recent application logs:"
           pm2 logs cookcam-api --lines 10 --nostream
           
+    - name: Notify USDA seeding trigger
+      if: ${{ success() && inputs.run_usda_seeding }}
+      run: |
+        echo "🌱 USDA seeding will be triggered after deployment"
+        echo "📊 Seeding type: ${{ inputs.usda_seeding_type || 'complete' }}"
+        echo "🔧 This will be handled by a separate workflow run"
+        
     - name: Notify deployment status
       if: always()
       run: |
@@ -259,8 +281,24 @@ jobs:
           echo "🎉 Backend deployment completed successfully!"
           echo "✅ Authentication fixes have been deployed to production"
           echo "🔗 The 'Cooking session not found' errors should now be resolved"
+          
+          if [ "${{ inputs.run_usda_seeding }}" = "true" ]; then
+            echo "🌱 USDA seeding has been triggered"
+            echo "📊 Check the USDA Database Seeding workflow for progress"
+            echo "⏰ Note: USDA seeding can take several days to complete"
+          fi
         else
           echo "💥 Backend deployment failed!"
           echo "❌ Please check the logs above for details"
           echo "🔄 Consider running the workflow again or investigating the issue"
-        fi 
+        fi
+
+  # USDA Seeding Job (runs after successful deployment if requested)
+  usda-seeding:
+    needs: deploy
+    if: ${{ success() && inputs.run_usda_seeding }}
+    uses: ./.github/workflows/usda-seeding.yml
+    with:
+      seeding_type: ${{ inputs.usda_seeding_type || 'complete' }}
+      environment: 'production'
+    secrets: inherit 
