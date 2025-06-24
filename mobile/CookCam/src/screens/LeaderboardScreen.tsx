@@ -291,27 +291,42 @@ const LeaderboardScreen: React.FC = () => {
         </View>
 
         <View style={styles.xpContainer}>
-          <Text
-            style={[
-              styles.xpText,
-              isTopThree === true ? styles.topThreeXP : null,
-            ]}
-          >
-            {String(Number(safeUser.xp || 0).toLocaleString())}
-          </Text>
-          <Text style={styles.xpLabel}>XP</Text>
-          {safeUser.xpGained != null && safeUser.xpGained > 0 ? (
-            <Text style={styles.xpGained}>
-              +{String(safeUser.xpGained || 0)} this{" "}
-              {String(
-                selectedPeriod === "allTime"
-                  ? "total"
-                  : selectedPeriod === "daily"
-                    ? "today"
-                    : selectedPeriod,
-              )}
-            </Text>
-          ) : null}
+          {/* For daily/weekly periods, emphasize period XP */}
+          {selectedPeriod !== "allTime" && safeUser.xpGained != null && safeUser.xpGained > 0 ? (
+            <>
+              <Text
+                style={[
+                  styles.xpText,
+                  isTopThree === true ? styles.topThreeXP : null,
+                ]}
+              >
+                {String(Number(safeUser.xpGained || 0).toLocaleString())}
+              </Text>
+              <Text style={styles.xpLabel}>
+                XP {selectedPeriod === "daily" ? "today" : "this week"}
+              </Text>
+              <Text style={styles.totalXpSubtext}>
+                {String(Number(safeUser.xp || 0).toLocaleString())} total
+              </Text>
+            </>
+          ) : (
+            <>
+              <Text
+                style={[
+                  styles.xpText,
+                  isTopThree === true ? styles.topThreeXP : null,
+                ]}
+              >
+                {String(Number(safeUser.xp || 0).toLocaleString())}
+              </Text>
+              <Text style={styles.xpLabel}>XP</Text>
+              {safeUser.xpGained != null && safeUser.xpGained > 0 ? (
+                <Text style={styles.xpGained}>
+                  +{String(safeUser.xpGained || 0)}
+                </Text>
+              ) : null}
+            </>
+          )}
         </View>
       </Animated.View>
     );
@@ -333,9 +348,11 @@ const LeaderboardScreen: React.FC = () => {
               <View style={styles.compactRankBadge}>
                 <TrendingUp size={14} color="#66BB6A" />
                 <Text style={styles.compactRankText}>
-                  #{String(Number(userRank) || 0)} this{" "}
+                  #{String(Number(userRank) || 0)} {" "}
                   {String(
-                    selectedPeriod === "allTime" ? "all time" : selectedPeriod,
+                    selectedPeriod === "allTime" ? "all time" : 
+                    selectedPeriod === "daily" ? "today" :
+                    "this week",
                   )}
                 </Text>
               </View>
@@ -716,6 +733,11 @@ const styles = StyleSheet.create({
   xpGained: {
     fontSize: 11,
     color: "#4CAF50",
+    marginTop: 2,
+  },
+  totalXpSubtext: {
+    fontSize: 11,
+    color: "#8E8E93",
     marginTop: 2,
   },
   compactRankBadge: {
