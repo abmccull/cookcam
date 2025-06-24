@@ -180,23 +180,35 @@ function calculateStringSimilarity(str1: string, str2: string): number {
 }
 
 function levenshteinDistance(str1: string, str2: string): number {
-  const matrix = Array(str2.length + 1).fill(null).map(() => Array(str1.length + 1).fill(null));
+  const matrix: number[][] = Array(str2.length + 1).fill(null).map(() => Array(str1.length + 1).fill(0));
   
-  for (let i = 0; i <= str1.length; i++) matrix[0][i] = i;
-  for (let j = 0; j <= str2.length; j++) matrix[j][0] = j;
+  for (let i = 0; i <= str1.length; i++) {
+    const row = matrix[0];
+    if (row) row[i] = i;
+  }
+  for (let j = 0; j <= str2.length; j++) {
+    const row = matrix[j];
+    if (row) row[0] = j;
+  }
   
   for (let j = 1; j <= str2.length; j++) {
     for (let i = 1; i <= str1.length; i++) {
       const indicator = str1[i - 1] === str2[j - 1] ? 0 : 1;
-      matrix[j][i] = Math.min(
-        matrix[j][i - 1] + 1,     // deletion
-        matrix[j - 1][i] + 1,     // insertion
-        matrix[j - 1][i - 1] + indicator // substitution
-      );
+      const currentRow = matrix[j];
+      const prevRow = matrix[j - 1];
+      
+      if (currentRow && prevRow) {
+        const deletion = (currentRow[i - 1] ?? 0) + 1;
+        const insertion = (prevRow[i] ?? 0) + 1;
+        const substitution = (prevRow[i - 1] ?? 0) + indicator;
+        
+        currentRow[i] = Math.min(deletion, insertion, substitution);
+      }
     }
   }
   
-  return matrix[str2.length][str1.length];
+  const lastRow = matrix[str2.length];
+  return lastRow ? (lastRow[str1.length] ?? 0) : 0;
 }
 
 // Enhanced production synonyms database
@@ -273,7 +285,14 @@ function calculateEnhancedSimilarity(input: string, dbName: string): number {
 }
 
 // Helper function to check if an ingredient has valid nutrition data
-function hasValidNutritionData(ingredient: DatabaseIngredient): boolean {
+function hasValidNutritionData(ingredient: DatabaseIngredient): ingredient is DatabaseIngredient & {
+  name: string;
+  calories_per_100g: number;
+  protein_g_per_100g: number;
+  carbs_g_per_100g: number;
+  fat_g_per_100g: number;
+  sodium_mg_per_100g: number;
+} {
   return ingredient.name !== null &&
          ingredient.calories_per_100g !== null &&
          ingredient.protein_g_per_100g !== null &&
@@ -310,17 +329,20 @@ async function findBestIngredientMatch(ingredientName: string): Promise<Ingredie
         .limit(5);
       
       if (matches) {
-        const validMatches = matches.filter(hasValidNutritionData);
-        candidates.push(...validMatches.map(m => ({
-          name: m.name!,
-          calories_per_100g: m.calories_per_100g!,
-          protein_g_per_100g: m.protein_g_per_100g!,
-          carbs_g_per_100g: m.carbs_g_per_100g!,
-          fat_g_per_100g: m.fat_g_per_100g!,
-          sodium_mg_per_100g: m.sodium_mg_per_100g!,
-          matchType: 'synonym',
-          similarity: calculateEnhancedSimilarity(synonym, m.name!)
-        })));
+        for (const match of matches) {
+          if (hasValidNutritionData(match)) {
+            candidates.push({
+              name: match.name,
+              calories_per_100g: match.calories_per_100g,
+              protein_g_per_100g: match.protein_g_per_100g,
+              carbs_g_per_100g: match.carbs_g_per_100g,
+              fat_g_per_100g: match.fat_g_per_100g,
+              sodium_mg_per_100g: match.sodium_mg_per_100g,
+              matchType: 'synonym',
+              similarity: calculateEnhancedSimilarity(synonym, match.name)
+            });
+          }
+        }
       }
     }
     
@@ -334,17 +356,20 @@ async function findBestIngredientMatch(ingredientName: string): Promise<Ingredie
         .limit(15);
       
       if (fuzzyMatches) {
-        const validMatches = fuzzyMatches.filter(hasValidNutritionData);
-        candidates.push(...validMatches.map(m => ({
-          name: m.name!,
-          calories_per_100g: m.calories_per_100g!,
-          protein_g_per_100g: m.protein_g_per_100g!,
-          carbs_g_per_100g: m.carbs_g_per_100g!,
-          fat_g_per_100g: m.fat_g_per_100g!,
-          sodium_mg_per_100g: m.sodium_mg_per_100g!,
-          matchType: 'fuzzy',
-          similarity: calculateEnhancedSimilarity(ingredientName, m.name!)
-        })));
+        for (const match of fuzzyMatches) {
+          if (hasValidNutritionData(match)) {
+            candidates.push({
+              name: match.name,
+              calories_per_100g: match.calories_per_100g,
+              protein_g_per_100g: match.protein_g_per_100g,
+              carbs_g_per_100g: match.carbs_g_per_100g,
+              fat_g_per_100g: match.fat_g_per_100g,
+              sodium_mg_per_100g: match.sodium_mg_per_100g,
+              matchType: 'fuzzy',
+              similarity: calculateEnhancedSimilarity(ingredientName, match.name)
+            });
+          }
+        }
       }
     }
     
@@ -403,13 +428,13 @@ export async function calculateSmartNutrition(
   for (const ingredient of ingredients) {
     // Parse quantity and unit from the ingredient
     const quantityMatch = ingredient.quantity.match(/(\d+(?:\.\d+)?)\s*(\w+)?/);
-    if (!quantityMatch) {
+    if (!quantityMatch || !quantityMatch[1]) {
       unmatchedIngredients.push(ingredient.item);
       continue;
     }
 
     const quantity = parseFloat(quantityMatch[1]);
-    const unit = ingredient.unit || (quantityMatch[2] ?? 'piece');
+    const unit = ingredient.unit || quantityMatch[2] || 'piece';
 
     // Find best database match
     const match = await findBestIngredientMatch(ingredient.item);
