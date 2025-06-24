@@ -33,6 +33,7 @@ interface GamificationContextType {
   useFreeze: () => Promise<boolean>;
   unlockBadge: (badgeId: string) => Promise<void>;
   loadGamificationProgress: () => Promise<void>;
+  refreshUserStats: () => Promise<void>; // Force refresh bypassing cache
   xpNotification: {
     visible: boolean;
     xpGained: number;
@@ -297,6 +298,16 @@ export const GamificationProvider: React.FC<GamificationProviderProps> = ({
       }
     }
   }, [user?.id]); // Keep the dependency but use ref to prevent unnecessary runs
+
+  const refreshUserStats = async () => {
+    if (!user || isLoading) {
+      return;
+    }
+
+    logger.debug("🔄 Force refreshing user stats (bypassing cache)");
+    setLastChecked(null); // Clear cache to force reload
+    await loadGamificationProgress();
+  };
 
   const loadGamificationProgress = async () => {
     if (!user || isLoading) {
@@ -583,6 +594,7 @@ export const GamificationProvider: React.FC<GamificationProviderProps> = ({
     useFreeze,
     unlockBadge,
     loadGamificationProgress,
+    refreshUserStats,
     xpNotification,
     hideXPNotification,
   };

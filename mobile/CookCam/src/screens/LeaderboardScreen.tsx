@@ -24,6 +24,7 @@ import {
   Zap,
 } from "lucide-react-native";
 import { useAuth } from "../context/AuthContext";
+import { useGamification } from "../context/GamificationContext";
 import { cookCamApi } from "../services/cookCamApi";
 import * as Haptics from "expo-haptics";
 import logger from "../utils/logger";
@@ -45,6 +46,7 @@ type LeaderboardType = "global" | "friends";
 
 const LeaderboardScreen: React.FC = () => {
   const { user } = useAuth();
+  const { refreshUserStats } = useGamification();
   const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>("weekly");
   const [leaderboardType, setLeaderboardType] =
     useState<LeaderboardType>("global");
@@ -118,6 +120,9 @@ const LeaderboardScreen: React.FC = () => {
         "-",
         String(selectedPeriod),
       );
+
+      // Refresh user stats to sync header XP with latest DB data
+      await refreshUserStats();
 
       // Call actual API endpoint with current filters
       const response = await cookCamApi.getLeaderboard(50, selectedPeriod, leaderboardType);
