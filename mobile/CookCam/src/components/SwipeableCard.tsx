@@ -279,25 +279,25 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
             <View style={styles.macrosGrid}>
               <View style={styles.macroItem}>
                 <Text style={styles.macroValue}>
-                  {recipe.calories || recipe.macros?.calories || 350}
+                  {recipe.calories || recipe.macros?.calories || "—"}
                 </Text>
                 <Text style={styles.macroLabel}>Calories</Text>
               </View>
               <View style={styles.macroItem}>
                 <Text style={styles.macroValue}>
-                  {recipe.macros?.protein || 15}g
+                  {recipe.macros?.protein ? `${recipe.macros.protein}g` : "—"}
                 </Text>
                 <Text style={styles.macroLabel}>Protein</Text>
               </View>
               <View style={styles.macroItem}>
                 <Text style={styles.macroValue}>
-                  {recipe.macros?.carbs || 45}g
+                  {recipe.macros?.carbs ? `${recipe.macros.carbs}g` : "—"}
                 </Text>
                 <Text style={styles.macroLabel}>Carbs</Text>
               </View>
               <View style={styles.macroItem}>
                 <Text style={styles.macroValue}>
-                  {recipe.macros?.fat || 12}g
+                  {recipe.macros?.fat ? `${recipe.macros.fat}g` : "—"}
                 </Text>
                 <Text style={styles.macroLabel}>Fat</Text>
               </View>
@@ -310,21 +310,23 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
                 </View>
               ))}
             </View>
-
-            {isTop && (
-              <TouchableOpacity
-                style={styles.favoriteButton}
-                onPress={handleFavorite}
-              >
-                <Heart
-                  size={24}
-                  color={isCardFavorited ? "#FF1744" : "#CCC"}
-                  fill={isCardFavorited ? "#FF1744" : "none"}
-                />
-              </TouchableOpacity>
-            )}
           </View>
         </TouchableOpacity>
+
+        {/* Move heart button outside of the main TouchableOpacity to make it independently clickable */}
+        {isTop && (
+          <TouchableOpacity
+            style={styles.favoriteButton}
+            onPress={handleFavorite}
+            activeOpacity={0.8}
+          >
+            <Heart
+              size={24}
+              color={isCardFavorited ? "#FF1744" : "#CCC"}
+              fill={isCardFavorited ? "#FF1744" : "none"}
+            />
+          </TouchableOpacity>
+        )}
 
         {isTop && (
           <Animated.View style={[styles.overlay, overlayStyle]}>

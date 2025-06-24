@@ -261,7 +261,7 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
   });
 
   return (
-    <SafeScreen style={styles.container}>
+    <SafeScreen style={styles.container} includeBottom={false}>
       <View style={styles.header}>
         <Text style={styles.title}>Recipe Suggestions</Text>
         <Text style={styles.subtitle}>
@@ -290,7 +290,7 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
         )}
 
         {!isLoading && !error && (
-          <>
+          <View style={styles.cardStackContainer}>
             <CardStack
               recipes={recipes}
               onCookRecipe={handleCookRecipe}
@@ -299,23 +299,25 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
               onRefreshRecipes={generateRecipes}
               isLoading={false}
             />
-            {recipes.length > 0 && (
-              <View style={styles.swipeInstructions}>
-                <View style={styles.swipeInstruction}>
-                  <View style={styles.swipeIconContainer}>
-                    <X size={20} color="#FF5252" />
-                  </View>
-                  <Text style={styles.swipeText}>Swipe left to dismiss</Text>
-                </View>
-                <View style={styles.swipeInstruction}>
-                  <View style={styles.swipeIconContainer}>
-                    <ChefHat size={20} color="#4CAF50" />
-                  </View>
-                  <Text style={styles.swipeText}>Swipe right to cook</Text>
-                </View>
+          </View>
+        )}
+
+        {/* Swipe instructions positioned at the bottom of content area */}
+        {!isLoading && !error && recipes.length > 0 && (
+          <View style={styles.swipeInstructionsContainer}>
+            <View style={styles.swipeInstructionCard}>
+              <View style={styles.swipeIconContainer}>
+                <X size={18} color="#FF5252" />
               </View>
-            )}
-          </>
+              <Text style={styles.swipeText}>Swipe left to dismiss</Text>
+            </View>
+            <View style={styles.swipeInstructionCard}>
+              <View style={styles.swipeIconContainer}>
+                <ChefHat size={18} color="#4CAF50" />
+              </View>
+              <Text style={styles.swipeText}>Swipe right to cook</Text>
+            </View>
+          </View>
         )}
       </View>
     </SafeScreen>
@@ -329,8 +331,8 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: 20,
-    paddingTop: 10,
-    paddingBottom: 10,
+    paddingTop: 5,
+    paddingBottom: 5,
     alignItems: 'center',
   },
   title: {
@@ -345,7 +347,11 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     flex: 1,
-    paddingBottom: 100, // Add padding to prevent overlap with bottom navbar
+    justifyContent: 'flex-start',
+  },
+  cardStackContainer: {
+    flex: 1,
+    marginBottom: 10,
   },
   errorOverlay: {
     position: "absolute",
@@ -392,34 +398,38 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
   },
-  swipeInstructions: {
+  swipeInstructionsContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingHorizontal: 40,
-    paddingVertical: 20,
-    marginTop: 10,
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: 20,
+    justifyContent: 'space-between',
     marginHorizontal: 20,
+    marginTop: 'auto', // Push to bottom of the content container
+    marginBottom: 20,
+    gap: 12,
+  },
+  swipeInstructionCard: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    backgroundColor: 'rgba(255, 255, 255, 0.98)',
+    borderRadius: 16,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 3,
     },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.12,
     shadowRadius: 8,
-    elevation: 4,
-  },
-  swipeInstruction: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    elevation: 6,
     gap: 8,
   },
   swipeIconContainer: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(248, 249, 250, 0.8)',
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(248, 249, 250, 0.9)',
     alignItems: 'center',
     justifyContent: 'center',
   },
