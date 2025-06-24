@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { supabase, createAuthenticatedClient } from '../index';
+import { supabase, createAuthenticatedClient, supabaseServiceRole } from '../index';
 import { createClient } from '@supabase/supabase-js';
 import { authenticateUser } from '../middleware/auth';
 import { logger } from '../utils/logger';
@@ -397,6 +397,61 @@ router.get('/debug-xp', async (req: Request, res: Response) => {
   } catch (error: unknown) {
     console.error('Debug XP error:', error);
     res.status(500).json({ error: 'Debug failed', details: error });
+  }
+});
+
+// Test awarding XP to verify RLS fix
+router.post('/test-award-xp', async (req, res) => {
+  try {
+    console.log('🧪 Testing XP award with service role client...');
+    
+    const testUserId = 'bbf490ea-3a74-41c8-a438-bb7ea311bcfa';
+    const testAction = 'test_xp_award';
+    const testXP = 5;
+    
+    console.log(`🧪 Test awarding ${testXP} XP to user ${testUserId} for action: ${testAction}`);
+    
+    // Use service role client for admin operations
+    const { data, error } = await supabaseServiceRole.rpc('add_user_xp', {
+      p_user_id: testUserId,
+      p_action: testAction,
+      p_xp_amount: testXP,
+      p_metadata: { source: 'rls_test', timestamp: new Date().toISOString() }
+    });
+
+    if (error) {
+      console.log('❌ Error adding test XP:', error);
+      return res.status(500).json({ 
+        success: false, 
+        error: error.message,
+        details: error 
+      });
+    }
+
+    console.log('✅ Successfully awarded test XP:', data);
+    
+    // Fetch updated user progress to verify
+    const { data: progress, error: progressError } = await supabaseServiceRole
+      .from('user_progress')
+      .select('*')
+      .eq('user_id', testUserId)
+      .eq('action', testAction)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    res.json({ 
+      success: true, 
+      result: data,
+      newProgressEntry: progress || 'No progress entry found',
+      progressError: progressError ? progressError.message : null
+    });
+  } catch (error) {
+    console.log('❌ Exception in test award XP:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error' 
+    });
   }
 });
 

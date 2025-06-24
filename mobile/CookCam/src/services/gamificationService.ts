@@ -1,5 +1,6 @@
 import { supabase } from "./supabaseClient";
 import logger from "../utils/logger";
+import { gamificationService } from "./api";
 
 
 interface User {
@@ -78,48 +79,28 @@ class GamificationService {
         return { success: false, error: "User not authenticated" };
       }
 
-      // Get current user data first
-      const { data: currentUser, error: getUserError } = await supabase
-        .from("users")
-        .select("total_xp, xp, level")
-        .eq("id", user.id)
-        .single();
-
-      if (getUserError) {
-        logger.error("❌ Error getting current user data:", getUserError);
-        return { success: false, error: getUserError.message };
+      // Call the backend API endpoint instead of direct Supabase update
+      try {
+        const response = await gamificationService.addXP(amount, reason, _metadata || {});
+        
+        if (response.success) {
+          logger.debug(`✅ Added ${amount} XP via API. Response:`, response.data);
+          return {
+            success: true,
+            data: {
+              xp_gained: amount,
+              total_xp: response.data?.new_total_xp,
+              level: response.data?.new_level,
+            },
+          };
+        } else {
+          logger.error("❌ API call failed:", response.error);
+          return { success: false, error: response.error };
+        }
+      } catch (apiError) {
+        logger.error("❌ API call exception:", apiError);
+        return { success: false, error: "Failed to call XP API" };
       }
-
-      // Calculate new XP values
-      const newTotalXP = (currentUser.total_xp || 0) + amount;
-      const newXP = (currentUser.xp || 0) + amount;
-
-      // Update user's XP
-      const { data, error } = await supabase
-        .from("users")
-        .update({
-          total_xp: newTotalXP,
-          xp: newXP,
-        })
-        .eq("id", user.id)
-        .select("total_xp, xp, level")
-        .single();
-
-      if (error) {
-        logger.error("❌ Error adding XP:", error);
-        return { success: false, error: error.message };
-      }
-
-      logger.debug(`✅ Added ${amount} XP. New total: ${data.total_xp}`);
-
-      return {
-        success: true,
-        data: {
-          xp_gained: amount,
-          total_xp: data.total_xp,
-          level: data.level,
-        },
-      };
     } catch (error) {
       logger.error("❌ Unexpected error adding XP:", error);
       return { success: false, error: "Failed to add XP" };
