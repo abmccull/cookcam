@@ -1647,4 +1647,216 @@ router.post('/:recipeId/favorite', authenticateUser, async (req: Request, res: R
   }
 });
 
+// POST /api/recipes/calculate-smart-nutrition - Smart nutrition calculation with fuzzy matching
+router.post('/calculate-smart-nutrition', async (req, res) => {
+  try {
+    const { ingredients, servings = 2 } = req.body;
+
+    if (!ingredients || !Array.isArray(ingredients)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Ingredients array is required'
+      });
+    }
+
+    logger.info('🧠 Calculating smart nutrition with fuzzy matching...', { 
+      ingredientCount: ingredients.length,
+      servings 
+    });
+
+    // Import the smart nutrition service
+    const { calculateSmartNutrition } = await import('../services/smartNutritionService');
+    
+    // Calculate nutrition using fuzzy matching
+    const result = await calculateSmartNutrition(ingredients, servings);
+
+    // Log match quality for monitoring
+    const totalIngredients = ingredients.length;
+    const matchedIngredients = result.ingredientBreakdown.length;
+    const averageConfidence = result.ingredientBreakdown.length > 0 
+      ? result.ingredientBreakdown.reduce((sum, item) => sum + item.confidence, 0) / result.ingredientBreakdown.length
+      : 0;
+
+    logger.info('🎯 Smart nutrition calculation complete', {
+      totalIngredients,
+      matchedIngredients,
+      unmatchedCount: result.unmatchedIngredients.length,
+      averageConfidence: Math.round(averageConfidence * 100) / 100,
+      totalCalories: result.totalNutrition.calories
+    });
+
+    res.json({
+      success: true,
+      data: {
+        nutrition: result,
+        quality: {
+          totalIngredients,
+          matchedIngredients,
+          matchRate: Math.round((matchedIngredients / totalIngredients) * 100),
+          averageConfidence: Math.round(averageConfidence * 100)
+        }
+      }
+    });
+
+  } catch (error: unknown) {
+    logger.error('Smart nutrition calculation error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to calculate smart nutrition'
+    });
+  }
+});
+
+// POST /api/recipes/test-smart-nutrition - Test smart nutrition with sample AI recipe
+router.post('/test-smart-nutrition', async (req, res) => {
+  try {
+    logger.info('🧪 Testing smart nutrition with AI recipe sample...');
+
+    // Sample AI-generated recipe ingredients (typical format from OpenAI)
+    const mockAIIngredients = [
+      { item: "ripe tomatoes", quantity: "250 g" },
+      { item: "red onion", quantity: "1 medium" },
+      { item: "olive oil", quantity: "2 tbsp" },
+      { item: "fresh basil leaves", quantity: "10 pieces" },
+      { item: "mozzarella cheese", quantity: "100 g" },
+      { item: "balsamic vinegar", quantity: "1 tsp" },
+      { item: "salt", quantity: "1/2 tsp" },
+      { item: "black pepper", quantity: "1/4 tsp" }
+    ];
+
+    const servings = 2;
+
+    // Import and use smart nutrition service
+    const { calculateSmartNutrition } = await import('../services/smartNutritionService');
+    const result = await calculateSmartNutrition(mockAIIngredients, servings);
+
+    // Calculate match statistics
+    const totalIngredients = mockAIIngredients.length;
+    const matchedIngredients = result.ingredientBreakdown.length;
+    const averageConfidence = result.ingredientBreakdown.length > 0 
+      ? result.ingredientBreakdown.reduce((sum, item) => sum + item.confidence, 0) / result.ingredientBreakdown.length
+      : 0;
+
+    res.json({
+      success: true,
+      data: {
+        recipeName: 'Test Caprese Salad',
+        servings,
+        nutrition: result,
+        quality: {
+          totalIngredients,
+          matchedIngredients,
+          matchRate: Math.round((matchedIngredients / totalIngredients) * 100),
+          averageConfidence: Math.round(averageConfidence * 100)
+        },
+        message: 'Smart nutrition test completed with fuzzy ingredient matching'
+      }
+    });
+
+  } catch (error: unknown) {
+    logger.error('Test smart nutrition error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to test smart nutrition'
+    });
+  }
+});
+
+// Enhanced recipe generation with smart nutrition calculation
+router.post('/generate-full-with-smart-nutrition', authenticateUser, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user.id;
+    const { sessionId, selectedTitle } = req.body;
+
+    // Get the original recipe generation data
+    const { data: sessionData, error: sessionError } = await supabase
+      .from('cooking_sessions')
+      .select('*')
+      .eq('session_id', sessionId)
+      .eq('user_id', userId)
+      .single();
+
+    if (sessionError || !sessionData) {
+      return res.status(404).json({ error: 'Recipe session not found' });
+    }
+
+    // Generate full recipe using AI service
+    const fullRecipe = await generateFullRecipe(selectedTitle, sessionData.original_ingredients);
+
+    // Calculate accurate nutrition using smart fuzzy matching
+    const { calculateSmartNutrition } = await import('../services/smartNutritionService');
+    const smartNutrition = await calculateSmartNutrition(fullRecipe.ingredients, fullRecipe.servings);
+
+    // Store the recipe with both AI estimates and database-calculated nutrition
+    const { data: recipe, error: recipeError } = await supabase
+      .from('recipes')
+      .insert([{
+        title: fullRecipe.title,
+        description: `A ${fullRecipe.cuisine} dish featuring ${sessionData.original_ingredients.detectedIngredients.join(', ')}`,
+        prep_time: Math.floor(fullRecipe.totalTimeMinutes * 0.3),
+        cook_time: Math.ceil(fullRecipe.totalTimeMinutes * 0.7),
+        difficulty: fullRecipe.difficulty.toLowerCase(),
+        servings: fullRecipe.servings,
+        ingredients: fullRecipe.ingredients,
+        instructions: fullRecipe.steps.map(step => step.instruction),
+        nutrition: {
+          // AI estimates
+          ai_calories: fullRecipe.caloriesPerServing,
+          ai_protein: fullRecipe.macros.protein_g,
+          ai_carbs: fullRecipe.macros.carbs_g,
+          ai_fat: fullRecipe.macros.fat_g,
+          // Database-calculated values
+          db_calories: smartNutrition.perServing.calories,
+          db_protein: smartNutrition.perServing.protein_g,
+          db_carbs: smartNutrition.perServing.carbs_g,
+          db_fat: smartNutrition.perServing.fat_g,
+          db_sodium: smartNutrition.perServing.sodium_mg,
+          // Match quality metrics
+          ingredient_match_rate: Math.round((smartNutrition.ingredientBreakdown.length / fullRecipe.ingredients.length) * 100),
+          unmatched_ingredients: smartNutrition.unmatchedIngredients
+        },
+        tags: [fullRecipe.cuisine],
+        created_by: userId,
+        is_generated: true,
+        cuisine: fullRecipe.cuisine,
+        ai_metadata: {
+          chef_camillo_version: '1.0',
+          session_id: sessionId,
+          original_ingredients: sessionData.original_ingredients,
+          social_caption: fullRecipe.socialCaption,
+          finishing_tip: fullRecipe.finishingTip,
+          nutrition_method: 'smart_fuzzy_matching'
+        }
+      }])
+      .select()
+      .single();
+
+    if (recipeError) {
+      logger.error('Recipe storage error', { error: recipeError.message });
+      return res.status(500).json({ error: 'Failed to store recipe' });
+    }
+
+    res.json({
+      success: true,
+      recipe: {
+        ...recipe,
+        smartNutrition: smartNutrition,
+        nutritionComparison: {
+          ai_estimate: {
+            calories: fullRecipe.caloriesPerServing,
+            protein: fullRecipe.macros.protein_g,
+            carbs: fullRecipe.macros.carbs_g,
+            fat: fullRecipe.macros.fat_g
+          },
+          database_calculated: smartNutrition.perServing
+        }
+      }
+    });
+
+  } catch (error: unknown) {
+    logger.error('Enhanced recipe generation error:', error);
+    res.status(500).json({ error: 'Failed to generate recipe with smart nutrition' });
+  }
+});
+
 export default router; 

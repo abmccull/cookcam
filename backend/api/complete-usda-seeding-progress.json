@@ -1,11 +1,11 @@
 {
   "totalItems": 617000,
-  "processedItems": 20633,
-  "currentPage": 86,
+  "processedItems": 42633,
+  "currentPage": 196,
   "currentDataType": "Branded",
   "currentDataTypeIndex": 3,
   "startTime": "2025-06-24T14:59:28.147Z",
-  "lastUpdateTime": "2025-06-24T17:29:26.871Z",
+  "lastUpdateTime": "2025-06-24T19:03:09.547Z",
   "errors": [
     "Error processing Hummus, commercial: Cannot read properties of undefined (reading 'id')",
     "Error processing Tomatoes, grape, raw: Cannot read properties of undefined (reading 'id')",
@@ -10540,541 +10540,240 @@
     "Error processing Bread, multigrain, reduced calorie and/or high fiber, toasted: Cannot read properties of undefined (reading 'id')",
     "Error processing Roll, multigrain: Cannot read properties of undefined (reading 'id')"
   ],
-  "successfulInserts": 6300,
+  "successfulInserts": 10000,
   "skippedDuplicates": 0,
   "batchBuffer": [
     {
-      "name": "5-10 LB WG KING MACKEREL",
-      "fdc_id": 1457375,
-      "category": "Fish  Unprepared/Unprocessed",
-      "searchable_text": "5-10 lb wg king mackerel fish  unprepared/unprocessed beaver street fisheries inc.   branded fish--unprepared-unprocessed branded beaver-street-fisheries-inc-",
+      "name": "WEIS QUALITY, HICKORY BACON, SMOKED, SMOKED",
+      "fdc_id": 1859930,
+      "category": "Bacon, Sausages & Ribs",
+      "searchable_text": "weis quality, hickory bacon, smoked, smoked bacon, sausages & ribs weis markets, inc.   branded bacon--sausages---ribs branded weis-markets--inc-",
       "tags": [
         "branded",
-        "fish--unprepared-unprocessed",
+        "bacon--sausages---ribs",
         "branded",
-        "beaver-street-fisheries-inc-"
+        "weis-markets--inc-"
       ],
       "dietary_flags": [],
       "usda_data_type": "Branded",
-      "usda_sync_date": "2025-06-24T17:29:26.870Z",
-      "protein_g_per_100g": 19.6,
-      "fat_g_per_100g": 1.79,
-      "calcium_mg_per_100g": 31,
-      "iron_mg_per_100g": 1.79,
-      "sodium_mg_per_100g": 161,
-      "vitamin_c_mg_per_100g": 1.6
+      "usda_sync_date": "2025-06-24T19:03:09.546Z",
+      "protein_g_per_100g": 22.2,
+      "fat_g_per_100g": 38.9,
+      "iron_mg_per_100g": 2,
+      "sodium_mg_per_100g": 1440
     },
     {
-      "name": "MULLER CORNER GREEK PEACH   5.3Z",
-      "fdc_id": 1457376,
-      "category": "Yogurt/Yogurt Substitutes",
-      "searchable_text": "muller corner greek peach   5.3z yogurt/yogurt substitutes pepsico inc.   branded yogurt-yogurt-substitutes branded pepsico-inc-",
+      "name": "HOT SAUCE, HOT",
+      "fdc_id": 1859931,
+      "category": "Ketchup, Mustard, BBQ & Cheese Sauce",
+      "searchable_text": "hot sauce, hot ketchup, mustard, bbq & cheese sauce pellicano specialty food distributors   branded ketchup--mustard--bbq---cheese-sauce branded pellicano-specialty-food-distributors",
       "tags": [
         "branded",
-        "yogurt-yogurt-substitutes",
+        "ketchup--mustard--bbq---cheese-sauce",
         "branded",
-        "pepsico-inc-"
+        "pellicano-specialty-food-distributors"
+      ],
+      "dietary_flags": [
+        "contains-soy"
+      ],
+      "usda_data_type": "Branded",
+      "usda_sync_date": "2025-06-24T19:03:09.546Z",
+      "sodium_mg_per_100g": 1300
+    },
+    {
+      "name": "CHUNKY PEANUT BUTTER",
+      "fdc_id": 1859932,
+      "category": "Nut & Seed Butters",
+      "searchable_text": "chunky peanut butter nut & seed butters american blanching company   branded nut---seed-butters branded american-blanching-company",
+      "tags": [
+        "branded",
+        "nut---seed-butters",
+        "branded",
+        "american-blanching-company"
+      ],
+      "dietary_flags": [
+        "contains-soy"
+      ],
+      "usda_data_type": "Branded",
+      "usda_sync_date": "2025-06-24T19:03:09.546Z",
+      "protein_g_per_100g": 21.9,
+      "fat_g_per_100g": 46.9,
+      "carbs_g_per_100g": 28.1,
+      "sugar_g_per_100g": 12.5,
+      "fiber_g_per_100g": 6.2,
+      "iron_mg_per_100g": 2.25,
+      "sodium_mg_per_100g": 438
+    },
+    {
+      "name": "PACIFIC RESOURCES, NEW ZEALAND PACIFIC SALT",
+      "fdc_id": 1859933,
+      "category": "Seasoning Mixes, Salts, Marinades & Tenderizers",
+      "searchable_text": "pacific resources, new zealand pacific salt seasoning mixes, salts, marinades & tenderizers pacific resources international, inc   branded seasoning-mixes--salts--marinades---tenderizers branded pacific-resources-international--inc",
+      "tags": [
+        "branded",
+        "seasoning-mixes--salts--marinades---tenderizers",
+        "branded",
+        "pacific-resources-international--inc"
+      ],
+      "dietary_flags": [],
+      "usda_data_type": "Branded",
+      "usda_sync_date": "2025-06-24T19:03:09.546Z",
+      "sodium_mg_per_100g": 18000
+    },
+    {
+      "name": "TURKEY RING BOLOGNA",
+      "fdc_id": 1859935,
+      "category": "Pepperoni, Salami & Cold Cuts",
+      "searchable_text": "turkey ring bologna pepperoni, salami & cold cuts john f martin & sons inc   branded pepperoni--salami---cold-cuts branded john-f-martin---sons-inc",
+      "tags": [
+        "branded",
+        "pepperoni--salami---cold-cuts",
+        "branded",
+        "john-f-martin---sons-inc"
+      ],
+      "dietary_flags": [],
+      "usda_data_type": "Branded",
+      "usda_sync_date": "2025-06-24T19:03:09.546Z",
+      "protein_g_per_100g": 16.1,
+      "fat_g_per_100g": 10.7,
+      "carbs_g_per_100g": 5.36,
+      "sugar_g_per_100g": 3.57,
+      "calcium_mg_per_100g": 36,
+      "iron_mg_per_100g": 0.64,
+      "sodium_mg_per_100g": 1070
+    },
+    {
+      "name": "MILD ITALIAN SAUSAGE",
+      "fdc_id": 1859936,
+      "category": "Sausages, Hotdogs & Brats",
+      "searchable_text": "mild italian sausage sausages, hotdogs & brats premio foods, inc.   branded sausages--hotdogs---brats branded premio-foods--inc-",
+      "tags": [
+        "branded",
+        "sausages--hotdogs---brats",
+        "branded",
+        "premio-foods--inc-"
+      ],
+      "dietary_flags": [],
+      "usda_data_type": "Branded",
+      "usda_sync_date": "2025-06-24T19:03:09.546Z",
+      "protein_g_per_100g": 21.4,
+      "fat_g_per_100g": 24.3,
+      "carbs_g_per_100g": 4.29,
+      "sugar_g_per_100g": 1.43,
+      "calcium_mg_per_100g": 29,
+      "iron_mg_per_100g": 1.03,
+      "sodium_mg_per_100g": 871
+    },
+    {
+      "name": "CULTURED BUTTERMILK BLEND, BUTTER, MILK",
+      "fdc_id": 1859937,
+      "category": "Milk Additives",
+      "searchable_text": "cultured buttermilk blend, butter, milk milk additives saco foods, inc.   branded milk-additives branded saco-foods--inc-",
+      "tags": [
+        "branded",
+        "milk-additives",
+        "branded",
+        "saco-foods--inc-"
       ],
       "dietary_flags": [
         "contains-dairy"
       ],
       "usda_data_type": "Branded",
-      "usda_sync_date": "2025-06-24T17:29:26.871Z",
-      "protein_g_per_100g": 6,
-      "fat_g_per_100g": 1.33,
-      "carbs_g_per_100g": 13.3,
-      "sugar_g_per_100g": 11.3,
-      "calcium_mg_per_100g": 167,
-      "sodium_mg_per_100g": 53
+      "usda_sync_date": "2025-06-24T19:03:09.546Z",
+      "protein_g_per_100g": 21.7,
+      "fat_g_per_100g": 4.35,
+      "carbs_g_per_100g": 56.5,
+      "sugar_g_per_100g": 52.2,
+      "calcium_mg_per_100g": 957,
+      "iron_mg_per_100g": 0.78,
+      "sodium_mg_per_100g": 722,
+      "vitamin_c_mg_per_100g": 2.6
     },
     {
-      "name": "Munchies Cheese Fix Snack Mix 8 Ounce Plastic Bag",
-      "fdc_id": 1457377,
-      "category": "Snacks",
-      "searchable_text": "munchies cheese fix snack mix 8 ounce plastic bag snacks pepsico inc.   branded snacks branded pepsico-inc-",
+      "name": "FETTUCCINE NOODLES, RED CHILE",
+      "fdc_id": 1859938,
+      "category": "Pasta by Shape & Type",
+      "searchable_text": "fettuccine noodles, red chile pasta by shape & type al dente inc.   branded pasta-by-shape---type branded al-dente-inc-",
       "tags": [
         "branded",
-        "snacks",
+        "pasta-by-shape---type",
         "branded",
-        "pepsico-inc-"
+        "al-dente-inc-"
       ],
       "dietary_flags": [
-        "contains-dairy",
+        "contains-gluten",
+        "contains-eggs"
+      ],
+      "usda_data_type": "Branded",
+      "usda_sync_date": "2025-06-24T19:03:09.546Z",
+      "protein_g_per_100g": 14.3,
+      "fat_g_per_100g": 1.79,
+      "carbs_g_per_100g": 75,
+      "sugar_g_per_100g": 1.79,
+      "fiber_g_per_100g": 3.6,
+      "calcium_mg_per_100g": 36,
+      "iron_mg_per_100g": 3.21,
+      "sodium_mg_per_100g": 27
+    },
+    {
+      "name": "SQUID INK FETTUCCINE NOODLES",
+      "fdc_id": 1859939,
+      "category": "Pasta by Shape & Type",
+      "searchable_text": "squid ink fettuccine noodles pasta by shape & type al dente inc.   branded pasta-by-shape---type branded al-dente-inc-",
+      "tags": [
+        "branded",
+        "pasta-by-shape---type",
+        "branded",
+        "al-dente-inc-"
+      ],
+      "dietary_flags": [
+        "contains-gluten",
+        "contains-eggs"
+      ],
+      "usda_data_type": "Branded",
+      "usda_sync_date": "2025-06-24T19:03:09.546Z",
+      "protein_g_per_100g": 14.3,
+      "fat_g_per_100g": 1.79,
+      "carbs_g_per_100g": 75,
+      "sugar_g_per_100g": 1.79,
+      "fiber_g_per_100g": 3.6,
+      "calcium_mg_per_100g": 36,
+      "iron_mg_per_100g": 3.21,
+      "sodium_mg_per_100g": 27
+    },
+    {
+      "name": "FUSILLI CORTI BUCATI, FUSILLI CORTI BUCATI",
+      "fdc_id": 1859941,
+      "category": "Pasta by Shape & Type",
+      "searchable_text": "fusilli corti bucati, fusilli corti bucati pasta by shape & type f.lli de cecco di filippo fara   branded pasta-by-shape---type branded f-lli-de-cecco-di-filippo-fara",
+      "tags": [
+        "branded",
+        "pasta-by-shape---type",
+        "branded",
+        "f-lli-de-cecco-di-filippo-fara"
+      ],
+      "dietary_flags": [
         "contains-gluten"
       ],
       "usda_data_type": "Branded",
-      "usda_sync_date": "2025-06-24T17:29:26.871Z",
-      "protein_g_per_100g": 7.14,
-      "fat_g_per_100g": 25,
-      "carbs_g_per_100g": 64.3,
-      "sugar_g_per_100g": 3.57,
+      "usda_sync_date": "2025-06-24T19:03:09.546Z",
+      "protein_g_per_100g": 12.5,
+      "fat_g_per_100g": 1.79,
+      "carbs_g_per_100g": 73.2,
+      "sugar_g_per_100g": 1.79,
       "fiber_g_per_100g": 3.6,
-      "iron_mg_per_100g": 1.29,
-      "sodium_mg_per_100g": 714
+      "iron_mg_per_100g": 3.21
     },
     {
-      "name": "SAUS,PTY,FC,SM,1OZ,10#,Z",
-      "fdc_id": 1457378,
-      "category": "Meat/Poultry/Other Animals Sausages  Prepared/Processed",
-      "searchable_text": "saus,pty,fc,sm,1oz,10#,z meat/poultry/other animals sausages  prepared/processed smithfield foods inc.   branded meat-poultry-other-animals-sausages--prepared-processed branded smithfield-foods-inc-",
+      "name": "CRUNCHY ITALIAN BISCUITS, AMARETTI",
+      "fdc_id": 1859942,
+      "category": "Cookies & Biscuits",
+      "searchable_text": "crunchy italian biscuits, amaretti cookies & biscuits great crescent international inc.   branded cookies---biscuits branded great-crescent-international-inc-",
       "tags": [
         "branded",
-        "meat-poultry-other-animals-sausages--prepared-processed",
+        "cookies---biscuits",
         "branded",
-        "smithfield-foods-inc-"
-      ],
-      "dietary_flags": [],
-      "usda_data_type": "Branded",
-      "usda_sync_date": "2025-06-24T17:29:26.871Z",
-      "protein_g_per_100g": 10.7,
-      "fat_g_per_100g": 42.9,
-      "iron_mg_per_100g": 1.29,
-      "sodium_mg_per_100g": 714
-    },
-    {
-      "name": "Tropicana Pure Premium Orange Tangerine 100% Juice 14 Fluid Ounce Paper Carton",
-      "fdc_id": 1457379,
-      "category": "Non Alcoholic Beverages  Ready to Drink",
-      "searchable_text": "tropicana pure premium orange tangerine 100% juice 14 fluid ounce paper carton non alcoholic beverages  ready to drink pepsico inc.   branded non-alcoholic-beverages--ready-to-drink branded pepsico-inc-",
-      "tags": [
-        "branded",
-        "non-alcoholic-beverages--ready-to-drink",
-        "branded",
-        "pepsico-inc-"
-      ],
-      "dietary_flags": [],
-      "usda_data_type": "Branded",
-      "usda_sync_date": "2025-06-24T17:29:26.871Z",
-      "protein_g_per_100g": 0.68,
-      "carbs_g_per_100g": 10.1,
-      "sugar_g_per_100g": 9.42,
-      "calcium_mg_per_100g": 10,
-      "iron_mg_per_100g": 0.09,
-      "sodium_mg_per_100g": 1,
-      "vitamin_c_mg_per_100g": 38.4
-    },
-    {
-      "name": "TOP BUTT SRLN STK CHCC6OZ",
-      "fdc_id": 1457380,
-      "category": "Meat/Poultry/Other Animals  Unprepared/Unprocessed",
-      "searchable_text": "top butt srln stk chcc6oz meat/poultry/other animals  unprepared/unprocessed beaver street fisheries inc.   branded meat-poultry-other-animals--unprepared-unprocessed branded beaver-street-fisheries-inc-",
-      "tags": [
-        "branded",
-        "meat-poultry-other-animals--unprepared-unprocessed",
-        "branded",
-        "beaver-street-fisheries-inc-"
-      ],
-      "dietary_flags": [],
-      "usda_data_type": "Branded",
-      "usda_sync_date": "2025-06-24T17:29:26.871Z",
-      "protein_g_per_100g": 22.3,
-      "fat_g_per_100g": 6.25,
-      "calcium_mg_per_100g": 15,
-      "iron_mg_per_100g": 1.88,
-      "sodium_mg_per_100g": 46
-    },
-    {
-      "name": "Tropicana Trop50 Orange Juice Some Pulp 59 Fluid Ounce Plastic Bottle",
-      "fdc_id": 1457381,
-      "category": "Non Alcoholic Beverages  Ready to Drink",
-      "searchable_text": "tropicana trop50 orange juice some pulp 59 fluid ounce plastic bottle non alcoholic beverages  ready to drink pepsico inc.   branded non-alcoholic-beverages--ready-to-drink branded pepsico-inc-",
-      "tags": [
-        "branded",
-        "non-alcoholic-beverages--ready-to-drink",
-        "branded",
-        "pepsico-inc-"
-      ],
-      "dietary_flags": [],
-      "usda_data_type": "Branded",
-      "usda_sync_date": "2025-06-24T17:29:26.871Z",
-      "protein_g_per_100g": 0.3,
-      "fat_g_per_100g": 0.04,
-      "carbs_g_per_100g": 4.7,
-      "sugar_g_per_100g": 4.31,
-      "calcium_mg_per_100g": 4,
-      "iron_mg_per_100g": 0.06,
-      "sodium_mg_per_100g": 1,
-      "vitamin_c_mg_per_100g": 55.1
-    },
-    {
-      "name": "5 OZ LOBSTER TAILS",
-      "fdc_id": 1457382,
-      "category": "Shellfish Unprepared/Unprocessed",
-      "searchable_text": "5 oz lobster tails shellfish unprepared/unprocessed beaver street fisheries inc.   branded shellfish-unprepared-unprocessed branded beaver-street-fisheries-inc-",
-      "tags": [
-        "branded",
-        "shellfish-unprepared-unprocessed",
-        "branded",
-        "beaver-street-fisheries-inc-"
-      ],
-      "dietary_flags": [],
-      "usda_data_type": "Branded",
-      "usda_sync_date": "2025-06-24T17:29:26.871Z",
-      "protein_g_per_100g": 20.5,
-      "fat_g_per_100g": 1.34,
-      "carbs_g_per_100g": 2.68,
-      "calcium_mg_per_100g": 49,
-      "iron_mg_per_100g": 1.22,
-      "sodium_mg_per_100g": 179,
-      "vitamin_c_mg_per_100g": 2
-    },
-    {
-      "name": "CADBURY GREEN & BLACK'S CHOCOLATE PIECES VARIETY VALENTINES DAY1X3.88 OZ",
-      "fdc_id": 1457383,
-      "category": "Confectionery Products",
-      "searchable_text": "cadbury green & black's chocolate pieces variety valentines day1x3.88 oz confectionery products mondelez usa   branded confectionery-products branded mondelez-usa",
-      "tags": [
-        "branded",
-        "confectionery-products",
-        "branded",
-        "mondelez-usa"
-      ],
-      "dietary_flags": [
-        "contains-dairy",
-        "contains-gluten",
-        "contains-soy"
-      ],
-      "usda_data_type": "Branded",
-      "usda_sync_date": "2025-06-24T17:29:26.871Z",
-      "protein_g_per_100g": 5,
-      "fat_g_per_100g": 47.5,
-      "carbs_g_per_100g": 42.5,
-      "sugar_g_per_100g": 37.5,
-      "fiber_g_per_100g": 2.5,
-      "calcium_mg_per_100g": 74,
-      "iron_mg_per_100g": 10.7,
-      "sodium_mg_per_100g": 225
-    },
-    {
-      "name": "Smithfield Single Sliced Smoked Bacon",
-      "fdc_id": 1457384,
-      "category": "Meat/Poultry/Other Animals  Prepared/Processed",
-      "searchable_text": "smithfield single sliced smoked bacon meat/poultry/other animals  prepared/processed smithfield foods inc.   branded meat-poultry-other-animals--prepared-processed branded smithfield-foods-inc-",
-      "tags": [
-        "branded",
-        "meat-poultry-other-animals--prepared-processed",
-        "branded",
-        "smithfield-foods-inc-"
-      ],
-      "dietary_flags": [],
-      "usda_data_type": "Branded",
-      "usda_sync_date": "2025-06-24T17:29:26.871Z"
-    },
-    {
-      "name": "BEEF OXTAILS CUT",
-      "fdc_id": 1457385,
-      "category": "Meat/Poultry/Other Animals  Unprepared/Unprocessed",
-      "searchable_text": "beef oxtails cut meat/poultry/other animals  unprepared/unprocessed beaver street fisheries inc.   branded meat-poultry-other-animals--unprepared-unprocessed branded beaver-street-fisheries-inc-",
-      "tags": [
-        "branded",
-        "meat-poultry-other-animals--unprepared-unprocessed",
-        "branded",
-        "beaver-street-fisheries-inc-"
-      ],
-      "dietary_flags": [],
-      "usda_data_type": "Branded",
-      "usda_sync_date": "2025-06-24T17:29:26.871Z",
-      "protein_g_per_100g": 18.8,
-      "fat_g_per_100g": 18.8,
-      "iron_mg_per_100g": 1.61,
-      "sodium_mg_per_100g": 58
-    },
-    {
-      "name": "1.87OZ LAY'S SALT AND VINEGAR",
-      "fdc_id": 1457386,
-      "category": "Snacks",
-      "searchable_text": "1.87oz lay's salt and vinegar snacks pepsico inc.   branded snacks branded pepsico-inc-",
-      "tags": [
-        "branded",
-        "snacks",
-        "branded",
-        "pepsico-inc-"
-      ],
-      "dietary_flags": [],
-      "usda_data_type": "Branded",
-      "usda_sync_date": "2025-06-24T17:29:26.871Z",
-      "protein_g_per_100g": 5.65,
-      "fat_g_per_100g": 35.8,
-      "carbs_g_per_100g": 52.7,
-      "sugar_g_per_100g": 1.88,
-      "fiber_g_per_100g": 3.8,
-      "iron_mg_per_100g": 2.03,
-      "sodium_mg_per_100g": 791,
-      "vitamin_c_mg_per_100g": 16.9
-    },
-    {
-      "name": "26/30 BTFLY BRD SHRIMP",
-      "fdc_id": 1457387,
-      "category": "Shellfish Unprepared/Unprocessed",
-      "searchable_text": "26/30 btfly brd shrimp shellfish unprepared/unprocessed beaver street fisheries inc.   branded shellfish-unprepared-unprocessed branded beaver-street-fisheries-inc-",
-      "tags": [
-        "branded",
-        "shellfish-unprepared-unprocessed",
-        "branded",
-        "beaver-street-fisheries-inc-"
-      ],
-      "dietary_flags": [
-        "contains-gluten",
-        "contains-soy"
-      ],
-      "usda_data_type": "Branded",
-      "usda_sync_date": "2025-06-24T17:29:26.871Z",
-      "protein_g_per_100g": 9.82,
-      "fat_g_per_100g": 7.14,
-      "carbs_g_per_100g": 19.6,
-      "fiber_g_per_100g": 0.9,
-      "calcium_mg_per_100g": 49,
-      "iron_mg_per_100g": 1.34,
-      "sodium_mg_per_100g": 571,
-      "vitamin_c_mg_per_100g": 1.8
-    },
-    {
-      "name": "8/12 E/Z PEEL SHRIMP",
-      "fdc_id": 1457388,
-      "category": "Shellfish Unprepared/Unprocessed",
-      "searchable_text": "8/12 e/z peel shrimp shellfish unprepared/unprocessed beaver street fisheries inc.   branded shellfish-unprepared-unprocessed branded beaver-street-fisheries-inc-",
-      "tags": [
-        "branded",
-        "shellfish-unprepared-unprocessed",
-        "branded",
-        "beaver-street-fisheries-inc-"
-      ],
-      "dietary_flags": [],
-      "usda_data_type": "Branded",
-      "usda_sync_date": "2025-06-24T17:29:26.871Z",
-      "protein_g_per_100g": 11.6,
-      "fat_g_per_100g": 0.89,
-      "calcium_mg_per_100g": 27,
-      "sodium_mg_per_100g": 598
-    },
-    {
-      "name": "Quaker Grits Quick 5-Minute 36.8 Ounce Paper Bag",
-      "fdc_id": 1457389,
-      "category": "Grains/Flour",
-      "searchable_text": "quaker grits quick 5-minute 36.8 ounce paper bag grains/flour pepsico inc.   branded grains-flour branded pepsico-inc-",
-      "tags": [
-        "branded",
-        "grains-flour",
-        "branded",
-        "pepsico-inc-"
-      ],
-      "dietary_flags": [],
-      "usda_data_type": "Branded",
-      "usda_sync_date": "2025-06-24T17:29:26.871Z",
-      "protein_g_per_100g": 8.11,
-      "fat_g_per_100g": 1.35,
-      "carbs_g_per_100g": 78.4,
-      "fiber_g_per_100g": 5.4,
-      "iron_mg_per_100g": 3.89
-    },
-    {
-      "name": "NABISCO NEWTONS COOKIES STRAWBERRY 1X10 OZ",
-      "fdc_id": 1457390,
-      "category": "Biscuits/Cookies",
-      "searchable_text": "nabisco newtons cookies strawberry 1x10 oz biscuits/cookies mondelez usa   branded biscuits-cookies branded mondelez-usa",
-      "tags": [
-        "branded",
-        "biscuits-cookies",
-        "branded",
-        "mondelez-usa"
-      ],
-      "dietary_flags": [
-        "contains-gluten",
-        "contains-soy"
-      ],
-      "usda_data_type": "Branded",
-      "usda_sync_date": "2025-06-24T17:29:26.871Z",
-      "protein_g_per_100g": 3.45,
-      "fat_g_per_100g": 5.17,
-      "carbs_g_per_100g": 72.4,
-      "sugar_g_per_100g": 41.4,
-      "fiber_g_per_100g": 3.4,
-      "calcium_mg_per_100g": 29,
-      "iron_mg_per_100g": 1.59,
-      "sodium_mg_per_100g": 328,
-      "vitamin_c_mg_per_100g": 3
-    },
-    {
-      "name": "Diet Lipton Green Tea with Citrus 16.9 Fluid Ounce PET Bottle",
-      "fdc_id": 1457391,
-      "category": "Coffee/Tea/Substitutes",
-      "searchable_text": "diet lipton green tea with citrus 16.9 fluid ounce pet bottle coffee/tea/substitutes pepsico inc.   branded coffee-tea-substitutes branded pepsico-inc-",
-      "tags": [
-        "branded",
-        "coffee-tea-substitutes",
-        "branded",
-        "pepsico-inc-"
-      ],
-      "dietary_flags": [],
-      "usda_data_type": "Branded",
-      "usda_sync_date": "2025-06-24T17:29:26.871Z",
-      "sodium_mg_per_100g": 34,
-      "vitamin_c_mg_per_100g": 24.9
-    },
-    {
-      "name": "X2 All Natural Energy gives you the energy to perform at your best while maintaining a healthy lifestyle every day. X2 gives you the same kick as other energy drinks with no artificial ingredients.",
-      "fdc_id": 1457392,
-      "category": "Non Alcoholic Beverages  Ready to Drink",
-      "searchable_text": "x2 all natural energy gives you the energy to perform at your best while maintaining a healthy lifestyle every day. x2 gives you the same kick as other energy drinks with no artificial ingredients. non alcoholic beverages  ready to drink advanced bio development inc   branded non-alcoholic-beverages--ready-to-drink branded advanced-bio-development-inc",
-      "tags": [
-        "branded",
-        "non-alcoholic-beverages--ready-to-drink",
-        "branded",
-        "advanced-bio-development-inc"
-      ],
-      "dietary_flags": [],
-      "usda_data_type": "Branded",
-      "usda_sync_date": "2025-06-24T17:29:26.871Z",
-      "carbs_g_per_100g": 2.78,
-      "sugar_g_per_100g": 2.78,
-      "sodium_mg_per_100g": 3
-    },
-    {
-      "name": "SOUR PATCH FRUITS SOFT CANDY FRUITS FAT FREE12X8.000 OZ",
-      "fdc_id": 1457393,
-      "category": "Confectionery Products",
-      "searchable_text": "sour patch fruits soft candy fruits fat free12x8.000 oz confectionery products mondelez international   branded confectionery-products branded mondelez-international",
-      "tags": [
-        "branded",
-        "confectionery-products",
-        "branded",
-        "mondelez-international"
-      ],
-      "dietary_flags": [],
-      "usda_data_type": "Branded",
-      "usda_sync_date": "2025-06-24T17:29:26.871Z",
-      "carbs_g_per_100g": 90,
-      "sugar_g_per_100g": 62.5,
-      "sodium_mg_per_100g": 62
-    },
-    {
-      "name": "Tostitos Creamy Spinach Dip 15 Ounce Glass Jar",
-      "fdc_id": 1457394,
-      "category": "Sauces/Spreads/Dips/Condiments",
-      "searchable_text": "tostitos creamy spinach dip 15 ounce glass jar sauces/spreads/dips/condiments pepsico inc.   branded sauces-spreads-dips-condiments branded pepsico-inc-",
-      "tags": [
-        "branded",
-        "sauces-spreads-dips-condiments",
-        "branded",
-        "pepsico-inc-"
-      ],
-      "dietary_flags": [
-        "contains-dairy"
-      ],
-      "usda_data_type": "Branded",
-      "usda_sync_date": "2025-06-24T17:29:26.871Z",
-      "protein_g_per_100g": 3.12,
-      "fat_g_per_100g": 12.5,
-      "carbs_g_per_100g": 6.25,
-      "sugar_g_per_100g": 3.12,
-      "fiber_g_per_100g": 3.1,
-      "calcium_mg_per_100g": 62,
-      "sodium_mg_per_100g": 625
-    },
-    {
-      "name": "OREO COOKIES APPLE PIE 1X10.7 OZ",
-      "fdc_id": 1457395,
-      "category": "Biscuits/Cookies",
-      "searchable_text": "oreo cookies apple pie 1x10.7 oz biscuits/cookies mondelez usa   branded biscuits-cookies branded mondelez-usa",
-      "tags": [
-        "branded",
-        "biscuits-cookies",
-        "branded",
-        "mondelez-usa"
-      ],
-      "dietary_flags": [
-        "contains-gluten",
-        "contains-soy"
-      ],
-      "usda_data_type": "Branded",
-      "usda_sync_date": "2025-06-24T17:29:26.871Z",
-      "protein_g_per_100g": 3.45,
-      "fat_g_per_100g": 24.1,
-      "carbs_g_per_100g": 72.4,
-      "sugar_g_per_100g": 41.4,
-      "calcium_mg_per_100g": 7,
-      "iron_mg_per_100g": 1.66,
-      "sodium_mg_per_100g": 241,
-      "vitamin_c_mg_per_100g": 0.1
-    },
-    {
-      "name": "RSTD TOMATO & HERB SALMON",
-      "fdc_id": 1457396,
-      "category": "Fish  Unprepared/Unprocessed",
-      "searchable_text": "rstd tomato & herb salmon fish  unprepared/unprocessed beaver street fisheries inc.   branded fish--unprepared-unprocessed branded beaver-street-fisheries-inc-",
-      "tags": [
-        "branded",
-        "fish--unprepared-unprocessed",
-        "branded",
-        "beaver-street-fisheries-inc-"
-      ],
-      "dietary_flags": [],
-      "usda_data_type": "Branded",
-      "usda_sync_date": "2025-06-24T17:29:26.871Z",
-      "protein_g_per_100g": 17,
-      "fat_g_per_100g": 12.8,
-      "carbs_g_per_100g": 2.13,
-      "sugar_g_per_100g": 1.42,
-      "calcium_mg_per_100g": 11,
-      "iron_mg_per_100g": 0.71,
-      "sodium_mg_per_100g": 213,
-      "vitamin_c_mg_per_100g": 6.4
-    },
-    {
-      "name": "NABISCO OREO THINS COOKIES GOLDEN OREO 1X10.1 OZ",
-      "fdc_id": 1457397,
-      "category": "Biscuits/Cookies",
-      "searchable_text": "nabisco oreo thins cookies golden oreo 1x10.1 oz biscuits/cookies mondelez usa   branded biscuits-cookies branded mondelez-usa",
-      "tags": [
-        "branded",
-        "biscuits-cookies",
-        "branded",
-        "mondelez-usa"
-      ],
-      "dietary_flags": [
-        "contains-gluten",
-        "contains-soy"
-      ],
-      "usda_data_type": "Branded",
-      "usda_sync_date": "2025-06-24T17:29:26.871Z",
-      "protein_g_per_100g": 3.45,
-      "fat_g_per_100g": 20.7,
-      "carbs_g_per_100g": 72.4,
-      "sugar_g_per_100g": 37.9,
-      "calcium_mg_per_100g": 7,
-      "iron_mg_per_100g": 2.1,
-      "sodium_mg_per_100g": 328
-    },
-    {
-      "name": "Gatorade Instant Powder Mix Orange 18.3 OZ",
-      "fdc_id": 1457398,
-      "category": "Non Alcoholic Beverages  Not Ready to Drink",
-      "searchable_text": "gatorade instant powder mix orange 18.3 oz non alcoholic beverages  not ready to drink pepsico inc.   branded non-alcoholic-beverages--not-ready-to-drink branded pepsico-inc-",
-      "tags": [
-        "branded",
-        "non-alcoholic-beverages--not-ready-to-drink",
-        "branded",
-        "pepsico-inc-"
-      ],
-      "dietary_flags": [],
-      "usda_data_type": "Branded",
-      "usda_sync_date": "2025-06-24T17:29:26.871Z",
-      "carbs_g_per_100g": 6.09,
-      "sugar_g_per_100g": 5.81,
-      "calcium_mg_per_100g": 3,
-      "iron_mg_per_100g": 0.01,
-      "sodium_mg_per_100g": 42
-    },
-    {
-      "name": "DELICJE SZAMPANSKIE COOKIES CHERRY 1X147.000 GR",
-      "fdc_id": 1457399,
-      "category": "Biscuits/Cookies",
-      "searchable_text": "delicje szampanskie cookies cherry 1x147.000 gr biscuits/cookies mondelez international   branded biscuits-cookies branded mondelez-international",
-      "tags": [
-        "branded",
-        "biscuits-cookies",
-        "branded",
-        "mondelez-international"
+        "great-crescent-international-inc-"
       ],
       "dietary_flags": [
         "contains-dairy",
@@ -11083,189 +10782,510 @@
         "contains-eggs"
       ],
       "usda_data_type": "Branded",
-      "usda_sync_date": "2025-06-24T17:29:26.871Z",
-      "protein_g_per_100g": 3.45,
-      "fat_g_per_100g": 6.9,
-      "carbs_g_per_100g": 72.4,
-      "sugar_g_per_100g": 48.3,
-      "sodium_mg_per_100g": 103
-    },
-    {
-      "name": "DENTYNE ICE GUM SPEARMINT SUGAR FREE1X16 PC",
-      "fdc_id": 1457400,
-      "category": "Confectionery Products",
-      "searchable_text": "dentyne ice gum spearmint sugar free1x16 pc confectionery products mondelez usa   branded confectionery-products branded mondelez-usa",
-      "tags": [
-        "branded",
-        "confectionery-products",
-        "branded",
-        "mondelez-usa"
-      ],
-      "dietary_flags": [
-        "contains-soy"
-      ],
-      "usda_data_type": "Branded",
-      "usda_sync_date": "2025-06-24T17:29:26.871Z",
-      "carbs_g_per_100g": 66.7
-    },
-    {
-      "name": "NABISCO HONEY MAID GRAHAM CRACKERS PEANUT BUTTER 1X0.880 OZ",
-      "fdc_id": 1457401,
-      "category": "Biscuits/Cookies",
-      "searchable_text": "nabisco honey maid graham crackers peanut butter 1x0.880 oz biscuits/cookies mondelez usa   branded biscuits-cookies branded mondelez-usa",
-      "tags": [
-        "branded",
-        "biscuits-cookies",
-        "branded",
-        "mondelez-usa"
-      ],
-      "dietary_flags": [
-        "contains-gluten",
-        "contains-soy"
-      ],
-      "usda_data_type": "Branded",
-      "usda_sync_date": "2025-06-24T17:29:26.871Z",
-      "protein_g_per_100g": 12,
-      "fat_g_per_100g": 20.8,
-      "carbs_g_per_100g": 60,
+      "usda_sync_date": "2025-06-24T19:03:09.546Z",
+      "protein_g_per_100g": 5,
+      "fat_g_per_100g": 22.5,
+      "carbs_g_per_100g": 70,
       "sugar_g_per_100g": 20,
-      "fiber_g_per_100g": 8,
-      "calcium_mg_per_100g": 400,
-      "iron_mg_per_100g": 2.88,
-      "sodium_mg_per_100g": 540
+      "iron_mg_per_100g": 3.6,
+      "sodium_mg_per_100g": 5
     },
     {
-      "name": "16/20 HEADLESS S/O SHRIMP",
-      "fdc_id": 1457402,
-      "category": "Shellfish Unprepared/Unprocessed",
-      "searchable_text": "16/20 headless s/o shrimp shellfish unprepared/unprocessed beaver street fisheries inc.   branded shellfish-unprepared-unprocessed branded beaver-street-fisheries-inc-",
+      "name": "RESTAURANT STYLE TORTILLA CHIPS",
+      "fdc_id": 1859944,
+      "category": "Chips, Pretzels & Snacks",
+      "searchable_text": "restaurant style tortilla chips chips, pretzels & snacks utz quality foods, llc   branded chips--pretzels---snacks branded utz-quality-foods--llc",
       "tags": [
         "branded",
-        "shellfish-unprepared-unprocessed",
+        "chips--pretzels---snacks",
         "branded",
-        "beaver-street-fisheries-inc-"
+        "utz-quality-foods--llc"
       ],
       "dietary_flags": [],
       "usda_data_type": "Branded",
-      "usda_sync_date": "2025-06-24T17:29:26.871Z",
-      "protein_g_per_100g": 17.9,
-      "fat_g_per_100g": 1.79,
-      "calcium_mg_per_100g": 54,
-      "iron_mg_per_100g": 2.68,
-      "sodium_mg_per_100g": 143,
-      "vitamin_c_mg_per_100g": 3.6
-    },
-    {
-      "name": "16/20 OZ LOBSTER TAILS",
-      "fdc_id": 1457403,
-      "category": "Shellfish Unprepared/Unprocessed",
-      "searchable_text": "16/20 oz lobster tails shellfish unprepared/unprocessed beaver street fisheries inc.   branded shellfish-unprepared-unprocessed branded beaver-street-fisheries-inc-",
-      "tags": [
-        "branded",
-        "shellfish-unprepared-unprocessed",
-        "branded",
-        "beaver-street-fisheries-inc-"
-      ],
-      "dietary_flags": [],
-      "usda_data_type": "Branded",
-      "usda_sync_date": "2025-06-24T17:29:26.871Z",
-      "protein_g_per_100g": 17,
-      "fat_g_per_100g": 0.89,
-      "calcium_mg_per_100g": 84,
-      "iron_mg_per_100g": 0.27,
-      "sodium_mg_per_100g": 429
-    },
-    {
-      "name": "Tostitos Original Restaurant Style Tortilla Chips 13 Ounce Plastic Bag",
-      "fdc_id": 1457404,
-      "category": "Snacks",
-      "searchable_text": "tostitos original restaurant style tortilla chips 13 ounce plastic bag snacks pepsico inc.   branded snacks branded pepsico-inc-",
-      "tags": [
-        "branded",
-        "snacks",
-        "branded",
-        "pepsico-inc-"
-      ],
-      "dietary_flags": [],
-      "usda_data_type": "Branded",
-      "usda_sync_date": "2025-06-24T17:29:26.871Z",
+      "usda_sync_date": "2025-06-24T19:03:09.546Z",
       "protein_g_per_100g": 7.14,
       "fat_g_per_100g": 25,
-      "carbs_g_per_100g": 67.9,
-      "fiber_g_per_100g": 3.6,
-      "calcium_mg_per_100g": 107,
-      "iron_mg_per_100g": 1.07,
-      "sodium_mg_per_100g": 411
+      "carbs_g_per_100g": 64.3,
+      "fiber_g_per_100g": 7.1,
+      "iron_mg_per_100g": 2.57,
+      "sodium_mg_per_100g": 357
     },
     {
-      "name": "Gatorade Thirst Quencher Fruit Punch (4 - 20 Fluid Ounce) 80 Fluid Ounce 4 Pack Plastic Bottles",
-      "fdc_id": 1457405,
-      "category": "Non Alcoholic Beverages  Ready to Drink",
-      "searchable_text": "gatorade thirst quencher fruit punch (4 - 20 fluid ounce) 80 fluid ounce 4 pack plastic bottles non alcoholic beverages  ready to drink pepsico inc.   branded non-alcoholic-beverages--ready-to-drink branded pepsico-inc-",
+      "name": "TOMATO PASTA SAUCE",
+      "fdc_id": 1859945,
+      "category": "Prepared Pasta & Pizza Sauces",
+      "searchable_text": "tomato pasta sauce prepared pasta & pizza sauces quisling media   branded prepared-pasta---pizza-sauces branded quisling-media",
       "tags": [
         "branded",
-        "non-alcoholic-beverages--ready-to-drink",
+        "prepared-pasta---pizza-sauces",
         "branded",
-        "pepsico-inc-"
+        "quisling-media"
+      ],
+      "dietary_flags": [
+        "contains-dairy"
+      ],
+      "usda_data_type": "Branded",
+      "usda_sync_date": "2025-06-24T19:03:09.546Z",
+      "protein_g_per_100g": 1.63,
+      "fat_g_per_100g": 2.85,
+      "carbs_g_per_100g": 7.32,
+      "sugar_g_per_100g": 4.88,
+      "fiber_g_per_100g": 1.6,
+      "calcium_mg_per_100g": 203,
+      "iron_mg_per_100g": 0.88,
+      "sodium_mg_per_100g": 179,
+      "vitamin_c_mg_per_100g": 2
+    },
+    {
+      "name": "MARINARA SAUCE",
+      "fdc_id": 1859946,
+      "category": "Prepared Pasta & Pizza Sauces",
+      "searchable_text": "marinara sauce prepared pasta & pizza sauces quisling media   branded prepared-pasta---pizza-sauces branded quisling-media",
+      "tags": [
+        "branded",
+        "prepared-pasta---pizza-sauces",
+        "branded",
+        "quisling-media"
+      ],
+      "dietary_flags": [
+        "contains-soy"
+      ],
+      "usda_data_type": "Branded",
+      "usda_sync_date": "2025-06-24T19:03:09.546Z",
+      "protein_g_per_100g": 2.44,
+      "fat_g_per_100g": 2.44,
+      "carbs_g_per_100g": 10.6,
+      "sugar_g_per_100g": 0.81,
+      "fiber_g_per_100g": 2.4,
+      "calcium_mg_per_100g": 407,
+      "iron_mg_per_100g": 1.46,
+      "sodium_mg_per_100g": 211,
+      "vitamin_c_mg_per_100g": 2.9
+    },
+    {
+      "name": "ESSENTIALLY YOU VANILLA ALMOND CEREAL, VANILLA ALMOND",
+      "fdc_id": 1859948,
+      "category": "Cereal",
+      "searchable_text": "essentially you vanilla almond cereal, vanilla almond cereal food town stores inc.   branded cereal branded food-town-stores-inc-",
+      "tags": [
+        "branded",
+        "cereal",
+        "branded",
+        "food-town-stores-inc-"
+      ],
+      "dietary_flags": [
+        "contains-gluten"
+      ],
+      "usda_data_type": "Branded",
+      "usda_sync_date": "2025-06-24T19:03:09.546Z",
+      "protein_g_per_100g": 6.67,
+      "fat_g_per_100g": 5,
+      "carbs_g_per_100g": 83.3,
+      "sugar_g_per_100g": 30,
+      "fiber_g_per_100g": 10,
+      "iron_mg_per_100g": 27,
+      "sodium_mg_per_100g": 500,
+      "vitamin_c_mg_per_100g": 70
+    },
+    {
+      "name": "WILDBERRY SORBATE AND ICE CREAM BARS",
+      "fdc_id": 1859949,
+      "category": "Ice Cream & Frozen Yogurt",
+      "searchable_text": "wildberry sorbate and ice cream bars ice cream & frozen yogurt fieldbrook foods   branded ice-cream---frozen-yogurt branded fieldbrook-foods",
+      "tags": [
+        "branded",
+        "ice-cream---frozen-yogurt",
+        "branded",
+        "fieldbrook-foods"
+      ],
+      "dietary_flags": [
+        "contains-dairy"
+      ],
+      "usda_data_type": "Branded",
+      "usda_sync_date": "2025-06-24T19:03:09.546Z",
+      "protein_g_per_100g": 1.96,
+      "fat_g_per_100g": 0.49,
+      "carbs_g_per_100g": 30.4,
+      "sugar_g_per_100g": 21.6,
+      "fiber_g_per_100g": 2.9,
+      "calcium_mg_per_100g": 59,
+      "sodium_mg_per_100g": 49,
+      "vitamin_c_mg_per_100g": 2.4
+    },
+    {
+      "name": "PREMIUM SUNDAE CONES",
+      "fdc_id": 1859950,
+      "category": "Ice Cream & Frozen Yogurt",
+      "searchable_text": "premium sundae cones ice cream & frozen yogurt fieldbrook foods   branded ice-cream---frozen-yogurt branded fieldbrook-foods",
+      "tags": [
+        "branded",
+        "ice-cream---frozen-yogurt",
+        "branded",
+        "fieldbrook-foods"
+      ],
+      "dietary_flags": [
+        "contains-dairy",
+        "contains-gluten",
+        "contains-soy"
+      ],
+      "usda_data_type": "Branded",
+      "usda_sync_date": "2025-06-24T19:03:09.546Z",
+      "protein_g_per_100g": 5,
+      "fat_g_per_100g": 18.8,
+      "carbs_g_per_100g": 35,
+      "sugar_g_per_100g": 23.8,
+      "fiber_g_per_100g": 1.2,
+      "calcium_mg_per_100g": 75,
+      "sodium_mg_per_100g": 100
+    },
+    {
+      "name": "COOKIES AND CREAM RICH & CREAMY FROZEN DAIRY DESSERT, COOKIES AND CREAM",
+      "fdc_id": 1859951,
+      "category": "Ice Cream & Frozen Yogurt",
+      "searchable_text": "cookies and cream rich & creamy frozen dairy dessert, cookies and cream ice cream & frozen yogurt dollar tree stores, inc.   branded ice-cream---frozen-yogurt branded dollar-tree-stores--inc-",
+      "tags": [
+        "branded",
+        "ice-cream---frozen-yogurt",
+        "branded",
+        "dollar-tree-stores--inc-"
+      ],
+      "dietary_flags": [
+        "contains-dairy",
+        "contains-gluten",
+        "contains-soy"
+      ],
+      "usda_data_type": "Branded",
+      "usda_sync_date": "2025-06-24T19:03:09.546Z",
+      "protein_g_per_100g": 1.72,
+      "fat_g_per_100g": 4.31,
+      "carbs_g_per_100g": 29.3,
+      "sugar_g_per_100g": 19,
+      "calcium_mg_per_100g": 103,
+      "iron_mg_per_100g": 0.62,
+      "sodium_mg_per_100g": 138
+    },
+    {
+      "name": "PREMIUM ORIGINAL CLASSICS ECLAIRS BARS, STRAWBERRY SHORTCAKE, VANILLA",
+      "fdc_id": 1859952,
+      "category": "Ice Cream & Frozen Yogurt",
+      "searchable_text": "premium original classics eclairs bars, strawberry shortcake, vanilla ice cream & frozen yogurt fieldbrook foods   branded ice-cream---frozen-yogurt branded fieldbrook-foods",
+      "tags": [
+        "branded",
+        "ice-cream---frozen-yogurt",
+        "branded",
+        "fieldbrook-foods"
+      ],
+      "dietary_flags": [
+        "contains-dairy",
+        "contains-gluten",
+        "contains-soy"
+      ],
+      "usda_data_type": "Branded",
+      "usda_sync_date": "2025-06-24T19:03:09.546Z",
+      "protein_g_per_100g": 2.74,
+      "fat_g_per_100g": 12.3,
+      "carbs_g_per_100g": 28.8,
+      "sugar_g_per_100g": 23.3,
+      "calcium_mg_per_100g": 55,
+      "sodium_mg_per_100g": 82
+    },
+    {
+      "name": "SQUEEZABLE APPLE FRUIT SNACK, APPLE",
+      "fdc_id": 1859953,
+      "category": "Wholesome Snacks",
+      "searchable_text": "squeezable apple fruit snack, apple wholesome snacks whiskey high   branded wholesome-snacks branded whiskey-high",
+      "tags": [
+        "branded",
+        "wholesome-snacks",
+        "branded",
+        "whiskey-high"
       ],
       "dietary_flags": [],
       "usda_data_type": "Branded",
-      "usda_sync_date": "2025-06-24T17:29:26.871Z",
-      "carbs_g_per_100g": 5.95,
-      "sugar_g_per_100g": 5.68,
-      "sodium_mg_per_100g": 44
+      "usda_sync_date": "2025-06-24T19:03:09.546Z",
+      "carbs_g_per_100g": 18.7,
+      "sugar_g_per_100g": 17.3,
+      "fiber_g_per_100g": 1.3,
+      "iron_mg_per_100g": 0.48,
+      "vitamin_c_mg_per_100g": 40
     },
     {
-      "name": "NABISCO NEWTONS COOKIES BLUEBERRY 1X10.000 OZ",
-      "fdc_id": 1457406,
-      "category": "Biscuits/Cookies",
-      "searchable_text": "nabisco newtons cookies blueberry 1x10.000 oz biscuits/cookies mondelez international   branded biscuits-cookies branded mondelez-international",
+      "name": "WHOLE PEPPERONCINI",
+      "fdc_id": 1859954,
+      "category": "Pickles, Olives, Peppers & Relishes",
+      "searchable_text": "whole pepperoncini pickles, olives, peppers & relishes golden beach, inc.   branded pickles--olives--peppers---relishes branded golden-beach--inc-",
       "tags": [
         "branded",
-        "biscuits-cookies",
+        "pickles--olives--peppers---relishes",
         "branded",
-        "mondelez-international"
+        "golden-beach--inc-"
+      ],
+      "dietary_flags": [],
+      "usda_data_type": "Branded",
+      "usda_sync_date": "2025-06-24T19:03:09.546Z",
+      "carbs_g_per_100g": 6.67,
+      "sodium_mg_per_100g": 2330
+    },
+    {
+      "name": "STUFFED GREEN OLIVES",
+      "fdc_id": 1859955,
+      "category": "Pickles, Olives, Peppers & Relishes",
+      "searchable_text": "stuffed green olives pickles, olives, peppers & relishes things that work l.l.c.   branded pickles--olives--peppers---relishes branded things-that-work-l-l-c-",
+      "tags": [
+        "branded",
+        "pickles--olives--peppers---relishes",
+        "branded",
+        "things-that-work-l-l-c-"
+      ],
+      "dietary_flags": [],
+      "usda_data_type": "Branded",
+      "usda_sync_date": "2025-06-24T19:03:09.546Z",
+      "fat_g_per_100g": 10,
+      "carbs_g_per_100g": 13.3,
+      "sodium_mg_per_100g": 867
+    },
+    {
+      "name": "PITTED GREEN OLIVES",
+      "fdc_id": 1859956,
+      "category": "Pickles, Olives, Peppers & Relishes",
+      "searchable_text": "pitted green olives pickles, olives, peppers & relishes things that work l.l.c.   branded pickles--olives--peppers---relishes branded things-that-work-l-l-c-",
+      "tags": [
+        "branded",
+        "pickles--olives--peppers---relishes",
+        "branded",
+        "things-that-work-l-l-c-"
+      ],
+      "dietary_flags": [],
+      "usda_data_type": "Branded",
+      "usda_sync_date": "2025-06-24T19:03:09.546Z",
+      "fat_g_per_100g": 10,
+      "carbs_g_per_100g": 13.3,
+      "sodium_mg_per_100g": 867
+    },
+    {
+      "name": "OMEGA CRANBERRY BLEND",
+      "fdc_id": 1859957,
+      "category": "Popcorn, Peanuts, Seeds & Related Snacks",
+      "searchable_text": "omega cranberry blend popcorn, peanuts, seeds & related snacks bay valley foods, llc   branded popcorn--peanuts--seeds---related-snacks branded bay-valley-foods--llc",
+      "tags": [
+        "branded",
+        "popcorn--peanuts--seeds---related-snacks",
+        "branded",
+        "bay-valley-foods--llc"
       ],
       "dietary_flags": [
-        "contains-gluten",
         "contains-soy"
       ],
       "usda_data_type": "Branded",
-      "usda_sync_date": "2025-06-24T17:29:26.871Z",
-      "protein_g_per_100g": 3.45,
-      "fat_g_per_100g": 5.17,
-      "carbs_g_per_100g": 75.9,
-      "sugar_g_per_100g": 44.8,
-      "fiber_g_per_100g": 10.3,
-      "calcium_mg_per_100g": 12,
-      "iron_mg_per_100g": 1.03,
-      "sodium_mg_per_100g": 328
+      "usda_sync_date": "2025-06-24T19:03:09.546Z",
+      "protein_g_per_100g": 13.3,
+      "fat_g_per_100g": 33.3,
+      "carbs_g_per_100g": 43.3,
+      "sugar_g_per_100g": 30,
+      "fiber_g_per_100g": 6.7,
+      "calcium_mg_per_100g": 67,
+      "iron_mg_per_100g": 2.4,
+      "sodium_mg_per_100g": 183
     },
     {
-      "name": "NABISCO OREO SANDWICH COOKIES CHOCOLATE SPRING1X15.35 OZ",
-      "fdc_id": 1457407,
-      "category": "Biscuits/Cookies",
-      "searchable_text": "nabisco oreo sandwich cookies chocolate spring1x15.35 oz biscuits/cookies mondelez usa   branded biscuits-cookies branded mondelez-usa",
+      "name": "CREAM SPREAD, HAZELNUT",
+      "fdc_id": 1859961,
+      "category": "Nut & Seed Butters",
+      "searchable_text": "cream spread, hazelnut nut & seed butters allied international corp. of va   branded nut---seed-butters branded allied-international-corp--of-va",
       "tags": [
         "branded",
-        "biscuits-cookies",
+        "nut---seed-butters",
         "branded",
-        "mondelez-usa"
+        "allied-international-corp--of-va"
       ],
       "dietary_flags": [
-        "contains-gluten",
+        "contains-dairy",
         "contains-soy"
       ],
       "usda_data_type": "Branded",
-      "usda_sync_date": "2025-06-24T17:29:26.871Z",
-      "protein_g_per_100g": 3.45,
-      "fat_g_per_100g": 24.1,
-      "carbs_g_per_100g": 72.4,
-      "sugar_g_per_100g": 44.8,
-      "calcium_mg_per_100g": 34,
-      "iron_mg_per_100g": 3.97,
-      "sodium_mg_per_100g": 310
+      "usda_sync_date": "2025-06-24T19:03:09.546Z",
+      "fat_g_per_100g": 30,
+      "carbs_g_per_100g": 70,
+      "sugar_g_per_100g": 60,
+      "sodium_mg_per_100g": 100
+    },
+    {
+      "name": "KOOKAMUNGA CRUNCH , KETTLE CORN, APPLE CINNAMON, APPLE CINNAMON ",
+      "fdc_id": 1859962,
+      "category": "Popcorn, Peanuts, Seeds & Related Snacks",
+      "searchable_text": "kookamunga crunch , kettle corn, apple cinnamon, apple cinnamon  popcorn, peanuts, seeds & related snacks golden island int'l inc.   branded popcorn--peanuts--seeds---related-snacks branded golden-island-int-l-inc-",
+      "tags": [
+        "branded",
+        "popcorn--peanuts--seeds---related-snacks",
+        "branded",
+        "golden-island-int-l-inc-"
+      ],
+      "dietary_flags": [
+        "contains-soy"
+      ],
+      "usda_data_type": "Branded",
+      "usda_sync_date": "2025-06-24T19:03:09.546Z",
+      "protein_g_per_100g": 3.57,
+      "fat_g_per_100g": 8.93,
+      "carbs_g_per_100g": 71.4,
+      "sugar_g_per_100g": 42.9,
+      "fiber_g_per_100g": 3.6,
+      "sodium_mg_per_100g": 232,
+      "vitamin_c_mg_per_100g": 53.6
+    },
+    {
+      "name": "APPLE & CINNAMON TOASTED OATS, APPLE & CINNAMON",
+      "fdc_id": 1859963,
+      "category": "Cereal",
+      "searchable_text": "apple & cinnamon toasted oats, apple & cinnamon cereal nash finch company   branded cereal branded nash-finch-company",
+      "tags": [
+        "branded",
+        "cereal",
+        "branded",
+        "nash-finch-company"
+      ],
+      "dietary_flags": [
+        "contains-gluten"
+      ],
+      "usda_data_type": "Branded",
+      "usda_sync_date": "2025-06-24T19:03:09.546Z",
+      "protein_g_per_100g": 6.67,
+      "fat_g_per_100g": 5,
+      "carbs_g_per_100g": 80,
+      "sugar_g_per_100g": 36.7,
+      "fiber_g_per_100g": 6.7,
+      "calcium_mg_per_100g": 333,
+      "iron_mg_per_100g": 15,
+      "sodium_mg_per_100g": 400,
+      "vitamin_c_mg_per_100g": 20
+    },
+    {
+      "name": "FLAVORED SNACKS, ASSORTED FRUIT",
+      "fdc_id": 1859964,
+      "category": "Candy",
+      "searchable_text": "flavored snacks, assorted fruit candy mount franklin foods llc   branded candy branded mount-franklin-foods-llc",
+      "tags": [
+        "branded",
+        "candy",
+        "branded",
+        "mount-franklin-foods-llc"
+      ],
+      "dietary_flags": [],
+      "usda_data_type": "Branded",
+      "usda_sync_date": "2025-06-24T19:03:09.546Z",
+      "carbs_g_per_100g": 83.7,
+      "sugar_g_per_100g": 61.7,
+      "sodium_mg_per_100g": 88,
+      "vitamin_c_mg_per_100g": 264
+    },
+    {
+      "name": "CREAMY PEANUT BUTTER, CREAMY",
+      "fdc_id": 1859965,
+      "category": "Nut & Seed Butters",
+      "searchable_text": "creamy peanut butter, creamy nut & seed butters hormel foods corporation    branded nut---seed-butters branded hormel-foods-corporation-",
+      "tags": [
+        "branded",
+        "nut---seed-butters",
+        "branded",
+        "hormel-foods-corporation-"
+      ],
+      "dietary_flags": [
+        "contains-soy"
+      ],
+      "usda_data_type": "Branded",
+      "usda_sync_date": "2025-06-24T19:03:09.546Z",
+      "protein_g_per_100g": 21.9,
+      "fat_g_per_100g": 50,
+      "carbs_g_per_100g": 21.9,
+      "sugar_g_per_100g": 9.38,
+      "fiber_g_per_100g": 6.2,
+      "iron_mg_per_100g": 2.25,
+      "sodium_mg_per_100g": 469
+    },
+    {
+      "name": "PEANUT BUTTER, CREAMY",
+      "fdc_id": 1859966,
+      "category": "Nut & Seed Butters",
+      "searchable_text": "peanut butter, creamy nut & seed butters key food stores co-operative, inc.   branded nut---seed-butters branded key-food-stores-co-operative--inc-",
+      "tags": [
+        "branded",
+        "nut---seed-butters",
+        "branded",
+        "key-food-stores-co-operative--inc-"
+      ],
+      "dietary_flags": [],
+      "usda_data_type": "Branded",
+      "usda_sync_date": "2025-06-24T19:03:09.546Z",
+      "protein_g_per_100g": 21.9,
+      "fat_g_per_100g": 50,
+      "carbs_g_per_100g": 21.9,
+      "sugar_g_per_100g": 9.38,
+      "fiber_g_per_100g": 6.2,
+      "calcium_mg_per_100g": 62,
+      "iron_mg_per_100g": 2.25,
+      "sodium_mg_per_100g": 469
+    },
+    {
+      "name": "TOMATO SAUCE, SPANISH STYLE",
+      "fdc_id": 1859967,
+      "category": "Tomatoes",
+      "searchable_text": "tomato sauce, spanish style tomatoes rosa food products company inc   branded tomatoes branded rosa-food-products-company-inc",
+      "tags": [
+        "branded",
+        "tomatoes",
+        "branded",
+        "rosa-food-products-company-inc"
+      ],
+      "dietary_flags": [],
+      "usda_data_type": "Branded",
+      "usda_sync_date": "2025-06-24T19:03:09.546Z",
+      "protein_g_per_100g": 1.61,
+      "carbs_g_per_100g": 6.45,
+      "sugar_g_per_100g": 3.23,
+      "fiber_g_per_100g": 1.6,
+      "sodium_mg_per_100g": 774,
+      "vitamin_c_mg_per_100g": 7.7
+    },
+    {
+      "name": "CHOPPED OCEAN CLAMS",
+      "fdc_id": 1859968,
+      "category": "Canned Seafood",
+      "searchable_text": "chopped ocean clams canned seafood tate & lyle sugars   branded canned-seafood branded tate---lyle-sugars",
+      "tags": [
+        "branded",
+        "canned-seafood",
+        "branded",
+        "tate---lyle-sugars"
+      ],
+      "dietary_flags": [],
+      "usda_data_type": "Branded",
+      "usda_sync_date": "2025-06-24T19:03:09.547Z",
+      "protein_g_per_100g": 11.1,
+      "iron_mg_per_100g": 2,
+      "sodium_mg_per_100g": 574
+    },
+    {
+      "name": "SHORT CUT GREEN BEANS",
+      "fdc_id": 1859970,
+      "category": "Canned Vegetables",
+      "searchable_text": "short cut green beans canned vegetables otis mcallister inc.   branded canned-vegetables branded otis-mcallister-inc-",
+      "tags": [
+        "branded",
+        "canned-vegetables",
+        "branded",
+        "otis-mcallister-inc-"
+      ],
+      "dietary_flags": [],
+      "usda_data_type": "Branded",
+      "usda_sync_date": "2025-06-24T19:03:09.547Z",
+      "carbs_g_per_100g": 4.13,
+      "sugar_g_per_100g": 0.83,
+      "fiber_g_per_100g": 1.7,
+      "calcium_mg_per_100g": 17,
+      "iron_mg_per_100g": 0.3,
+      "sodium_mg_per_100g": 8
     }
   ],
-  "estimatedCompletion": "2025-06-25T22:03:06.345Z"
+  "estimatedCompletion": "2025-06-26T05:24:25.865Z"
 }
