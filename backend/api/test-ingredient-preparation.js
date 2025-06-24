@@ -20,11 +20,12 @@ function extractNutritionalData(food) {
     const nutrientId = nutrient.nutrientId || nutrient.nutrient?.id;
     const amount = nutrient.value || nutrient.amount;
 
-    switch (nutrientId) {
-      case 2047:
-      case 2048:
-        nutrition.calories_per_100g = amount;
-        break;
+         switch (nutrientId) {
+       case 1008: // Energy (branded foods)
+       case 2047:
+       case 2048:
+         nutrition.calories_per_100g = amount;
+         break;
       case 1003:
         nutrition.protein_g_per_100g = amount;
         break;
