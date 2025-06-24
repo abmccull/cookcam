@@ -131,7 +131,9 @@ const BiometricLogin: React.FC<BiometricLoginProps> = ({
         const credentials = await biometricService.getStoredCredentials();
         
         if (credentials) {
+          logger.debug("✅ Biometric authentication successful");
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          logger.debug("🔄 Calling onSuccess callback with credentials");
           onSuccess(credentials);
         } else {
           throw new Error('No stored credentials found');

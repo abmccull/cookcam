@@ -32,7 +32,7 @@ import {
 import * as Haptics from "expo-haptics";
 import { useGamification, XP_VALUES } from "../context/GamificationContext";
 import { useAuth } from "../context/AuthContext";
-import cookCamApi from "../services/cookCamApi";
+import { cookCamApi } from "../services/cookCamApi";
 import MysteryBox from "../components/MysteryBox";
 import AIChefIcon from "../components/AIChefIcon";
 import LoadingAnimation from "../components/LoadingAnimation";

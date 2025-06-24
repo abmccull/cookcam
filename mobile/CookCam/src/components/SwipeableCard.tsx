@@ -199,6 +199,7 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
   }));
 
   const handleFavorite = async () => {
+    // Immediately update the visual state for better UX
     const newFavoriteState = !isCardFavorited;
     setIsCardFavorited(newFavoriteState);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -210,10 +211,15 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
       isPreview: (recipe as any).isPreview,
     });
     
-    // Call the parent's onFavorite callback
-    onFavorite(recipe);
-    
-    logger.debug(newFavoriteState ? "❤️ Added to favorites:" : "💔 Removed from favorites:", recipe.title);
+    try {
+      // Call the parent's onFavorite callback (this will handle the API call)
+      await onFavorite(recipe);
+      logger.debug(newFavoriteState ? "❤️ Added to favorites:" : "💔 Removed from favorites:", recipe.title);
+    } catch (error) {
+      // If the API call fails, revert the visual state
+      setIsCardFavorited(!newFavoriteState);
+      logger.error("❌ Failed to update favorite status, reverting UI:", error);
+    }
   };
 
   const handleCardTap = () => {
@@ -312,8 +318,8 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
               >
                 <Heart
                   size={24}
-                  color={isCardFavorited ? "#FF6B6B" : "#CCC"}
-                  fill={isCardFavorited ? "#FF6B6B" : "none"}
+                  color={isCardFavorited ? "#FF1744" : "#CCC"}
+                  fill={isCardFavorited ? "#FF1744" : "none"}
                 />
               </TouchableOpacity>
             )}

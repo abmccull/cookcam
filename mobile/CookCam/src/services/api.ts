@@ -495,6 +495,13 @@ class ApiClient {
     );
   }
 
+  async scanIngredients(imageData: string): Promise<ApiResponse<any>> {
+    return this.makeRequest("/scan/ingredients", {
+      method: "POST",
+      body: JSON.stringify({ image_data: imageData }),
+    });
+  }
+
   async getIngredients(params?: {
     page?: number;
     limit?: number;
@@ -580,6 +587,19 @@ class ApiClient {
     return this.makeRequest("/ingredients/batch-search", {
       method: "POST",
       body: JSON.stringify({ queries }),
+    });
+  }
+
+  // Creator analytics endpoint
+  async getCreatorAnalytics(): Promise<ApiResponse<any>> {
+    return this.makeRequest("/analytics/creator");
+  }
+
+  // Referral system endpoint
+  async linkUserToReferral(userId: string, referralCode: string): Promise<ApiResponse<any>> {
+    return this.makeRequest("/users/link-referral", {
+      method: "POST",
+      body: JSON.stringify({ user_id: userId, referral_code: referralCode }),
     });
   }
 

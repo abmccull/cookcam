@@ -26,7 +26,7 @@ import {
 } from "lucide-react-native";
 import { useAuth } from "../context/AuthContext";
 import DeepLinkService from "../services/DeepLinkService";
-import cookCamApi from "../services/cookCamApi";
+import { cookCamApi } from "../services/cookCamApi";
 import logger from "../utils/logger";
 
 

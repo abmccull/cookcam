@@ -265,7 +265,7 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
       <View style={styles.header}>
         <Text style={styles.title}>Recipe Suggestions</Text>
         <Text style={styles.subtitle}>
-          {isLoading ? "Finding ideas..." : `${recipes.length} recipes found • Swipe to explore`}
+          {isLoading ? "Finding ideas..." : `${recipes.length} recipes found`}
         </Text>
       </View>
 
@@ -290,14 +290,32 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
         )}
 
         {!isLoading && !error && (
-          <CardStack
-            recipes={recipes}
-            onCookRecipe={handleCookRecipe}
-            onFavoriteRecipe={handleFavoriteRecipe}
-            onViewRecipeDetails={handleViewRecipeDetails}
-            onRefreshRecipes={generateRecipes}
-            isLoading={false}
-          />
+          <>
+            <CardStack
+              recipes={recipes}
+              onCookRecipe={handleCookRecipe}
+              onFavoriteRecipe={handleFavoriteRecipe}
+              onViewRecipeDetails={handleViewRecipeDetails}
+              onRefreshRecipes={generateRecipes}
+              isLoading={false}
+            />
+            {recipes.length > 0 && (
+              <View style={styles.swipeInstructions}>
+                <View style={styles.swipeInstruction}>
+                  <View style={styles.swipeIconContainer}>
+                    <X size={20} color="#FF5252" />
+                  </View>
+                  <Text style={styles.swipeText}>Swipe left to dismiss</Text>
+                </View>
+                <View style={styles.swipeInstruction}>
+                  <View style={styles.swipeIconContainer}>
+                    <ChefHat size={20} color="#4CAF50" />
+                  </View>
+                  <Text style={styles.swipeText}>Swipe right to cook</Text>
+                </View>
+              </View>
+            )}
+          </>
         )}
       </View>
     </SafeScreen>
@@ -312,7 +330,7 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: 20,
     paddingTop: 10,
-    paddingBottom: 20,
+    paddingBottom: 10,
     alignItems: 'center',
   },
   title: {
@@ -373,6 +391,42 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 16,
     fontWeight: "600",
+  },
+  swipeInstructions: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingHorizontal: 40,
+    paddingVertical: 20,
+    marginTop: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 20,
+    marginHorizontal: 20,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  swipeInstruction: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  swipeIconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(248, 249, 250, 0.8)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  swipeText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#666',
   },
 });
 

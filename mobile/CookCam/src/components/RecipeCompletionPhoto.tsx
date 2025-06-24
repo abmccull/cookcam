@@ -263,6 +263,7 @@ const RecipeCompletionPhoto: React.FC<RecipeCompletionPhotoProps> = ({
             success = true;
           }
           break;
+        }
 
         case "facebook":
           await Share.share(shareContent);

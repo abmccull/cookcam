@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { View, Text, StyleSheet } from "react-native";
 
 interface ServingSizeIconProps {
@@ -6,11 +6,12 @@ interface ServingSizeIconProps {
   size?: number;
 }
 
-const ServingSizeIcon: React.FC<ServingSizeIconProps> = ({
+const ServingSizeIcon: React.FC<ServingSizeIconProps> = React.memo(({
   type,
   size = 48,
 }) => {
-  const getIconContent = () => {
+  // Memoize the icon content calculation
+  const iconContent = useMemo(() => {
     const normalizedType = type.toLowerCase();
 
     switch (normalizedType) {
@@ -41,23 +42,50 @@ const ServingSizeIcon: React.FC<ServingSizeIconProps> = ({
       default:
         return { icon: "🍽️", number: "1", color: "#4CAF50" };
     }
-  };
+  }, [type]);
 
-  const { icon, number, color } = getIconContent();
+  // Memoize dynamic styles
+  const containerStyle = useMemo(() => [
+    styles.container,
+    { width: size, height: size }
+  ], [size]);
+
+  const iconContainerStyle = useMemo(() => [
+    styles.iconContainer,
+    { backgroundColor: `${iconContent.color}20` }
+  ], [iconContent.color]);
+
+  const iconStyle = useMemo(() => [
+    styles.icon,
+    { fontSize: size * 0.4 }
+  ], [size]);
+
+  const numberBadgeStyle = useMemo(() => [
+    styles.numberBadge,
+    { backgroundColor: iconContent.color }
+  ], [iconContent.color]);
+
+  const numberTextStyle = useMemo(() => [
+    styles.numberText,
+    { fontSize: size * 0.2 }
+  ], [size]);
 
   return (
-    <View style={[styles.container, { width: size, height: size }]}>
-      <View style={[styles.iconContainer, { backgroundColor: `${color}20` }]}>
-        <Text style={[styles.icon, { fontSize: size * 0.4 }]}>{icon}</Text>
+    <View style={containerStyle}>
+      <View style={iconContainerStyle}>
+        <Text style={iconStyle}>{iconContent.icon}</Text>
       </View>
-      <View style={[styles.numberBadge, { backgroundColor: color }]}>
-        <Text style={[styles.numberText, { fontSize: size * 0.2 }]}>
-          {number}
+      <View style={numberBadgeStyle}>
+        <Text style={numberTextStyle}>
+          {iconContent.number}
         </Text>
       </View>
     </View>
   );
-};
+});
+
+// Add display name for debugging
+ServingSizeIcon.displayName = 'ServingSizeIcon';
 
 const styles = StyleSheet.create({
   container: {

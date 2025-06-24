@@ -88,8 +88,13 @@ const FavoritesScreen = ({ navigation }: { navigation: any }) => {
       setIsLoading(true);
       const response = await cookCamApi.getUserRecipes(50, 0);
 
-      if (response.success && response.data) {
-        setSavedRecipes(response.data || []);
+      if (response.success && response.data && (response.data as any).recipes) {
+        // Transform API response to match SavedRecipe interface  
+        const transformedRecipes: SavedRecipe[] = (response.data as any).recipes.map((recipe: any) => ({
+          created_at: recipe.created_at,
+          recipe: recipe
+        }));
+        setSavedRecipes(transformedRecipes);
       } else {
         logger.error("Failed to fetch saved recipes:", response.error);
       }
@@ -103,7 +108,38 @@ const FavoritesScreen = ({ navigation }: { navigation: any }) => {
   const handleRefresh = async () => {
     setIsRefreshing(true);
     await fetchSavedRecipes();
+    await fetchRecommendations();
     setIsRefreshing(false);
+  };
+
+  const fetchRecommendations = async () => {
+    if (!user) return;
+    
+    setIsLoadingRecommendations(true);
+    try {
+      // Get user's recent recipes for recommendations
+      const response = await cookCamApi.getUserRecipes(10, 0);
+      if (response.success && response.data && (response.data as any).recipes && (response.data as any).recipes.length > 0) {
+        // Transform recent recipes into recommendation format
+        const recentRecipes = (response.data as any).recipes.slice(0, 3).map((recipe: any, index: number) => ({
+          id: recipe.id,
+          title: recipe.title,
+          cuisine: recipe.cuisine_type || "Various",
+          match: `${95 - index * 3}%`, // Simple match calculation
+          recipe: recipe
+        }));
+        
+        setRecommendations(recentRecipes);
+      } else {
+        // If no recipes, show empty recommendations
+        setRecommendations([]);
+      }
+    } catch (error) {
+      logger.error("Error fetching recommendations:", error);
+      setRecommendations([]);
+    } finally {
+      setIsLoadingRecommendations(false);
+    }
   };
 
   // Collection badges
@@ -160,19 +196,16 @@ const FavoritesScreen = ({ navigation }: { navigation: any }) => {
   ];
 
   const currentMilestone =
-    savingsMilestones.find((m) => m.count > savedRecipes.length) ||
+    savingsMilestones.find((m) => m.count > (savedRecipes?.length || 0)) ||
     savingsMilestones[savingsMilestones.length - 1];
   const progress = Math.min(
-    (savedRecipes.length / currentMilestone.count) * 100,
+    ((savedRecipes?.length || 0) / currentMilestone.count) * 100,
     100,
   );
 
-  // Recipe recommendations based on saved
-  const recommendations = [
-    { id: "r1", title: "Fettuccine Alfredo", cuisine: "Italian", match: "92%" },
-    { id: "r2", title: "Pad Thai", cuisine: "Thai", match: "88%" },
-    { id: "r3", title: "Butter Chicken", cuisine: "Indian", match: "85%" },
-  ];
+  // State for recommendations
+  const [recommendations, setRecommendations] = useState<any[]>([]);
+  const [isLoadingRecommendations, setIsLoadingRecommendations] = useState(false);
 
   const filters = [
     { key: "all", label: "All" },
@@ -190,6 +223,7 @@ const FavoritesScreen = ({ navigation }: { navigation: any }) => {
       
       if (currentUserId) {
         fetchSavedRecipes();
+        fetchRecommendations();
       } else {
         // Clear recipes when user logs out
         setSavedRecipes([]);
@@ -282,7 +316,7 @@ const FavoritesScreen = ({ navigation }: { navigation: any }) => {
         <Text style={styles.headerTitle}>Your Favorites</Text>
         <View style={styles.favoritesCounter}>
           <Text style={styles.heartEmoji}>❤️</Text>
-          <Text style={styles.counterText}>{savedRecipes.length}</Text>
+          <Text style={styles.counterText}>{savedRecipes?.length || 0}</Text>
         </View>
       </View>
 
@@ -332,7 +366,7 @@ const FavoritesScreen = ({ navigation }: { navigation: any }) => {
           }
         >
           {collectionBadges.map((badge) => {
-            const cuisineCount = savedRecipes.filter(
+            const cuisineCount = (savedRecipes || []).filter(
               (r) => r.recipe.cuisine_type === badge.cuisineType,
             ).length;
             const progress = (cuisineCount / badge.requirement) * 100;
@@ -371,29 +405,50 @@ const FavoritesScreen = ({ navigation }: { navigation: any }) => {
       ) : (
         <>
           {/* Recommendations */}
-          <View style={styles.recommendationsSection}>
-            <Text style={styles.recommendationsTitle}>Recommended for you</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              {recommendations.map((rec) => (
-                <Animated.View
-                  key={rec.id}
-                  style={[
-                    styles.recommendCard,
-                    { transform: [{ scale: recommendScale }] },
-                  ]}
-                >
-                  <View style={styles.recommendMatch}>
-                    <TrendingUp size={12} color="#4CAF50" />
-                    <Text style={styles.recommendMatchText}>
-                      {rec.match} match
-                    </Text>
+          {(savedRecipes?.length || 0) > 0 && (
+            <View style={styles.recommendationsSection}>
+              <Text style={styles.recommendationsTitle}>Recommended for you</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                {isLoadingRecommendations ? (
+                  <View style={styles.recommendCard}>
+                    <ActivityIndicator size="small" color="#2D1B69" />
+                    <Text style={styles.recommendTitle}>Loading...</Text>
                   </View>
-                  <Text style={styles.recommendTitle}>{rec.title}</Text>
-                  <Text style={styles.recommendCuisine}>{rec.cuisine}</Text>
-                </Animated.View>
-              ))}
-            </ScrollView>
-          </View>
+                ) : recommendations.length > 0 ? (
+                  recommendations.map((rec) => (
+                    <TouchableOpacity
+                      key={rec.id}
+                      style={[
+                        styles.recommendCard,
+                        { transform: [{ scale: recommendScale }] },
+                      ]}
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                        navigation.navigate("Home", {
+                          screen: "CookMode",
+                          params: { recipe: rec.recipe },
+                        });
+                      }}
+                    >
+                      <View style={styles.recommendMatch}>
+                        <TrendingUp size={12} color="#4CAF50" />
+                        <Text style={styles.recommendMatchText}>
+                          {rec.match} match
+                        </Text>
+                      </View>
+                      <Text style={styles.recommendTitle}>{rec.title}</Text>
+                      <Text style={styles.recommendCuisine}>{rec.cuisine}</Text>
+                    </TouchableOpacity>
+                  ))
+                ) : (
+                  <View style={styles.recommendCard}>
+                    <Text style={styles.recommendTitle}>No recommendations yet</Text>
+                    <Text style={styles.recommendCuisine}>Save more recipes to get personalized suggestions!</Text>
+                  </View>
+                )}
+              </ScrollView>
+            </View>
+          )}
 
           {/* Recipe Grid */}
           <ScrollView
@@ -407,7 +462,7 @@ const FavoritesScreen = ({ navigation }: { navigation: any }) => {
               />
             }
           >
-            {savedRecipes.length === 0 ? (
+            {(savedRecipes?.length || 0) === 0 ? (
               <View style={styles.emptyState}>
                 <Heart size={48} color="#E5E5E7" />
                 <Text style={styles.emptyStateTitle}>No saved recipes yet</Text>
@@ -416,8 +471,8 @@ const FavoritesScreen = ({ navigation }: { navigation: any }) => {
                   recipes!
                 </Text>
               </View>
-            ) : (
-              savedRecipes.map((savedRecipe, index) => (
+                          ) : (
+              (savedRecipes || []).map((savedRecipe, index) => (
                 <TouchableOpacity
                   key={savedRecipe.recipe.id}
                   style={styles.recipeCard}
@@ -527,7 +582,7 @@ const FavoritesScreen = ({ navigation }: { navigation: any }) => {
                 />
               </View>
               <Text style={styles.progressText}>
-                {savedRecipes.length} / {currentMilestone.count} recipes saved
+                {savedRecipes?.length || 0} / {currentMilestone.count} recipes saved
               </Text>
             </Animated.View>
           </ScrollView>

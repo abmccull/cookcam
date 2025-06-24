@@ -382,9 +382,11 @@ class CookCamApi {
 
   async getLeaderboard(
     limit: number = 50,
+    period: "daily" | "weekly" | "monthly" | "allTime" = "weekly",
+    type: "global" | "friends" = "global",
   ): Promise<ApiResponse<LeaderboardEntry[]>> {
     return apiService.get<LeaderboardEntry[]>(
-      `${API_ENDPOINTS.gamification.leaderboard}?limit=${limit}`,
+      `${API_ENDPOINTS.gamification.leaderboard}?limit=${limit}&period=${period}&type=${type}`,
     );
   }
 

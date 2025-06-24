@@ -40,7 +40,7 @@ interface LeaderboardUser {
   recipesCooked?: number;
 }
 
-type TimePeriod = "daily" | "weekly" | "monthly" | "yearly" | "allTime";
+type TimePeriod = "daily" | "weekly" | "allTime";
 type LeaderboardType = "global" | "friends";
 
 const LeaderboardScreen: React.FC = () => {
@@ -61,8 +61,6 @@ const LeaderboardScreen: React.FC = () => {
   const timePeriods: { key: TimePeriod; label: string }[] = [
     { key: "daily", label: "Today" },
     { key: "weekly", label: "Week" },
-    { key: "monthly", label: "Month" },
-    { key: "yearly", label: "Year" },
     { key: "allTime", label: "All Time" },
   ];
 
@@ -121,8 +119,8 @@ const LeaderboardScreen: React.FC = () => {
         String(selectedPeriod),
       );
 
-      // Call actual API endpoint
-      const response = await cookCamApi.getLeaderboard(50);
+      // Call actual API endpoint with current filters
+      const response = await cookCamApi.getLeaderboard(50, selectedPeriod, leaderboardType);
 
       if (response.success && response.data) {
         try {
@@ -135,7 +133,9 @@ const LeaderboardScreen: React.FC = () => {
         }
 
         // Transform API response to our format
-        const leaderboardData = response.data.leaderboard || [];
+        const leaderboardData = Array.isArray(response.data) 
+          ? response.data 
+          : ((response.data as any)?.leaderboard || []);
 
         if (leaderboardData.length === 0) {
           setError("No leaderboard data found. Be the first to start cooking!");
@@ -165,7 +165,10 @@ const LeaderboardScreen: React.FC = () => {
             setUserRank(userEntry.rank);
           } else {
             // User not in top results - get actual rank from API response
-            setUserRank(response.data.userRank || null);
+            const userRank = !Array.isArray(response.data) 
+              ? (response.data as any)?.userRank 
+              : null;
+            setUserRank(userRank || null);
           }
         }
       } else {
@@ -176,10 +179,10 @@ const LeaderboardScreen: React.FC = () => {
             : "Failed to load leaderboard. Please try again.";
         setError(errorMessage);
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(
         "❌ Error loading leaderboard:",
-        error?.message || String(error),
+        (error as any)?.message || String(error),
       );
       const errorMessage =
         error instanceof Error

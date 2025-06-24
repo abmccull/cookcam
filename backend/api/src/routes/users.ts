@@ -12,6 +12,62 @@ interface AuthenticatedRequest extends Request {
 
 const router = Router();
 
+// Get current user's profile (authenticated)
+router.get('/profile', authenticateUser, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as AuthenticatedRequest).user.id;
+
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', userId)
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        return res.status(404).json({ error: 'User profile not found' });
+      }
+      logger.error('Get user profile error:', error);
+      return res.status(500).json({ error: 'Failed to fetch user profile' });
+    }
+
+    res.json(user);
+  } catch (error) {
+    logger.error('Get user profile error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Update current user's profile (authenticated)
+router.put('/profile', authenticateUser, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as AuthenticatedRequest).user.id;
+    const { name, avatar_url, is_creator } = req.body;
+
+    const updateData: any = {};
+    if (name !== undefined) updateData.name = name;
+    if (avatar_url !== undefined) updateData.avatar_url = avatar_url;
+    if (is_creator !== undefined) updateData.is_creator = is_creator;
+
+    const { data: user, error } = await supabase
+      .from('users')
+      .update(updateData)
+      .eq('id', userId)
+      .select()
+      .single();
+
+    if (error) {
+      logger.error('Update user profile error:', error);
+      return res.status(500).json({ error: 'Failed to update user profile' });
+    }
+
+    res.json(user);
+  } catch (error) {
+    logger.error('Update user profile error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Get user by ID (public profile)
 router.get('/:userId', async (req: Request, res: Response) => {
   try {

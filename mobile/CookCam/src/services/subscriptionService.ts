@@ -169,4 +169,21 @@ class SubscriptionService {
   }
 }
 
+// Types for external use
+export interface SubscriptionProduct {
+  productId: string;
+  price: string;
+  currency: string;
+  title: string;
+  description: string;
+}
+
+export enum SubscriptionStatus {
+  NONE = 'none',
+  ACTIVE = 'active',
+  EXPIRED = 'expired',
+  CANCELLED = 'cancelled',
+  PENDING = 'pending'
+}
+
 export default SubscriptionService;

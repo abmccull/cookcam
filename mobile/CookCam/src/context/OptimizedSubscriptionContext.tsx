@@ -11,13 +11,11 @@ import { SubscriptionActionsProvider, useSubscriptionActions } from "./Subscript
 // Combined provider that wraps all subscription-related contexts
 export function OptimizedSubscriptionProvider({ children }: { children: ReactNode }) {
   return (
-    <SubscriptionStateProvider>
-      <FeatureAccessProvider>
-        <SubscriptionActionsProvider>
-          {children}
-        </SubscriptionActionsProvider>
-      </FeatureAccessProvider>
-    </SubscriptionStateProvider>
+    <SubscriptionStateProvider children={
+      <FeatureAccessProvider children={
+        <SubscriptionActionsProvider children={children} />
+      } />
+    } />
   );
 }
 

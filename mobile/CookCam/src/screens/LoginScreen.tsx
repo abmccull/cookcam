@@ -91,15 +91,19 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   const handleBiometricLogin = async (credentials: { email: string; token: string }) => {
     try {
       setLoading(true);
+      logger.debug("🔐 Starting biometric login process...");
       await loginWithBiometrics(credentials);
+      logger.debug("✅ Biometric login process completed successfully");
       // Navigation will be handled by the auth state change in App.tsx
     } catch (error) {
+      logger.error("❌ Biometric login failed:", error);
       Alert.alert(
         "Biometric Login Failed",
         error instanceof Error ? error.message : "Please try logging in with your password."
       );
     } finally {
       setLoading(false);
+      logger.debug("🔐 Biometric login loading state cleared");
     }
   };
 

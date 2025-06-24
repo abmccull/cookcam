@@ -12,6 +12,7 @@ import {
 } from "../services/secureStorage";
 import { supabase } from "../services/supabaseClient";
 import BiometricAuthService from "../services/biometricAuth";
+import { apiClient } from "../services/api";
 import logger from "../utils/logger";
 
 
@@ -61,6 +62,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreatingProfile, setIsCreatingProfile] = useState(false);
+  const [isBiometricLoginInProgress, setIsBiometricLoginInProgress] = useState(false);
 
   useEffect(() => {
     // Check for existing session on mount
@@ -72,6 +74,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       logger.debug("🔐 Auth state changed:", event, session?.user?.id);
 
+      if (isBiometricLoginInProgress) {
+        logger.debug("🔐 Biometric login in progress, onAuthStateChange listener is standing down.");
+        return;
+      }
+      
       try {
         if (session?.user) {
           await loadUserProfile(session.user.id, session.access_token);
@@ -115,20 +122,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const loadUserProfile = async (userId: string, accessToken: string) => {
+    logger.debug(`🔄 [loadUserProfile] Starting for user ID: ${userId}`);
     try {
-      // Store the Supabase session token securely
       await secureStorage.setSecureItem(TOKEN_KEY, accessToken);
+      logger.debug(`🔄 [loadUserProfile] Token stored. Fetching profile via API...`);
 
-      // Get user profile from our users table
-      const { data: userData, error } = await supabase
-        .from("users")
-        .select("*")
-        .eq("id", userId)
-        .single();
+      // Use our backend API instead of direct Supabase query to avoid session issues
+      const response = await apiClient.getUserProfile();
+      
+      logger.debug(`🔄 [loadUserProfile] API response:`, { success: response.success, hasData: !!response.data, error: response.error });
 
-      if (error) {
-        // If user profile doesn't exist (PGRST116), create it
-        if (error.code === "PGRST116") {
+      if (!response.success) {
+        if (response.error?.includes("not found") || response.error?.includes("PGRST116")) {
           logger.debug("🔄 User profile not found, creating...");
           try {
             await createUserProfile(userId);
@@ -139,11 +144,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           }
           return;
         }
-        logger.error("Error loading user profile:", error);
+        logger.error("Error loading user profile:", response.error);
         return;
       }
 
-      if (userData) {
+      if (response.data) {
+        const userData = response.data;
         const formattedUser: User = {
           id: userData.id,
           email: userData.email,
@@ -159,6 +165,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           favoriteCount: undefined, // Field not confirmed in schema
           subscriberCount: undefined, // Field not confirmed in schema
         };
+        logger.debug("✅ User profile loaded successfully:", { id: formattedUser.id, email: formattedUser.email });
         setUser(formattedUser);
       }
     } catch (error) {
@@ -226,10 +233,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         };
         setUser(formattedUser);
       }
-    } catch (error) {
+    } catch (error: any) {
       logger.error("Failed to create user profile:", error);
-      // You might want to show an error alert here
-      throw error;
     } finally {
       setIsCreatingProfile(false);
     }
@@ -281,66 +286,52 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const loginWithBiometrics = async (credentials: { email: string; token: string; refreshToken?: string }) => {
+    setIsLoading(true);
+    setIsBiometricLoginInProgress(true);
+    logger.debug("🔐 [loginWithBiometrics] Starting...");
+
     try {
-      setIsLoading(true);
-      logger.debug("🔐 Attempting biometric login with stored credentials", {
-        hasToken: !!credentials.token,
-        hasRefreshToken: !!credentials.refreshToken,
-        tokenLength: credentials.token?.length,
-        refreshTokenLength: credentials.refreshToken?.length,
-        email: credentials.email
+      if (!credentials.refreshToken) {
+        throw new Error("Your session has expired. Please sign in with your password to refresh biometric login.");
+      }
+      
+      logger.debug("🔐 [loginWithBiometrics] Using refresh token to get new session");
+      const { data: refreshData, error: refreshError } = await supabase.auth.setSession({
+        access_token: credentials.token,
+        refresh_token: credentials.refreshToken,
       });
 
-      // First, try to use the refresh token to get a new session
-      if (credentials.refreshToken) {
-        logger.debug("🔐 Using refresh token to get new session");
-        
-        const { data: refreshData, error: refreshError } = await supabase.auth.setSession({
-          access_token: credentials.token,
-          refresh_token: credentials.refreshToken,
-        });
-
-        logger.debug("🔐 setSession response:", {
-          hasSession: !!refreshData.session,
-          hasUser: !!refreshData.session?.user,
-          hasAccessToken: !!refreshData.session?.access_token,
-          hasRefreshToken: !!refreshData.session?.refresh_token,
-          errorMessage: refreshError?.message,
-          errorCode: refreshError?.name,
-        });
-
-        if (refreshData.session && !refreshError) {
-          logger.debug("✅ Successfully refreshed session with biometric credentials");
-          
-          // Update stored credentials with new tokens
-          const biometricService = BiometricAuthService.getInstance();
-          await biometricService.storeCredentialsForBiometric(
-            credentials.email,
-            refreshData.session.access_token,
-            refreshData.session.refresh_token
-          );
-
-          // Load user profile with new session
-          await loadUserProfile(refreshData.session.user.id, refreshData.session.access_token);
-          logger.debug("✅ Biometric login successful with refreshed token");
-          return;
-        } else {
-          logger.debug("🔐 Refresh token failed, tokens have expired", {
-            refreshError: refreshError?.message
-          });
-        }
+      if (refreshError) {
+        logger.error("🔐 [loginWithBiometrics] Refresh token failed:", refreshError.message);
+        throw new Error("Your session has expired. Please sign in with your password to refresh biometric login.");
       }
 
-      // If we get here, the stored tokens are expired (normal after logout)
-      // Instead of clearing credentials, inform user they need to sign in once to refresh
-      logger.debug("🔐 Stored biometric tokens have expired after logout");
-      throw new Error("Your session has expired. Please sign in with your password once to refresh your biometric login.");
-      
+      if (refreshData.session?.user) {
+        logger.debug("✅ [loginWithBiometrics] Session refreshed successfully.");
+        
+        // Small delay to ensure session is fully established in Supabase client
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Explicitly load the user profile now that the session is guaranteed to be stable.
+        await loadUserProfile(refreshData.session.user.id, refreshData.session.access_token);
+
+        // Store the new tokens for the *next* biometric login.
+        const biometricService = BiometricAuthService.getInstance();
+        await biometricService.storeCredentialsForBiometric(
+          credentials.email,
+          refreshData.session.access_token,
+          refreshData.session.refresh_token
+        );
+      } else {
+        throw new Error("Failed to refresh session. Please log in with your password.");
+      }
     } catch (error) {
-      logger.error("Biometric login error:", error);
+      logger.error("❌ [loginWithBiometrics] Error:", error);
       throw error;
     } finally {
       setIsLoading(false);
+      setIsBiometricLoginInProgress(false);
+      logger.debug("🔐 [loginWithBiometrics] Process finished.");
     }
   };
 

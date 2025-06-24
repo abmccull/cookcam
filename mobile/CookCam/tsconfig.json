@@ -5,11 +5,14 @@
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "jsx": "react-native",
-    "lib": ["dom", "es2017"],
+    "lib": ["dom", "es2017", "es2015"],
     "moduleResolution": "bundler",
     "noEmit": true,
     "resolveJsonModule": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "target": "es2017",
+    "downlevelIteration": true,
+    "forceConsistentCasingInFileNames": true
   },
   "include": [
     "**/*.ts",

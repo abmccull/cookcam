@@ -7,8 +7,7 @@ import {
   ScrollView,
   Alert,
 } from "react-native";
-import {
-  FeatureGate,
+import FeatureGate, {
   UnlimitedScansGate,
   PremiumRecipesGate,
   CreatorToolsGate,

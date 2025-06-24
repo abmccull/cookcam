@@ -51,7 +51,7 @@ import ChefBadge from "../components/ChefBadge";
 import { useGamification, XP_VALUES } from "../context/GamificationContext";
 import logger from "../utils/logger";
 import StripeConnectService from "../services/StripeConnectService";
-import cookCamApi from "../services/cookCamApi";
+import { cookCamApi } from "../services/cookCamApi";
 
 interface CreatorTier {
   id: number;
@@ -237,29 +237,42 @@ const CreatorScreen = ({ navigation }: { navigation: any }) => {
       setError(null);
       logger.debug("📊 Loading creator analytics and earnings");
 
-      // Load analytics and earnings in parallel
-      const [analyticsResponse, earningsResponse] = await Promise.all([
-        cookCamApi.getCreatorAnalytics(),
-        StripeConnectService.getInstance().getCreatorEarnings(),
-      ]);
-
-      if (analyticsResponse.success && analyticsResponse.data) {
-        setAnalytics(analyticsResponse.data);
-        logger.debug("✅ Creator analytics loaded", analyticsResponse.data);
-      } else {
-        logger.warn("⚠️ Failed to load analytics", analyticsResponse);
+      // Load analytics and earnings separately with individual error handling
+      try {
+        const analyticsResponse = await cookCamApi.getCreatorAnalytics();
+        if (analyticsResponse.success && analyticsResponse.data) {
+          setAnalytics(analyticsResponse.data);
+          logger.debug("✅ Creator analytics loaded", analyticsResponse.data);
+        } else {
+          logger.warn("⚠️ Failed to load analytics", analyticsResponse);
+        }
+      } catch (analyticsError) {
+        logger.error("❌ Analytics error:", analyticsError);
       }
 
-      // Handle earnings response - StripeConnectService returns CreatorEarnings directly
-      if (earningsResponse) {
+      // Handle earnings separately to avoid failing if Stripe is not available
+      try {
+        const earningsResponse = await StripeConnectService.getInstance().getCreatorEarnings();
+        if (earningsResponse) {
+          setEarnings({
+            total_earnings: earningsResponse.totalEarnings,
+            available_balance: earningsResponse.currentBalance,
+            pending_balance: earningsResponse.pendingBalance,
+            last_payout_date: earningsResponse.lastPayoutDate?.toISOString() || null,
+            next_payout_date: earningsResponse.nextPayoutDate?.toISOString() || null,
+          });
+          logger.debug("✅ Creator earnings loaded", earningsResponse);
+        }
+      } catch (earningsError) {
+        logger.error("❌ Earnings error (Stripe may not be configured):", earningsError);
+        // Set default earnings state instead of failing completely
         setEarnings({
-          total_earnings: earningsResponse.totalEarnings,
-          available_balance: earningsResponse.currentBalance,
-          pending_balance: earningsResponse.pendingBalance,
-          last_payout_date: earningsResponse.lastPayoutDate?.toISOString() || null,
-          next_payout_date: earningsResponse.nextPayoutDate?.toISOString() || null,
+          total_earnings: 0,
+          available_balance: 0,
+          pending_balance: 0,
+          last_payout_date: null,
+          next_payout_date: null,
         });
-        logger.debug("✅ Creator earnings loaded", earningsResponse);
       }
 
     } catch (error) {
@@ -272,7 +285,7 @@ const CreatorScreen = ({ navigation }: { navigation: any }) => {
   };
 
   useEffect(() => {
-    if (user?.isCreator) {
+    if (user?.isCreator && hasCreatorSubscription) {
       loadCreatorData();
     }
 
