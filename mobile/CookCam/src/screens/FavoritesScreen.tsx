@@ -86,13 +86,13 @@ const FavoritesScreen = ({ navigation }: { navigation: any }) => {
 
     try {
       setIsLoading(true);
-      const response = await cookCamApi.getUserRecipes(50, 0);
+      const response = await cookCamApi.getSavedRecipes(50, 0);
 
-      if (response.success && response.data && (response.data as any).recipes) {
+      if (response.success && response.data && response.data.saved_recipes) {
         // Transform API response to match SavedRecipe interface  
-        const transformedRecipes: SavedRecipe[] = (response.data as any).recipes.map((recipe: any) => ({
-          created_at: recipe.created_at,
-          recipe: recipe
+        const transformedRecipes: SavedRecipe[] = response.data.saved_recipes.map((savedRecipe: any) => ({
+          created_at: savedRecipe.created_at,
+          recipe: savedRecipe.recipe
         }));
         setSavedRecipes(transformedRecipes);
       } else {

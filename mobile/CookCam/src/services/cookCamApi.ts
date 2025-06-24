@@ -321,6 +321,15 @@ class CookCamApi {
     );
   }
 
+  async getSavedRecipes(
+    limit: number = 20,
+    offset: number = 0,
+  ): Promise<ApiResponse<any>> {
+    return apiService.get<any>(
+      `/api/v1/recipes/saved/my?limit=${limit}&offset=${offset}`,
+    );
+  }
+
   async getRecipe(recipeId: string): Promise<ApiResponse<Recipe>> {
     return apiService.get<Recipe>(API_ENDPOINTS.recipes.get(recipeId));
   }

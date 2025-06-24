@@ -1247,6 +1247,8 @@ router.get('/saved/my', authenticateUser, async (req: Request, res: Response) =>
     const userId = (req as any).user.id;
     const { limit = 20, offset = 0 } = req.query;
 
+    logger.debug('Fetching saved recipes for user:', { userId, limit, offset });
+
     const { data: savedRecipes, error } = await supabase
       .from('saved_recipes')
       .select(`
@@ -1261,8 +1263,19 @@ router.get('/saved/my', authenticateUser, async (req: Request, res: Response) =>
       .range(parseInt(offset as string), parseInt(offset as string) + parseInt(limit as string) - 1);
 
     if (error) {
+      logger.error('Supabase error fetching saved recipes:', { 
+        error: error.message, 
+        code: error.code, 
+        details: error.details,
+        userId 
+      });
       return res.status(500).json({ error: 'Failed to fetch saved recipes' });
     }
+
+    logger.debug('Successfully fetched saved recipes:', { 
+      count: savedRecipes?.length || 0, 
+      userId 
+    });
 
     res.json({ saved_recipes: savedRecipes || [] });
   } catch (error: unknown) {
