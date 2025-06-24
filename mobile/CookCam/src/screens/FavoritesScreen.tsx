@@ -88,18 +88,36 @@ const FavoritesScreen = ({ navigation }: { navigation: any }) => {
       setIsLoading(true);
       const response = await cookCamApi.getSavedRecipes(50, 0);
 
-      if (response.success && response.data && response.data.saved_recipes) {
-        // Transform API response to match SavedRecipe interface  
-        const transformedRecipes: SavedRecipe[] = response.data.saved_recipes.map((savedRecipe: any) => ({
-          created_at: savedRecipe.created_at,
-          recipe: savedRecipe.recipe
-        }));
-        setSavedRecipes(transformedRecipes);
+      logger.debug("GetSavedRecipes response:", {
+        success: response.success,
+        hasData: !!response.data,
+        dataKeys: response.data ? Object.keys(response.data) : [],
+        error: response.error,
+        fullResponse: response
+      });
+
+      if (response.success && response.data) {
+        // Check if it's direct saved_recipes array or wrapped in data
+        const savedRecipesArray = response.data.saved_recipes || response.data;
+        
+        if (Array.isArray(savedRecipesArray)) {
+          // Transform API response to match SavedRecipe interface  
+          const transformedRecipes: SavedRecipe[] = savedRecipesArray.map((savedRecipe: any) => ({
+            created_at: savedRecipe.created_at,
+            recipe: savedRecipe.recipe
+          }));
+          setSavedRecipes(transformedRecipes);
+        } else {
+          logger.error("Saved recipes is not an array:", savedRecipesArray);
+          setSavedRecipes([]);
+        }
       } else {
-        logger.error("Failed to fetch saved recipes:", response.error);
+        logger.error("Failed to fetch saved recipes:", response.error || 'Unknown error');
+        setSavedRecipes([]);
       }
     } catch (error) {
       logger.error("Error fetching saved recipes:", error);
+      setSavedRecipes([]);
     } finally {
       setIsLoading(false);
     }
