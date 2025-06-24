@@ -153,9 +153,16 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
         sessionId: sessionId,
       });
 
-      if (detailedResponse.success && detailedResponse.data?.data?.recipe) {
-        const detailedRecipe = detailedResponse.data.data.recipe;
-        logger.debug("✅ Detailed recipe generated successfully");
+      // Handle response validation with flexible structure
+      const responseData = detailedResponse.data?.data || detailedResponse.data;
+      
+      if (detailedResponse.success && responseData?.recipe) {
+        const detailedRecipe = responseData.recipe;
+        logger.debug("✅ Detailed recipe generated successfully", {
+          hasIngredients: !!detailedRecipe.ingredients,
+          hasInstructions: !!detailedRecipe.instructions,
+          instructionsCount: detailedRecipe.instructions?.length
+        });
 
         const cookModeRecipe: Recipe = {
           ...recipe,
@@ -172,9 +179,16 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
         navigation.navigate("CookMode", {
           recipe: cookModeRecipe,
           sessionId: sessionId,
-          detailedRecipeId: detailedResponse.data.data.stored_recipe?.id,
+          detailedRecipeId: responseData.stored_recipe?.id,
         });
       } else {
+        logger.error("❌ Invalid response structure:", {
+          success: detailedResponse.success,
+          hasData: !!detailedResponse.data,
+          hasNestedData: !!detailedResponse.data?.data,
+          hasRecipe: !!(detailedResponse.data?.data?.recipe || detailedResponse.data?.recipe),
+          fullResponse: detailedResponse
+        });
         throw new Error("Invalid detailed recipe response format");
       }
     } catch (error: any) {
@@ -211,8 +225,9 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
           sessionId: sessionId,
         });
 
-        if (detailedResponse.success && detailedResponse.data?.data?.stored_recipe?.id) {
-          const savedRecipeId = detailedResponse.data.data.stored_recipe.id;
+        const favoriteResponseData = detailedResponse.data?.data || detailedResponse.data;
+        if (detailedResponse.success && favoriteResponseData?.stored_recipe?.id) {
+          const savedRecipeId = favoriteResponseData.stored_recipe.id;
           logger.debug("✅ Recipe saved with ID:", savedRecipeId);
           
           // Now favorite the saved recipe
