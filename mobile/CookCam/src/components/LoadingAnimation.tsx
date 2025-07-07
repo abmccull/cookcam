@@ -4,59 +4,32 @@ import AIChefIcon from "./AIChefIcon";
 import { moderateScale } from "../utils/responsive";
 import logger from "../utils/logger";
 
-export type LoadingVariant = "scanning" | "previews" | "detailed";
-
 interface LoadingAnimationProps {
   visible: boolean;
-  variant: LoadingVariant;
+  title?: string;
+  subtitle?: string;
 }
 
-const getContentForVariant = (variant: LoadingVariant) => {
-  switch (variant) {
-    case "scanning":
-      return {
-        title: "AI Chef Analyzing...",
-        subtitle: "Identifying ingredients with computer vision",
-        steps: [
-          { icon: "🔍", text: "Scanning image patterns" },
-          { icon: "🧠", text: "Processing with neural networks" },
-          { icon: "✨", text: "Matching to ingredient database" },
-        ],
-      };
-    case "previews":
-      return {
-        title: "👨‍🍳 Crafting Recipe Ideas...",
-        subtitle: "Creating 3 unique dishes just for you",
-        steps: [
-          { icon: "🥘", text: "Exploring flavor combinations" },
-          { icon: "🌟", text: "Personalizing to your taste" },
-          { icon: "🎯", text: "Curating diverse options" },
-        ],
-      };
-    case "detailed":
-      return {
-        title: "📝 Perfecting Your Recipe...",
-        subtitle: "Crafting step-by-step cooking instructions",
-        steps: [
-          { icon: "⏱️", text: "Calculating optimal timing" },
-          { icon: "🔥", text: "Detailing cooking techniques" },
-          { icon: "📋", text: "Organizing clear steps" },
-        ],
-      };
-    default:
-      return getContentForVariant("scanning");
-  }
-};
+const getDefaultContent = () => ({
+  title: "🤖 AI Chef Working...",
+  subtitle: "Creating something delicious for you",
+  steps: [
+    { icon: "🔍", text: "Analyzing ingredients" },
+    { icon: "🧠", text: "Processing with AI" },
+    { icon: "✨", text: "Crafting perfect recipes" },
+  ],
+});
 
 const LoadingAnimation: React.FC<LoadingAnimationProps> = ({
   visible,
-  variant,
+  title,
+  subtitle,
 }) => {
   const aiPulseAnim = useRef(new Animated.Value(1)).current;
   const aiOpacityAnim = useRef(new Animated.Value(0.7)).current;
 
   useEffect(() => {
-    logger.debug(`🎬 LoadingAnimation: visible=${visible}, variant=${variant}`);
+    logger.debug(`🎬 LoadingAnimation: visible=${visible}`);
     
     if (visible) {
       // Start pulsing animation when loading
@@ -98,9 +71,14 @@ const LoadingAnimation: React.FC<LoadingAnimationProps> = ({
         opacity.stop();
       };
     }
-  }, [visible, variant]);
+  }, [visible]);
 
-  const content = getContentForVariant(variant);
+  const defaultContent = getDefaultContent();
+  const content = {
+    title: title || defaultContent.title,
+    subtitle: subtitle || defaultContent.subtitle,
+    steps: defaultContent.steps,
+  };
 
   return (
     <Modal visible={visible} transparent animationType="fade">
@@ -128,7 +106,7 @@ const LoadingAnimation: React.FC<LoadingAnimationProps> = ({
             <Text style={styles.subtitle}>{content.subtitle}</Text>
 
             <View style={styles.stepsContainer}>
-              {content.steps.map((step, index) => (
+              {content.steps.map((step: { icon: string; text: string }, index: number) => (
                 <Text key={index} style={styles.stepText}>
                   {step.icon} {step.text}
                 </Text>
@@ -147,12 +125,6 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(139, 69, 19, 0.4)",
     justifyContent: "center",
     alignItems: "center",
-    zIndex: 9999,
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
   },
   modal: {
     backgroundColor: "#FFFFFF",

@@ -139,12 +139,9 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
     }
 
     try {
-      // Set loading state FIRST and add a small delay to ensure it shows
+      // Set loading state FIRST
       setIsGeneratingDetailed(true);
       logger.debug("🔄 Loading animation should now be visible...");
-      
-      // Add a small delay to ensure loading animation renders
-      await new Promise(resolve => setTimeout(resolve, 100));
       
       logger.debug("🍳 Generating detailed recipe for:", recipe.title);
       
@@ -172,9 +169,6 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
           ) || [],
           tips: detailedRecipe.tips || [],
         };
-
-        // Add a small delay before navigation to show completion
-        await new Promise(resolve => setTimeout(resolve, 500));
 
         navigation.navigate("CookMode", {
           recipe: cookModeRecipe,
@@ -284,6 +278,7 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
   logger.debug("🎯 RecipeCardsScreen render:", {
     recipesCount: recipes.length,
     isLoading,
+    isGeneratingDetailed,
     error: !!error,
     hasSessionId: !!sessionId,
   });
@@ -298,15 +293,16 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
       </View>
 
       <View style={styles.contentContainer}>
-        {isLoading && (
-          <LoadingAnimation visible={true} variant="previews" />
+        {/* Single unified loading animation */}
+        {(isLoading || isGeneratingDetailed) && (
+          <LoadingAnimation 
+            visible={true} 
+            title={isGeneratingDetailed ? "📝 Perfecting Your Recipe..." : "👨‍🍳 Crafting Recipe Ideas..."}
+            subtitle={isGeneratingDetailed ? "Crafting step-by-step cooking instructions" : "Creating 3 unique dishes just for you"}
+          />
         )}
 
-        {isGeneratingDetailed && (
-          <LoadingAnimation visible={true} variant="detailed" />
-        )}
-
-        {!isLoading && error && (
+        {!isLoading && !isGeneratingDetailed && error && (
           <View style={styles.errorContainer}>
             <Text style={styles.errorTitle}>Oops!</Text>
             <Text style={styles.errorText}>{error}</Text>
@@ -317,7 +313,7 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
           </View>
         )}
 
-        {!isLoading && !error && (
+        {!isLoading && !isGeneratingDetailed && !error && (
           <View style={styles.cardStackContainer}>
             <CardStack
               recipes={recipes}
@@ -331,7 +327,7 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
         )}
 
         {/* Swipe instructions positioned at the bottom of content area */}
-        {!isLoading && !error && recipes.length > 0 && (
+        {!isLoading && !isGeneratingDetailed && !error && recipes.length > 0 && (
           <View style={styles.swipeInstructionsContainer}>
             <View style={styles.swipeInstructionCard}>
               <View style={styles.swipeIconContainer}>
@@ -469,3 +465,4 @@ const styles = StyleSheet.create({
 });
 
 export default RecipeCardsScreen;
+

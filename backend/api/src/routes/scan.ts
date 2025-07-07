@@ -36,6 +36,7 @@ const getOpenAIClient = (): OpenAI => {
     }
     openai = new OpenAI({
       apiKey: apiKey,
+      timeout: 60000, // 1 minute timeout for vision analysis
     });
   }
   return openai;

@@ -39,6 +39,7 @@ export class RecipePreviewService {
   constructor() {
     this.openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
+      timeout: 60000, // 1 minute timeout for previews
     });
   }
 

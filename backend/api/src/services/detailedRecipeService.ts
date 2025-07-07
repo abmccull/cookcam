@@ -75,6 +75,7 @@ export class DetailedRecipeService {
   constructor() {
     this.openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
+      timeout: 120000, // 2 minutes timeout
     });
   }
 
@@ -97,16 +98,16 @@ export class DetailedRecipeService {
         messages: [
           {
             role: 'system',
-            content: 'You are a professional chef instructor. Generate detailed, clear cooking instructions with tips and techniques. Return only valid JSON.'
+            content: 'You are a professional chef instructor. Generate detailed, clear cooking instructions with tips and techniques. Return only valid JSON in the exact format requested.'
           },
           {
             role: 'user',
             content: prompt
           }
         ],
-        max_tokens: 4000, // More tokens for detailed instructions
+        max_tokens: 2500, // Reduced for faster response
         temperature: 0.6,
-        response_format: { type: 'json_object' }
+        // Removed response_format for faster processing
       });
 
       const content = response.choices[0]?.message?.content;

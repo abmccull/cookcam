@@ -103,6 +103,7 @@ export class EnhancedRecipeGenerationService {
     
     this.openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
+      timeout: 90000, // 1.5 minutes timeout for multiple recipes
     });
   }
 
