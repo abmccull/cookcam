@@ -177,6 +177,17 @@ jobs:
           tar -xzf /tmp/backend/api/deployment.tar.gz
           echo "✅ Files extracted successfully"
           
+          # Ensure Node.js and npm are available
+          echo "🔧 Checking Node.js and npm installation..."
+          if ! command -v node &> /dev/null; then
+            echo "📥 Installing Node.js..."
+            curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
+            apt-get install -y nodejs
+          fi
+          
+          echo "📋 Node.js version: $(node --version)"
+          echo "📋 npm version: $(npm --version)"
+          
           # Install/update dependencies
           echo "📦 Installing dependencies..."
           npm ci --production
