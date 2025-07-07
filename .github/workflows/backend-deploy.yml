@@ -88,9 +88,9 @@ jobs:
         rm -rf dist
         echo "🧹 Cleaned previous build directory"
         
-        # Build with verbose output
-        echo "🔨 Running TypeScript build with verbose output..."
-        npx tsc --verbose || {
+        # Build with error handling
+        echo "🔨 Running TypeScript build..."
+        npx tsc || {
           echo "❌ TypeScript compilation failed!"
           echo "🔍 Checking for errors..."
           npx tsc --noEmit --listFiles | head -20
