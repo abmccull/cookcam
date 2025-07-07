@@ -91,12 +91,13 @@ function extractNutritionalData(food: any) {
 // GET /api/ingredients/search - Search ingredients
 router.get('/search', async (req, res) => {
   try {
-    const { query, limit = 20 } = req.query;
+    const { q, query, limit = 20 } = req.query;
+    const searchQuery = q || query; // Support both 'q' and 'query' parameters for backward compatibility
     
-    if (!query || typeof query !== 'string') {
+    if (!searchQuery || typeof searchQuery !== 'string') {
       return res.status(400).json({
         success: false,
-        error: 'Query parameter is required'
+        error: 'Query parameter (q or query) is required'
       });
     }
 
@@ -104,7 +105,7 @@ router.get('/search', async (req, res) => {
     const { data: results, error } = await supabase
       .from('ingredients')
       .select('*')
-      .or(`name.ilike.%${query}%,searchable_text.ilike.%${query}%`)
+      .or(`name.ilike.%${searchQuery}%,searchable_text.ilike.%${searchQuery}%`)
       .limit(parseInt(limit as string));
 
     if (error) {
@@ -136,16 +137,17 @@ router.get('/search', async (req, res) => {
 // GET /api/ingredients/usda/search - Direct USDA search
 router.get('/usda/search', async (req, res) => {
   try {
-    const { query, limit = 10 } = req.query;
+    const { q, query, limit = 10 } = req.query;
+    const searchQuery = q || query; // Support both 'q' and 'query' parameters for backward compatibility
     
-    if (!query || typeof query !== 'string') {
+    if (!searchQuery || typeof searchQuery !== 'string') {
       return res.status(400).json({
         success: false,
-        error: 'Query parameter is required'
+        error: 'Query parameter (q or query) is required'
       });
     }
 
-    const results = await searchUSDAFoods(query, parseInt(limit as string));
+    const results = await searchUSDAFoods(searchQuery, parseInt(limit as string));
     
     res.json({
       success: true,

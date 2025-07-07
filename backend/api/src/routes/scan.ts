@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { supabase, createAuthenticatedClient } from '../index';
-import { authenticateUser } from '../middleware/auth';
+import { authenticateUser, optionalAuth } from '../middleware/auth';
 import express from 'express';
 import sharp from 'sharp';
 import OpenAI from 'openai';
@@ -543,7 +543,7 @@ router.put('/:scanId/ingredients', authenticateUser, async (req: Request, res: R
 });
 
 // Also add a new endpoint specifically for mobile app image analysis
-router.post('/analyze', authenticateUser, validateScanInput, async (req: express.Request, res: express.Response) => {
+router.post('/analyze', optionalAuth, validateScanInput, async (req: express.Request, res: express.Response) => {
   try {
     console.log('🔍 Analyzing image for ingredients...');
 
@@ -587,48 +587,56 @@ router.post('/analyze', authenticateUser, validateScanInput, async (req: express
       });
     }
 
-    // Store scan result
-    const { data: scanResult, error: scanError } = await supabase
-      .from('ingredient_scans')
-      .insert([{
-        user_id: (req as any).user.id,
-        detected_ingredients: detectedIngredients,
-        image_url: null, // Not storing image for privacy
-        confidence_score: detectedIngredients.reduce((acc, ing) => acc + ing.confidence, 0) / detectedIngredients.length,
-        scan_metadata: {
-          ingredients_count: detectedIngredients.length,
-          processing_time: Date.now()
-        }
-      }])
-      .select()
-      .single();
+    // Store scan result (only if user is authenticated)
+    let scanResult = null;
+    if ((req as any).user?.id) {
+      const { data: result, error: scanError } = await supabase
+        .from('ingredient_scans')
+        .insert([{
+          user_id: (req as any).user.id,
+          detected_ingredients: detectedIngredients,
+          image_url: null, // Not storing image for privacy
+          confidence_score: detectedIngredients.reduce((acc, ing) => acc + ing.confidence, 0) / detectedIngredients.length,
+          scan_metadata: {
+            ingredients_count: detectedIngredients.length,
+            processing_time: Date.now()
+          }
+        }])
+        .select()
+        .single();
 
-    if (scanError) {
-      console.error('Scan storage error:', scanError);
-      // Continue even if storage fails
+      if (scanError) {
+        console.error('Scan storage error:', scanError);
+        // Continue even if storage fails
+      } else {
+        scanResult = result;
+      }
     }
 
-    // Award XP for scanning
-    try {
-      await supabase.rpc('add_user_xp', {
-        p_user_id: (req as any).user.id,
-        p_xp_amount: 15,
-        p_action: 'image_scan_analysis',
-        p_metadata: { 
-          scan_id: scanResult?.id, 
-          ingredients_count: detectedIngredients.length 
-        }
-      });
-    } catch (xpError) {
-      console.error('XP award error:', xpError);
+    // Award XP for scanning (only if user is authenticated)
+    if ((req as any).user?.id) {
+      try {
+        await supabase.rpc('add_user_xp', {
+          p_user_id: (req as any).user.id,
+          p_xp_amount: 15,
+          p_action: 'image_scan_analysis',
+          p_metadata: { 
+            scan_id: scanResult?.id, 
+            ingredients_count: detectedIngredients.length 
+          }
+        });
+      } catch (xpError) {
+        console.error('XP award error:', xpError);
+      }
     }
 
     res.json({
       success: true,
       scan_id: scanResult?.id,
       ingredients: detectedIngredients,
-      confidence_score: scanResult?.confidence_score || 0.8,
-      xp_awarded: 15
+      confidence_score: scanResult?.confidence_score || (detectedIngredients.reduce((acc, ing) => acc + ing.confidence, 0) / detectedIngredients.length),
+      xp_awarded: (req as any).user?.id ? 15 : 0,
+      user_authenticated: !!(req as any).user?.id
     });
 
   } catch (error: unknown) {
