@@ -73,25 +73,55 @@ jobs:
         cd backend/api
         echo "🔨 Building TypeScript..."
         
+        # Debug environment
+        echo "🔍 Environment Debug:"
+        echo "Node version: $(node --version)"
+        echo "npm version: $(npm --version)"
+        echo "TypeScript version: $(npx tsc --version)"
+        echo "Current directory: $(pwd)"
+        echo "📁 Source directory contents:"
+        ls -la src/
+        echo "📄 TypeScript config:"
+        cat tsconfig.json
+        
         # Clean previous build
         rm -rf dist
         echo "🧹 Cleaned previous build directory"
         
-        # Build the application
-        npm run build
+        # Build with verbose output
+        echo "🔨 Running TypeScript build with verbose output..."
+        npx tsc --verbose || {
+          echo "❌ TypeScript compilation failed!"
+          echo "🔍 Checking for errors..."
+          npx tsc --noEmit --listFiles | head -20
+          exit 1
+        }
         echo "✅ TypeScript build completed"
         
         # Verify critical files exist
+        echo "🔍 Post-build verification:"
+        echo "📁 Checking if dist directory exists:"
+        ls -la . | grep dist || echo "No dist directory found"
+        
+        if [ -d "dist" ]; then
+          echo "📁 dist/ directory contents:"
+          ls -la dist/
+        else
+          echo "❌ dist/ directory was not created"
+          exit 1
+        fi
+        
         if [ ! -f "dist/index.js" ]; then
           echo "❌ Build failed: dist/index.js not found"
-          echo "📁 Build directory contents:"
-          ls -la dist/ 2>/dev/null || echo "dist/ directory doesn't exist"
+          echo "🔍 Searching for any .js files in dist:"
+          find dist -name "*.js" -type f 2>/dev/null || echo "No .js files found in dist"
+          echo "🔍 Full dist tree:"
+          find dist -type f 2>/dev/null || echo "dist directory is empty"
           exit 1
         fi
         
         echo "✅ Build artifact verified: dist/index.js exists"
-        echo "📁 Build directory contents:"
-        ls -la dist/
+        echo "📊 File size: $(du -h dist/index.js)"
         
         # Verify authentication fixes are included
         if grep -q "createAuthenticatedClient" dist/index.js; then
