@@ -257,10 +257,19 @@ jobs:
           
           # Ensure Node.js and npm are available
           echo "🔧 Checking Node.js and npm installation..."
+          
+          # Check if Node.js is available
           if ! command -v node &> /dev/null; then
-            echo "📥 Installing Node.js..."
+            echo "📥 Installing Node.js and npm..."
             curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
             apt-get install -y nodejs
+          fi
+          
+          # Check if npm is available (can be missing even with Node.js installed)
+          if ! command -v npm &> /dev/null; then
+            echo "📥 Installing npm..."
+            apt-get update
+            apt-get install -y npm
           fi
           
           echo "📋 Node.js version: $(node --version)"
