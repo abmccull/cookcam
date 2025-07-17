@@ -1,0 +1,26 @@
+{
+  "name": "cookcam-website",
+  "version": "1.0.0",
+  "description": "CookCam AI static website",
+  "main": "index.html",
+  "scripts": {
+    "dev": "npx serve .",
+    "build": "echo 'Static website - no build needed'",
+    "install-analytics": "npm install @vercel/analytics"
+  },
+  "dependencies": {
+    "@vercel/analytics": "^1.1.1"
+  },
+  "devDependencies": {
+    "serve": "^14.2.1"
+  },
+  "keywords": [
+    "cookcam",
+    "ai",
+    "cooking",
+    "recipes",
+    "static-website"
+  ],
+  "author": "CookCam Team",
+  "license": "MIT"
+} 
