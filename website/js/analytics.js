@@ -1,10 +1,9 @@
 // Vercel Analytics for static websites
 (function() {
-    // Load Vercel Analytics script
+    // Load Vercel Analytics script for static websites
     const script = document.createElement('script');
     script.src = 'https://va.vercel-scripts.com/v1/script.js';
     script.defer = true;
-    script.setAttribute('data-api', '/_vercel/insights/vitals');
     
     // Add the script to the head
     document.head.appendChild(script);

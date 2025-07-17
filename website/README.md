@@ -247,7 +247,7 @@ Before deployment, verify:
 
 ### Vercel Analytics Setup
 - **Package**: `@vercel/analytics@^1.1.1` installed via npm
-- **Configuration**: Enabled in `vercel.json` with `"analytics": { "enable": true }`
+- **Configuration**: Automatic integration via analytics script (no vercel.json config needed)
 - **Integration**: Automatic pageview tracking and custom event monitoring
 
 ### Tracked Events
@@ -264,7 +264,7 @@ Before deployment, verify:
 - `js/analytics.js` - Core analytics implementation
 - All HTML files - Analytics script inclusion
 - `package.json` - Dependency management
-- `vercel.json` - Analytics configuration
+- `vercel.json` - Routing configuration (analytics auto-enabled)
 
 ## 📞 Support
 
