@@ -292,7 +292,7 @@ export class CacheService {
       try {
         const info = await this.redis.info('memory');
         const usedMemory = info.match(/used_memory:(\d+)/);
-        if (usedMemory) {
+        if (usedMemory && usedMemory[1]) {
           stats.redisMemoryUsage = parseInt(usedMemory[1]);
         }
         

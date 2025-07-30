@@ -316,7 +316,7 @@ export class BackupService {
       // Test cache connection
       try {
         await this.cacheService.set('backup:test', 'test', { ttl: 60 });
-        await this.cacheService.delete('backup:test');
+        await this.cacheService.del('backup:test');
         checks.push({
           name: 'Cache Connection',
           success: true,

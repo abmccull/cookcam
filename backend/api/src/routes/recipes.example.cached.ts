@@ -1,6 +1,6 @@
 // Example of how to implement caching in the recipes route
 import { Router } from 'express';
-import { authenticateUser } from '../middleware/auth';
+import { authenticateUser, AuthenticatedRequest } from '../middleware/auth';
 import { cacheService, CacheNamespaces, CacheTTL } from '../services/cache';
 import { supabase } from '../index';
 import { logger } from '../utils/logger';
@@ -85,7 +85,7 @@ router.get('/popular', async (req, res) => {
 
 // Get recipe by ID with caching using decorator pattern
 class RecipeService {
-  @CacheService.cacheable('recipe-details', CacheTTL.LONG)
+  @cacheService.cacheable('recipe-details', CacheTTL.LONG)
   async getRecipeById(recipeId: string) {
     const { data, error } = await supabase
       .from('recipes')
@@ -155,7 +155,7 @@ router.put('/:id', authenticateUser, async (req, res) => {
 });
 
 // Get cache statistics (admin only)
-router.get('/admin/cache-stats', authenticateUser, async (req, res) => {
+router.get('/admin/cache-stats', authenticateUser, async (req: AuthenticatedRequest, res) => {
   try {
     // Check if user is admin (you'd implement this check properly)
     if (req.user?.email !== 'admin@cookcam.ai') {

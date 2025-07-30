@@ -126,7 +126,7 @@ export const authenticateUser = async (req: AuthenticatedRequest, res: Response,
 // Optional authentication - allows both authenticated and guest users
 export const optionalAuth = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    logger.debug('OptionalAuth middleware called for:', req.path);
+    logger.debug('OptionalAuth middleware called for:', { path: req.path });
     const authHeader = req.headers.authorization;
     
     // No auth header = continue as guest

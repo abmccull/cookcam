@@ -32,7 +32,8 @@ router.post('/add-xp', authenticateUser, async (req: AuthenticatedRequest, res: 
 
     if (error) {
       logger.error('Error adding XP:', error);
-      return res.status(500).json({ error: 'Failed to add XP' });
+      res.status(500).json({ error: 'Failed to add XP' });
+      return;
     }
 
     res.json({
@@ -46,9 +47,14 @@ router.post('/add-xp', authenticateUser, async (req: AuthenticatedRequest, res: 
 });
 
 // Check daily streak (calls your SQL function)
-router.post('/check-streak', authenticateUser, async (req: Request, res: Response) => {
+router.post('/check-streak', authenticateUser, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const userId = req.user?.id;
+
+    if (!userId) {
+      res.status(401).json({ error: 'User authentication required' });
+      return;
+    }
 
     const { data, error } = await supabase.rpc('check_user_streak', {
       p_user_id: userId
@@ -70,9 +76,14 @@ router.post('/check-streak', authenticateUser, async (req: Request, res: Respons
 });
 
 // Get user progress and achievements
-router.get('/progress', authenticateUser, async (req: Request, res: Response) => {
+router.get('/progress', authenticateUser, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const userId = req.user?.id;
+
+    if (!userId) {
+      res.status(401).json({ error: 'User authentication required' });
+      return;
+    }
     const token = req.headers.authorization?.replace('Bearer ', '') || '';
     const userClient = createAuthenticatedClient(token);
 
@@ -256,15 +267,18 @@ router.get('/leaderboard', async (req: Request, res: Response) => {
       leaderboard = leaderboard.slice(0, parseInt(limit as string));
       
       // Update ranks after sorting and limiting
-      leaderboard.forEach((entry, index) => {
-        entry.rank = index + 1;
-      });
+      if (leaderboard) {
+        leaderboard.forEach((entry, index) => {
+          entry.rank = index + 1;
+        });
+      }
     }
 
-    logger.debug(`✅ Leaderboard fetched: ${leaderboard.length} entries for ${period}`);
+    const finalLeaderboard = leaderboard || [];
+    logger.debug(`✅ Leaderboard fetched: ${finalLeaderboard.length} entries for ${period}`);
 
     res.json({
-      leaderboard,
+      leaderboard: finalLeaderboard,
       metadata: {
         type,
         period,

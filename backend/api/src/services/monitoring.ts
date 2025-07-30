@@ -353,12 +353,12 @@ export class MonitoringService {
     }
   }
   
-  // Start periodic health checks
-  startHealthChecks(intervalMs = 60000): void {
-    setInterval(() => {
-      this.logMetrics();
-    }, intervalMs);
-  }
+  // Start periodic health checks - COMMENTED OUT DUE TO DUPLICATE
+  // startHealthChecks(intervalMs = 60000): void {
+  //   setInterval(() => {
+  //     this.logMetrics();
+  //   }, intervalMs);
+  // }
   
   // Get performance metrics
   async getPerformanceMetrics(): Promise<any> {

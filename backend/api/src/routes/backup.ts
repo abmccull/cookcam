@@ -109,6 +109,12 @@ router.post('/start', authenticateUser, requireAdmin, async (req: Request, res: 
 router.get('/status/:backupId', authenticateUser, requireAdmin, async (req: Request, res: Response) => {
   try {
     const { backupId } = req.params;
+    
+    if (!backupId) {
+      res.status(400).json({ error: 'Backup ID is required' });
+      return;
+    }
+    
     const status = await backupService.getBackupStatus(backupId);
     
     if (!status) {
