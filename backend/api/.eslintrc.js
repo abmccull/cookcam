@@ -85,6 +85,7 @@ module.exports = {
     'no-var': 'error',
     'eqeqeq': ['error', 'always'],
     'curly': ['error', 'all'],
+    'quotes': ['error', 'single', { avoidEscape: true, allowTemplateLiterals: true }],
   },
   overrides: [
     {
