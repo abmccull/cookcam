@@ -115,13 +115,7 @@ router.post('/signup', authRateLimiter, validateAuthInput, async (req: Request, 
     }
 
     // Use Supabase with retry logic for 504 errors
-    logger.info('Attempting Supabase signup:', {
-      email,
-      nameProvided: !!name,
-      nameLength: name?.length,
-      passwordLength: password?.length,
-      emailFormat: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email),
-    });
+    logger.info('Attempting Supabase signup for user');
 
     // Retry logic for AuthRetryableFetchError (504 timeouts)
     const maxRetries = 3;
@@ -130,7 +124,7 @@ router.post('/signup', authRateLimiter, validateAuthInput, async (req: Request, 
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
-        logger.info(`Supabase signup attempt ${attempt}/${maxRetries}`);
+        logger.debug(`Supabase signup attempt ${attempt}/${maxRetries}`);
 
         const result = await supabase.auth.signUp({
           email,
@@ -155,16 +149,12 @@ router.post('/signup', authRateLimiter, validateAuthInput, async (req: Request, 
         }
 
         // Log retry attempt for 504 errors
-        logger.warn(`Supabase signup 504 timeout on attempt ${attempt}/${maxRetries}:`, {
-          errorName: (authError as any).name,
-          status: (authError as any).status,
-          willRetry: attempt < maxRetries,
-        });
+        logger.warn(`Supabase signup timeout on attempt ${attempt}/${maxRetries}`);
 
         // Wait before retry (exponential backoff: 1s, 2s, 4s)
         if (attempt < maxRetries) {
           const delay = Math.pow(2, attempt - 1) * 1000;
-          logger.info(`Waiting ${delay}ms before retry...`);
+          logger.debug(`Waiting ${delay}ms before retry...`);
           await new Promise((resolve) => setTimeout(resolve, delay));
         }
       } catch (unexpectedError) {
@@ -174,35 +164,17 @@ router.post('/signup', authRateLimiter, validateAuthInput, async (req: Request, 
       }
     }
 
-    logger.info('Supabase signup final response:', {
-      hasAuthData: !!authData,
-      hasUser: !!authData?.user,
-      hasSession: !!authData?.session,
-      hasError: !!authError,
-      userId: authData?.user?.id,
-      finalAttempt: true,
+    logger.debug('Supabase signup completed', {
+      success: !!authData?.user,
+      hasError: !!authError
     });
 
     if (authError) {
-      // Enhanced debugging for Supabase auth errors
-      logger.error('Supabase signup error - DETAILED DEBUG:', {
-        errorType: typeof authError,
-        errorConstructor: authError.constructor.name,
+      // Log auth error without sensitive details
+      logger.error('Supabase signup error:', {
         message: authError.message,
-        name: authError.name,
         code: (authError as any).code,
-        status: (authError as any).status,
-        statusCode: (authError as any).statusCode,
-        details: (authError as any).details,
-        hint: (authError as any).hint,
-        errorDescription: (authError as any).error_description,
-        fullError: authError,
-        // Try to serialize to see full structure
-        stringified: JSON.stringify(authError, null, 2),
-        // Check all enumerable properties
-        ownProps: Object.getOwnPropertyNames(authError),
-        // Input data for context
-        requestData: { email, name },
+        status: (authError as any).status
       });
 
       const errorMessage =

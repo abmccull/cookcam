@@ -77,10 +77,7 @@ export const authenticateUser = async (
 
     // Production mode - use Supabase auth validation
     try {
-      logger.info('🔐 Validating Supabase token:', {
-        tokenLength: token.length,
-        tokenPrefix: token.substring(0, 20) + '...',
-      });
+      logger.debug('🔐 Validating Supabase token');
 
       const {
         data: { user },
@@ -89,9 +86,7 @@ export const authenticateUser = async (
 
       if (error || !user) {
         logger.warn('❌ Supabase token validation failed:', {
-          error: error?.message,
-          hasUser: !!user,
-          tokenPrefix: token.substring(0, 20) + '...',
+          error: error?.message
         });
         res.status(401).json({
           error: 'Token expired or invalid',
@@ -101,10 +96,7 @@ export const authenticateUser = async (
         return;
       }
 
-      logger.info('✅ Supabase token validation successful:', {
-        userId: user.id,
-        email: user.email,
-      });
+      logger.debug('✅ Supabase token validation successful');
 
       req.user = {
         id: user.id,
@@ -113,8 +105,7 @@ export const authenticateUser = async (
       next();
     } catch (validationError: unknown) {
       logger.error('❌ Supabase token validation error:', {
-        error: validationError instanceof Error ? validationError.message : 'Unknown error',
-        tokenPrefix: token.substring(0, 20) + '...',
+        error: validationError instanceof Error ? validationError.message : 'Unknown error'
       });
 
       res.status(401).json({

@@ -37,9 +37,15 @@ export const supabase = createClient(
 );
 
 // Initialize Supabase service role client (for user impersonation)
+// Check both possible env var names for service role key
+const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
+if (!serviceRoleKey) {
+  logger.warn('No Supabase service role key found. Some operations may fail.');
+}
+
 export const supabaseServiceRole = createClient(
   process.env.SUPABASE_URL || '',
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || '',
+  serviceRoleKey || process.env.SUPABASE_ANON_KEY || '',
   {
     auth: {
       autoRefreshToken: false,
@@ -66,7 +72,7 @@ export const createAuthenticatedClient = (userJwt: string) => {
 // Log which keys are being used (without exposing the actual keys)
 logger.info('Supabase clients initialized', {
   hasAnonKey: !!process.env.SUPABASE_ANON_KEY,
-  hasServiceRoleKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+  hasServiceRoleKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY || !!process.env.SUPABASE_SERVICE_KEY,
   securityMode: 'user-context-aware',
 });
 
