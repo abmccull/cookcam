@@ -128,14 +128,14 @@ function convertToGrams(quantity: number, unit: string, ingredientName: string):
   // Whole item estimates based on ingredient type
   if (unitLower.includes('whole') || unitLower.includes('piece') || unitLower === '') {
     // Fruits
-    if (ingredientLower.includes('apple')) return quantity * 180;
-    if (ingredientLower.includes('banana')) return quantity * 120;
-    if (ingredientLower.includes('orange')) return quantity * 150;
-    if (ingredientLower.includes('tomato')) return quantity * 120;
-    if (ingredientLower.includes('onion')) return quantity * 110;
-    if (ingredientLower.includes('potato')) return quantity * 200;
-    if (ingredientLower.includes('egg')) return quantity * 50;
-    if (ingredientLower.includes('avocado')) return quantity * 200;
+    if (ingredientLower.includes('apple')) {return quantity * 180;}
+    if (ingredientLower.includes('banana')) {return quantity * 120;}
+    if (ingredientLower.includes('orange')) {return quantity * 150;}
+    if (ingredientLower.includes('tomato')) {return quantity * 120;}
+    if (ingredientLower.includes('onion')) {return quantity * 110;}
+    if (ingredientLower.includes('potato')) {return quantity * 200;}
+    if (ingredientLower.includes('egg')) {return quantity * 50;}
+    if (ingredientLower.includes('avocado')) {return quantity * 200;}
     
     // Default whole item
     return quantity * 100;
@@ -146,15 +146,16 @@ function convertToGrams(quantity: number, unit: string, ingredientName: string):
 }
 
 // Fuzzy string matching for ingredient names
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function calculateStringSimilarity(str1: string, str2: string): number {
   const s1 = str1.toLowerCase().trim();
   const s2 = str2.toLowerCase().trim();
   
   // Exact match
-  if (s1 === s2) return 1.0;
+  if (s1 === s2) {return 1.0;}
   
   // Contains match
-  if (s1.includes(s2) || s2.includes(s1)) return 0.9;
+  if (s1.includes(s2) || s2.includes(s1)) {return 0.9;}
   
   // Word overlap scoring
   const words1 = s1.split(/\s+/);
@@ -184,11 +185,11 @@ function levenshteinDistance(str1: string, str2: string): number {
   
   for (let i = 0; i <= str1.length; i++) {
     const row = matrix[0];
-    if (row) row[i] = i;
+    if (row) {row[i] = i;}
   }
   for (let j = 0; j <= str2.length; j++) {
     const row = matrix[j];
-    if (row) row[0] = j;
+    if (row) {row[0] = j;}
   }
   
   for (let j = 1; j <= str2.length; j++) {
@@ -238,17 +239,17 @@ function calculateEnhancedSimilarity(input: string, dbName: string): number {
   const normalizedDb = dbName.toLowerCase().replace(/[^a-z\s]/g, ' ').replace(/\s+/g, ' ').trim();
   
   // Exact match
-  if (normalizedInput === normalizedDb) return 1.0;
+  if (normalizedInput === normalizedDb) {return 1.0;}
   
   // Substring containment
-  if (normalizedDb.includes(normalizedInput)) return 0.95;
-  if (normalizedInput.includes(normalizedDb)) return 0.90;
+  if (normalizedDb.includes(normalizedInput)) {return 0.95;}
+  if (normalizedInput.includes(normalizedDb)) {return 0.90;}
   
   // Word-based similarity
   const inputWords = new Set(normalizedInput.split(' ').filter(w => w.length > 2));
   const dbWords = new Set(normalizedDb.split(' ').filter(w => w.length > 2));
   
-  if (inputWords.size === 0 || dbWords.size === 0) return 0;
+  if (inputWords.size === 0 || dbWords.size === 0) {return 0;}
   
   const intersection = new Set(Array.from(inputWords).filter(x => dbWords.has(x)));
   const union = new Set([...Array.from(inputWords), ...Array.from(dbWords)]);

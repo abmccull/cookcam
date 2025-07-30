@@ -74,7 +74,7 @@ export class CreatorService {
           .eq('link_code', linkCode)
           .single();
 
-        if (!existing) break;
+        if (!existing) {break;}
         
         linkCode = generateAffiliateCode();
         attempts++;
@@ -233,7 +233,7 @@ export class CreatorService {
       const targetYear = year || new Date().getFullYear();
 
       // Check if revenue record exists
-      let { data: revenue, error } = await supabase
+      const { data: revenue, error } = await supabase
         .from('creator_revenue')
         .select('*')
         .eq('creator_id', creatorId)

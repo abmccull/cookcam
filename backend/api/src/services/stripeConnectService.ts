@@ -7,18 +7,8 @@ const stripe = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SEC
   apiVersion: '2025-05-28.basil',
 }) : null;
 
-interface CreatorStripeAccount {
-  creator_id: string;
-  stripe_account_id: string;
-  account_status: 'pending' | 'active' | 'restricted' | 'disabled';
-  details_submitted: boolean;
-  charges_enabled: boolean;
-  payouts_enabled: boolean;
-  country: string;
-  currency: string;
-  created_at: Date;
-  updated_at: Date;
-}
+// Note: CreatorStripeAccount interface removed as it's not used
+// The actual database schema is used directly through Supabase
 
 export class StripeConnectService {
   // Create Connected Account for Creator
@@ -102,7 +92,7 @@ export class StripeConnectService {
 
   // Update account status from webhook
   async updateAccountStatus(accountId: string): Promise<void> {
-    if (!stripe) return;
+    if (!stripe) {return;}
 
     try {
       const account = await stripe.accounts.retrieve(accountId);
@@ -128,8 +118,8 @@ export class StripeConnectService {
 
   // Get account status based on Stripe account object
   private getAccountStatus(account: Stripe.Account): string {
-    if (!account.details_submitted) return 'pending';
-    if (!account.charges_enabled || !account.payouts_enabled) return 'restricted';
+    if (!account.details_submitted) {return 'pending';}
+    if (!account.charges_enabled || !account.payouts_enabled) {return 'restricted';}
     return 'active';
   }
 
@@ -219,7 +209,7 @@ export class StripeConnectService {
 
   // Get creator's Stripe dashboard URL
   async getCreatorDashboardUrl(creatorId: string): Promise<string | null> {
-    if (!stripe) return null;
+    if (!stripe) {return null;}
 
     try {
       const { data: account } = await supabase

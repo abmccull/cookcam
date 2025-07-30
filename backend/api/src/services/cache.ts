@@ -110,7 +110,7 @@ export class CacheService {
       } else {
         // Fallback to memory cache
         const item = this.memoryCache.get(fullKey);
-        if (!item) return null;
+        if (!item) {return null;}
         
         if (Date.now() > item.expires) {
           this.memoryCache.delete(fullKey);
@@ -308,7 +308,7 @@ export class CacheService {
 
   // Health check
   async healthCheck(): Promise<boolean> {
-    if (!this.redis) return true; // Memory cache is always healthy
+    if (!this.redis) {return true;} // Memory cache is always healthy
     
     try {
       await this.redis.ping();
