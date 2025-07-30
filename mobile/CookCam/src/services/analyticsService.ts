@@ -9,7 +9,7 @@ interface AnalyticsEvent {
   properties?: Record<string, any>;
   timestamp: Date;
   sessionId: string;
-  userId?: string;
+  userId?: string | undefined;
 }
 
 interface SessionData {

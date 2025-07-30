@@ -25,14 +25,14 @@ interface RecipeRatingModalProps {
 interface RatingData {
   overallRating: number;
   subRatings: {
-    taste?: number;
-    ease?: number;
-    presentation?: number;
-    accuracy?: number;
-    value?: number;
+    taste?: number | undefined;
+    ease?: number | undefined;
+    presentation?: number | undefined;
+    accuracy?: number | undefined;
+    value?: number | undefined;
   };
-  review?: string;
-  images?: string[];
+  review?: string | undefined;
+  images?: string[] | undefined;
 }
 
 const RecipeRatingModal: React.FC<RecipeRatingModalProps> = ({

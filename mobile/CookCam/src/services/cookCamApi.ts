@@ -605,8 +605,8 @@ class CookCamApi {
   // Helper method to test API connectivity
   async testConnection(): Promise<{
     connected: boolean;
-    latency?: number;
-    error?: string;
+    latency?: number | undefined;
+    error?: string | undefined;
   }> {
     const startTime = Date.now();
 

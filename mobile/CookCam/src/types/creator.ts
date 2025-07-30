@@ -61,7 +61,7 @@ export interface CreatorTierCardProps {
 }
 
 export interface CreatorLinkSectionProps {
-  userId?: string;
+  userId?: string | undefined;
   onCopyCode: () => void;
   onShare: () => void;
 }

@@ -15,8 +15,8 @@ export interface BiometricCapabilities {
 
 export interface BiometricAuthResult {
   success: boolean;
-  error?: string;
-  warning?: string;
+  error?: string | undefined;
+  warning?: string | undefined;
 }
 
 class BiometricAuthService {
@@ -284,7 +284,7 @@ class BiometricAuthService {
   /**
    * Retrieve stored credentials for biometric login
    */
-  async getStoredCredentials(): Promise<{ email: string; token: string; refreshToken?: string } | null> {
+  async getStoredCredentials(): Promise<{ email: string; token: string; refreshToken?: string | undefined } | null> {
     try {
       const email = await SecureStore.getItemAsync('biometric_email');
       const accessToken = await SecureStore.getItemAsync('biometric_access_token');

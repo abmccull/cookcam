@@ -14,7 +14,7 @@ import BiometricAuthService from '../services/biometricAuth';
 import logger from '../utils/logger';
 
 interface BiometricLoginProps {
-  onSuccess: (credentials: { email: string; token: string; refreshToken?: string }) => void;
+  onSuccess: (credentials: { email: string; token: string; refreshToken?: string | undefined }) => void;
   onError?: (error: string) => void;
   style?: any;
   disabled?: boolean;

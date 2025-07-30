@@ -3,17 +3,17 @@ export interface RecipeRating {
   recipeId: string;
   userId: string;
   userName: string;
-  userAvatar?: string;
+  userAvatar?: string | undefined;
   overallRating: number; // 1-5
   subRatings?: {
-    taste?: number;
-    ease?: number;
-    presentation?: number;
-    accuracy?: number;
-    value?: number;
-  };
-  review?: string;
-  images?: string[];
+    taste?: number | undefined;
+    ease?: number | undefined;
+    presentation?: number | undefined;
+    accuracy?: number | undefined;
+    value?: number | undefined;
+  } | undefined;
+  review?: string | undefined;
+  images?: string[] | undefined;
   helpfulCount: number;
   createdAt: string;
   updatedAt: string;
@@ -34,12 +34,12 @@ export interface ClaimedRecipe {
   tags: string[];
   creatorId: string;
   creatorName: string;
-  creatorAvatar?: string;
+  creatorAvatar?: string | undefined;
   creatorBadge?: {
     tier: number;
     name: string;
-  };
-  creatorTier?: number;
+  } | undefined;
+  creatorTier?: number | undefined;
   claimedAt: string;
   viewCount: number;
   shareCount: number;

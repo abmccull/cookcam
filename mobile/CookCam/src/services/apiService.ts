@@ -19,13 +19,13 @@ export interface ApiResponse<T = any> {
   data?: T;
   error?: string;
   message?: string;
-  status?: number;
+  status?: number | undefined;
 }
 
 export interface ApiError {
   message: string;
-  status?: number;
-  code?: string;
+  status?: number | undefined;
+  code?: string | undefined;
   details?: any;
 }
 

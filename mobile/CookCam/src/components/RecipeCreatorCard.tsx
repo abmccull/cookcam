@@ -19,13 +19,13 @@ interface RecipeCreatorCardProps {
     imageUrl?: string;
     creatorName?: string;
     creatorAvatar?: string;
-    creatorTier?: number;
+    creatorTier?: number | undefined;
     viewCount: number;
     averageRating: number;
     ratingCount: number;
     prepTime: number;
     difficulty: "Easy" | "Medium" | "Hard";
-    isSaved?: boolean;
+    isSaved?: boolean | undefined;
   };
   onPress: () => void;
   onCreatorPress?: () => void;

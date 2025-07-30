@@ -24,7 +24,7 @@ import logger from "../utils/logger";
 interface CheckInDay {
   date: string;
   completed: boolean;
-  photoUri?: string;
+  photoUri?: string | undefined;
 }
 
 const DailyCheckIn: React.FC = () => {

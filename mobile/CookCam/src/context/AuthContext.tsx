@@ -21,15 +21,15 @@ interface User {
   email: string;
   name: string;
   isCreator: boolean;
-  creatorTier?: number;
+  creatorTier?: number | undefined;
   level: number;
   xp: number;
   streak: number;
   badges: string[];
-  avatarUrl?: string;
-  creatorCode?: string;
-  favoriteCount?: number;
-  subscriberCount?: number;
+  avatarUrl?: string | undefined;
+  creatorCode?: string | undefined;
+  favoriteCount?: number | undefined;
+  subscriberCount?: number | undefined;
 }
 
 interface AuthContextType {
