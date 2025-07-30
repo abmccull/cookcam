@@ -17,12 +17,7 @@ const router = Router();
 
 // User interface for consistent typing
 
-interface SessionData {
-  access_token: string;
-  refresh_token: string;
-  expires_in: number;
-  token_type: string;
-}
+// Removed unused SessionData interface
 
 interface ProfileUpdateData {
   name?: string;

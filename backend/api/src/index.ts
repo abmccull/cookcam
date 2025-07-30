@@ -13,9 +13,9 @@ import analyticsRoutes from './routes/analytics';
 import userRoutes from './routes/users';
 import { securityHeaders, rateLimiter, sanitizeInput } from './middleware/security';
 import { logger } from './utils/logger';
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response } from 'express';
 import { errorHandler, requestIdMiddleware, notFoundHandler } from './middleware/errorHandler';
-import { authenticateUser } from './middleware/auth';
+import { authenticateUser, AuthenticatedRequest } from './middleware/auth';
 import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './config/swagger';
 import { securityMonitoring } from './services/security-monitoring';
@@ -97,8 +97,8 @@ app.use(cors({
   origin: process.env.CORS_ORIGIN || 'http://localhost:8081',
   credentials: true
 }));
-app.use(express.json({ limit: "10mb" }));
-app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(morgan('combined'));
 
 // Apply input sanitization
@@ -111,7 +111,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
 }));
 
 // Security metrics endpoint (protected)
-app.get('/api/v1/security/metrics', authenticateUser, async (req: Request, res: Response): Promise<void> => {
+app.get('/api/v1/security/metrics', authenticateUser, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   // Only allow admins to access security metrics
   if ((req as any).user?.role !== 'admin') {
     await securityMonitoring.logUnauthorizedAccess(req, 'security_metrics');
@@ -198,4 +198,6 @@ httpServer.listen(PORT, () => {
       logger.info('Monitoring service started');
     });
   }
-}); console.log('🚀 CI/CD Pipeline Active');
+});
+
+logger.info('🚀 CI/CD Pipeline Active');

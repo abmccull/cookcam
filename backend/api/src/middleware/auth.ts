@@ -126,12 +126,12 @@ export const authenticateUser = async (req: AuthenticatedRequest, res: Response,
 // Optional authentication - allows both authenticated and guest users
 export const optionalAuth = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    console.log('👥 OptionalAuth middleware called for:', req.path);
+    logger.debug('OptionalAuth middleware called for:', req.path);
     const authHeader = req.headers.authorization;
     
     // No auth header = continue as guest
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      console.log('👤 No auth header - continuing as guest');
+      logger.debug('No auth header - continuing as guest');
       req.user = undefined;
       req.isFreeTier = true;
       return next();
@@ -146,12 +146,12 @@ export const optionalAuth = async (req: AuthenticatedRequest, res: Response, nex
       const { data: { user }, error } = await supabase.auth.getUser(token);
       
       if (error || !user) {
-        console.log('❌ Invalid token - continuing as guest');
+        logger.debug('Invalid token - continuing as guest');
         req.user = undefined;
         req.isFreeTier = true;
         return next();
       } else {
-        console.log('✅ Valid token - authenticated user');
+        logger.debug('Valid token - authenticated user');
         req.user = { 
           id: user.id, 
           ...(user.email && { email: user.email })
@@ -161,7 +161,7 @@ export const optionalAuth = async (req: AuthenticatedRequest, res: Response, nex
       }
     } catch {
       // Invalid token = continue as guest (don't fail)
-      console.log('❌ Token validation error - continuing as guest');
+      logger.debug('Token validation error - continuing as guest');
       req.user = undefined;
       req.isFreeTier = true;
       next();
@@ -169,7 +169,7 @@ export const optionalAuth = async (req: AuthenticatedRequest, res: Response, nex
   } catch (error: unknown) {
     logger.error('Optional auth middleware error', { error: error instanceof Error ? error.message : 'Unknown error' });
     // Even on error, continue as guest
-    console.log('⚠️ Error in optionalAuth - continuing as guest');
+    logger.debug('Error in optionalAuth - continuing as guest');
     req.user = undefined;
     req.isFreeTier = true;
     next();

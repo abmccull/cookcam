@@ -1,26 +1,25 @@
 import { Router, Request, Response } from 'express';
 import { supabase, createAuthenticatedClient, supabaseServiceRole } from '../index';
-import { createClient } from '@supabase/supabase-js';
-import { authenticateUser } from '../middleware/auth';
+import { authenticateUser, AuthenticatedRequest } from '../middleware/auth';
 import { logger } from '../utils/logger';
 
 const router = Router();
 
-interface AuthenticatedRequest extends Request {
-  user: {
-    id: string;
-    email?: string;
-  };
-}
 
 // Add XP to user (calls your SQL function)
-router.post('/add-xp', authenticateUser, async (req: Request, res: Response) => {
+router.post('/add-xp', authenticateUser, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const { xp_amount, action, metadata = {} } = req.body;
-    const userId = (req as AuthenticatedRequest).user.id;
+    const userId = req.user?.id;
+
+    if (!userId) {
+      res.status(401).json({ error: 'User authentication required' });
+      return;
+    }
 
     if (!xp_amount || !action) {
-      return res.status(400).json({ error: 'XP amount and action are required' });
+      res.status(400).json({ error: 'XP amount and action are required' });
+      return;
     }
 
     // Call your SQL function
@@ -49,7 +48,7 @@ router.post('/add-xp', authenticateUser, async (req: Request, res: Response) => 
 // Check daily streak (calls your SQL function)
 router.post('/check-streak', authenticateUser, async (req: Request, res: Response) => {
   try {
-    const userId = (req as AuthenticatedRequest).user.id;
+    const userId = req.user?.id;
 
     const { data, error } = await supabase.rpc('check_user_streak', {
       p_user_id: userId
@@ -73,12 +72,12 @@ router.post('/check-streak', authenticateUser, async (req: Request, res: Respons
 // Get user progress and achievements
 router.get('/progress', authenticateUser, async (req: Request, res: Response) => {
   try {
-    const userId = (req as AuthenticatedRequest).user.id;
+    const userId = req.user?.id;
     const token = req.headers.authorization?.replace('Bearer ', '') || '';
     const userClient = createAuthenticatedClient(token);
 
     // Get user stats
-    const { data: user, error: userError } = await userClient
+    const { data: user } = await userClient
       .from('users')
       .select('level, xp, total_xp, streak_current, streak_shields')
       .eq('id', userId)
@@ -168,7 +167,7 @@ router.get('/leaderboard', async (req: Request, res: Response) => {
       logger.debug('📊 Entering fallback logic for period:', { period });
       
       // Fallback: Direct query approach (don't pre-sort for period-specific queries)
-      let baseQuery = supabase
+      const baseQuery = supabase
         .from('users')
         .select('id, name, avatar_url, level, total_xp, xp, is_creator, creator_tier')
         .gt('total_xp', 0);
@@ -182,7 +181,7 @@ router.get('/leaderboard', async (req: Request, res: Response) => {
 
       // Calculate period-specific XP for all periods
       let periodStart: Date;
-      let periodXpMap = new Map();
+      const periodXpMap = new Map();
 
       if (period === 'daily') {
         periodStart = new Date();

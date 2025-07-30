@@ -136,7 +136,7 @@ export async function checkSubscriptionLimits(
 
       // Check limits based on tier features
       let limit: number;
-      let currentUsage: number = 0;
+      const currentUsage: number = 0;
 
       switch (limitType) {
         case 'recipes':

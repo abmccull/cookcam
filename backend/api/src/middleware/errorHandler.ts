@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { AppError, ErrorResponse } from '../utils/errors';
 import { logger } from '../utils/logger';
 import { v4 as uuidv4 } from 'uuid';
+import { AuthenticatedRequest } from './auth';
 
 // Extend Request to include requestId
 declare global {
@@ -24,7 +25,7 @@ export const errorHandler = (
   err: Error,
   req: Request,
   res: Response,
-  next: NextFunction
+  _next: NextFunction
 ): void => {
   // Default error values
   let statusCode = 500;
@@ -74,7 +75,7 @@ export const errorHandler = (
     url: req.url,
     method: req.method,
     ip: req.ip,
-    userId: (req as any).user?.id,
+    userId: (req as AuthenticatedRequest).user?.id,
     requestId: req.id,
   };
 
@@ -136,7 +137,13 @@ export const notFoundHandler = (req: Request, res: Response): void => {
 };
 
 // Validation error formatter
-export const formatValidationErrors = (errors: any[]): string => {
+interface ValidationError {
+  param?: string;
+  msg?: string;
+  message?: string;
+}
+
+export const formatValidationErrors = (errors: ValidationError[]): string => {
   return errors
     .map(err => {
       if (err.param) {
@@ -148,7 +155,7 @@ export const formatValidationErrors = (errors: any[]): string => {
 };
 
 // Database error handler
-export const handleDatabaseError = (error: any): AppError => {
+export const handleDatabaseError = (error: { code?: string; message?: string }): AppError => {
   // PostgreSQL error codes
   if (error.code === '23505') {
     // Unique constraint violation
