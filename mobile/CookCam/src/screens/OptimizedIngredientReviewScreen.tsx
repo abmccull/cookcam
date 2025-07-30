@@ -352,7 +352,7 @@ const OptimizedIngredientReviewScreen: React.FC<IngredientReviewScreenProps> = R
       )}
 
       {/* AI Analysis Loading Animation */}
-      <LoadingAnimation visible={loading} variant="scanning" />
+      <LoadingAnimation visible={loading} />
 
       {/* Mystery Box Reward Modal */}
       <MysteryBoxModal

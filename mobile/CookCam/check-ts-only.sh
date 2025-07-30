@@ -4,13 +4,13 @@
 echo "⚡ Fast TypeScript Syntax Check"
 echo "==============================="
 
-# Check specific files if provided, otherwise all
+# Use the tsconfig.json configuration
 if [ $# -eq 0 ]; then
-    echo "Checking all TypeScript files..."
-    npx tsc --noEmit --jsx react-native src/**/*.tsx src/**/*.ts
+    echo "Checking all TypeScript files using tsconfig.json..."
+    npx tsc --noEmit
 else
     echo "Checking specific files: $@"
-    npx tsc --noEmit --jsx react-native "$@"
+    npx tsc --noEmit "$@"
 fi
 
 EXIT_CODE=$?

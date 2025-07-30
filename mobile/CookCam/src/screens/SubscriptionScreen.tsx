@@ -171,8 +171,8 @@ const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({
   };
 
   const renderProduct = (product: SubscriptionProduct) => {
-    const Icon = getProductIcon(product.tier);
-    const color = getProductColor(product.tier);
+    const Icon = getProductIcon(product.tier || "regular");
+    const color = getProductColor(product.tier || "regular");
     const isSelected = selectedProduct === product.productId;
     const isCurrentTier = state.currentSubscription?.tier_slug === product.tier;
 
@@ -194,7 +194,7 @@ const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({
               {product.title}
             </Text>
             <Text style={styles.productPrice}>
-              {product.localizedPrice}/month
+              {product.localizedPrice || product.price}/month
             </Text>
           </View>
           {product.tier === "creator" && (
@@ -209,7 +209,7 @@ const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({
         <View style={styles.trialInfo}>
           <Shield size={16} color="#4CAF50" />
           <Text style={styles.trialText}>
-            {product.freeTrialPeriod} free trial
+            {product.freeTrialPeriod || "3-day"} free trial
           </Text>
         </View>
 
@@ -255,7 +255,7 @@ const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({
               <ActivityIndicator color="white" />
             ) : (
               <Text style={styles.subscribeButtonText}>
-                Start {product.freeTrialPeriod} Free Trial
+                Start {product.freeTrialPeriod || "3-day"} Free Trial
               </Text>
             )}
           </View>

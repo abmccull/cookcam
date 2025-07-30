@@ -14,6 +14,10 @@ import userRoutes from './routes/users';
 import { securityHeaders, rateLimiter, sanitizeInput } from './middleware/security';
 import { logger } from './utils/logger';
 import { Request, Response, NextFunction } from 'express';
+import { errorHandler, requestIdMiddleware, notFoundHandler } from './middleware/errorHandler';
+import swaggerUi from 'swagger-ui-express';
+import { swaggerSpec } from './config/swagger';
+import { securityMonitoring } from './services/security-monitoring';
 import { initializeRealTimeService } from './services/realTimeService';
 
 // Load environment variables
@@ -74,6 +78,13 @@ logger.info('Supabase clients initialized', {
 const realTimeService = initializeRealTimeService(httpServer);
 export { realTimeService };
 
+// Apply request ID middleware first
+app.use(requestIdMiddleware);
+
+// Apply security monitoring
+app.use(securityMonitoring.ipReputationMiddleware());
+app.use(securityMonitoring.detectSuspiciousPatterns());
+
 // Apply security headers
 app.use(securityHeaders);
 
@@ -91,6 +102,24 @@ app.use(morgan('combined'));
 
 // Apply input sanitization
 app.use(sanitizeInput);
+
+// API Documentation
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+  customSiteTitle: 'CookCam API Documentation',
+  customCss: '.swagger-ui .topbar { display: none }',
+}));
+
+// Security metrics endpoint (protected)
+app.get('/api/v1/security/metrics', authenticateUser, async (req: Request, res: Response) => {
+  // Only allow admins to access security metrics
+  if ((req as any).user?.role !== 'admin') {
+    await securityMonitoring.logUnauthorizedAccess(req, 'security_metrics');
+    return res.status(403).json({ error: 'Access denied' });
+  }
+  
+  const metrics = await securityMonitoring.getSecurityMetrics();
+  res.json(metrics);
+});
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -128,6 +157,10 @@ import healthRoutes from './routes/health';
 app.use('/api/v1/health', healthRoutes);
 app.use('/health', healthRoutes);
 
+// Backup routes
+import backupRoutes from './routes/backup';
+app.use('/api/v1/backup', backupRoutes);
+
 // Apply subscription middleware after auth but before other routes
 import { checkSubscriptionMiddleware } from './middleware/subscription';
 app.use(checkSubscriptionMiddleware);
@@ -142,27 +175,11 @@ app.use('/api/subscription', subscriptionRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/users', userRoutes);
 
-// Error handling middleware
-app.use((err: Error & { status?: number }, req: Request, res: Response, _next: NextFunction) => {
-  logger.error('Express error handler', { 
-    error: err.message, 
-    stack: err.stack, 
-    status: err.status 
-  });
-  
-  // Don't expose internal errors in production
-  if (process.env.NODE_ENV === 'production') {
-    res.status(err.status || 500).json({
-      error: 'Internal server error',
-      message: err.status === 400 ? err.message : 'Something went wrong'
-    });
-  } else {
-    res.status(err.status || 500).json({
-      error: err.message,
-      stack: err.stack
-    });
-  }
-});
+// 404 handler - must be before error handler
+app.use(notFoundHandler);
+
+// Global error handling middleware - must be last
+app.use(errorHandler);
 
 // Start server with HTTP server instead of Express app
 httpServer.listen(PORT, () => {

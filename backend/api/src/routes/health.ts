@@ -78,4 +78,50 @@ router.get('/metrics', async (req: Request, res: Response) => {
   }
 });
 
+// Database-specific health check
+router.get('/db', async (req: Request, res: Response) => {
+  try {
+    const dbHealth = await monitoringService.checkDatabaseHealth();
+    const status = dbHealth.status === 'up' ? 200 : 503;
+    res.status(status).json(dbHealth);
+  } catch (error: unknown) {
+    logger.error('Database health check failed', { error });
+    res.status(503).json({
+      status: 'down',
+      error: error instanceof Error ? error.message : 'Unknown error',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Cache health check
+router.get('/cache', async (req: Request, res: Response) => {
+  try {
+    const cacheHealth = await monitoringService.checkCacheHealth();
+    const status = cacheHealth.status === 'up' ? 200 : 503;
+    res.status(status).json(cacheHealth);
+  } catch (error: unknown) {
+    logger.error('Cache health check failed', { error });
+    res.status(503).json({
+      status: 'down',
+      error: error instanceof Error ? error.message : 'Unknown error',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Security status
+router.get('/security', async (req: Request, res: Response) => {
+  try {
+    const securityMetrics = await monitoringService.getSecurityMetrics();
+    res.json(securityMetrics);
+  } catch (error: unknown) {
+    logger.error('Security metrics check failed', { error });
+    res.status(500).json({
+      error: 'Failed to get security metrics',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
 export default router; 

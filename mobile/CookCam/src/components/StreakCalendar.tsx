@@ -7,18 +7,28 @@ import {
   ScrollView,
   Animated,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import { Calendar, Shield, Flame, Lock, Gift, Zap } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
-import * as SecureStore from "expo-secure-store";
 import { useGamification } from "../context/GamificationContext";
+import { useAuth } from "../context/AuthContext";
+import { supabase } from "../services/supabaseClient";
 import logger from "../utils/logger";
 
+interface StreakData {
+  current_streak: number;
+  longest_streak: number;
+  last_cook_date: string | null;
+  freeze_tokens_used: number;
+  total_freeze_tokens: number;
+}
 
-interface StreakDay {
-  date: string;
-  cooked: boolean;
-  shieldUsed?: boolean;
+interface DailyCook {
+  cook_date: string;
+  freeze_used: boolean;
+  recipes_cooked: number;
+  xp_earned: number;
 }
 
 interface StreakReward {
@@ -30,10 +40,13 @@ interface StreakReward {
 }
 
 const StreakCalendar: React.FC = () => {
-  const { streak, freezeTokens, useFreeze, addXP } = useGamification();
-  const [streakDays, setStreakDays] = useState<StreakDay[]>([]);
-  const [currentMonth, _setCurrentMonth] = useState(new Date());
+  const { user } = useAuth();
+  const { addXP } = useGamification();
+  const [streakData, setStreakData] = useState<StreakData | null>(null);
+  const [dailyCooks, setDailyCooks] = useState<DailyCook[]>([]);
+  const [currentMonth, setCurrentMonth] = useState(new Date());
   const [showRewards, setShowRewards] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -46,28 +59,30 @@ const StreakCalendar: React.FC = () => {
       title: "Week Warrior",
       reward: "50 XP + Shield",
       icon: "🔥",
-      earned: streak >= 7,
+      earned: (streakData?.current_streak || 0) >= 7,
     },
     {
       days: 30,
       title: "Monthly Master",
       reward: "Exclusive Recipes",
       icon: "💎",
-      earned: streak >= 30,
+      earned: (streakData?.current_streak || 0) >= 30,
     },
     {
       days: 100,
       title: "Century Chef",
       reward: "Creator Features",
       icon: "👑",
-      earned: streak >= 100,
+      earned: (streakData?.current_streak || 0) >= 100,
     },
   ];
 
   useEffect(() => {
-    loadStreakData();
-    startAnimations();
-  }, []);
+    if (user) {
+      loadStreakData();
+      startAnimations();
+    }
+  }, [user]);
 
   const startAnimations = () => {
     // Fade in animation
@@ -96,275 +111,303 @@ const StreakCalendar: React.FC = () => {
 
   const loadStreakData = async () => {
     try {
-      const data = await SecureStore.getItemAsync("streakData");
-      if (data) {
-        setStreakDays(JSON.parse(data));
-      } else {
-        // Generate mock data for demonstration
-        generateMockStreakData();
+      setLoading(true);
+      
+      // Get user's streak data
+      const { data: streak, error: streakError } = await supabase
+        .from('user_streaks')
+        .select('*')
+        .eq('user_id', user?.id)
+        .single();
+
+      if (streakError && streakError.code !== 'PGRST116') {
+        throw streakError;
       }
+
+      // If no streak exists, create one
+      if (!streak) {
+        const { data: newStreak, error: createError } = await supabase
+          .from('user_streaks')
+          .insert({
+            user_id: user?.id,
+            current_streak: 0,
+            longest_streak: 0,
+          })
+          .select()
+          .single();
+
+        if (createError) throw createError;
+        setStreakData(newStreak);
+      } else {
+        setStreakData(streak);
+      }
+
+      // Get this month's cooking records
+      const startOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
+      const endOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
+      
+      const { data: cooks, error: cooksError } = await supabase
+        .from('daily_cooks')
+        .select('*')
+        .eq('user_id', user?.id)
+        .gte('cook_date', startOfMonth.toISOString().split('T')[0])
+        .lte('cook_date', endOfMonth.toISOString().split('T')[0])
+        .order('cook_date', { ascending: true });
+
+      if (cooksError) throw cooksError;
+      setDailyCooks(cooks || []);
+
     } catch (error) {
-      logger.error("Error loading streak data:", error);
-      generateMockStreakData();
+      logger.error('Failed to load streak data:', error);
+      Alert.alert('Error', 'Failed to load streak data');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const generateMockStreakData = () => {
-    const days: StreakDay[] = [];
-    const today = new Date();
+  const handleUseFreeze = async () => {
+    try {
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
-    // Generate last 30 days
-    for (let i = 29; i >= 0; i--) {
-      const date = new Date();
-      date.setDate(today.getDate() - i);
+      if (!streakData || streakData.freeze_tokens_used >= streakData.total_freeze_tokens) {
+        Alert.alert('No Shields Available', 'You have used all your streak shields.');
+        return;
+      }
 
-      // Mock data: random cooking pattern with current streak
-      const cooked = i < streak || (Math.random() > 0.3 && i >= streak + 3);
-      days.push({
-        date: date.toISOString().split("T")[0],
-        cooked,
-        shieldUsed: !cooked && Math.random() > 0.8,
-      });
+      // Use freeze token for yesterday
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+      const { data, error } = await supabase
+        .rpc('use_freeze_token', {
+          p_user_id: user?.id,
+          p_date: yesterdayStr
+        });
+
+      if (error) throw error;
+
+      if (data) {
+        Alert.alert('Shield Used!', 'Your streak has been protected for yesterday.');
+        await loadStreakData(); // Reload data
+      } else {
+        Alert.alert('Shield Failed', 'Unable to use shield. You may have already cooked yesterday.');
+      }
+
+    } catch (error) {
+      logger.error('Failed to use freeze token:', error);
+      Alert.alert('Error', 'Failed to use streak shield');
     }
-
-    setStreakDays(days);
   };
 
-  const handleUseShield = async () => {
-    if (freezeTokens <= 0) {
-      Alert.alert(
-        "No Shields Available",
-        "Earn shields by maintaining 7-day streaks!",
-      );
-      return;
+  const getDaysInMonth = (date: Date) => {
+    return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+  };
+
+  const getFirstDayOfMonth = (date: Date) => {
+    return new Date(date.getFullYear(), date.getMonth(), 1).getDay();
+  };
+
+  const isDateCooked = (date: number) => {
+    const dateStr = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), date)
+      .toISOString().split('T')[0];
+    return dailyCooks.some(cook => cook.cook_date === dateStr);
+  };
+
+  const isDateFrozen = (date: number) => {
+    const dateStr = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), date)
+      .toISOString().split('T')[0];
+    const cook = dailyCooks.find(c => c.cook_date === dateStr);
+    return cook?.freeze_used || false;
+  };
+
+  const renderCalendarDay = (day: number | null) => {
+    if (!day) {
+      return <View style={styles.emptyDay} />;
     }
 
-    Alert.alert(
-      "Use Streak Shield? 🛡️",
-      `You have ${freezeTokens} shield${
-        freezeTokens > 1 ? "s" : ""
-      } available. Use one to protect your streak?`,
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Use Shield",
-          onPress: async () => {
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            const used = await useFreeze();
-            if (used) {
-              // Animate shield usage
-              Animated.sequence([
-                Animated.timing(shieldScale, {
-                  toValue: 1.5,
-                  duration: 200,
-                  useNativeDriver: true,
-                }),
-                Animated.timing(shieldScale, {
-                  toValue: 1,
-                  duration: 200,
-                  useNativeDriver: true,
-                }),
-              ]).start();
+    const isCooked = isDateCooked(day);
+    const isFrozen = isDateFrozen(day);
+    const isToday = 
+      day === new Date().getDate() && 
+      currentMonth.getMonth() === new Date().getMonth() &&
+      currentMonth.getFullYear() === new Date().getFullYear();
 
-              Alert.alert(
-                "Shield Applied! 🛡️",
-                "Your streak is protected for today!",
-              );
-            }
-          },
-        },
-      ],
+    return (
+      <View
+        style={[
+          styles.calendarDay,
+          isCooked && styles.cookedDay,
+          isToday && styles.todayDay,
+        ]}
+      >
+        <Text
+          style={[
+            styles.dayText,
+            isCooked && styles.cookedDayText,
+            isToday && styles.todayDayText,
+          ]}
+        >
+          {day}
+        </Text>
+        {isCooked && !isFrozen && (
+          <Flame size={12} color="#FF6B6B" style={styles.dayIcon} />
+        )}
+        {isFrozen && (
+          <Shield size={12} color="#4ECDC4" style={styles.dayIcon} />
+        )}
+      </View>
     );
   };
 
-  const handleRecoverStreak = async () => {
-    Alert.alert(
-      "Recover Streak? 🔥",
-      "Restore your broken streak for 25 XP (within 24 hours of breaking)",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Recover (25 XP)",
-          onPress: async () => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-            // In real app, check if user has enough XP and deduct it
-            await addXP(-25, "STREAK_RECOVERY");
-            Alert.alert(
-              "Streak Recovered! 🎉",
-              "Your streak has been restored!",
-            );
-          },
-        },
-      ],
-    );
-  };
-
-  const renderCalendarGrid = () => {
-    const daysInMonth = new Date(
-      currentMonth.getFullYear(),
-      currentMonth.getMonth() + 1,
-      0,
-    ).getDate();
-
-    const firstDayOfMonth = new Date(
-      currentMonth.getFullYear(),
-      currentMonth.getMonth(),
-      1,
-    ).getDay();
-
+  const renderCalendar = () => {
+    const daysInMonth = getDaysInMonth(currentMonth);
+    const firstDay = getFirstDayOfMonth(currentMonth);
     const days = [];
 
     // Empty cells for days before month starts
-    for (let i = 0; i < firstDayOfMonth; i++) {
-      days.push(<View key={`empty-${i}`} style={styles.calendarDay} />);
+    for (let i = 0; i < firstDay; i++) {
+      days.push(null);
     }
 
     // Days of the month
-    for (let day = 1; day <= daysInMonth; day++) {
-      const dateStr = `${currentMonth.getFullYear()}-${String(
-        currentMonth.getMonth() + 1,
-      ).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-      const streakDay = streakDays.find((d) => d.date === dateStr);
-      const isToday =
-        new Date().toDateString() === new Date(dateStr).toDateString();
-
-      days.push(
-        <TouchableOpacity
-          key={day}
-          style={[
-            styles.calendarDay,
-            streakDay?.cooked && styles.cookedDay,
-            streakDay?.shieldUsed && styles.shieldedDay,
-            isToday && styles.todayDay,
-          ]}
-          activeOpacity={0.8}
-        >
-          <Text
-            style={[styles.dayText, streakDay?.cooked && styles.cookedDayText]}
-          >
-            {day}
-          </Text>
-          {streakDay?.cooked && (
-            <Flame
-              size={12}
-              color="#FF6B35"
-              fill="#FF6B35"
-              style={styles.dayIcon}
-            />
-          )}
-          {streakDay?.shieldUsed && (
-            <Shield
-              size={12}
-              color="#4CAF50"
-              fill="#4CAF50"
-              style={styles.dayIcon}
-            />
-          )}
-        </TouchableOpacity>,
-      );
+    for (let i = 1; i <= daysInMonth; i++) {
+      days.push(i);
     }
 
-    return days;
+    // Render weeks
+    const weeks: React.ReactElement[] = [];
+    let week: React.ReactElement[] = [];
+    days.forEach((day, index) => {
+      week.push(renderCalendarDay(day));
+      if ((index + 1) % 7 === 0 || index === days.length - 1) {
+        weeks.push(
+          <View key={`week-${weeks.length}`} style={styles.calendarWeek}>
+            {week}
+          </View>
+        );
+        week = [];
+      }
+    });
+
+    return weeks;
   };
+
+  const changeMonth = (direction: number) => {
+    const newMonth = new Date(currentMonth);
+    newMonth.setMonth(newMonth.getMonth() + direction);
+    setCurrentMonth(newMonth);
+    loadStreakData(); // Reload data for new month
+  };
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#FF6B6B" />
+      </View>
+    );
+  }
+
+  const currentStreak = streakData?.current_streak || 0;
+  const longestStreak = streakData?.longest_streak || 0;
+  const freezeTokensLeft = (streakData?.total_freeze_tokens || 3) - (streakData?.freeze_tokens_used || 0);
 
   return (
     <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
-      {/* Streak Header */}
       <View style={styles.header}>
-        <Animated.View
-          style={[styles.streakBadge, { transform: [{ scale: pulseAnim }] }]}
-        >
-          <Flame size={32} color="#FF6B35" fill="#FF6B35" />
-          <Text style={styles.streakNumber}>{streak}</Text>
-          <Text style={styles.streakLabel}>Day Streak</Text>
-        </Animated.View>
-
-        <View style={styles.shieldInfo}>
+        <View style={styles.streakInfo}>
           <Animated.View
             style={[
-              styles.shieldBadge,
-              { transform: [{ scale: shieldScale }] },
+              styles.streakBadge,
+              { transform: [{ scale: pulseAnim }] },
             ]}
           >
-            <Shield size={24} color="#4CAF50" />
-            <Text style={styles.shieldCount}>{freezeTokens}</Text>
+            <Flame size={32} color="#FF6B6B" />
+            <Text style={styles.streakNumber}>{currentStreak}</Text>
           </Animated.View>
-          <TouchableOpacity
-            style={styles.useShieldButton}
-            onPress={handleUseShield}
-          >
-            <Text style={styles.useShieldText}>Use Shield</Text>
-          </TouchableOpacity>
+          <View style={styles.streakDetails}>
+            <Text style={styles.streakLabel}>Day Streak</Text>
+            <Text style={styles.longestStreak}>
+              Longest: {longestStreak} days
+            </Text>
+          </View>
         </View>
+
+        <TouchableOpacity
+          style={styles.freezeButton}
+          onPress={handleUseFreeze}
+          disabled={freezeTokensLeft === 0}
+        >
+          <Animated.View
+            style={{ transform: [{ scale: shieldScale }] }}
+          >
+            <Shield
+              size={24}
+              color={freezeTokensLeft > 0 ? "#4ECDC4" : "#666"}
+            />
+          </Animated.View>
+          <Text style={styles.freezeCount}>{freezeTokensLeft}</Text>
+        </TouchableOpacity>
       </View>
 
-      {/* Calendar View */}
+      <View style={styles.monthSelector}>
+        <TouchableOpacity onPress={() => changeMonth(-1)}>
+          <Text style={styles.monthArrow}>‹</Text>
+        </TouchableOpacity>
+        <Text style={styles.monthText}>
+          {currentMonth.toLocaleDateString('en-US', {
+            month: 'long',
+            year: 'numeric',
+          })}
+        </Text>
+        <TouchableOpacity onPress={() => changeMonth(1)}>
+          <Text style={styles.monthArrow}>›</Text>
+        </TouchableOpacity>
+      </View>
+
       <View style={styles.calendar}>
         <View style={styles.calendarHeader}>
-          <Text style={styles.monthText}>
-            {currentMonth.toLocaleDateString("en-US", {
-              month: "long",
-              year: "numeric",
-            })}
-          </Text>
-        </View>
-
-        <View style={styles.weekDays}>
-          {["S", "M", "T", "W", "T", "F", "S"].map((day, index) => (
-            <Text key={index} style={styles.weekDayText}>
+          {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, index) => (
+            <Text key={index} style={styles.calendarHeaderText}>
               {day}
             </Text>
           ))}
         </View>
-
-        <View style={styles.calendarGrid}>{renderCalendarGrid()}</View>
+        {renderCalendar()}
       </View>
 
-      {/* Streak Rewards */}
       <TouchableOpacity
-        style={styles.rewardsToggle}
+        style={styles.rewardsButton}
         onPress={() => setShowRewards(!showRewards)}
       >
-        <Gift size={20} color="#FFB800" />
-        <Text style={styles.rewardsToggleText}>Streak Rewards</Text>
+        <Gift size={20} color="#FFE66D" />
+        <Text style={styles.rewardsButtonText}>Streak Rewards</Text>
       </TouchableOpacity>
 
       {showRewards && (
-        <View style={styles.rewardsContainer}>
+        <ScrollView style={styles.rewardsContainer}>
           {streakRewards.map((reward, index) => (
             <View
               key={index}
               style={[
-                styles.rewardCard,
-                reward.earned && styles.rewardCardEarned,
+                styles.rewardItem,
+                reward.earned && styles.rewardEarned,
               ]}
             >
               <Text style={styles.rewardIcon}>{reward.icon}</Text>
               <View style={styles.rewardInfo}>
                 <Text style={styles.rewardTitle}>{reward.title}</Text>
                 <Text style={styles.rewardDays}>{reward.days} days</Text>
+                <Text style={styles.rewardReward}>{reward.reward}</Text>
               </View>
-              <View style={styles.rewardDetails}>
-                <Text style={styles.rewardText}>{reward.reward}</Text>
-                {reward.earned ? (
-                  <Zap size={16} color="#4CAF50" />
-                ) : (
-                  <Lock size={16} color="#8E8E93" />
-                )}
-              </View>
+              {reward.earned ? (
+                <Zap size={24} color="#FFE66D" />
+              ) : (
+                <Lock size={24} color="#666" />
+              )}
             </View>
           ))}
-        </View>
-      )}
-
-      {/* Streak Recovery */}
-      {streak === 0 && (
-        <TouchableOpacity
-          style={styles.recoveryButton}
-          onPress={handleRecoverStreak}
-        >
-          <Text style={styles.recoveryText}>Recover Streak (25 XP)</Text>
-        </TouchableOpacity>
+        </ScrollView>
       )}
     </Animated.View>
   );
@@ -372,152 +415,174 @@ const StreakCalendar: React.FC = () => {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 20,
-    padding: 20,
-    marginHorizontal: 20,
-    marginVertical: 10,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 5,
+    flex: 1,
+    backgroundColor: "#1A1A1A",
+    padding: 16,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: "#1A1A1A",
   },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 20,
+    marginBottom: 24,
   },
-  streakBadge: {
-    alignItems: "center",
-  },
-  streakNumber: {
-    fontSize: 36,
-    fontWeight: "bold",
-    color: "#FF6B35",
-    marginTop: 4,
-  },
-  streakLabel: {
-    fontSize: 14,
-    color: "#8E8E93",
-  },
-  shieldInfo: {
-    alignItems: "center",
-  },
-  shieldBadge: {
+  streakInfo: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-    marginBottom: 8,
   },
-  shieldCount: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#4CAF50",
+  streakBadge: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: "rgba(255, 107, 107, 0.2)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 16,
   },
-  useShieldButton: {
-    backgroundColor: "#4CAF50",
+  streakNumber: {
+    fontSize: 24,
+    fontWeight: "700",
+    color: "#FF6B6B",
+    marginTop: 4,
+  },
+  streakDetails: {
+    justifyContent: "center",
+  },
+  streakLabel: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#FFF",
+  },
+  longestStreak: {
+    fontSize: 14,
+    color: "#999",
+    marginTop: 4,
+  },
+  freezeButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(78, 205, 196, 0.2)",
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 16,
+    borderRadius: 20,
   },
-  useShieldText: {
-    color: "#FFFFFF",
-    fontSize: 12,
+  freezeCount: {
+    fontSize: 16,
     fontWeight: "600",
+    color: "#4ECDC4",
+    marginLeft: 8,
   },
-  calendar: {
+  monthSelector: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 20,
   },
-  calendarHeader: {
-    alignItems: "center",
-    marginBottom: 16,
+  monthArrow: {
+    fontSize: 28,
+    color: "#FFF",
+    paddingHorizontal: 16,
   },
   monthText: {
     fontSize: 18,
     fontWeight: "600",
-    color: "#2D1B69",
+    color: "#FFF",
   },
-  weekDays: {
+  calendar: {
+    backgroundColor: "rgba(255, 255, 255, 0.05)",
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 24,
+  },
+  calendarHeader: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    marginBottom: 12,
+  },
+  calendarHeaderText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#999",
+    width: 40,
+    textAlign: "center",
+  },
+  calendarWeek: {
     flexDirection: "row",
     justifyContent: "space-around",
     marginBottom: 8,
   },
-  weekDayText: {
-    fontSize: 12,
-    color: "#8E8E93",
-    width: 40,
-    textAlign: "center",
-  },
-  calendarGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-  },
   calendarDay: {
-    width: "14.28%",
-    aspectRatio: 1,
+    width: 40,
+    height: 40,
     justifyContent: "center",
     alignItems: "center",
-    borderRadius: 8,
-    position: "relative",
+    borderRadius: 20,
+  },
+  emptyDay: {
+    width: 40,
+    height: 40,
+  },
+  dayText: {
+    fontSize: 16,
+    color: "#666",
   },
   cookedDay: {
-    backgroundColor: "#FFE5DC",
+    backgroundColor: "rgba(255, 107, 107, 0.2)",
   },
-  shieldedDay: {
-    backgroundColor: "#E8F5E9",
+  cookedDayText: {
+    color: "#FFF",
+    fontWeight: "600",
   },
   todayDay: {
     borderWidth: 2,
-    borderColor: "#FF6B35",
+    borderColor: "#FFE66D",
   },
-  dayText: {
-    fontSize: 14,
-    color: "#2D1B69",
-  },
-  cookedDayText: {
-    fontWeight: "600",
+  todayDayText: {
+    color: "#FFE66D",
+    fontWeight: "700",
   },
   dayIcon: {
     position: "absolute",
     bottom: 2,
-    right: 2,
+    right: 8,
   },
-  rewardsToggle: {
+  rewardsButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 8,
-    paddingVertical: 12,
-    backgroundColor: "#FFF9F7",
-    borderRadius: 12,
-    marginBottom: 12,
+    backgroundColor: "rgba(255, 230, 109, 0.2)",
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
   },
-  rewardsToggleText: {
+  rewardsButtonText: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#FFB800",
+    color: "#FFE66D",
+    marginLeft: 8,
   },
   rewardsContainer: {
-    gap: 12,
+    maxHeight: 200,
   },
-  rewardCard: {
+  rewardItem: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#F8F8FF",
-    borderRadius: 12,
+    backgroundColor: "rgba(255, 255, 255, 0.05)",
     padding: 16,
-    borderWidth: 1,
-    borderColor: "#E5E5E7",
+    borderRadius: 8,
+    marginBottom: 8,
   },
-  rewardCardEarned: {
-    backgroundColor: "#E8F5E9",
-    borderColor: "#4CAF50",
+  rewardEarned: {
+    backgroundColor: "rgba(255, 230, 109, 0.1)",
   },
   rewardIcon: {
-    fontSize: 28,
-    marginRight: 12,
+    fontSize: 32,
+    marginRight: 16,
   },
   rewardInfo: {
     flex: 1,
@@ -525,31 +590,17 @@ const styles = StyleSheet.create({
   rewardTitle: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#2D1B69",
+    color: "#FFF",
   },
   rewardDays: {
-    fontSize: 12,
-    color: "#8E8E93",
+    fontSize: 14,
+    color: "#999",
+    marginTop: 2,
   },
-  rewardDetails: {
-    alignItems: "flex-end",
-  },
-  rewardText: {
-    fontSize: 13,
-    color: "#666",
-    marginBottom: 4,
-  },
-  recoveryButton: {
-    backgroundColor: "#FF6B35",
-    paddingVertical: 12,
-    borderRadius: 12,
-    alignItems: "center",
-    marginTop: 12,
-  },
-  recoveryText: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "600",
+  rewardReward: {
+    fontSize: 14,
+    color: "#4ECDC4",
+    marginTop: 4,
   },
 });
 

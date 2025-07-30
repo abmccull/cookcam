@@ -997,7 +997,7 @@ const CookModeScreen: React.FC<CookModeScreenProps> = ({
             style={styles.fullModalBody}
             contentContainerStyle={styles.modalContent}
           >
-            {recipe?.ingredients?.map((ingredient, index) => (
+            {recipe?.ingredients?.map((ingredient: any, index: number) => (
               <View key={index} style={styles.ingredientItem}>
                 <View style={styles.ingredientBullet} />
                 <Text style={styles.ingredientText}>

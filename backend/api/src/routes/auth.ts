@@ -4,8 +4,16 @@ import { authenticateUser, generateAccessToken, generateRefreshToken, verifyRefr
 import { authRateLimiter } from '../middleware/security';
 import { validateAuthInput } from '../middleware/validation';
 import { logger } from '../utils/logger';
+import { securityMonitoring } from '../services/security-monitoring';
 
 const router = Router();
+
+/**
+ * @swagger
+ * tags:
+ *   name: Authentication
+ *   description: User authentication and authorization
+ */
 
 // Demo mode - controlled by environment variable for development only
 const DEMO_MODE = process.env.DEMO_MODE === 'true';
@@ -75,6 +83,70 @@ const createDemoSession = (user: DemoUser): SessionData => ({
   token_type: 'bearer'
 });
 
+/**
+ * @swagger
+ * /auth/signup:
+ *   post:
+ *     summary: Create a new user account
+ *     tags: [Authentication]
+ *     security: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *               - name
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: user@example.com
+ *               password:
+ *                 type: string
+ *                 format: password
+ *                 minLength: 6
+ *                 example: password123
+ *               name:
+ *                 type: string
+ *                 example: John Doe
+ *     responses:
+ *       201:
+ *         description: User created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 user:
+ *                   $ref: '#/components/schemas/User'
+ *                 session:
+ *                   type: object
+ *                   properties:
+ *                     access_token:
+ *                       type: string
+ *                     refresh_token:
+ *                       type: string
+ *                     expires_in:
+ *                       type: number
+ *                     token_type:
+ *                       type: string
+ *       400:
+ *         description: Invalid input or user already exists
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       429:
+ *         description: Too many requests
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 // Sign up a new user
 router.post('/signup', authRateLimiter, validateAuthInput, async (req: Request, res: Response) => {
   try {
@@ -269,6 +341,8 @@ router.post('/signin', authRateLimiter, validateAuthInput, async (req: Request, 
     });
 
     if (error) {
+      // Log authentication failure
+      await securityMonitoring.logAuthFailure(req, error.message);
       return res.status(401).json({ error: error.message });
     }
 
@@ -279,6 +353,8 @@ router.post('/signin', authRateLimiter, validateAuthInput, async (req: Request, 
     });
   } catch (error: unknown) {
     logger.error('Signin error', { error });
+    // Log authentication failure
+    await securityMonitoring.logAuthFailure(req, 'Unexpected error during signin');
     return res.status(401).json({
       error: 'Invalid email or password',
       code: 'INVALID_CREDENTIALS'

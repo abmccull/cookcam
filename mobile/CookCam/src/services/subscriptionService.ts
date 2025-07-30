@@ -173,9 +173,12 @@ class SubscriptionService {
 export interface SubscriptionProduct {
   productId: string;
   price: string;
+  localizedPrice?: string;
   currency: string;
   title: string;
   description: string;
+  tier?: "regular" | "creator";
+  freeTrialPeriod?: string;
 }
 
 export enum SubscriptionStatus {

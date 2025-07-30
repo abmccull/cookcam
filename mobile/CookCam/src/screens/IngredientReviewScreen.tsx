@@ -896,7 +896,7 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
       )}
 
       {/* AI Analysis Loading Animation */}
-      <LoadingAnimation visible={loading} variant="scanning" />
+      <LoadingAnimation visible={loading} />
 
       {/* Mystery Box Reward Modal */}
       <Modal

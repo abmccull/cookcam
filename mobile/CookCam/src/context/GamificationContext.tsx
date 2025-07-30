@@ -8,6 +8,7 @@ import React, {
 } from "react";
 import { useAuth } from "./AuthContext";
 import GamificationService from "../services/gamificationService";
+import { StreakService } from "../services/streakService";
 import * as SecureStore from "expo-secure-store";
 import logger from "../utils/logger";
 
@@ -537,29 +538,69 @@ export const GamificationProvider: React.FC<GamificationProviderProps> = ({
   };
 
   const checkStreak = async () => {
-    // In real app, check last cook date from database
-    // For demo, just increment streak
-    const newStreak = streak + 1;
-    setStreak(newStreak);
-    updateUser({ streak: newStreak });
-
-    // Check for streak badges
-    if (newStreak === 7) {
-      await unlockBadge("streak_7");
-    } else if (newStreak === 30) {
-      await unlockBadge("streak_30");
+    if (!user) return;
+    
+    try {
+      // Update streak in database
+      const success = await StreakService.updateStreak(user.id);
+      
+      if (success) {
+        // Get updated streak data
+        const streakData = await StreakService.getStreakData(user.id);
+        
+        if (streakData) {
+          const newStreak = streakData.current_streak;
+          setStreak(newStreak);
+          updateUser({ streak: newStreak });
+          
+          // Check for streak badges and milestones
+          if (newStreak === 7) {
+            await unlockBadge("streak_7");
+            await addXP(50, "WEEK_STREAK_BONUS");
+          } else if (newStreak === 30) {
+            await unlockBadge("streak_30");
+            await addXP(200, "MONTH_STREAK_BONUS");
+          } else if (newStreak === 100) {
+            await unlockBadge("century_chef");
+            await addXP(500, "CENTURY_STREAK_BONUS");
+          }
+          
+          // Add daily streak bonus XP
+          const streakBonus = Math.min(newStreak * 2, 50); // Cap at 50 XP
+          await addXP(streakBonus, "DAILY_STREAK_BONUS");
+          
+          // Check and award milestone rewards
+          await StreakService.checkAndAwardMilestones(user.id, newStreak);
+        }
+      }
+    } catch (error) {
+      logger.error('Failed to update streak:', error);
+      // Fallback to local increment
+      const newStreak = streak + 1;
+      setStreak(newStreak);
+      updateUser({ streak: newStreak });
     }
-
-    // Add streak bonus XP
-    await addXP(XP_VALUES.STREAK_BONUS * newStreak, "STREAK_BONUS");
   };
 
   const useFreeze = async (): Promise<boolean> => {
-    if (freezeTokens > 0) {
-      setFreezeTokens(freezeTokens - 1);
-      // In real app, save freeze token usage to database
-      return true;
+    if (!user) return false;
+    
+    try {
+      // Use freeze token for yesterday
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayStr = yesterday.toISOString().split('T')[0];
+      
+      const success = await StreakService.useFreezeToken(user.id, yesterdayStr);
+      
+      if (success) {
+        setFreezeTokens(Math.max(0, freezeTokens - 1));
+        return true;
+      }
+    } catch (error) {
+      logger.error('Failed to use freeze token:', error);
     }
+    
     return false;
   };
 

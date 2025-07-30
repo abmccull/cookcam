@@ -19,10 +19,12 @@ import {
   useFeatureGate,
 } from "../context/SubscriptionContext";
 import { useAnalytics, useScreenTracking } from "../services/analyticsService";
+import { useAuth } from "../context/AuthContext";
 
 // Example of integrating feature gates into an existing screen
 export default function ExampleFeatureGateScreen() {
   const [scanCount, setScanCount] = useState(0);
+  const { user } = useAuth();
   const {
     state,
     isSubscribed,
@@ -149,7 +151,7 @@ export default function ExampleFeatureGateScreen() {
         </TouchableOpacity>
 
         {/* Premium recipes (feature gated) */}
-        <PremiumRecipesGate>
+        <PremiumRecipesGate userId={user?.id || ''}>
           <TouchableOpacity
             style={[styles.actionButton, styles.premiumButton]}
             onPress={handlePremiumRecipe}
@@ -165,7 +167,7 @@ export default function ExampleFeatureGateScreen() {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>💼 Creator Tools</Text>
 
-        <CreatorToolsGate>
+        <CreatorToolsGate userId={user?.id || ''}>
           <View style={styles.creatorTools}>
             <TouchableOpacity style={styles.creatorButton}>
               <Text style={styles.creatorButtonText}>
@@ -223,7 +225,8 @@ export default function ExampleFeatureGateScreen() {
 
         <FeatureGate
           feature="analytics_dashboard"
-          fallback={
+          userId={user?.id || ''}
+          fallbackComponent={
             <View style={styles.analyticsPlaceholder}>
               <Text style={styles.placeholderText}>
                 📊 Analytics dashboard is available with premium subscription

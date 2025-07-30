@@ -183,7 +183,7 @@ const RecipeCard: React.FC<RecipeCardProps> = React.memo(({
           <NutritionBadge
             nutrition={nutrition}
             servings={1}
-            variant="detailed"
+            variant="full"
           />
         )}
 

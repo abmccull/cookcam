@@ -157,17 +157,7 @@ async function createEssentialTables() {
     );
   `;
 
-  // Create user_follows table
-  const createFollowsSQL = `
-    CREATE TABLE IF NOT EXISTS user_follows (
-      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-      follower_id UUID REFERENCES users(id) ON DELETE CASCADE,
-      following_id UUID REFERENCES users(id) ON DELETE CASCADE,
-      created_at TIMESTAMPTZ DEFAULT now(),
-      UNIQUE(follower_id, following_id),
-      CHECK (follower_id != following_id)
-    );
-  `;
+  // Note: user_follows table removed - social features not implemented
 
   const tables = [
     { name: 'users', sql: createUsersSQL },
@@ -177,8 +167,7 @@ async function createEssentialTables() {
     { name: 'recipe_sessions', sql: createRecipeSessionsSQL },
     { name: 'ingredient_scans', sql: createScansSQL },
     { name: 'saved_recipes', sql: createSavedRecipesSQL },
-    { name: 'recipe_ratings', sql: createRatingsSQL },
-    { name: 'user_follows', sql: createFollowsSQL }
+    { name: 'recipe_ratings', sql: createRatingsSQL }
   ];
 
   for (const table of tables) {

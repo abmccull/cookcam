@@ -88,7 +88,7 @@ const PlanPaywallScreen: React.FC<PlanPaywallScreenProps> = ({
       try {
         // Start the IAP purchase process
         await subscriptionService.purchaseProduct(productId);
-        const purchaseResult = { success: true };
+        const purchaseResult: { success: boolean; error?: string } = { success: true };
         
         if (!purchaseResult.success) {
           throw new Error(purchaseResult.error || "Purchase failed");

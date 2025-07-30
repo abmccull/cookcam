@@ -1,0 +1,95 @@
+version: '3.8'
+
+services:
+  api:
+    build: 
+      context: ./backend/api
+      dockerfile: Dockerfile.dev
+    container_name: cookcam-api-dev
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+      - "9229:9229" # Debug port
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+    env_file:
+      - ./backend/api/.env
+    depends_on:
+      - redis
+      - postgres
+    networks:
+      - cookcam-network
+    volumes:
+      - ./backend/api:/app
+      - /app/node_modules
+    command: npm run dev
+
+  redis:
+    image: redis:7-alpine
+    container_name: cookcam-redis-dev
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    networks:
+      - cookcam-network
+
+  postgres:
+    image: postgres:14-alpine
+    container_name: cookcam-postgres-dev
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=cookcam_dev
+    volumes:
+      - postgres-dev-data:/var/lib/postgresql/data
+    networks:
+      - cookcam-network
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: cookcam-mailhog
+    restart: unless-stopped
+    ports:
+      - "1025:1025" # SMTP server
+      - "8025:8025" # Web UI
+    networks:
+      - cookcam-network
+
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: cookcam-redis-commander-dev
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      - REDIS_HOSTS=local:redis:6379
+    depends_on:
+      - redis
+    networks:
+      - cookcam-network
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: cookcam-pgadmin-dev
+    restart: unless-stopped
+    ports:
+      - "5050:80"
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=dev@cookcam.ai
+      - PGADMIN_DEFAULT_PASSWORD=dev
+    volumes:
+      - pgadmin-dev-data:/var/lib/pgadmin
+    networks:
+      - cookcam-network
+
+networks:
+  cookcam-network:
+    driver: bridge
+
+volumes:
+  postgres-dev-data:
+  pgadmin-dev-data:

@@ -356,6 +356,59 @@ export class MonitoringService {
       };
     }
   }
+  
+  // Get individual database health
+  async checkDatabaseHealth(): Promise<ServiceHealth> {
+    return this.checkDatabase();
+  }
+  
+  // Get individual cache health
+  async checkCacheHealth(): Promise<ServiceHealth> {
+    return this.checkCache();
+  }
+  
+  // Get security metrics
+  async getSecurityMetrics(): Promise<any> {
+    try {
+      // In a real implementation, this would query security events
+      return {
+        timestamp: new Date().toISOString(),
+        events: {
+          last_24h: {
+            total: 0,
+            auth_failures: 0,
+            rate_limits: 0,
+            suspicious_activities: 0
+          }
+        },
+        blocked_ips: [],
+        active_sessions: 0,
+        failed_login_attempts: 0
+      };
+    } catch (error) {
+      logger.error('Failed to get security metrics', { error });
+      return {
+        error: 'Failed to get security metrics',
+        timestamp: new Date().toISOString()
+      };
+    }
+  }
+  
+  // Start periodic health checks
+  startHealthChecks(intervalMs: number = 60000): void {
+    setInterval(async () => {
+      try {
+        const health = await this.getHealthStatus();
+        if (health.status !== 'healthy') {
+          logger.warn('System health degraded', { health });
+        }
+      } catch (error) {
+        logger.error('Health check failed', { error });
+      }
+    }, intervalMs);
+    
+    logger.info('Periodic health checks started', { intervalMs });
+  }
 }
 
 export const monitoringService = new MonitoringService(); 

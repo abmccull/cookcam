@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import helmet from 'helmet';
+import { securityMonitoring } from '../services/security-monitoring';
 
 // Simple rate limiting implementation without external dependencies
 interface RateLimitStore {
@@ -43,6 +44,11 @@ export const rateLimiter = (options: {
       rateLimitStore[ip].count++;
       
       if (rateLimitStore[ip].count > max) {
+        // Log rate limit violation
+        securityMonitoring.logRateLimitViolation(req).catch(err => 
+          console.error('Failed to log rate limit violation:', err)
+        );
+        
         return res.status(429).json({
           error: message,
           retryAfter: Math.ceil((rateLimitStore[ip].resetTime - now) / 1000)
