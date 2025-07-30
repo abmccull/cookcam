@@ -102,7 +102,7 @@ export class NotificationService {
   async sendDailyCheckInReminder(userId: string): Promise<void> {
     const payload: NotificationPayload = {
       title: '📸 Time for your daily check-in!',
-      body: "Show us what you're cooking today and keep your streak alive!",
+      body: 'Show us what you\'re cooking today and keep your streak alive!',
       data: {
         type: 'daily_checkin',
         action: 'open_camera',
