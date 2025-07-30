@@ -1,4 +1,4 @@
-import express, { Response } from 'express';
+import express from 'express';
 import http from 'http';
 import cors from 'cors';
 import morgan from 'morgan';
@@ -14,7 +14,7 @@ import userRoutes from './routes/users';
 import { securityHeaders, rateLimiter, sanitizeInput } from './middleware/security';
 import { logger } from './utils/logger';
 import { errorHandler, requestIdMiddleware, notFoundHandler } from './middleware/errorHandler';
-import { authenticateUser, AuthenticatedRequest } from './middleware/auth';
+// import { authenticateUser, AuthenticatedRequest } from './middleware/auth'; // Uncomment when admin endpoint is enabled
 import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './config/swagger';
 import { securityMonitoring } from './services/security-monitoring';

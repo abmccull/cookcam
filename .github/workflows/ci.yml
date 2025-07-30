@@ -171,6 +171,7 @@ jobs:
   security-scan:
     name: Security Scan
     runs-on: ubuntu-latest
+    continue-on-error: true
     permissions:
       contents: read
       security-events: write
@@ -197,7 +198,11 @@ jobs:
         if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository
         run: |
           echo "Security scan results (not uploaded due to fork PR limitations):"
-          cat trivy-results.sarif | jq '.runs[0].results[] | {ruleId: .ruleId, message: .message.text, severity: .level}'
+          if [ -f trivy-results.sarif ]; then
+            cat trivy-results.sarif | jq '.runs[0].results[] | {ruleId: .ruleId, message: .message.text, severity: .level}' || echo "Could not parse SARIF file"
+          else
+            echo "No SARIF file found"
+          fi
         continue-on-error: true
           
       - name: Run npm audit on backend

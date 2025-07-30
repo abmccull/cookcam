@@ -1730,11 +1730,11 @@ router.post('/test-smart-nutrition', async (req, res) => {
       { item: 'ripe tomatoes', quantity: '250 g' },
       { item: 'red onion', quantity: '1 medium' },
       { item: 'olive oil', quantity: '2 tbsp' },
-      { item: "fresh basil leaves", quantity: "10 pieces" },
-      { item: "mozzarella cheese", quantity: "100 g" },
-      { item: "balsamic vinegar", quantity: "1 tsp" },
-      { item: "salt", quantity: "1/2 tsp" },
-      { item: "black pepper", quantity: "1/4 tsp" }
+      { item: 'fresh basil leaves', quantity: '10 pieces' },
+      { item: 'mozzarella cheese', quantity: '100 g' },
+      { item: 'balsamic vinegar', quantity: '1 tsp' },
+      { item: 'salt', quantity: '1/2 tsp' },
+      { item: 'black pepper', quantity: '1/4 tsp' }
     ];
 
     const servings = 2;
