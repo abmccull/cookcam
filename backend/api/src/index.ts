@@ -186,7 +186,6 @@ httpServer.listen(PORT, () => {
   logger.info('CookCam API server started', { 
     port: PORT, 
     environment: process.env.NODE_ENV || 'development',
-    demoMode: process.env.DEMO_MODE === 'true',
     websocket: 'enabled'
   });
   

@@ -61,15 +61,28 @@ class SubscriptionLifecycleService {
    */
   async getSubscriptionState(userId: string): Promise<SubscriptionState> {
     try {
-      // TODO: Replace with actual API call to your backend
-      const response = await this.mockGetSubscriptionStatus(userId);
+      // Call backend API to get subscription status
+      const response = await fetch(`${process.env.REACT_NATIVE_API_URL}/api/v1/subscription/status`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          // TODO: Add proper authentication header
+          // 'Authorization': `Bearer ${userToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`API call failed: ${response.status}`);
+      }
+
+      const subscriptionData = await response.json();
 
       const now = new Date();
-      const expiresAt = response.current_period_end
-        ? new Date(response.current_period_end)
+      const expiresAt = subscriptionData.current_period_end
+        ? new Date(subscriptionData.current_period_end)
         : null;
-      const canceledAt = response.canceled_at
-        ? new Date(response.canceled_at)
+      const canceledAt = subscriptionData.canceled_at
+        ? new Date(subscriptionData.canceled_at)
         : null;
 
       // Calculate grace period end (7 days after cancellation or expiration)
@@ -78,7 +91,7 @@ class SubscriptionLifecycleService {
         gracePeriodEnd = new Date(
           canceledAt.getTime() + this.gracePeriodDays * 24 * 60 * 60 * 1000,
         );
-      } else if (expiresAt && response.status === "expired") {
+      } else if (expiresAt && subscriptionData.status === "expired") {
         gracePeriodEnd = new Date(
           expiresAt.getTime() + this.gracePeriodDays * 24 * 60 * 60 * 1000,
         );
@@ -87,16 +100,16 @@ class SubscriptionLifecycleService {
       const isInGracePeriod = gracePeriodEnd ? now <= gracePeriodEnd : false;
 
       return {
-        status: response.status,
-        tier: this.determineTier(response.status, response.plan_id),
+        status: subscriptionData.status,
+        tier: this.determineTier(subscriptionData.status, subscriptionData.plan_id),
         expiresAt,
         canceledAt,
         gracePeriodEnd,
         isInGracePeriod,
         paymentFailed:
-          response.status === "past_due" || response.status === "unpaid",
+          subscriptionData.status === "past_due" || subscriptionData.status === "unpaid",
         canReactivate:
-          response.status === "canceled" || response.status === "expired",
+          subscriptionData.status === "canceled" || subscriptionData.status === "expired",
       };
     } catch (error) {
       logger.error("Error getting subscription state:", error);
@@ -152,7 +165,18 @@ class SubscriptionLifecycleService {
       await AsyncStorage.setItem("cancel_reason", cancelReason || "");
 
       // Update user state in backend
-      // TODO: Call your backend API to update user status
+      await fetch(`${process.env.REACT_NATIVE_API_URL}/api/v1/subscription/cancel`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          // TODO: Add proper authentication header
+          // 'Authorization': `Bearer ${userToken}`,
+        },
+        body: JSON.stringify({
+          userId,
+          cancelReason
+        })
+      });
 
       // Schedule grace period reminder
       await this.scheduleGracePeriodReminder(userId);
@@ -358,8 +382,23 @@ class SubscriptionLifecycleService {
         }`,
       );
 
-      // TODO: Call your backend to reactivate subscription
-      // This would involve calling Stripe to resume/create new subscription
+      // Call backend API to reactivate subscription
+      const response = await fetch(`${process.env.REACT_NATIVE_API_URL}/api/v1/subscription/reactivate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          // TODO: Add proper authentication header
+          // 'Authorization': `Bearer ${userToken}`,
+        },
+        body: JSON.stringify({
+          userId,
+          offerCode
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to reactivate subscription: ${response.status}`);
+      }
 
       // Clear cancellation flags
       await AsyncStorage.removeItem("subscription_canceled_at");
@@ -523,35 +562,6 @@ class SubscriptionLifecycleService {
     );
   }
 
-  // Mock method for development
-  private async mockGetSubscriptionStatus(userId: string): Promise<any> {
-    // Simulate different subscription states for testing
-    const mockStates = [
-      {
-        status: "active",
-        plan_id: "consumer_monthly",
-        current_period_end: Date.now() + 30 * 24 * 60 * 60 * 1000,
-      },
-      {
-        status: "canceled",
-        plan_id: "creator_monthly",
-        canceled_at: Date.now() - 3 * 24 * 60 * 60 * 1000,
-      },
-      {
-        status: "past_due",
-        plan_id: "consumer_monthly",
-        current_period_end: Date.now() - 2 * 24 * 60 * 60 * 1000,
-      },
-      {
-        status: "expired",
-        plan_id: "creator_monthly",
-        current_period_end: Date.now() - 10 * 24 * 60 * 60 * 1000,
-      },
-    ];
-
-    // Return a random state for demo purposes
-    return mockStates[Math.floor(Math.random() * mockStates.length)];
-  }
 
   private async processUserDowngrade(
     _userId: string,

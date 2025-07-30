@@ -52,6 +52,9 @@ export default {
       supportsTablet: true,
       infoPlist: {
         'NSFaceIDUsageDescription': 'Allow CookCam to use Face ID for secure and convenient authentication.'
+      },
+      config: {
+        usesNonExemptEncryption: false
       }
     },
     owner: 'abmccull',

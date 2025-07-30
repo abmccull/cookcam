@@ -15,25 +15,7 @@ const router = Router();
  *   description: User authentication and authorization
  */
 
-// Demo mode - controlled by environment variable for development only
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
 // User interface for consistent typing
-interface DemoUser {
-  id: string;
-  email: string;
-  name: string;
-  level: number;
-  xp: number;
-  total_xp: number;
-  streak_current: number;
-  is_creator: boolean;
-  creator_tier: number | null;
-  creator_bio: string | null;
-  creator_specialty: string | null;
-  avatar_url: string | null;
-  badges: string[];
-}
 
 interface SessionData {
   access_token: string;
@@ -59,29 +41,6 @@ interface AuthenticatedRequest extends Request {
   };
 }
 
-// Demo user data
-const createDemoUser = (email: string, name?: string): DemoUser => ({
-  id: `demo_${Date.now()}`,
-  email,
-  name: name || email.split('@')[0] || 'Demo User',
-  level: 5,
-  xp: 1250,
-  total_xp: 1250,
-  streak_current: 3,
-  is_creator: false,
-  creator_tier: null,
-  creator_bio: null,
-  creator_specialty: null,
-  avatar_url: null,
-  badges: ['first_recipe', 'first_scan', 'streak_7']
-});
-
-const createDemoSession = (user: DemoUser): SessionData => ({
-  access_token: `demo_token_${user.id}`,
-  refresh_token: `demo_refresh_${user.id}`,
-  expires_in: 3600,
-  token_type: 'bearer'
-});
 
 /**
  * @swagger
@@ -156,19 +115,7 @@ router.post('/signup', authRateLimiter, validateAuthInput, async (req: Request, 
       return res.status(400).json({ error: 'Email, password, and name are required' });
     }
 
-    if (DEMO_MODE) {
-      // Demo mode - create mock user
-      const user = createDemoUser(email, name);
-      const session = createDemoSession(user);
-      
-      return res.status(201).json({
-        user,
-        session,
-        message: 'Demo user created successfully'
-      });
-    }
-
-    // Production mode - use Supabase with retry logic for 504 errors
+    // Use Supabase with retry logic for 504 errors
     logger.info('Attempting Supabase signup:', {
       email,
       nameProvided: !!name,
@@ -322,19 +269,7 @@ router.post('/signin', authRateLimiter, validateAuthInput, async (req: Request, 
       return res.status(400).json({ error: 'Email and password are required' });
     }
 
-    if (DEMO_MODE) {
-      // Demo mode - accept any credentials
-      const user = createDemoUser(email);
-      const session = createDemoSession(user);
-      
-      return res.json({
-        user,
-        session,
-        message: 'Demo sign in successful'
-      });
-    }
-
-    // Production mode - use Supabase
+    // Use Supabase
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password
@@ -365,9 +300,6 @@ router.post('/signin', authRateLimiter, validateAuthInput, async (req: Request, 
 // Sign out a user
 router.post('/signout', authenticateUser, async (req: Request, res: Response) => {
   try {
-    if (DEMO_MODE) {
-      return res.json({ message: 'Demo sign out successful' });
-    }
 
     const { error } = await supabase.auth.signOut();
 
@@ -391,24 +323,7 @@ router.post('/refresh', authRateLimiter, async (req: Request, res: Response) => 
       return res.status(400).json({ error: 'Refresh token is required' });
     }
 
-    if (DEMO_MODE) {
-      // Demo mode - create new tokens
-      if (refresh_token.startsWith('demo_refresh_')) {
-        const userId = refresh_token.replace('demo_refresh_', '');
-        const user = createDemoUser('demo@example.com');
-        user.id = userId;
-        const newSession = createDemoSession(user);
-        
-        return res.json({
-          access_token: newSession.access_token,
-          refresh_token: newSession.refresh_token,
-          expires_in: newSession.expires_in,
-          user
-        });
-      }
-    }
-
-    // Production mode - verify refresh token
+    // Verify refresh token
     try {
       const decoded = verifyRefreshToken(refresh_token);
       
@@ -448,11 +363,6 @@ router.get('/me', authenticateUser, async (req: Request, res: Response) => {
   try {
     const userId = (req as AuthenticatedRequest).user.id;
 
-    if (DEMO_MODE && userId.startsWith('demo_')) {
-      const user = createDemoUser('demo@example.com', 'Demo User');
-      user.id = userId;
-      return res.json({ user });
-    }
 
     const { data: user, error } = await supabase
       .from('users')
@@ -535,21 +445,6 @@ router.put('/profile', authenticateUser, async (req: Request, res: Response) => 
       return res.status(400).json({ error: 'No fields to update' });
     }
 
-    if (DEMO_MODE && userId.startsWith('demo_')) {
-      const user = createDemoUser('demo@example.com', updateData.name || 'Demo User');
-      user.id = userId;
-      // Update demo user properties that exist in the interface
-      if (updateData.avatar_url !== undefined) {user.avatar_url = updateData.avatar_url;}
-      if (updateData.is_creator !== undefined) {user.is_creator = updateData.is_creator;}
-      if (updateData.creator_tier !== undefined) {user.creator_tier = updateData.creator_tier;}
-      if (updateData.creator_bio !== undefined) {user.creator_bio = updateData.creator_bio;}
-      if (updateData.creator_specialty !== undefined) {user.creator_specialty = updateData.creator_specialty;}
-      
-      return res.json({
-        user,
-        message: 'Demo profile updated successfully'
-      });
-    }
 
     const { data, error } = await supabase
       .from('users')
@@ -616,12 +511,6 @@ router.delete('/account', authenticateUser, async (req: Request, res: Response) 
       return res.status(400).json({ error: 'Password confirmation is required' });
     }
 
-    if (DEMO_MODE && userId.startsWith('demo_')) {
-      return res.json({
-        message: 'Demo account deleted successfully',
-        note: 'This is a demo deletion - no actual data was removed'
-      });
-    }
 
     // Verify password before deletion (get user's email first)
     const { data: userData, error: userError } = await userClient
