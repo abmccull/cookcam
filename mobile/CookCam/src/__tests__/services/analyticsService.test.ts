@@ -25,7 +25,10 @@ describe('analyticsService', () => {
         },
       };
 
-      await analyticsService.trackEvent(eventData.event_name, eventData.properties, eventData.user_id);
+      await analyticsService.trackEvent(eventData.event_name, {
+        ...eventData.properties,
+        user_id: eventData.user_id,
+      });
 
       // Verify the event was tracked (this would depend on your actual implementation)
       expect(true).toBe(true); // Placeholder assertion
@@ -65,7 +68,7 @@ describe('analyticsService', () => {
       const context = 'recipe_card';
       const userId = 'test-user-id';
 
-      await analyticsService.trackUserAction(action, context, userId);
+      await analyticsService.trackUserAction(action, { context, userId });
 
       expect(true).toBe(true); // Placeholder assertion
     });
@@ -76,7 +79,7 @@ describe('analyticsService', () => {
       const screenName = 'RecipeDetailScreen';
       const userId = 'test-user-id';
 
-      await analyticsService.trackScreenView(screenName, userId);
+      await analyticsService.trackScreenView(screenName, { userId });
 
       expect(true).toBe(true); // Placeholder assertion
     });

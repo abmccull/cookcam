@@ -222,6 +222,11 @@ class AnalyticsService {
     }
   }
 
+  // Alias for track method (for backward compatibility)
+  async trackEvent(eventName: string, properties?: Record<string, any>) {
+    return this.track(eventName, properties);
+  }
+
   // Get current user ID
   private async getUserId(): Promise<string | undefined> {
     try {

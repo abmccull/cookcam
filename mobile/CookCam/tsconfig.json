@@ -13,7 +13,7 @@
     "target": "es2017",
     "downlevelIteration": true,
     "forceConsistentCasingInFileNames": true,
-    "types": ["react-native"],
+    "types": ["react-native", "jest"],
     "isolatedModules": true
   },
   "include": [
