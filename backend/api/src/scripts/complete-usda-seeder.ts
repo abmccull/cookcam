@@ -182,8 +182,8 @@ class CompleteUSDASeeder {
 
       return data.foods || [];
     } catch (_error) {
-      console.error(`❌ Failed to fetch ${dataType} page ${page}:`, error);
-      throw error;
+      console.error(`❌ Failed to fetch ${dataType} page ${page}:`, _error);
+      throw _error;
     }
   }
 
@@ -443,8 +443,8 @@ class CompleteUSDASeeder {
         }
 
       } catch (_error) {
-        this.progress.errors.push(`Error processing ${food.description}: ${(error as Error).message}`);
-        console.error(`❌ Error processing ${food.description}:`, error);
+        this.progress.errors.push(`Error processing ${food.description}: ${(_error as Error).message}`);
+        console.error(`❌ Error processing ${food.description}:`, _error);
       }
     }
   }
@@ -521,8 +521,8 @@ class CompleteUSDASeeder {
             await this.saveProgress();
 
           } catch (_error) {
-            console.error(`❌ Error processing ${dataType} page ${page}:`, error);
-            this.progress.errors.push(`Error processing ${dataType} page ${page}: ${(error as Error).message}`);
+            console.error(`❌ Error processing ${dataType} page ${page}:`, _error);
+            this.progress.errors.push(`Error processing ${dataType} page ${page}: ${(_error as Error).message}`);
             await this.saveProgress();
           }
         }
@@ -543,9 +543,9 @@ class CompleteUSDASeeder {
       this.printProgress();
 
     } catch (_error) {
-      console.error('❌ Fatal error in seeding process:', error);
+      console.error('❌ Fatal error in seeding process:', _error);
       await this.saveProgress();
-      throw error;
+      throw _error;
     }
   }
 

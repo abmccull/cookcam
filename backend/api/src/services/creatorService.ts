@@ -233,7 +233,7 @@ export class CreatorService {
       const targetYear = year || new Date().getFullYear();
 
       // Check if revenue record exists
-      const { data: revenue, error } = await supabase
+      let { data: revenue, error } = await supabase
         .from('creator_revenue')
         .select('*')
         .eq('creator_id', creatorId)
