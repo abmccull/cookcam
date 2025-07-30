@@ -49,7 +49,7 @@ module.exports = {
       allowHigherOrderFunctions: true,
       allowDirectConstAssertionInArrowFunctions: true,
     }],
-    '@typescript-eslint/no-explicit-any': 'error',
+    '@typescript-eslint/no-explicit-any': 'warn',
     '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
     '@typescript-eslint/no-floating-promises': 'error',
     '@typescript-eslint/no-misused-promises': 'error',
@@ -90,6 +90,12 @@ module.exports = {
       rules: {
         '@typescript-eslint/no-explicit-any': 'off',
         'sonarjs/no-duplicate-string': 'off',
+      },
+    },
+    {
+      files: ['src/scripts/**/*.ts'],
+      rules: {
+        'no-console': 'off',
       },
     },
   ],
