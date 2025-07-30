@@ -15,6 +15,7 @@ import { securityHeaders, rateLimiter, sanitizeInput } from './middleware/securi
 import { logger } from './utils/logger';
 import { Request, Response, NextFunction } from 'express';
 import { errorHandler, requestIdMiddleware, notFoundHandler } from './middleware/errorHandler';
+import { authenticateUser } from './middleware/auth';
 import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './config/swagger';
 import { securityMonitoring } from './services/security-monitoring';
@@ -110,11 +111,12 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
 }));
 
 // Security metrics endpoint (protected)
-app.get('/api/v1/security/metrics', authenticateUser, async (req: Request, res: Response) => {
+app.get('/api/v1/security/metrics', authenticateUser, async (req: Request, res: Response): Promise<void> => {
   // Only allow admins to access security metrics
   if ((req as any).user?.role !== 'admin') {
     await securityMonitoring.logUnauthorizedAccess(req, 'security_metrics');
-    return res.status(403).json({ error: 'Access denied' });
+    res.status(403).json({ error: 'Access denied' });
+    return;
   }
   
   const metrics = await securityMonitoring.getSecurityMetrics();
@@ -122,7 +124,7 @@ app.get('/api/v1/security/metrics', authenticateUser, async (req: Request, res: 
 });
 
 // Health check endpoint
-app.get('/health', (req, res) => {
+app.get('/health', (req, res): void => {
   res.json({
     status: 'healthy',
     timestamp: new Date().toISOString(),

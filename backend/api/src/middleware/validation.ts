@@ -27,13 +27,14 @@ export const sanitizeArray = (input: unknown[]): unknown[] => {
 };
 
 // Validation middleware for auth endpoints
-export const validateAuthInput = (req: Request, res: Response, next: NextFunction) => {
+export const validateAuthInput = (req: Request, res: Response, next: NextFunction): void => {
   const { email, password, name } = req.body;
 
   // Validate email
   if (email) {
     if (!ValidationRules.email(email)) {
-      return res.status(400).json({ error: 'Invalid email format' });
+      res.status(400).json({ error: 'Invalid email format' });
+      return;
     }
     req.body.email = sanitizeString(email.toLowerCase());
   }
@@ -41,9 +42,10 @@ export const validateAuthInput = (req: Request, res: Response, next: NextFunctio
   // Validate password
   if (password) {
     if (!ValidationRules.password(password)) {
-      return res.status(400).json({ 
+      res.status(400).json({ 
         error: 'Password must be at least 8 characters long' 
       });
+      return;
     }
   }
 
@@ -51,7 +53,8 @@ export const validateAuthInput = (req: Request, res: Response, next: NextFunctio
   if (name) {
     req.body.name = sanitizeString(name);
     if (req.body.name.length < 2) {
-      return res.status(400).json({ error: 'Name must be at least 2 characters' });
+      res.status(400).json({ error: 'Name must be at least 2 characters' });
+      return;
     }
   }
 
@@ -59,21 +62,23 @@ export const validateAuthInput = (req: Request, res: Response, next: NextFunctio
 };
 
 // Validation middleware for recipe input
-export const validateRecipeInput = (req: Request, res: Response, next: NextFunction) => {
+export const validateRecipeInput = (req: Request, res: Response, next: NextFunction): void => {
   const { title, ingredients, preferences } = req.body;
 
   // Validate title
   if (title) {
     req.body.title = sanitizeString(title);
     if (req.body.title.length < 3) {
-      return res.status(400).json({ error: 'Title must be at least 3 characters' });
+      res.status(400).json({ error: 'Title must be at least 3 characters' });
+      return;
     }
   }
 
   // Validate ingredients array
   if (ingredients) {
     if (!Array.isArray(ingredients)) {
-      return res.status(400).json({ error: 'Ingredients must be an array' });
+      res.status(400).json({ error: 'Ingredients must be an array' });
+      return;
     }
     req.body.ingredients = sanitizeArray(ingredients).map(ing => {
       const ingredient = ing as Record<string, unknown>;
@@ -88,7 +93,8 @@ export const validateRecipeInput = (req: Request, res: Response, next: NextFunct
   if (preferences) {
     const validPreferences = ['vegan', 'vegetarian', 'gluten-free', 'dairy-free', 'low-carb', 'keto'];
     if (!Array.isArray(preferences)) {
-      return res.status(400).json({ error: 'Preferences must be an array' });
+      res.status(400).json({ error: 'Preferences must be an array' });
+      return;
     }
     req.body.preferences = preferences.filter(pref => validPreferences.includes(pref));
   }
@@ -97,13 +103,14 @@ export const validateRecipeInput = (req: Request, res: Response, next: NextFunct
 };
 
 // Validation middleware for pagination
-export const validatePagination = (req: Request, res: Response, next: NextFunction) => {
+export const validatePagination = (req: Request, res: Response, next: NextFunction): void => {
   const { limit, offset } = req.query;
 
   if (limit) {
     const limitNum = parseInt(limit as string);
     if (isNaN(limitNum) || !ValidationRules.limit(limitNum)) {
-      return res.status(400).json({ error: 'Invalid limit parameter (1-100)' });
+      res.status(400).json({ error: 'Invalid limit parameter (1-100)' });
+      return;
     }
     req.query.limit = limitNum.toString();
   }
@@ -111,7 +118,8 @@ export const validatePagination = (req: Request, res: Response, next: NextFuncti
   if (offset) {
     const offsetNum = parseInt(offset as string);
     if (isNaN(offsetNum) || !ValidationRules.offset(offsetNum)) {
-      return res.status(400).json({ error: 'Invalid offset parameter' });
+      res.status(400).json({ error: 'Invalid offset parameter' });
+      return;
     }
     req.query.offset = offsetNum.toString();
   }
@@ -120,18 +128,20 @@ export const validatePagination = (req: Request, res: Response, next: NextFuncti
 };
 
 // Validation middleware for scan input
-export const validateScanInput = (req: Request, res: Response, next: NextFunction) => {
+export const validateScanInput = (req: Request, res: Response, next: NextFunction): void => {
   const { image_data, detected_ingredients } = req.body;
 
   // Validate image data size (limit to 10MB base64)
   if (image_data && image_data.length > 10 * 1024 * 1024 * 1.37) { // Base64 is ~37% larger
-    return res.status(400).json({ error: 'Image size too large (max 10MB)' });
+    res.status(400).json({ error: 'Image size too large (max 10MB)' });
+    return;
   }
 
   // Validate detected ingredients if provided
   if (detected_ingredients) {
     if (!Array.isArray(detected_ingredients)) {
-      return res.status(400).json({ error: 'Detected ingredients must be an array' });
+      res.status(400).json({ error: 'Detected ingredients must be an array' });
+      return;
     }
     req.body.detected_ingredients = sanitizeArray(detected_ingredients);
   }
@@ -140,7 +150,7 @@ export const validateScanInput = (req: Request, res: Response, next: NextFunctio
 };
 
 // Generic input sanitization middleware
-export const sanitizeInput = (req: Request, res: Response, next: NextFunction) => {
+export const sanitizeInput = (req: Request, res: Response, next: NextFunction): void => {
   // Sanitize body
   if (req.body && typeof req.body === 'object') {
     for (const key in req.body) {

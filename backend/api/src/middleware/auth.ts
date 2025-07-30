@@ -53,16 +53,17 @@ export const verifyRefreshToken = (token: string): TokenPayload => {
 };
 
 export interface AuthenticatedRequest extends Request {
-  user?: { id: string; email?: string };
+  user?: { id: string; email?: string } | undefined;
   isFreeTier?: boolean;
 }
 
-export const authenticateUser = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+export const authenticateUser = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const authHeader = req.headers.authorization;
     
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ error: 'Authentication required' });
+      res.status(401).json({ error: 'Authentication required' });
+      return;
     }
 
     const token = authHeader.substring(7);
@@ -84,11 +85,12 @@ export const authenticateUser = async (req: AuthenticatedRequest, res: Response,
           hasUser: !!user,
           tokenPrefix: token.substring(0, 20) + '...'
         });
-        return res.status(401).json({ 
+        res.status(401).json({ 
           error: 'Token expired or invalid',
           code: 'TOKEN_EXPIRED',
           message: 'Please refresh your session'
         });
+        return;
       }
 
       logger.info('✅ Supabase token validation successful:', {
@@ -96,7 +98,10 @@ export const authenticateUser = async (req: AuthenticatedRequest, res: Response,
         email: user.email
       });
 
-      req.user = { id: user.id, email: user.email };
+      req.user = { 
+        id: user.id, 
+        ...(user.email && { email: user.email })
+      };
       next();
     } catch (validationError: unknown) {
       logger.error('❌ Supabase token validation error:', {
@@ -104,20 +109,22 @@ export const authenticateUser = async (req: AuthenticatedRequest, res: Response,
         tokenPrefix: token.substring(0, 20) + '...'
       });
       
-      return res.status(401).json({ 
+      res.status(401).json({ 
         error: 'Token expired or invalid',
         code: 'TOKEN_EXPIRED',
         message: 'Please refresh your session'
       });
+      return;
     }
   } catch (error: unknown) {
     logger.error('Auth middleware error', { error: error instanceof Error ? error.message : 'Unknown error' });
     res.status(401).json({ error: 'Authentication failed' });
+    return;
   }
 };
 
 // Optional authentication - allows both authenticated and guest users
-export const optionalAuth = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+export const optionalAuth = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     console.log('👥 OptionalAuth middleware called for:', req.path);
     const authHeader = req.headers.authorization;
@@ -142,12 +149,15 @@ export const optionalAuth = async (req: AuthenticatedRequest, res: Response, nex
         console.log('❌ Invalid token - continuing as guest');
         req.user = undefined;
         req.isFreeTier = true;
-        next();
+        return next();
       } else {
         console.log('✅ Valid token - authenticated user');
-        req.user = { id: user.id, email: user.email };
+        req.user = { 
+          id: user.id, 
+          ...(user.email && { email: user.email })
+        };
         req.isFreeTier = false;
-        next();
+        return next();
       }
     } catch {
       // Invalid token = continue as guest (don't fail)

@@ -22,7 +22,7 @@ export const rateLimiter = (options: {
   const max = options.max || parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100');
   const message = options.message || 'Too many requests from this IP, please try again later.';
 
-  return (req: Request, res: Response, next: NextFunction) => {
+  return (req: Request, res: Response, next: NextFunction): void => {
     const ip = req.ip || req.socket.remoteAddress || 'unknown';
     const now = Date.now();
     
@@ -49,10 +49,11 @@ export const rateLimiter = (options: {
           console.error('Failed to log rate limit violation:', err)
         );
         
-        return res.status(429).json({
+        res.status(429).json({
           error: message,
           retryAfter: Math.ceil((rateLimitStore[ip].resetTime - now) / 1000)
         });
+        return;
       }
     } else {
       // Reset window
@@ -74,11 +75,12 @@ export const authRateLimiter = rateLimiter({
 });
 
 // API key validation for sensitive endpoints
-export const validateApiKey = (req: Request, res: Response, next: NextFunction) => {
+export const validateApiKey = (req: Request, res: Response, next: NextFunction): void => {
   const apiKey = req.headers['x-api-key'];
   
   if (!apiKey || apiKey !== process.env.INTERNAL_API_KEY) {
-    return res.status(401).json({ error: 'Invalid API key' });
+    res.status(401).json({ error: 'Invalid API key' });
+    return;
   }
   
   next();
@@ -108,14 +110,15 @@ export const securityHeaders = helmet({
 
 // Request validation middleware
 export const validateRequest = (schema: { validate: (body: unknown) => { error?: { details: { message: string }[] } } }) => {
-  return (req: Request, res: Response, next: NextFunction) => {
+  return (req: Request, res: Response, next: NextFunction): void => {
     const { error } = schema.validate(req.body);
     
     if (error?.details?.[0]?.message) {
-      return res.status(400).json({
+      res.status(400).json({
         error: 'Validation error',
         details: error.details[0].message
       });
+      return;
     }
     
     next();
@@ -123,7 +126,7 @@ export const validateRequest = (schema: { validate: (body: unknown) => { error?:
 };
 
 // Sanitize user input
-export const sanitizeInput = (req: Request, res: Response, next: NextFunction) => {
+export const sanitizeInput = (req: Request, res: Response, next: NextFunction): void => {
   // Remove any potential script tags or SQL injection attempts
   const sanitize = (obj: unknown): unknown => {
     if (typeof obj === 'string') {

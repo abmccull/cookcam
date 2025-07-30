@@ -7,7 +7,9 @@ export class AppError extends Error {
     super(message);
     this.statusCode = statusCode;
     this.isOperational = true;
-    this.code = code;
+    if (code !== undefined) {
+      this.code = code;
+    }
 
     Error.captureStackTrace(this, this.constructor);
   }
@@ -48,7 +50,9 @@ export class RateLimitError extends AppError {
 
   constructor(retryAfter?: number) {
     super('Too many requests', 429, 'RATE_LIMIT_ERROR');
-    this.retryAfter = retryAfter;
+    if (retryAfter !== undefined) {
+      this.retryAfter = retryAfter;
+    }
   }
 }
 

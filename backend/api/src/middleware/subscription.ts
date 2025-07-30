@@ -56,10 +56,11 @@ export async function checkSubscriptionMiddleware(
 
 // Middleware to require a specific subscription tier
 export function requireTier(tierSlug: string) {
-  return async (req: Request, res: Response, next: NextFunction) => {
+  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       if (!(req as any).user) {
-        return res.status(401).json({ error: 'Authentication required' });
+        res.status(401).json({ error: 'Authentication required' });
+        return;
       }
 
       const userId = (req as any).user.id;
@@ -71,12 +72,13 @@ export function requireTier(tierSlug: string) {
       const requiredTierIndex = tierHierarchy.indexOf(tierSlug);
 
       if (userTierIndex < requiredTierIndex) {
-        return res.status(403).json({ 
+        res.status(403).json({ 
           error: 'Upgrade required',
           message: `This feature requires a ${tierSlug} subscription or higher`,
           currentTier: userTier.slug,
           requiredTier: tierSlug
         });
+        return;
       }
 
       next();
@@ -89,22 +91,24 @@ export function requireTier(tierSlug: string) {
 
 // Middleware to require a specific feature
 export function requireFeature(featureKey: string) {
-  return async (req: Request, res: Response, next: NextFunction) => {
+  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       if (!(req as any).user) {
-        return res.status(401).json({ error: 'Authentication required' });
+        res.status(401).json({ error: 'Authentication required' });
+        return;
       }
 
       const userId = (req as any).user.id;
       const hasAccess = await subscriptionService.hasFeatureAccess(userId, featureKey);
 
       if (!hasAccess) {
-        return res.status(403).json({ 
+        res.status(403).json({ 
           error: 'Feature not available',
           message: 'Your subscription plan does not include this feature',
           feature: featureKey,
           upgradeUrl: '/subscription/upgrade'
         });
+        return;
       }
 
       next();
@@ -119,10 +123,11 @@ export function requireFeature(featureKey: string) {
 export async function checkSubscriptionLimits(
   limitType: 'recipes' | 'scans' | 'collections'
 ) {
-  return async (req: Request, res: Response, next: NextFunction) => {
+  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       if (!(req as any).user) {
-        return res.status(401).json({ error: 'Authentication required' });
+        res.status(401).json({ error: 'Authentication required' });
+        return;
       }
 
       const userId = (req as any).user.id;
@@ -136,7 +141,10 @@ export async function checkSubscriptionLimits(
       switch (limitType) {
         case 'recipes':
           limit = features.recipes_per_month || 5;
-          if (limit === -1) return next(); // Unlimited
+          if (limit === -1) {
+            next();
+            return;
+          }
           
           // TODO: Get current month's recipe count
           // currentUsage = await getMonthlyRecipeCount(userId);
@@ -144,7 +152,10 @@ export async function checkSubscriptionLimits(
 
         case 'scans':
           limit = features.scan_limit || 10;
-          if (limit === -1) return next(); // Unlimited
+          if (limit === -1) {
+            next();
+            return;
+          }
           
           // TODO: Get current month's scan count
           // currentUsage = await getMonthlyScanCount(userId);
@@ -152,7 +163,10 @@ export async function checkSubscriptionLimits(
 
         case 'collections':
           limit = features.collections_limit || 1;
-          if (limit === -1) return next(); // Unlimited
+          if (limit === -1) {
+            next();
+            return;
+          }
           
           // TODO: Get total collections count
           // currentUsage = await getCollectionsCount(userId);
@@ -160,13 +174,14 @@ export async function checkSubscriptionLimits(
       }
 
       if (currentUsage >= limit) {
-        return res.status(403).json({
+        res.status(403).json({
           error: 'Limit reached',
           message: `You have reached your ${limitType} limit for this month`,
           limit,
           usage: currentUsage,
           upgradeUrl: '/subscription/upgrade'
         });
+        return;
       }
 
       next();
@@ -178,21 +193,23 @@ export async function checkSubscriptionLimits(
 }
 
 // Helper to check if user is a creator
-export async function isCreator(req: Request, res: Response, next: NextFunction) {
+export async function isCreator(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     if (!(req as any).user) {
-      return res.status(401).json({ error: 'Authentication required' });
+      res.status(401).json({ error: 'Authentication required' });
+      return;
     }
 
     const userId = (req as any).user.id;
     const hasCreatorAccess = await subscriptionService.hasFeatureAccess(userId, FEATURES.CREATOR_DASHBOARD);
 
     if (!hasCreatorAccess) {
-      return res.status(403).json({
+      res.status(403).json({
         error: 'Creator access required',
         message: 'Upgrade to Creator tier to access this feature',
         upgradeUrl: '/subscription/upgrade?tier=creator'
       });
+      return;
     }
 
     next();

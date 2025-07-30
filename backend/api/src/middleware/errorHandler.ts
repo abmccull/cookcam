@@ -94,7 +94,7 @@ export const errorHandler = (
       : message,
     code,
     statusCode,
-    requestId: req.id,
+    ...(req.id && { requestId: req.id }),
     timestamp: new Date().toISOString(),
     path: req.path,
   };
@@ -102,8 +102,8 @@ export const errorHandler = (
   // Add additional details in development
   if (process.env.NODE_ENV !== 'production') {
     errorResponse.details = {
-      stack: err.stack,
       ...errorLog,
+      stack: err.stack,
     };
   }
 
@@ -127,7 +127,7 @@ export const notFoundHandler = (req: Request, res: Response): void => {
     message: `Cannot ${req.method} ${req.path}`,
     code: 'NOT_FOUND',
     statusCode: 404,
-    requestId: req.id,
+    ...(req.id && { requestId: req.id }),
     timestamp: new Date().toISOString(),
     path: req.path,
   };
