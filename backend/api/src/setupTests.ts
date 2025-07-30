@@ -28,7 +28,7 @@ afterEach(() => {
 // Global test utilities
 global.testUtils = {
   // Generate a valid JWT token for testing
-  generateTestToken: (userId: string = 'test-user-id') => {
+  generateTestToken: (_userId: string = 'test-user-id') => {
     return 'test-jwt-token';
   },
   

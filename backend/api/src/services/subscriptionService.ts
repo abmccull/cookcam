@@ -612,7 +612,9 @@ export class SubscriptionService {
           .select()
           .single();
 
-        if (error) throw error;
+        if (error) {
+          throw error;
+        }
         return data;
       } else {
         // Create new subscription
@@ -717,7 +719,7 @@ export class SubscriptionService {
   async upgradeUserToCreator(userId: string, metadata: any): Promise<any> {
     try {
       // Create creator subscription
-      const subscription = await this.createSubscription({
+      await this.createSubscription({
         userId,
         tierId: SUBSCRIPTION_TIERS.CREATOR.id,
         provider: 'manual',

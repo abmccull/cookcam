@@ -1,7 +1,7 @@
 // Example of how to implement caching in the recipes route
 import { Router } from 'express';
 import { authenticateUser, AuthenticatedRequest } from '../middleware/auth';
-import { cacheService, CacheNamespaces, CacheTTL } from '../services/cache';
+import { CacheService, cacheService, CacheNamespaces, CacheTTL } from '../services/cache';
 import { supabase } from '../index';
 import { logger } from '../utils/logger';
 
@@ -62,7 +62,9 @@ router.get('/popular', async (req, res) => {
           .order('views_count', { ascending: false })
           .range((page - 1) * limit, page * limit - 1);
           
-        if (error) throw error;
+        if (error) {
+          throw error;
+        }
         return data;
       },
       (page, limit) => `popular:${page}:${limit}`, // Key generator
@@ -85,7 +87,7 @@ router.get('/popular', async (req, res) => {
 
 // Get recipe by ID with caching using decorator pattern
 class RecipeService {
-  @cacheService.cacheable('recipe-details', CacheTTL.LONG)
+  @CacheService.cacheable('recipe-details', CacheTTL.LONG)
   async getRecipeById(recipeId: string) {
     const { data, error } = await supabase
       .from('recipes')
@@ -98,7 +100,9 @@ class RecipeService {
       .eq('id', recipeId)
       .single();
       
-    if (error) throw error;
+    if (error) {
+      throw error;
+    }
     return data;
   }
 }
@@ -137,7 +141,9 @@ router.put('/:id', authenticateUser, async (req, res) => {
       .select()
       .single();
       
-    if (error) throw error;
+    if (error) {
+      throw error;
+    }
     
     // Invalidate related caches
     await cacheService.del(`recipe-details:[\"${id}\"]`);

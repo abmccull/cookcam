@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Request, Response } from 'express';
 import http from 'http';
 import cors from 'cors';
 import morgan from 'morgan';
@@ -13,7 +13,6 @@ import analyticsRoutes from './routes/analytics';
 import userRoutes from './routes/users';
 import { securityHeaders, rateLimiter, sanitizeInput } from './middleware/security';
 import { logger } from './utils/logger';
-import { Request, Response } from 'express';
 import { errorHandler, requestIdMiddleware, notFoundHandler } from './middleware/errorHandler';
 import { authenticateUser, AuthenticatedRequest } from './middleware/auth';
 import swaggerUi from 'swagger-ui-express';
@@ -111,7 +110,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
 }));
 
 // Security metrics endpoint (protected)
-app.get('/api/v1/security/metrics', authenticateUser, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+app.get('/api/v1/security/metrics', authenticateUser, async (req: AuthenticatedRequest, res: Response) => {
   // Only allow admins to access security metrics
   if ((req as any).user?.role !== 'admin') {
     await securityMonitoring.logUnauthorizedAccess(req, 'security_metrics');

@@ -62,7 +62,8 @@ router.post('/check-streak', authenticateUser, async (req: AuthenticatedRequest,
 
     if (error) {
       logger.error('Error checking streak:', error);
-      return res.status(500).json({ error: 'Failed to check streak' });
+      res.status(500).json({ error: 'Failed to check streak' });
+      return;
     }
 
     res.json({
@@ -295,7 +296,12 @@ router.get('/leaderboard', async (req: Request, res: Response) => {
 // Get user's rank in leaderboard
 router.get('/rank/:userId?', authenticateUser, async (req: Request, res: Response) => {
   try {
-    const userId = req.params.userId || (req as AuthenticatedRequest).user.id;
+    const userId = req.params.userId || (req as AuthenticatedRequest).user?.id;
+    
+    if (!userId) {
+      res.status(400).json({ error: 'User ID is required' });
+      return;
+    }
     const { period = 'weekly' } = req.query;
 
     logger.debug('📊 Getting user rank:', { userId, period });
