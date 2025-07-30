@@ -1,5 +1,5 @@
 {
-  "buildCommand": "cd website && npm install && mkdir -p public && cp -r *.html css js images .well-known public/ || cp -r *.html css js images public/",
+  "buildCommand": "cd website && npm install && mkdir -p public && cp -r *.html css js images public/ && if [ -d .well-known ]; then cp -r .well-known public/; fi",
   "outputDirectory": "website/public",
   "installCommand": "echo 'No global install needed'",
   "ignoreCommand": "git diff --quiet HEAD^ HEAD ./website/",

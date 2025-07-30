@@ -3,16 +3,13 @@
     "apps": [],
     "details": [
       {
-        "appID": "2RYA3562X9.com.abmccull.cookcamexpo",
+        "appID": "YOUR_TEAM_ID.com.cookcam.app",
         "paths": [
           "/ref/*",
-          "/c/*",
-          "/creator/*",
-          "/recipe/*",
-          "/signup",
-          "/download"
+          "/c/*"
         ]
       }
     ]
   }
-} 
+}
+EOF < /dev/null

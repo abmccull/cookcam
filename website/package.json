@@ -5,7 +5,7 @@
   "main": "index.html",
   "scripts": {
     "dev": "npx serve .",
-    "build": "echo 'Static website - no build needed'",
+    "build": "mkdir -p public && cp -r *.html css js images public/ && if [ -d .well-known ]; then cp -r .well-known public/; fi",
     "install-analytics": "npm install @vercel/analytics"
   },
   "dependencies": {
