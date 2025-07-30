@@ -25,6 +25,8 @@ import * as Haptics from "expo-haptics";
 import * as SecureStore from "expo-secure-store";
 import SmartNotificationService from "../services/SmartNotificationService";
 import logger from "../utils/logger";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { RootStackParamList } from "../App";
 
 
 interface NotificationCategory {
@@ -36,7 +38,11 @@ interface NotificationCategory {
   color: string;
 }
 
-const NotificationPreferencesScreen: React.FC<{ navigation: any }> = ({
+interface NotificationPreferencesScreenProps {
+  navigation: NativeStackNavigationProp<RootStackParamList, "NotificationPreferences">;
+}
+
+const NotificationPreferencesScreen: React.FC<NotificationPreferencesScreenProps> = ({
   navigation,
 }) => {
   const [masterEnabled, setMasterEnabled] = useState(true);

@@ -185,9 +185,10 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
         });
         throw new Error("Invalid detailed recipe response format");
       }
-    } catch (error: any) {
+    } catch (error) {
       logger.error("❌ Detailed recipe generation failed:", error);
-      Alert.alert("Recipe Generation Failed", error?.message || "Please try again.");
+      const errorMessage = error instanceof Error ? error.message : "Please try again.";
+      Alert.alert("Recipe Generation Failed", errorMessage);
     } finally {
       setIsGeneratingDetailed(false);
       logger.debug("🔄 Loading animation should now be hidden");
@@ -254,11 +255,12 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
           throw new Error(response.error || "Failed to update favorite status");
         }
       }
-    } catch (error: any) {
+    } catch (error) {
       logger.error("❌ Failed to toggle favorite:", error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to update favorite status. Please try again.";
       Alert.alert(
         "Error",
-        error.message || "Failed to update favorite status. Please try again.",
+        errorMessage,
         [{ text: "OK" }]
       );
     }

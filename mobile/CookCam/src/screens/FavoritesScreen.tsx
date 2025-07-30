@@ -25,7 +25,8 @@ import { useAuth } from "../context/AuthContext";
 import { cookCamApi } from "../services/cookCamApi";
 import * as Haptics from "expo-haptics";
 import logger from "../utils/logger";
-
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { RootStackParamList } from "../App";
 
 interface SavedRecipe {
   created_at: string;
@@ -61,7 +62,11 @@ interface CollectionBadge {
   earned: boolean;
 }
 
-const FavoritesScreen = ({ navigation }: { navigation: any }) => {
+interface FavoritesScreenProps {
+  navigation: NativeStackNavigationProp<RootStackParamList, "Favorites">;
+}
+
+const FavoritesScreen = ({ navigation }: FavoritesScreenProps) => {
   const [selectedFilter, setSelectedFilter] = useState<
     "all" | "recent" | "top-rated" | "collections"
   >("all");
@@ -297,9 +302,23 @@ const FavoritesScreen = ({ navigation }: { navigation: any }) => {
   const handleRecipePress = (savedRecipe: SavedRecipe) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     // Navigate to recipe detail or cook mode
-    navigation.navigate("Home", {
-      screen: "CookMode",
-      params: { recipe: savedRecipe.recipe },
+    navigation.navigate("CookMode", {
+      recipeId: savedRecipe.recipe.id,
+      recipe: {
+        id: savedRecipe.recipe.id,
+        title: savedRecipe.recipe.title,
+        description: savedRecipe.recipe.description || "",
+        ingredients: savedRecipe.recipe.ingredients || [],
+        steps: savedRecipe.recipe.instructions?.map((inst: any, index: number) => ({
+          step: index + 1,
+          instruction: typeof inst === 'string' ? inst : inst.instruction || "",
+          time: inst.time,
+          temperature: inst.temperature
+        })) || [],
+        totalTime: savedRecipe.recipe.total_time_minutes || 0,
+        difficulty: savedRecipe.recipe.difficulty || "Medium",
+        servings: savedRecipe.recipe.servings || 4
+      }
     });
   };
 
@@ -442,9 +461,23 @@ const FavoritesScreen = ({ navigation }: { navigation: any }) => {
                       ]}
                       onPress={() => {
                         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                        navigation.navigate("Home", {
-                          screen: "CookMode",
-                          params: { recipe: rec.recipe },
+                        navigation.navigate("CookMode", {
+                          recipeId: rec.recipe?.id || rec.id,
+                          recipe: {
+                            id: rec.recipe?.id || rec.id,
+                            title: rec.recipe?.title || rec.title,
+                            description: rec.recipe?.description || "",
+                            ingredients: rec.recipe?.ingredients || [],
+                            steps: rec.recipe?.instructions?.map((inst: any, index: number) => ({
+                              step: index + 1,
+                              instruction: typeof inst === 'string' ? inst : inst.instruction || "",
+                              time: inst.time,
+                              temperature: inst.temperature
+                            })) || [],
+                            totalTime: rec.recipe?.total_time_minutes || 0,
+                            difficulty: rec.recipe?.difficulty || "Medium",
+                            servings: rec.recipe?.servings || 4
+                          }
                         });
                       }}
                     >

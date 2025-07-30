@@ -62,9 +62,14 @@ import StreakCalendar from "../components/StreakCalendar";
 import { cookCamApi } from "../services/cookCamApi";
 import * as SecureStore from "expo-secure-store";
 import logger from "../utils/logger";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { RootStackParamList } from "../App";
 
+interface ProfileScreenProps {
+  navigation: NativeStackNavigationProp<RootStackParamList, "Profile">;
+}
 
-const ProfileScreen = ({ navigation }: { navigation: any }) => {
+const ProfileScreen = ({ navigation }: ProfileScreenProps) => {
   const { user, logout, updateUser } = useAuth();
   const { level, xp, streak, badges } = useGamification();
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
@@ -534,7 +539,10 @@ const ProfileScreen = ({ navigation }: { navigation: any }) => {
           {/* Basic settings options */}
           <TouchableOpacity
             style={styles.settingItem}
-            onPress={() => navigation.navigate("Privacy")}
+            onPress={() => {
+              // TODO: Add Privacy screen to navigation
+              Alert.alert("Coming Soon", "Privacy settings will be available soon.");
+            }}
           >
             <View style={styles.settingLeft}>
               <View style={styles.settingIconContainer}>
@@ -547,7 +555,10 @@ const ProfileScreen = ({ navigation }: { navigation: any }) => {
 
           <TouchableOpacity
             style={styles.settingItem}
-            onPress={() => navigation.navigate("Support")}
+            onPress={() => {
+              // TODO: Add Support screen to navigation
+              Alert.alert("Coming Soon", "Support page will be available soon.");
+            }}
           >
             <View style={styles.settingLeft}>
               <View style={styles.settingIconContainer}>

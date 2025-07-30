@@ -142,9 +142,14 @@ export type TabParamList = {
   Profile: undefined;
 };
 
+export type HomeStackParamList = {
+  Main: undefined;
+  RecipeCards: undefined;
+};
+
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<TabParamList>();
-const HomeStack = createNativeStackNavigator();
+const HomeStack = createNativeStackNavigator<HomeStackParamList>();
 
 // Home Stack Navigator (new)
 function HomeStackNavigator() {
@@ -157,14 +162,20 @@ function HomeStackNavigator() {
   );
 }
 
+// Type for bottom tab screen props
+type TabScreenProps = {
+  navigation: any;
+  route: any;
+};
+
 // Wrapped screen components that correctly pass navigation props
-const WrappedHomeStack = (props: any) => <AppShell><HomeStackNavigator {...props} /></AppShell>;
-const WrappedFavorites = (props: any) => <AppShell><FavoritesScreen {...props} /></AppShell>;
-const WrappedLeaderboard = (props: any) => <AppShell><LeaderboardScreen {...props} /></AppShell>;
-const WrappedProfile = (props: any) => <AppShell><ProfileScreen {...props} /></AppShell>;
+const WrappedHomeStack = (props: TabScreenProps) => <AppShell><HomeStackNavigator /></AppShell>;
+const WrappedFavorites = (props: TabScreenProps) => <AppShell><FavoritesScreen navigation={props.navigation} /></AppShell>;
+const WrappedLeaderboard = (props: TabScreenProps) => <AppShell><LeaderboardScreen /></AppShell>;
+const WrappedProfile = (props: TabScreenProps) => <AppShell><ProfileScreen navigation={props.navigation} /></AppShell>;
 
 // Wrapped Creator screen
-const WrappedCreator = (props: any) => <AppShell><CreatorScreen {...props} /></AppShell>;
+const WrappedCreator = (props: TabScreenProps) => <AppShell><CreatorScreen navigation={props.navigation} /></AppShell>;
 
 // Main Tab Navigator
 function MainTabs() {

@@ -45,9 +45,15 @@ router.put('/profile', authenticateUser, async (req: Request, res: Response) => 
     const { name, avatar_url, is_creator } = req.body;
 
     const updateData: any = {};
-    if (name !== undefined) updateData.name = name;
-    if (avatar_url !== undefined) updateData.avatar_url = avatar_url;
-    if (is_creator !== undefined) updateData.is_creator = is_creator;
+    if (name !== undefined) {
+      updateData.name = name;
+    }
+    if (avatar_url !== undefined) {
+      updateData.avatar_url = avatar_url;
+    }
+    if (is_creator !== undefined) {
+      updateData.is_creator = is_creator;
+    }
 
     const { data: user, error } = await supabase
       .from('users')

@@ -139,7 +139,10 @@ const LEVEL_THRESHOLDS = generateLevelThresholds();
 if (__DEV__) {
   logger.debug("📊 XP Level Thresholds (first 15 levels):");
   for (let i = 1; i <= Math.min(15, LEVEL_THRESHOLDS.length - 1); i++) {
-    const xpForLevel = LEVEL_THRESHOLDS[i] - LEVEL_THRESHOLDS[i - 1];
+    const currentThreshold = LEVEL_THRESHOLDS[i];
+    const previousThreshold = LEVEL_THRESHOLDS[i - 1];
+    if (currentThreshold === undefined || previousThreshold === undefined) continue;
+    const xpForLevel = currentThreshold - previousThreshold;
     logger.debug(`Level ${i}: ${xpForLevel} XP (Total: ${LEVEL_THRESHOLDS[i]})`);
   }
   logger.debug(`...Level 100: Total XP needed: ${LEVEL_THRESHOLDS[100]?.toLocaleString()}`);

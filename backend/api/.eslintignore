@@ -1,10 +1,28 @@
+# Dependencies
 node_modules/
+
+# Build output
 dist/
+build/
 coverage/
+
+# Configuration files
+.eslintrc.js
+eslint.config.js
+jest.config.js
+*.config.js
+*.config.mjs
+*.config.cjs
+
+# Test files  
+**/*.test.ts
+**/*.spec.ts
+test-*.js
+
+# Scripts
+scripts/*.js
+
+# Other JS files
 *.js
-!.eslintrc.js
-!jest.config.js
-scripts/
-*.sql
-*.json
-.env*
+*.mjs
+*.cjs

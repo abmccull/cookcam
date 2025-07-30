@@ -1,3 +1,4 @@
+/* eslint-disable no-console, @typescript-eslint/no-unused-vars */
 import { supabase } from '../db/database';
 import axios from 'axios';
 import fs from 'fs/promises';
@@ -153,7 +154,7 @@ class CompleteUSDASeeder {
       });
       
       return data.totalPages * PAGE_SIZE || 0;
-    } catch (error) {
+    } catch (_error) {
       console.log(`⚠️ Could not get count for ${dataType}, estimating...`);
       // Fallback estimates based on known USDA data
       const estimates: { [key: string]: number } = {
@@ -180,7 +181,7 @@ class CompleteUSDASeeder {
       });
 
       return data.foods || [];
-    } catch (error) {
+    } catch (_error) {
       console.error(`❌ Failed to fetch ${dataType} page ${page}:`, error);
       throw error;
     }
@@ -188,7 +189,7 @@ class CompleteUSDASeeder {
 
   // Extract nutritional data using correct USDA nutrient IDs
   extractNutritionalData(food: USDAFood): any {
-    if (!food.foodNutrients) return {};
+    if (!food.foodNutrients) {return {};}
 
     const nutrition: any = {};
     
@@ -441,7 +442,7 @@ class CompleteUSDASeeder {
           this.printProgress();
         }
 
-      } catch (error) {
+      } catch (_error) {
         this.progress.errors.push(`Error processing ${food.description}: ${(error as Error).message}`);
         console.error(`❌ Error processing ${food.description}:`, error);
       }
@@ -519,7 +520,7 @@ class CompleteUSDASeeder {
             await this.processBatch(foods);
             await this.saveProgress();
 
-          } catch (error) {
+          } catch (_error) {
             console.error(`❌ Error processing ${dataType} page ${page}:`, error);
             this.progress.errors.push(`Error processing ${dataType} page ${page}: ${(error as Error).message}`);
             await this.saveProgress();
@@ -541,7 +542,7 @@ class CompleteUSDASeeder {
       console.log('\n🎉 Complete USDA database seeding finished!');
       this.printProgress();
 
-    } catch (error) {
+    } catch (_error) {
       console.error('❌ Fatal error in seeding process:', error);
       await this.saveProgress();
       throw error;

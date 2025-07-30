@@ -8,12 +8,15 @@ import {
   ScrollView,
   Dimensions,
   Alert,
+  NativeSyntheticEvent,
+  NativeScrollEvent,
 } from "react-native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RouteProp } from "@react-navigation/native";
 import { RootStackParamList } from "../App";
 import { Clock, Users, ChefHat } from "lucide-react-native";
 import { useTempData } from "../context/TempDataContext";
+import { Recipe } from "../utils/recipeTypes";
 
 interface RecipeCarouselScreenProps {
   navigation: NativeStackNavigationProp<RootStackParamList>;
@@ -113,7 +116,7 @@ const RecipeCarouselScreen: React.FC<RecipeCarouselScreenProps> = ({
     });
   }, [tempData.tempScanData]);
 
-  const handleCookNow = (recipe: any) => {
+  const handleCookNow = (recipe: Recipe) => {
     setSelectedRecipe(recipe);
 
     // Show toast message
@@ -129,7 +132,7 @@ const RecipeCarouselScreen: React.FC<RecipeCarouselScreenProps> = ({
     );
   };
 
-  const handleScroll = (event: any) => {
+  const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const offsetX = event.nativeEvent.contentOffset.x;
     const index = Math.round(offsetX / SCREEN_WIDTH);
     setCurrentIndex(index);

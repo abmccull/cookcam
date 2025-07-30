@@ -3,7 +3,7 @@ import { authenticateUser } from '../middleware/auth';
 import { subscriptionService } from '../services/subscriptionService';
 import { creatorService } from '../services/creatorService';
 import { stripeConnectService } from '../services/stripeConnectService';
-import { requireTier, requireFeature, isCreator } from '../middleware/subscription';
+import { isCreator } from '../middleware/subscription';
 import { logger } from '../utils/logger';
 import Stripe from 'stripe';
 

@@ -222,7 +222,7 @@ Always respond with valid JSON following the exact structure requested.`;
   }
 
   private buildDiverseRecipesPrompt(options: RecipeGenerationOptions): string {
-    const { ingredients, userPreferences = {}, recipeType, nutritionGoals, context } = options;
+    const { ingredients, userPreferences = {}, recipeType } = options;
 
     let prompt = `Create 3 COMPLETELY DIFFERENT ${recipeType || 'dishes'} using these scanned ingredients: ${ingredients.join(', ')}\n\n`;
 

@@ -282,7 +282,7 @@ const DailyCheckIn: React.FC = () => {
 
     const randomSuggestion =
       suggestions[Math.floor(Math.random() * suggestions.length)];
-    setSuggestedRecipe(randomSuggestion);
+    setSuggestedRecipe(randomSuggestion || "Classic Spaghetti");
     setShowSuggestion(true);
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);

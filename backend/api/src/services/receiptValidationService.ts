@@ -140,7 +140,7 @@ export class GooglePlayReceiptValidator {
       
       if (subscription) {
         const expiryTimeMillis = parseInt(subscription.expiryTimeMillis || '0');
-        const startTimeMillis = parseInt(subscription.startTimeMillis || '0');
+        // const startTimeMillis = parseInt(subscription.startTimeMillis || '0');
         const expiresAt = new Date(expiryTimeMillis);
         
         // Enhanced validation logic
@@ -149,7 +149,7 @@ export class GooglePlayReceiptValidator {
         const isNotCanceled = !subscription.cancelReason || subscription.autoRenewing;
         
         // Check if subscription needs acknowledgment
-        const needsAcknowledgment = subscription.acknowledgementState === 0;
+        // const needsAcknowledgment = subscription.acknowledgementState === 0;
         
         // Determine if subscription is currently active
         const isActive = !isExpired && hasValidPayment && isNotCanceled;

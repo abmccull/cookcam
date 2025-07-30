@@ -179,7 +179,20 @@ const MysteryBox: React.FC<MysteryBoxProps> = ({ onOpen }) => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
 
-    return pool[Math.floor(Math.random() * pool.length)];
+    const reward = pool[Math.floor(Math.random() * pool.length)];
+    if (!reward) {
+      // Fallback to a default reward if somehow undefined
+      return {
+        id: "xp_default",
+        rarity: "common" as const,
+        type: "xp" as const,
+        value: 10,
+        title: "XP Bonus",
+        description: "You earned 10 XP!",
+        icon: "✨",
+      };
+    }
+    return reward;
   };
 
   const handleOpenBox = async () => {

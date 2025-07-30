@@ -97,7 +97,7 @@ export class BackupService {
   }
 
   // List recent backups
-  async listRecentBackups(limit: number = 10): Promise<BackupStatus[]> {
+  async listRecentBackups(_limit: number = 10): Promise<BackupStatus[]> {
     try {
       // In a real implementation, this would query a backup metadata table
       // For now, we'll return cached statuses

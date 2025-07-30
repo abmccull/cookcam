@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { Router, Request, Response } from 'express';
 import { supabase, createAuthenticatedClient } from '../index';
 import { authenticateUser, optionalAuth } from '../middleware/auth';
@@ -7,7 +8,6 @@ import OpenAI from 'openai';
 import fs from 'fs';
 import path from 'path';
 import { validateScanInput } from '../middleware/validation';
-import { logger } from '../utils/logger';
 
 // Test CI/CD pipeline deployment
 // Testing CI/CD pipeline second time

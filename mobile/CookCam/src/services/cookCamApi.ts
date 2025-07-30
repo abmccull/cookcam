@@ -164,6 +164,83 @@ export interface AffiliateLink {
   is_active: boolean;
 }
 
+export interface RecipePreview {
+  id: string;
+  title: string;
+  description: string;
+  cookTime: number;
+  difficulty: string;
+  servings: number;
+  cuisineType: string;
+  estimatedCost?: number;
+  tags: string[];
+}
+
+export interface RecipeGenerationResponse {
+  sessionId: string;
+  previews: RecipePreview[];
+}
+
+export interface DetailedRecipe extends Recipe {
+  sessionId: string;
+  generatedAt: string;
+}
+
+export interface IngredientDetail {
+  id: string;
+  name: string;
+  category: string;
+  nutritionInfo?: NutritionInfo;
+  substitutes?: string[];
+  storageInfo?: {
+    method: string;
+    duration: string;
+    tips: string[];
+  };
+}
+
+export interface CreatorAnalytics {
+  period: string;
+  metrics: {
+    views: number;
+    likes: number;
+    shares: number;
+    revenue: number;
+    newSubscribers: number;
+    totalSubscribers: number;
+  };
+  topRecipes: Array<{
+    recipeId: string;
+    title: string;
+    views: number;
+    engagement: number;
+  }>;
+  revenueBreakdown: {
+    subscriptions: number;
+    tips: number;
+    collections: number;
+  };
+}
+
+export interface ReferralLinkResponse {
+  success: boolean;
+  referralCode: string;
+  userId: string;
+}
+
+export interface PayoutResponse {
+  id: string;
+  amount: number;
+  status: 'pending' | 'processing' | 'completed' | 'failed';
+  method: string;
+  createdAt: string;
+}
+
+export interface FavoriteResponse {
+  favorited: boolean;
+  recipeId: string;
+}
+
 class CookCamApi {
   private static instance: CookCamApi;
 
@@ -338,8 +415,8 @@ class CookCamApi {
     return apiService.delete(API_ENDPOINTS.recipes.delete(recipeId));
   }
 
-  async toggleFavoriteRecipe(recipeId: string): Promise<ApiResponse> {
-    return apiService.post(API_ENDPOINTS.recipes.favorite(recipeId));
+  async toggleFavoriteRecipe(recipeId: string): Promise<ApiResponse<FavoriteResponse>> {
+    return apiService.post<FavoriteResponse>(API_ENDPOINTS.recipes.favorite(recipeId));
   }
 
   async getRecipeNutrition(
@@ -354,8 +431,8 @@ class CookCamApi {
   async searchIngredients(
     query: string,
     limit: number = 20,
-  ): Promise<ApiResponse<any[]>> {
-    return apiService.get(
+  ): Promise<ApiResponse<IngredientDetail[]>> {
+    return apiService.get<IngredientDetail[]>(
       `${API_ENDPOINTS.ingredients.search}?q=${encodeURIComponent(
         query,
       )}&limit=${limit}`,
@@ -366,8 +443,8 @@ class CookCamApi {
     return apiService.get<string[]>(API_ENDPOINTS.ingredients.categories);
   }
 
-  async getIngredientDetails(ingredientId: string): Promise<ApiResponse<any>> {
-    return apiService.get(API_ENDPOINTS.ingredients.details(ingredientId));
+  async getIngredientDetails(ingredientId: string): Promise<ApiResponse<IngredientDetail>> {
+    return apiService.get<IngredientDetail>(API_ENDPOINTS.ingredients.details(ingredientId));
   }
 
   // Gamification Methods

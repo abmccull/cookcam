@@ -129,7 +129,7 @@ export class SecurityMonitoringService {
   // Get recent security events by IP
   private async getRecentEventsByIP(ip: string, secondsAgo: number): Promise<SecurityEvent[]> {
     const events: SecurityEvent[] = [];
-    const pattern = `security:event:*:${ip}`;
+    // const pattern = `security:event:*:${ip}`;
     
     // This is a simplified implementation
     // In production, you'd want to use Redis SCAN or maintain an index

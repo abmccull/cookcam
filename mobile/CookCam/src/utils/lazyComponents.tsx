@@ -1,6 +1,14 @@
 import React, { lazy, Suspense } from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { tokens } from '../styles';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../App';
+
+// Generic screen props type
+type ScreenProps<T extends keyof RootStackParamList> = {
+  navigation: NativeStackNavigationProp<RootStackParamList, T>;
+  route: any;
+};
 
 // Simple loading component
 const LoadingFallback = () => (
@@ -21,55 +29,55 @@ export const LazyLeaderboardScreen = lazy(() => import('../screens/LeaderboardSc
 export const LazyDiscoverScreen = lazy(() => import('../screens/DiscoverScreen'));
 
 // Wrapped components with Suspense
-export const CreatorScreen = (props: any) => (
+export const CreatorScreen = (props: ScreenProps<'Creator'>) => (
   <Suspense fallback={<LoadingFallback />}>
     <LazyCreatorScreen {...props} />
   </Suspense>
 );
 
-export const IngredientReviewScreen = (props: any) => (
+export const IngredientReviewScreen = (props: ScreenProps<'Camera'>) => (
   <Suspense fallback={<LoadingFallback />}>
     <LazyIngredientReviewScreen {...props} />
   </Suspense>
 );
 
-export const ProfileScreen = (props: any) => (
+export const ProfileScreen = (props: ScreenProps<'Profile'>) => (
   <Suspense fallback={<LoadingFallback />}>
     <LazyProfileScreen {...props} />
   </Suspense>
 );
 
-export const CreatorOnboardingScreen = (props: any) => (
+export const CreatorOnboardingScreen = (props: ScreenProps<'CreatorOnboarding'>) => (
   <Suspense fallback={<LoadingFallback />}>
     <LazyCreatorOnboardingScreen {...props} />
   </Suspense>
 );
 
-export const CameraScreen = (props: any) => (
+export const CameraScreen = (props: ScreenProps<'Camera'>) => (
   <Suspense fallback={<LoadingFallback />}>
     <LazyCameraScreen {...props} />
   </Suspense>
 );
 
-export const PreferencesScreen = (props: any) => (
+export const PreferencesScreen = (props: ScreenProps<'Preferences'>) => (
   <Suspense fallback={<LoadingFallback />}>
     <LazyPreferencesScreen {...props} />
   </Suspense>
 );
 
-export const FavoritesScreen = (props: any) => (
+export const FavoritesScreen = (props: ScreenProps<'Favorites'>) => (
   <Suspense fallback={<LoadingFallback />}>
     <LazyFavoritesScreen {...props} />
   </Suspense>
 );
 
-export const LeaderboardScreen = (props: any) => (
+export const LeaderboardScreen = (props: ScreenProps<'Leaderboard'>) => (
   <Suspense fallback={<LoadingFallback />}>
-    <LazyLeaderboardScreen {...props} />
+    <LazyLeaderboardScreen />
   </Suspense>
 );
 
-export const DiscoverScreen = (props: any) => (
+export const DiscoverScreen = (props: ScreenProps<'Discover'>) => (
   <Suspense fallback={<LoadingFallback />}>
     <LazyDiscoverScreen {...props} />
   </Suspense>

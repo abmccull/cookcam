@@ -14,7 +14,7 @@ import logger from "../utils/logger";
 
 
 // Types
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
   error?: string;
@@ -26,7 +26,7 @@ export interface ApiError {
   message: string;
   status?: number | undefined;
   code?: string | undefined;
-  details?: any;
+  details?: unknown;
 }
 
 // Storage keys (deprecated, kept for reference)
@@ -185,10 +185,10 @@ class ApiService {
   }
 
   // Generic request method
-  private async request<T = any>(
+  private async request<T = unknown>(
     method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH",
     endpoint: string,
-    data?: any,
+    data?: unknown,
     customHeaders?: Record<string, string>,
   ): Promise<ApiResponse<T>> {
     const url = `${this.baseURL}${endpoint}`;

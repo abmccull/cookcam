@@ -141,9 +141,10 @@ const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
 
       // Navigate to plan selection after successful signup
       navigation.navigate("PlanSelection");
-    } catch (error: any) {
+    } catch (error) {
       logger.error("Signup error:", error);
-      Alert.alert("Error", error.message || "Failed to create account");
+      const errorMessage = error instanceof Error ? error.message : "Failed to create account";
+      Alert.alert("Error", errorMessage);
     } finally {
       setLoading(false);
     }

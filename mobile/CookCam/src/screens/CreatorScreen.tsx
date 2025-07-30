@@ -52,6 +52,8 @@ import { useGamification, XP_VALUES } from "../context/GamificationContext";
 import logger from "../utils/logger";
 import StripeConnectService from "../services/StripeConnectService";
 import { cookCamApi } from "../services/cookCamApi";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { RootStackParamList } from "../App";
 
 interface CreatorTier {
   id: number;
@@ -102,7 +104,11 @@ interface CreatorEarnings {
   next_payout_date: string | null;
 }
 
-const CreatorScreen = ({ navigation }: { navigation: any }) => {
+interface CreatorScreenProps {
+  navigation: NativeStackNavigationProp<RootStackParamList, "Creator">;
+}
+
+const CreatorScreen = ({ navigation }: CreatorScreenProps) => {
   const { user } = useAuth();
   const { addXP } = useGamification();
   const { state: subscriptionState, isCreator } = useSubscription();
@@ -364,9 +370,7 @@ const CreatorScreen = ({ navigation }: { navigation: any }) => {
 
   const handleBecomeCreator = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    navigation.navigate("CreatorOnboarding", {
-      returnToTab: "Creator",
-    });
+    navigation.navigate("CreatorOnboarding");
   };
 
   const handleOpenStripeConnect = async () => {
