@@ -233,7 +233,7 @@ export class CreatorService {
       const targetYear = year || new Date().getFullYear();
 
       // Check if revenue record exists
-      let { data: revenue, error } = await supabase
+      const { data: revenue, error } = await supabase
         .from('creator_revenue')
         .select('*')
         .eq('creator_id', creatorId)
@@ -243,7 +243,8 @@ export class CreatorService {
 
       if (error && error.code === 'PGRST116') {
         // Record doesn't exist, calculate and create it
-        revenue = await this.calculateAndSaveCreatorRevenue(creatorId, targetMonth, targetYear);
+        const newRevenue = await this.calculateAndSaveCreatorRevenue(creatorId, targetMonth, targetYear);
+        return newRevenue;
       } else if (error) {
         throw error;
       }
