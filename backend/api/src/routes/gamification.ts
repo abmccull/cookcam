@@ -5,107 +5,118 @@ import { logger } from '../utils/logger';
 
 const router = Router();
 
-
 // Add XP to user (calls your SQL function)
-router.post('/add-xp', authenticateUser, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-  try {
-    const { xp_amount, action, metadata = {} } = req.body;
-    const userId = req.user?.id;
+router.post(
+  '/add-xp',
+  authenticateUser,
+  async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    try {
+      const { xp_amount, action, metadata = {} } = req.body;
+      const userId = req.user?.id;
 
-    if (!userId) {
-      res.status(401).json({ error: 'User authentication required' });
-      return;
+      if (!userId) {
+        res.status(401).json({ error: 'User authentication required' });
+        return;
+      }
+
+      if (!xp_amount || !action) {
+        res.status(400).json({ error: 'XP amount and action are required' });
+        return;
+      }
+
+      // Call your SQL function
+      const { data, error } = await supabase.rpc('add_user_xp', {
+        p_user_id: userId,
+        p_xp_amount: xp_amount,
+        p_action: action,
+        p_metadata: metadata,
+      });
+
+      if (error) {
+        logger.error('Error adding XP:', error);
+        res.status(500).json({ error: 'Failed to add XP' });
+        return;
+      }
+
+      res.json({
+        success: true,
+        result: data,
+      });
+    } catch (error: unknown) {
+      logger.error('Add XP error:', error);
+      res.status(500).json({ error: 'Internal server error' });
     }
-
-    if (!xp_amount || !action) {
-      res.status(400).json({ error: 'XP amount and action are required' });
-      return;
-    }
-
-    // Call your SQL function
-    const { data, error } = await supabase.rpc('add_user_xp', {
-      p_user_id: userId,
-      p_xp_amount: xp_amount,
-      p_action: action,
-      p_metadata: metadata
-    });
-
-    if (error) {
-      logger.error('Error adding XP:', error);
-      res.status(500).json({ error: 'Failed to add XP' });
-      return;
-    }
-
-    res.json({
-      success: true,
-      result: data
-    });
-  } catch (error: unknown) {
-    logger.error('Add XP error:', error);
-    res.status(500).json({ error: 'Internal server error' });
   }
-});
+);
 
 // Check daily streak (calls your SQL function)
-router.post('/check-streak', authenticateUser, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-  try {
-    const userId = req.user?.id;
+router.post(
+  '/check-streak',
+  authenticateUser,
+  async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    try {
+      const userId = req.user?.id;
 
-    if (!userId) {
-      res.status(401).json({ error: 'User authentication required' });
-      return;
+      if (!userId) {
+        res.status(401).json({ error: 'User authentication required' });
+        return;
+      }
+
+      const { data, error } = await supabase.rpc('check_user_streak', {
+        p_user_id: userId,
+      });
+
+      if (error) {
+        logger.error('Error checking streak:', error);
+        res.status(500).json({ error: 'Failed to check streak' });
+        return;
+      }
+
+      res.json({
+        success: true,
+        streak_data: data,
+      });
+    } catch (error: unknown) {
+      logger.error('Check streak error:', error);
+      res.status(500).json({ error: 'Internal server error' });
     }
-
-    const { data, error } = await supabase.rpc('check_user_streak', {
-      p_user_id: userId
-    });
-
-    if (error) {
-      logger.error('Error checking streak:', error);
-      res.status(500).json({ error: 'Failed to check streak' });
-      return;
-    }
-
-    res.json({
-      success: true,
-      streak_data: data
-    });
-  } catch (error: unknown) {
-    logger.error('Check streak error:', error);
-    res.status(500).json({ error: 'Internal server error' });
   }
-});
+);
 
 // Get user progress and achievements
-router.get('/progress', authenticateUser, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-  try {
-    const userId = req.user?.id;
+router.get(
+  '/progress',
+  authenticateUser,
+  async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    try {
+      const userId = req.user?.id;
 
-    if (!userId) {
-      res.status(401).json({ error: 'User authentication required' });
-      return;
-    }
-    const token = req.headers.authorization?.replace('Bearer ', '') || '';
-    const userClient = createAuthenticatedClient(token);
+      if (!userId) {
+        res.status(401).json({ error: 'User authentication required' });
+        return;
+      }
+      const token = req.headers.authorization?.replace('Bearer ', '') || '';
+      const userClient = createAuthenticatedClient(token);
 
-    // Get user stats
-    const { data: user } = await userClient
-      .from('users')
-      .select('level, xp, total_xp, streak_current, streak_shields')
-      .eq('id', userId)
-      .single();
+      // Get user stats
+      const { data: user } = await userClient
+        .from('users')
+        .select('level, xp, total_xp, streak_current, streak_shields')
+        .eq('id', userId)
+        .single();
 
-    // Get user progress
-    const { data: progress } = await userClient
-      .from('user_progress')
-      .select('*')
-      .eq('user_id', userId)
-      .single();
+      // Get user progress
+      const { data: progress } = await userClient
+        .from('user_progress')
+        .select('*')
+        .eq('user_id', userId)
+        .single();
 
-    // Get user achievements  
-    const { data: achievements } = await userClient
-      .from('user_achievements')
-      .select(`
+      // Get user achievements
+      const { data: achievements } = await userClient
+        .from('user_achievements')
+        .select(
+          `
         achievement_id,
         unlocked_at,
         achievements (
@@ -116,19 +127,21 @@ router.get('/progress', authenticateUser, async (req: AuthenticatedRequest, res:
           points,
           badge_icon
         )
-      `)
-      .eq('user_id', userId);
+      `
+        )
+        .eq('user_id', userId);
 
-    res.json({
-      user_stats: user,
-      recent_progress: progress || {},
-      achievements: achievements || []
-    });
-  } catch (error: unknown) {
-    logger.error('Get progress error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+      res.json({
+        user_stats: user,
+        recent_progress: progress || {},
+        achievements: achievements || [],
+      });
+    } catch (error: unknown) {
+      logger.error('Get progress error:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
   }
-});
+);
 
 // Get leaderboard
 router.get('/leaderboard', async (req: Request, res: Response) => {
@@ -143,7 +156,7 @@ router.get('/leaderboard', async (req: Request, res: Response) => {
     try {
       const { data, error } = await supabase.rpc('get_leaderboard_data', {
         p_period: period as string,
-        p_limit: parseInt(limit as string)
+        p_limit: parseInt(limit as string),
       });
 
       if (data && !error) {
@@ -159,10 +172,10 @@ router.get('/leaderboard', async (req: Request, res: Response) => {
             level: entry.level,
             avatar_url: entry.avatar_url,
             is_creator: entry.is_creator,
-            creator_tier: entry.creator_tier
-          }
+            creator_tier: entry.creator_tier,
+          },
         }));
-        
+
         // CRITICAL FIX: Filter out users with 0 period XP for daily/weekly
         if (period !== 'allTime') {
           leaderboard = leaderboard.filter((entry: any) => (entry.xp_gained || 0) > 0);
@@ -177,7 +190,7 @@ router.get('/leaderboard', async (req: Request, res: Response) => {
     } catch (funcError) {
       logger.warn('🔄 Using fallback leaderboard query:', { error: funcError });
       logger.debug('📊 Entering fallback logic for period:', { period });
-      
+
       // Fallback: Direct query approach (don't pre-sort for period-specific queries)
       const baseQuery = supabase
         .from('users')
@@ -212,11 +225,13 @@ router.get('/leaderboard', async (req: Request, res: Response) => {
       }
 
       // Get period XP for each user
-      const userIds = (users || []).map(u => u.id);
-      
+      const userIds = (users || []).map((u) => u.id);
+
       if (period !== 'allTime') {
-        logger.debug(`📊 Calculating ${period} XP since:`, { periodStart: periodStart.toISOString() });
-        
+        logger.debug(`📊 Calculating ${period} XP since:`, {
+          periodStart: periodStart.toISOString(),
+        });
+
         const { data: periodProgress } = await supabase
           .from('user_progress')
           .select('user_id, xp_gained')
@@ -225,11 +240,11 @@ router.get('/leaderboard', async (req: Request, res: Response) => {
 
         logger.debug(`📊 Found ${(periodProgress || []).length} XP entries for ${period}`);
 
-        (periodProgress || []).forEach(progress => {
+        (periodProgress || []).forEach((progress) => {
           const currentXp = periodXpMap.get(progress.user_id) || 0;
           periodXpMap.set(progress.user_id, currentXp + progress.xp_gained);
         });
-        
+
         logger.debug(`📊 Period XP map:`, Object.fromEntries(periodXpMap));
       }
 
@@ -238,8 +253,8 @@ router.get('/leaderboard', async (req: Request, res: Response) => {
         const periodXp = periodXpMap.get(user.id) || 0;
         return {
           rank: 1, // Will be set after sorting
-          xp_total: period === 'allTime' ? (user.total_xp || 0) : periodXp,
-          xp_gained: period === 'allTime' ? (user.total_xp || 0) : periodXp,
+          xp_total: period === 'allTime' ? user.total_xp || 0 : periodXp,
+          xp_gained: period === 'allTime' ? user.total_xp || 0 : periodXp,
           movement: 0,
           users: {
             id: user.id,
@@ -247,14 +262,14 @@ router.get('/leaderboard', async (req: Request, res: Response) => {
             level: user.level,
             avatar_url: user.avatar_url,
             is_creator: user.is_creator,
-            creator_tier: user.creator_tier
-          }
+            creator_tier: user.creator_tier,
+          },
         };
       });
 
       // For period-specific leaderboards, only include users with XP in that period
       if (period !== 'allTime') {
-        leaderboard = leaderboard.filter(entry => (entry.xp_gained || 0) > 0);
+        leaderboard = leaderboard.filter((entry) => (entry.xp_gained || 0) > 0);
       }
 
       // Sort by the appropriate XP value
@@ -263,10 +278,10 @@ router.get('/leaderboard', async (req: Request, res: Response) => {
       } else {
         leaderboard.sort((a, b) => (b.xp_gained || 0) - (a.xp_gained || 0));
       }
-      
+
       // Apply limit after sorting
       leaderboard = leaderboard.slice(0, parseInt(limit as string));
-      
+
       // Update ranks after sorting and limiting
       if (leaderboard) {
         leaderboard.forEach((entry, index) => {
@@ -283,10 +298,9 @@ router.get('/leaderboard', async (req: Request, res: Response) => {
       metadata: {
         type,
         period,
-        updated_at: new Date().toISOString()
-      }
+        updated_at: new Date().toISOString(),
+      },
     });
-
   } catch (error: unknown) {
     logger.error('Get leaderboard error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -297,7 +311,7 @@ router.get('/leaderboard', async (req: Request, res: Response) => {
 router.get('/rank/:userId?', authenticateUser, async (req: Request, res: Response) => {
   try {
     const userId = req.params.userId || (req as AuthenticatedRequest).user?.id;
-    
+
     if (!userId) {
       res.status(400).json({ error: 'User ID is required' });
       return;
@@ -310,7 +324,7 @@ router.get('/rank/:userId?', authenticateUser, async (req: Request, res: Respons
     try {
       const { data, error } = await supabase.rpc('get_user_rank', {
         p_user_id: userId,
-        p_period: period as string
+        p_period: period as string,
       });
 
       if (data && !error) {
@@ -318,7 +332,7 @@ router.get('/rank/:userId?', authenticateUser, async (req: Request, res: Respons
           rank: data[0]?.user_rank || null,
           total_users: data[0]?.total_users || 0,
           user_xp: data[0]?.user_xp || 0,
-          period_xp: data[0]?.period_xp || 0
+          period_xp: data[0]?.period_xp || 0,
         });
       }
     } catch {
@@ -354,9 +368,8 @@ router.get('/rank/:userId?', authenticateUser, async (req: Request, res: Respons
       rank,
       total_users: totalUsers || 0,
       user_xp: user.total_xp,
-      period_xp: user.total_xp // Fallback - same as total for now
+      period_xp: user.total_xp, // Fallback - same as total for now
     });
-
   } catch (error: unknown) {
     logger.error('Get user rank error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -367,7 +380,7 @@ router.get('/rank/:userId?', authenticateUser, async (req: Request, res: Respons
 router.get('/debug-xp', async (req: Request, res: Response) => {
   try {
     console.log('🔍 Debug XP endpoint called');
-    
+
     // Get recent user_progress entries
     const { data: recentProgress, error: progressError } = await supabase
       .from('user_progress')
@@ -402,7 +415,7 @@ router.get('/debug-xp', async (req: Request, res: Response) => {
           d.setDate(d.getDate() - d.getDay());
           d.setHours(0, 0, 0, 0);
           return d.toISOString();
-        })()
+        })(),
       },
       recent_progress: recentProgress || [],
       top_users: users || [],
@@ -410,8 +423,8 @@ router.get('/debug-xp', async (req: Request, res: Response) => {
       errors: {
         progressError: progressError?.message,
         usersError: usersError?.message,
-        todayError: todayError?.message
-      }
+        todayError: todayError?.message,
+      },
     });
   } catch (error: unknown) {
     console.error('Debug XP error:', error);
@@ -423,32 +436,32 @@ router.get('/debug-xp', async (req: Request, res: Response) => {
 router.post('/test-award-xp', async (req, res) => {
   try {
     console.log('🧪 Testing XP award with service role client...');
-    
+
     const testUserId = 'bbf490ea-3a74-41c8-a438-bb7ea311bcfa';
     const testAction = 'test_xp_award';
     const testXP = 5;
-    
+
     console.log(`🧪 Test awarding ${testXP} XP to user ${testUserId} for action: ${testAction}`);
-    
+
     // Use service role client for admin operations
     const { data, error } = await supabaseServiceRole.rpc('add_user_xp', {
       p_user_id: testUserId,
       p_action: testAction,
       p_xp_amount: testXP,
-      p_metadata: { source: 'rls_test', timestamp: new Date().toISOString() }
+      p_metadata: { source: 'rls_test', timestamp: new Date().toISOString() },
     });
 
     if (error) {
       console.log('❌ Error adding test XP:', error);
-      return res.status(500).json({ 
-        success: false, 
+      return res.status(500).json({
+        success: false,
         error: error.message,
-        details: error 
+        details: error,
       });
     }
 
     console.log('✅ Successfully awarded test XP:', data);
-    
+
     // Fetch updated user progress to verify
     const { data: progress, error: progressError } = await supabaseServiceRole
       .from('user_progress')
@@ -459,19 +472,19 @@ router.post('/test-award-xp', async (req, res) => {
       .limit(1)
       .single();
 
-    res.json({ 
-      success: true, 
+    res.json({
+      success: true,
       result: data,
       newProgressEntry: progress || 'No progress entry found',
-      progressError: progressError ? progressError.message : null
+      progressError: progressError ? progressError.message : null,
     });
   } catch (error) {
     console.log('❌ Exception in test award XP:', error);
-    res.status(500).json({ 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Unknown error' 
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
     });
   }
 });
 
-export default router; 
+export default router;

@@ -65,8 +65,8 @@ router.post('/track', authenticateUser, async (req: AuthenticatedRequest, res: R
           event_data,
           ip_address: req.ip,
           user_agent: req.get('User-Agent'),
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       })
       .select()
       .single();
@@ -80,10 +80,10 @@ router.post('/track', authenticateUser, async (req: AuthenticatedRequest, res: R
     if (xp_gained > 0) {
       const { error: updateError } = await userClient
         .from('users')
-        .update({ 
-          total_xp: newTotalXp, 
+        .update({
+          total_xp: newTotalXp,
           level: newLevel,
-          xp: newTotalXp // Also update current XP
+          xp: newTotalXp, // Also update current XP
         })
         .eq('id', userId);
 
@@ -98,9 +98,8 @@ router.post('/track', authenticateUser, async (req: AuthenticatedRequest, res: R
       success: true,
       message: 'Event tracked successfully',
       event_id: data.id,
-      level_up: newLevel > currentLevel
+      level_up: newLevel > currentLevel,
     });
-
   } catch (error: unknown) {
     logger.error('Error tracking analytics event', { error });
     res.status(500).json({ error: 'Internal server error' });
@@ -166,17 +165,20 @@ router.get('/dashboard', authenticateUser, async (req: AuthenticatedRequest, res
       .lte('created_at', endDate.toISOString());
 
     if (progressError || scanError || recipeError) {
-      logger.error('Failed to fetch analytics dashboard data', { 
-        progressError, scanError, recipeError, userId 
+      logger.error('Failed to fetch analytics dashboard data', {
+        progressError,
+        scanError,
+        recipeError,
+        userId,
       });
       return res.status(500).json({ error: 'Failed to fetch dashboard data' });
     }
 
     // Process analytics data
     const allEvents = [
-      ...(progressEvents || []).map(e => ({ ...e, source: 'progress', type: e.action })),
-      ...(scanEvents || []).map(e => ({ ...e, source: 'scan', type: 'scan' })),
-      ...(recipeEvents || []).map(e => ({ ...e, source: 'recipe', type: 'recipe_generation' }))
+      ...(progressEvents || []).map((e) => ({ ...e, source: 'progress', type: e.action })),
+      ...(scanEvents || []).map((e) => ({ ...e, source: 'scan', type: 'scan' })),
+      ...(recipeEvents || []).map((e) => ({ ...e, source: 'recipe', type: 'recipe_generation' })),
     ];
 
     const eventCounts = allEvents.reduce((acc: Record<string, number>, event: any) => {
@@ -211,7 +213,7 @@ router.get('/dashboard', authenticateUser, async (req: AuthenticatedRequest, res
         type: event.type,
         source: event.source,
         timestamp: event.created_at,
-        data: event.metadata || event.scan_metadata || {}
+        data: event.metadata || event.scan_metadata || {},
       }));
 
     const analytics = {
@@ -223,22 +225,21 @@ router.get('/dashboard', authenticateUser, async (req: AuthenticatedRequest, res
         timeframe,
         date_range: {
           start: startDate.toISOString(),
-          end: endDate.toISOString()
-        }
+          end: endDate.toISOString(),
+        },
       },
       event_counts: eventCounts,
       timeline: eventsByDate,
       hourly_distribution: eventsByHour,
-      recent_events: recentEvents
+      recent_events: recentEvents,
     };
 
     logger.info('Analytics dashboard data fetched', { userId, totalEvents: allEvents.length });
 
     res.json({
       success: true,
-      data: analytics
+      data: analytics,
     });
-
   } catch (error: unknown) {
     logger.error('Error fetching analytics dashboard', { error });
     res.status(500).json({ error: 'Internal server error' });
@@ -249,11 +250,11 @@ router.get('/dashboard', authenticateUser, async (req: AuthenticatedRequest, res
 router.get('/global', authenticateUser, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const user = req.user;
-    
+
     if (!user) {
       return res.status(401).json({ error: 'User authentication required' });
     }
-    
+
     // Check if user has admin privileges
     if (!user.is_admin) {
       return res.status(403).json({ error: 'Admin access required' });
@@ -286,13 +287,13 @@ router.get('/global', authenticateUser, async (req: AuthenticatedRequest, res: R
         .select('user_id, action, created_at')
         .gte('created_at', startDate.toISOString())
         .lte('created_at', endDate.toISOString()),
-      
+
       supabase
         .from('scans')
         .select('user_id, created_at')
         .gte('created_at', startDate.toISOString())
         .lte('created_at', endDate.toISOString()),
-      
+
       supabase
         .from('recipe_sessions')
         .select('user_id, created_at')
@@ -303,7 +304,7 @@ router.get('/global', authenticateUser, async (req: AuthenticatedRequest, res: R
         .from('users')
         .select('id, created_at')
         .gte('created_at', startDate.toISOString())
-        .lte('created_at', endDate.toISOString())
+        .lte('created_at', endDate.toISOString()),
     ]);
 
     const progressEvents = progressResult.data || [];
@@ -313,9 +314,9 @@ router.get('/global', authenticateUser, async (req: AuthenticatedRequest, res: R
 
     // Process global data
     const allUserIds = new Set([
-      ...progressEvents.map(e => e.user_id),
-      ...scanEvents.map(e => e.user_id),
-      ...recipeEvents.map(e => e.user_id)
+      ...progressEvents.map((e) => e.user_id),
+      ...scanEvents.map((e) => e.user_id),
+      ...recipeEvents.map((e) => e.user_id),
     ]);
 
     const totalEvents = progressEvents.length + scanEvents.length + recipeEvents.length;
@@ -332,28 +333,27 @@ router.get('/global', authenticateUser, async (req: AuthenticatedRequest, res: R
         total_scans: scanEvents.length,
         total_recipes_generated: recipeEvents.length,
         avg_events_per_user: allUserIds.size > 0 ? (totalEvents / allUserIds.size).toFixed(2) : 0,
-        timeframe
+        timeframe,
       },
       activity_distribution: {
         scans: scanEvents.length,
         recipe_generations: recipeEvents.length,
-        progress_events: progressEvents.length
+        progress_events: progressEvents.length,
       },
       top_actions: Object.entries(actionCounts)
-        .sort(([,a], [,b]) => (b as number) - (a as number))
+        .sort(([, a], [, b]) => (b as number) - (a as number))
         .slice(0, 10)
-        .map(([action, count]) => ({ action, count }))
+        .map(([action, count]) => ({ action, count })),
     };
 
     res.json({
       success: true,
-      data: globalAnalytics
+      data: globalAnalytics,
     });
-
   } catch (error: unknown) {
     logger.error('Error fetching global analytics', { error });
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-export default router; 
+export default router;

@@ -32,16 +32,22 @@ async function seedRecipes() {
         cook_time: 0,
         difficulty: 'easy',
         servings: 2,
-        ingredients: ['2 large tomatoes', '1 small onion', '2 cloves garlic', '2 tbsp olive oil', '1/2 tsp salt'],
+        ingredients: [
+          '2 large tomatoes',
+          '1 small onion',
+          '2 cloves garlic',
+          '2 tbsp olive oil',
+          '1/2 tsp salt',
+        ],
         instructions: [
           'Wash and dice the tomatoes into bite-sized pieces',
           'Finely chop the onion and mince the garlic',
           'In a large bowl, combine tomatoes, onion, and garlic',
           'Drizzle with olive oil and season with salt',
-          'Toss gently and let sit for 5 minutes before serving'
+          'Toss gently and let sit for 5 minutes before serving',
         ],
         tags: ['healthy', 'vegetarian', 'quick', 'mediterranean'],
-        is_generated: false
+        is_generated: false,
       },
       {
         title: 'Simple Garlic Oil Sauce',
@@ -50,17 +56,22 @@ async function seedRecipes() {
         cook_time: 15,
         difficulty: 'easy',
         servings: 4,
-        ingredients: ['6 cloves garlic', '1/2 cup olive oil', '1 tsp salt', '1 small onion (optional)'],
+        ingredients: [
+          '6 cloves garlic',
+          '1/2 cup olive oil',
+          '1 tsp salt',
+          '1 small onion (optional)',
+        ],
         instructions: [
           'Slice garlic thinly and dice onion if using',
           'Heat olive oil in a large pan over medium-low heat',
           'Add garlic and cook until fragrant and lightly golden (2-3 minutes)',
           'Add onion if using and cook until softened',
           'Season with salt and remove from heat',
-          'Toss with cooked pasta and serve immediately'
+          'Toss with cooked pasta and serve immediately',
         ],
         tags: ['italian', 'vegetarian', 'quick', 'pasta'],
-        is_generated: false
+        is_generated: false,
       },
       {
         title: 'Roasted Tomato & Onion Medley',
@@ -69,7 +80,13 @@ async function seedRecipes() {
         cook_time: 45,
         difficulty: 'medium',
         servings: 4,
-        ingredients: ['4 large tomatoes', '2 medium onions', '4 cloves garlic', '3 tbsp olive oil', '1 tsp salt'],
+        ingredients: [
+          '4 large tomatoes',
+          '2 medium onions',
+          '4 cloves garlic',
+          '3 tbsp olive oil',
+          '1 tsp salt',
+        ],
         instructions: [
           'Preheat oven to 400°F (200°C)',
           'Cut tomatoes and onions into wedges',
@@ -77,10 +94,10 @@ async function seedRecipes() {
           'Place vegetables on a baking sheet',
           'Drizzle with olive oil and season with salt',
           'Roast for 45 minutes until caramelized and tender',
-          'Serve hot as a side dish'
+          'Serve hot as a side dish',
         ],
         tags: ['healthy', 'vegetarian', 'roasted', 'mediterranean'],
-        is_generated: false
+        is_generated: false,
       },
       {
         title: 'Classic Tomato Bruschetta',
@@ -89,17 +106,23 @@ async function seedRecipes() {
         cook_time: 0,
         difficulty: 'easy',
         servings: 6,
-        ingredients: ['3 large tomatoes', '1 small onion', '3 cloves garlic', '3 tbsp olive oil', '1/2 tsp salt'],
+        ingredients: [
+          '3 large tomatoes',
+          '1 small onion',
+          '3 cloves garlic',
+          '3 tbsp olive oil',
+          '1/2 tsp salt',
+        ],
         instructions: [
           'Dice tomatoes and remove excess juice',
           'Finely chop onion and mince garlic',
           'Combine tomatoes, onion, and garlic in a bowl',
           'Add olive oil and salt, mix well',
           'Let marinate for 15 minutes',
-          'Serve on toasted bread or crackers'
+          'Serve on toasted bread or crackers',
         ],
         tags: ['appetizer', 'italian', 'fresh', 'quick'],
-        is_generated: false
+        is_generated: false,
       },
       {
         title: 'Caramelized Onion & Tomato Compote',
@@ -108,79 +131,87 @@ async function seedRecipes() {
         cook_time: 30,
         difficulty: 'medium',
         servings: 3,
-        ingredients: ['3 large onions', '2 large tomatoes', '2 cloves garlic', '2 tbsp olive oil', '1/2 tsp salt'],
+        ingredients: [
+          '3 large onions',
+          '2 large tomatoes',
+          '2 cloves garlic',
+          '2 tbsp olive oil',
+          '1/2 tsp salt',
+        ],
         instructions: [
           'Slice onions thinly and dice tomatoes',
           'Heat olive oil in a large skillet over medium heat',
           'Add onions and cook slowly until caramelized (20-25 minutes)',
           'Add minced garlic and cook for 1 minute',
           'Add tomatoes and salt, cook until softened',
-          'Serve warm or at room temperature'
+          'Serve warm or at room temperature',
         ],
         tags: ['condiment', 'vegetarian', 'caramelized', 'slow-cooked'],
-        is_generated: false
-      }
+        is_generated: false,
+      },
     ];
 
     // Recipe ingredient mappings (ingredient_id: [quantity, unit])
     const recipeIngredients: { [recipeName: string]: RecipeIngredient[] } = {
       'Fresh Tomato Salad': [
-        { ingredient_id: 1, quantity: 2, unit: 'large' },      // Tomato
-        { ingredient_id: 2, quantity: 1, unit: 'small' },      // Onion
-        { ingredient_id: 3, quantity: 2, unit: 'cloves' },     // Garlic
-        { ingredient_id: 4, quantity: 2, unit: 'tbsp' },       // Olive Oil
-        { ingredient_id: 5, quantity: 0.5, unit: 'tsp' }       // Salt
+        { ingredient_id: 1, quantity: 2, unit: 'large' }, // Tomato
+        { ingredient_id: 2, quantity: 1, unit: 'small' }, // Onion
+        { ingredient_id: 3, quantity: 2, unit: 'cloves' }, // Garlic
+        { ingredient_id: 4, quantity: 2, unit: 'tbsp' }, // Olive Oil
+        { ingredient_id: 5, quantity: 0.5, unit: 'tsp' }, // Salt
       ],
       'Simple Garlic Oil Sauce': [
-        { ingredient_id: 3, quantity: 6, unit: 'cloves' },     // Garlic
-        { ingredient_id: 4, quantity: 8, unit: 'tbsp' },       // Olive Oil (1/2 cup = 8 tbsp)
-        { ingredient_id: 5, quantity: 1, unit: 'tsp' },        // Salt
-        { ingredient_id: 2, quantity: 1, unit: 'small' }       // Onion
+        { ingredient_id: 3, quantity: 6, unit: 'cloves' }, // Garlic
+        { ingredient_id: 4, quantity: 8, unit: 'tbsp' }, // Olive Oil (1/2 cup = 8 tbsp)
+        { ingredient_id: 5, quantity: 1, unit: 'tsp' }, // Salt
+        { ingredient_id: 2, quantity: 1, unit: 'small' }, // Onion
       ],
       'Roasted Tomato & Onion Medley': [
-        { ingredient_id: 1, quantity: 4, unit: 'large' },      // Tomato
-        { ingredient_id: 2, quantity: 2, unit: 'medium' },     // Onion
-        { ingredient_id: 3, quantity: 4, unit: 'cloves' },     // Garlic
-        { ingredient_id: 4, quantity: 3, unit: 'tbsp' },       // Olive Oil
-        { ingredient_id: 5, quantity: 1, unit: 'tsp' }         // Salt
+        { ingredient_id: 1, quantity: 4, unit: 'large' }, // Tomato
+        { ingredient_id: 2, quantity: 2, unit: 'medium' }, // Onion
+        { ingredient_id: 3, quantity: 4, unit: 'cloves' }, // Garlic
+        { ingredient_id: 4, quantity: 3, unit: 'tbsp' }, // Olive Oil
+        { ingredient_id: 5, quantity: 1, unit: 'tsp' }, // Salt
       ],
       'Classic Tomato Bruschetta': [
-        { ingredient_id: 1, quantity: 3, unit: 'large' },      // Tomato
-        { ingredient_id: 2, quantity: 1, unit: 'small' },      // Onion
-        { ingredient_id: 3, quantity: 3, unit: 'cloves' },     // Garlic
-        { ingredient_id: 4, quantity: 3, unit: 'tbsp' },       // Olive Oil
-        { ingredient_id: 5, quantity: 0.5, unit: 'tsp' }       // Salt
+        { ingredient_id: 1, quantity: 3, unit: 'large' }, // Tomato
+        { ingredient_id: 2, quantity: 1, unit: 'small' }, // Onion
+        { ingredient_id: 3, quantity: 3, unit: 'cloves' }, // Garlic
+        { ingredient_id: 4, quantity: 3, unit: 'tbsp' }, // Olive Oil
+        { ingredient_id: 5, quantity: 0.5, unit: 'tsp' }, // Salt
       ],
       'Caramelized Onion & Tomato Compote': [
-        { ingredient_id: 2, quantity: 3, unit: 'large' },      // Onion
-        { ingredient_id: 1, quantity: 2, unit: 'large' },      // Tomato
-        { ingredient_id: 3, quantity: 2, unit: 'cloves' },     // Garlic
-        { ingredient_id: 4, quantity: 2, unit: 'tbsp' },       // Olive Oil
-        { ingredient_id: 5, quantity: 0.5, unit: 'tsp' }       // Salt
-      ]
+        { ingredient_id: 2, quantity: 3, unit: 'large' }, // Onion
+        { ingredient_id: 1, quantity: 2, unit: 'large' }, // Tomato
+        { ingredient_id: 3, quantity: 2, unit: 'cloves' }, // Garlic
+        { ingredient_id: 4, quantity: 2, unit: 'tbsp' }, // Olive Oil
+        { ingredient_id: 5, quantity: 0.5, unit: 'tsp' }, // Salt
+      ],
     };
 
     // Disable RLS temporarily for seeding
     console.log('🔓 Temporarily disabling RLS for seeding...');
-    
+
     // Insert recipes
     for (const recipeData of recipes) {
       console.log(`📝 Creating recipe: ${recipeData.title}`);
-      
+
       const { data: recipe, error: recipeError } = await supabase
         .from('recipes')
-        .insert([{
-          title: recipeData.title,
-          description: recipeData.description,
-          prep_time: recipeData.prep_time,
-          cook_time: recipeData.cook_time,
-          difficulty: recipeData.difficulty,
-          servings: recipeData.servings,
-          ingredients: recipeData.ingredients,
-          instructions: recipeData.instructions,
-          tags: recipeData.tags,
-          is_generated: recipeData.is_generated
-        }])
+        .insert([
+          {
+            title: recipeData.title,
+            description: recipeData.description,
+            prep_time: recipeData.prep_time,
+            cook_time: recipeData.cook_time,
+            difficulty: recipeData.difficulty,
+            servings: recipeData.servings,
+            ingredients: recipeData.ingredients,
+            instructions: recipeData.instructions,
+            tags: recipeData.tags,
+            is_generated: recipeData.is_generated,
+          },
+        ])
         .select()
         .single();
 
@@ -200,21 +231,26 @@ async function seedRecipes() {
       const ingredientsToInsert = recipeIngredients[recipeData.title];
       if (ingredientsToInsert) {
         console.log(`🥗 Adding ${ingredientsToInsert.length} ingredients...`);
-        
+
         for (const ingredient of ingredientsToInsert) {
-          const { error: ingredientError } = await supabase
-            .from('recipe_ingredients')
-            .insert([{
+          const { error: ingredientError } = await supabase.from('recipe_ingredients').insert([
+            {
               recipe_id: recipe.id,
               ingredient_id: ingredient.ingredient_id,
               quantity: ingredient.quantity,
-              unit: ingredient.unit
-            }]);
+              unit: ingredient.unit,
+            },
+          ]);
 
           if (ingredientError) {
-            console.error(`❌ Error adding ingredient ${ingredient.ingredient_id}:`, ingredientError);
+            console.error(
+              `❌ Error adding ingredient ${ingredient.ingredient_id}:`,
+              ingredientError
+            );
           } else {
-            console.log(`  ✓ Added ingredient ${ingredient.ingredient_id} (${ingredient.quantity} ${ingredient.unit})`);
+            console.log(
+              `  ✓ Added ingredient ${ingredient.ingredient_id} (${ingredient.quantity} ${ingredient.unit})`
+            );
           }
         }
       }
@@ -224,7 +260,8 @@ async function seedRecipes() {
     console.log('\n📊 Verification - Checking created recipes...');
     const { data: allRecipes, error: verifyError } = await supabase
       .from('recipes')
-      .select(`
+      .select(
+        `
         id,
         title,
         servings,
@@ -237,7 +274,8 @@ async function seedRecipes() {
           unit,
           ingredient:ingredients (name)
         )
-      `)
+      `
+      )
       .order('created_at', { ascending: false })
       .limit(10);
 
@@ -248,16 +286,17 @@ async function seedRecipes() {
 
     console.log(`\n🎉 Successfully created ${allRecipes?.length || 0} recipes:`);
     allRecipes?.forEach((recipe: any) => {
-      console.log(`  • ${recipe.title} (${recipe.servings} servings, ${recipe.prep_time + recipe.cook_time} min total)`);
+      console.log(
+        `  • ${recipe.title} (${recipe.servings} servings, ${recipe.prep_time + recipe.cook_time} min total)`
+      );
       console.log(`    Ingredients: ${recipe.recipe_ingredients?.length || 0} items`);
     });
 
     console.log('\n🚀 Seeding complete! You can now test nutrition analysis.');
-    
   } catch (error) {
     console.error('❌ Seeding failed:', error);
   }
 }
 
 // Run the seeding
-seedRecipes(); 
+seedRecipes();

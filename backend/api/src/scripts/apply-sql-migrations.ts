@@ -13,39 +13,39 @@ const supabase = createClient(
 
 async function applySQLMigrations() {
   console.log('🔧 Applying SQL Migrations to Supabase...');
-  
+
   const migrations = [
     {
       name: 'XP Function',
-      file: '../../../supabase/migrations/add_user_xp_function.sql'
+      file: '../../../supabase/migrations/add_user_xp_function.sql',
     },
     {
       name: 'Enhanced Preferences',
-      file: '../../../supabase/migrations/20241201_enhanced_preferences.sql'
-    }
+      file: '../../../supabase/migrations/20241201_enhanced_preferences.sql',
+    },
   ];
 
   try {
     for (const migration of migrations) {
       console.log(`\n📄 Applying ${migration.name}...`);
-      
+
       // Read SQL file
       const sqlPath = join(__dirname, migration.file);
       const sqlContent = readFileSync(sqlPath, 'utf8');
-      
+
       // Split by semicolons and execute each statement
       const statements = sqlContent
         .split(';')
-        .map(stmt => stmt.trim())
-        .filter(stmt => stmt.length > 0 && !stmt.startsWith('--'));
-      
+        .map((stmt) => stmt.trim())
+        .filter((stmt) => stmt.length > 0 && !stmt.startsWith('--'));
+
       for (let i = 0; i < statements.length; i++) {
         const statement = statements[i];
         if (statement) {
           console.log(`   Executing statement ${i + 1}/${statements.length}...`);
-          
+
           const { error } = await supabase.rpc('exec_sql', {
-            sql: statement + ';'
+            sql: statement + ';',
           });
 
           if (error) {
@@ -56,7 +56,7 @@ async function applySQLMigrations() {
           }
         }
       }
-      
+
       console.log(`✅ ${migration.name} migration completed`);
     }
 
@@ -71,7 +71,6 @@ async function applySQLMigrations() {
     console.log('   1. Test XP functionality in the app');
     console.log('   2. Verify enhanced preferences work');
     console.log('   3. Check kitchen appliances are populated');
-
   } catch (error) {
     console.error('❌ Migration failed:', error);
     process.exit(1);
@@ -82,9 +81,9 @@ async function applySQLMigrations() {
 async function executeRawSQL(sql: string) {
   try {
     console.log('🔧 Executing raw SQL...');
-    
+
     const { data, error } = await supabase.rpc('exec_sql', {
-      sql: sql
+      sql: sql,
     });
 
     if (error) {
@@ -106,7 +105,7 @@ async function executeRawSQL(sql: string) {
 // Utility to test the XP function
 async function testXPFunction(userId: string) {
   console.log('🧪 Testing add_user_xp function...');
-  
+
   const sql = `
     SELECT * FROM add_user_xp(
       '${userId}'::UUID,
@@ -115,7 +114,7 @@ async function testXPFunction(userId: string) {
       '{"test": true}'::JSONB
     );
   `;
-  
+
   return await executeRawSQL(sql);
 }
 
@@ -132,4 +131,4 @@ if (require.main === module) {
     });
 }
 
-export { applySQLMigrations, executeRawSQL, testXPFunction }; 
+export { applySQLMigrations, executeRawSQL, testXPFunction };

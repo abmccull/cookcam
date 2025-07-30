@@ -9,7 +9,6 @@ interface AuthenticatedRequest extends Request {
   };
 }
 
-
 const router = Router();
 
 // Get current user's profile (authenticated)
@@ -157,12 +156,12 @@ router.post('/:userId/follow', authenticateUser, async (req: Request, res: Respo
       res.json({ message: 'User unfollowed successfully', following: false });
     } else {
       // Follow
-      const { error } = await supabase
-        .from('user_follows')
-        .insert([{
+      const { error } = await supabase.from('user_follows').insert([
+        {
           follower_id: followerId,
-          following_id: targetUserId
-        }]);
+          following_id: targetUserId,
+        },
+      ]);
 
       if (error) {
         return res.status(500).json({ error: 'Failed to follow user' });
@@ -184,12 +183,14 @@ router.get('/:userId/followers', async (req: Request, res: Response) => {
 
     const { data: followers, error } = await supabase
       .from('user_follows')
-      .select(`
+      .select(
+        `
         created_at,
         follower:follower_id (
           id, name, avatar_url, level, total_xp
         )
-      `)
+      `
+      )
       .eq('following_id', userId)
       .order('created_at', { ascending: false })
       .limit(parseInt(limit as string));
@@ -213,12 +214,14 @@ router.get('/:userId/following', async (req: Request, res: Response) => {
 
     const { data: following, error } = await supabase
       .from('user_follows')
-      .select(`
+      .select(
+        `
         created_at,
         following:following_id (
           id, name, avatar_url, level, total_xp
         )
-      `)
+      `
+      )
       .eq('follower_id', userId)
       .order('created_at', { ascending: false })
       .limit(parseInt(limit as string));
@@ -234,4 +237,4 @@ router.get('/:userId/following', async (req: Request, res: Response) => {
   }
 });
 
-export default router; 
+export default router;

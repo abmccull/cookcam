@@ -4,7 +4,13 @@ import { CacheService } from './cache';
 import { createClient } from '@supabase/supabase-js';
 
 interface SecurityEvent {
-  type: 'auth_failure' | 'rate_limit' | 'suspicious_activity' | 'sql_injection' | 'xss_attempt' | 'unauthorized_access';
+  type:
+    | 'auth_failure'
+    | 'rate_limit'
+    | 'suspicious_activity'
+    | 'sql_injection'
+    | 'xss_attempt'
+    | 'unauthorized_access';
   severity: 'low' | 'medium' | 'high' | 'critical';
   timestamp: Date;
   ip: string;
@@ -28,7 +34,8 @@ export class SecurityMonitoringService {
   private supabase: ReturnType<typeof createClient> | null = null;
   private threatPatterns: ThreatPattern[] = [
     {
-      pattern: /(\b(union|select|insert|update|delete|drop|create|alter|exec|execute|script|javascript|vbscript|onload|onerror|onclick)\b)/gi,
+      pattern:
+        /(\b(union|select|insert|update|delete|drop|create|alter|exec|execute|script|javascript|vbscript|onload|onerror|onclick)\b)/gi,
       type: 'sql_injection',
       severity: 'high',
       description: 'Potential SQL injection attempt',
@@ -54,10 +61,7 @@ export class SecurityMonitoringService {
 
   private initializeSupabase(): void {
     if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY) {
-      this.supabase = createClient(
-        process.env.SUPABASE_URL,
-        process.env.SUPABASE_SERVICE_KEY
-      );
+      this.supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
     }
   }
 
@@ -70,7 +74,7 @@ export class SecurityMonitoringService {
         severity: event.severity,
         ip: event.ip,
         timestamp: event.timestamp,
-        details: event.details
+        details: event.details,
       });
 
       // Store in cache for quick access
@@ -104,7 +108,7 @@ export class SecurityMonitoringService {
   private async checkAlertThresholds(event: SecurityEvent): Promise<void> {
     // Check for repeated failures from same IP
     const recentEvents = await this.getRecentEventsByIP(event.ip, 300); // Last 5 minutes
-    
+
     if (recentEvents.length >= 10) {
       await this.triggerAlert({
         type: 'repeated_security_events',
@@ -130,34 +134,40 @@ export class SecurityMonitoringService {
   private async getRecentEventsByIP(ip: string, secondsAgo: number): Promise<SecurityEvent[]> {
     const events: SecurityEvent[] = [];
     // const pattern = `security:event:*:${ip}`;
-    
+
     // This is a simplified implementation
     // In production, you'd want to use Redis SCAN or maintain an index
-    for (const type of ['auth_failure', 'rate_limit', 'suspicious_activity', 'sql_injection', 'xss_attempt']) {
+    for (const type of [
+      'auth_failure',
+      'rate_limit',
+      'suspicious_activity',
+      'sql_injection',
+      'xss_attempt',
+    ]) {
       const key = `security:event:${type}:${ip}`;
       const event = await this.cacheService.get<SecurityEvent>(key);
       if (event) {
         const eventTime = new Date(event.timestamp).getTime();
-        const cutoffTime = Date.now() - (secondsAgo * 1000);
+        const cutoffTime = Date.now() - secondsAgo * 1000;
         if (eventTime > cutoffTime) {
           events.push(event);
         }
       }
     }
-    
+
     return events;
   }
 
   // Trigger security alert
   private async triggerAlert(alert: any): Promise<void> {
     logger.error('SECURITY ALERT', alert);
-    
+
     // In production, this would:
     // - Send email/SMS to security team
     // - Post to Slack/Discord
     // - Create PagerDuty incident
     // - Log to SIEM system
-    
+
     if (this.supabase) {
       await this.supabase.from('security_alerts').insert({
         type: alert.type,
@@ -173,7 +183,11 @@ export class SecurityMonitoringService {
   detectSuspiciousPatterns(): (req: Request, res: Response, next: NextFunction) => void {
     return async (req: Request, res: Response, next: NextFunction) => {
       try {
-        const suspiciousPatterns: Array<{pattern: ThreatPattern; location: string; value: string}> = [];
+        const suspiciousPatterns: Array<{
+          pattern: ThreatPattern;
+          location: string;
+          value: string;
+        }> = [];
 
         // Check URL
         for (const pattern of this.threatPatterns) {
@@ -231,9 +245,11 @@ export class SecurityMonitoringService {
 
         // If suspicious patterns found, log them
         if (suspiciousPatterns.length > 0) {
-          const mostSevere = suspiciousPatterns.reduce((prev, curr) => 
-            prev.pattern.severity === 'critical' || 
-            (prev.pattern.severity === 'high' && curr.pattern.severity !== 'critical') ? prev : curr
+          const mostSevere = suspiciousPatterns.reduce((prev, curr) =>
+            prev.pattern.severity === 'critical' ||
+            (prev.pattern.severity === 'high' && curr.pattern.severity !== 'critical')
+              ? prev
+              : curr
           );
 
           await this.logSecurityEvent({
@@ -243,7 +259,7 @@ export class SecurityMonitoringService {
             ip: req.ip || 'unknown',
             userId: (req as any).user?.id,
             details: {
-              patterns: suspiciousPatterns.map(p => ({
+              patterns: suspiciousPatterns.map((p) => ({
                 type: p.pattern.type,
                 description: p.pattern.description,
                 location: p.location,
@@ -344,9 +360,9 @@ export class SecurityMonitoringService {
   }
 
   // IP reputation check
-  async checkIPReputation(ip: string): Promise<{blocked: boolean; reason?: string}> {
+  async checkIPReputation(ip: string): Promise<{ blocked: boolean; reason?: string }> {
     // Check local blocklist
-    const blockedIPs = await this.cacheService.get<string[]>('security:blocked_ips') || [];
+    const blockedIPs = (await this.cacheService.get<string[]>('security:blocked_ips')) || [];
     if (blockedIPs.includes(ip)) {
       return { blocked: true, reason: 'IP is on blocklist' };
     }

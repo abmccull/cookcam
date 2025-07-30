@@ -3,15 +3,17 @@ import { logger } from '../utils/logger';
 import Stripe from 'stripe';
 
 // Initialize Stripe (will be configured later)
-const stripe = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: '2025-05-28.basil',
-}) : null;
+const stripe = process.env.STRIPE_SECRET_KEY
+  ? new Stripe(process.env.STRIPE_SECRET_KEY, {
+      apiVersion: '2025-05-28.basil',
+    })
+  : null;
 
 // Subscription tier definitions
 export const SUBSCRIPTION_TIERS = {
   FREE: { id: 1, slug: 'free', name: 'Free', price: 0 },
   REGULAR: { id: 2, slug: 'regular', name: 'Regular', price: 3.99 },
-  CREATOR: { id: 3, slug: 'creator', name: 'Creator', price: 9.99 }
+  CREATOR: { id: 3, slug: 'creator', name: 'Creator', price: 9.99 },
 };
 
 // Feature keys
@@ -24,7 +26,7 @@ export const FEATURES = {
   REVENUE_ANALYTICS: 'revenue_analytics',
   DIRECT_MESSAGING: 'direct_messaging',
   BULK_OPERATIONS: 'bulk_operations',
-  API_ACCESS: 'api_access'
+  API_ACCESS: 'api_access',
 };
 
 interface SubscriptionTier {
@@ -63,7 +65,8 @@ export class SubscriptionService {
         .limit(1)
         .single();
 
-      if (error && error.code !== 'PGRST116') { // Not found is ok
+      if (error && error.code !== 'PGRST116') {
+        // Not found is ok
         logger.error('❌ Error fetching user subscription', { error, userId });
         throw error;
       }
@@ -79,7 +82,7 @@ export class SubscriptionService {
   async getUserTier(userId: string): Promise<SubscriptionTier> {
     try {
       const subscription = await this.getUserSubscription(userId);
-      
+
       if (!subscription) {
         return this.getTierById(SUBSCRIPTION_TIERS.FREE.id);
       }
@@ -110,11 +113,10 @@ export class SubscriptionService {
   // Check if user has access to a specific feature
   async hasFeatureAccess(userId: string, featureKey: string): Promise<boolean> {
     try {
-      const { data, error } = await supabase
-        .rpc('user_has_feature_access', {
-          user_id: userId,
-          feature_key: featureKey
-        });
+      const { data, error } = await supabase.rpc('user_has_feature_access', {
+        user_id: userId,
+        feature_key: featureKey,
+      });
 
       if (error) {
         logger.error('❌ Error checking feature access', { error, userId, featureKey });
@@ -132,7 +134,7 @@ export class SubscriptionService {
   async getUserFeatures(userId: string): Promise<string[]> {
     try {
       const tier = await this.getUserTier(userId);
-      
+
       const { data: features, error } = await supabase
         .from('feature_access')
         .select('feature_key')
@@ -144,7 +146,7 @@ export class SubscriptionService {
         return [];
       }
 
-      return features?.map(f => f.feature_key) || [];
+      return features?.map((f) => f.feature_key) || [];
     } catch (error: unknown) {
       logger.error('❌ Failed to get user features', { error, userId });
       return [];
@@ -176,7 +178,7 @@ export class SubscriptionService {
           current_period_end: periodEnd.toISOString(),
           provider: params.provider,
           provider_subscription_id: params.providerSubscriptionId,
-          provider_customer_id: params.providerCustomerId
+          provider_customer_id: params.providerCustomerId,
         })
         .select()
         .single();
@@ -191,13 +193,13 @@ export class SubscriptionService {
         userId: params.userId,
         subscriptionId: data.id,
         action: 'created',
-        toTierId: params.tierId
+        toTierId: params.tierId,
       });
 
-      logger.info('✅ Subscription created', { 
-        userId: params.userId, 
+      logger.info('✅ Subscription created', {
+        userId: params.userId,
         tierId: params.tierId,
-        subscriptionId: data.id 
+        subscriptionId: data.id,
       });
 
       return data;
@@ -211,9 +213,9 @@ export class SubscriptionService {
   private async cancelExistingSubscriptions(userId: string): Promise<void> {
     const { error } = await supabase
       .from('user_subscriptions')
-      .update({ 
+      .update({
         status: 'canceled',
-        canceled_at: new Date().toISOString()
+        canceled_at: new Date().toISOString(),
       })
       .eq('user_id', userId)
       .eq('status', 'active');
@@ -225,12 +227,12 @@ export class SubscriptionService {
 
   // Update subscription status
   async updateSubscriptionStatus(
-    subscriptionId: string, 
+    subscriptionId: string,
     status: 'active' | 'canceled' | 'expired' | 'paused'
   ): Promise<void> {
     try {
       const updateData: any = { status };
-      
+
       if (status === 'canceled') {
         updateData.canceled_at = new Date().toISOString();
       }
@@ -256,7 +258,7 @@ export class SubscriptionService {
   async cancelSubscription(userId: string, immediately: boolean = false): Promise<void> {
     try {
       const subscription = await this.getUserSubscription(userId);
-      
+
       if (!subscription) {
         throw new Error('No active subscription found');
       }
@@ -267,9 +269,9 @@ export class SubscriptionService {
         // Cancel at period end
         const { error } = await supabase
           .from('user_subscriptions')
-          .update({ 
+          .update({
             cancel_at_period_end: true,
-            canceled_at: new Date().toISOString()
+            canceled_at: new Date().toISOString(),
           })
           .eq('id', subscription.id);
 
@@ -283,7 +285,7 @@ export class SubscriptionService {
         userId,
         subscriptionId: subscription.id,
         action: immediately ? 'canceled' : 'scheduled_cancel',
-        fromTierId: subscription.tier_id
+        fromTierId: subscription.tier_id,
       });
 
       logger.info('✅ Subscription canceled', { userId, immediately });
@@ -297,13 +299,13 @@ export class SubscriptionService {
   async changeSubscriptionTier(userId: string, newTierId: number): Promise<UserSubscription> {
     try {
       const currentSubscription = await this.getUserSubscription(userId);
-      
+
       if (!currentSubscription) {
         // Create new subscription if none exists
         return this.createSubscription({
           userId,
           tierId: newTierId,
-          provider: 'manual'
+          provider: 'manual',
         });
       }
 
@@ -312,9 +314,9 @@ export class SubscriptionService {
       // Update existing subscription
       const { data, error } = await supabase
         .from('user_subscriptions')
-        .update({ 
+        .update({
           tier_id: newTierId,
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         })
         .eq('id', currentSubscription.id)
         .select()
@@ -330,13 +332,13 @@ export class SubscriptionService {
         subscriptionId: currentSubscription.id,
         action: newTierId > oldTierId ? 'upgraded' : 'downgraded',
         fromTierId: oldTierId,
-        toTierId: newTierId
+        toTierId: newTierId,
       });
 
-      logger.info('✅ Subscription tier changed', { 
-        userId, 
-        from: oldTierId, 
-        to: newTierId 
+      logger.info('✅ Subscription tier changed', {
+        userId,
+        from: oldTierId,
+        to: newTierId,
       });
 
       return data;
@@ -356,16 +358,14 @@ export class SubscriptionService {
     metadata?: any;
   }): Promise<void> {
     try {
-      const { error } = await supabase
-        .from('subscription_history')
-        .insert({
-          user_id: params.userId,
-          subscription_id: params.subscriptionId,
-          action: params.action,
-          from_tier_id: params.fromTierId,
-          to_tier_id: params.toTierId,
-          metadata: params.metadata
-        });
+      const { error } = await supabase.from('subscription_history').insert({
+        user_id: params.userId,
+        subscription_id: params.subscriptionId,
+        action: params.action,
+        from_tier_id: params.fromTierId,
+        to_tier_id: params.toTierId,
+        metadata: params.metadata,
+      });
 
       if (error) {
         logger.error('❌ Failed to log subscription history', { error, params });
@@ -399,8 +399,8 @@ export class SubscriptionService {
         }
       }
 
-      logger.info('✅ Processed expired subscriptions', { 
-        count: expiredSubs?.length || 0 
+      logger.info('✅ Processed expired subscriptions', {
+        count: expiredSubs?.length || 0,
       });
     } catch (error: unknown) {
       logger.error('❌ Failed to process expired subscriptions', { error });
@@ -421,7 +421,7 @@ export class SubscriptionService {
 
     try {
       const tier = await this.getTierById(params.tierId);
-      
+
       const session = await stripe.checkout.sessions.create({
         payment_method_types: ['card'],
         line_items: [
@@ -463,11 +463,11 @@ export class SubscriptionService {
         case 'checkout.session.completed':
           await this.handleCheckoutComplete(event.data.object);
           break;
-        
+
         case 'customer.subscription.updated':
           await this.handleSubscriptionUpdate(event.data.object);
           break;
-        
+
         case 'customer.subscription.deleted':
           await this.handleSubscriptionDeleted(event.data.object);
           break;
@@ -487,7 +487,7 @@ export class SubscriptionService {
       tierId,
       provider: 'stripe',
       providerSubscriptionId: session.subscription,
-      providerCustomerId: session.customer
+      providerCustomerId: session.customer,
     });
 
     // Check for referral attribution and record conversion
@@ -495,7 +495,11 @@ export class SubscriptionService {
   }
 
   // Check for referral attribution and record conversion
-  private async checkAndRecordReferralConversion(userId: string, subscriptionId: string, tierId: number): Promise<void> {
+  private async checkAndRecordReferralConversion(
+    userId: string,
+    subscriptionId: string,
+    tierId: number
+  ): Promise<void> {
     try {
       // Check if user has referral attribution
       const { data: attribution } = await supabase
@@ -510,18 +514,18 @@ export class SubscriptionService {
         // Import CreatorService to record conversion
         const { CreatorService } = await import('./creatorService');
         const creatorService = new CreatorService();
-        
+
         await creatorService.recordAffiliateConversion({
           linkCode: attribution.link_code,
           subscriberId: userId,
           subscriptionId: subscriptionId,
-          tierId: tierId
+          tierId: tierId,
         });
 
         logger.info('💰 Referral conversion recorded from subscription', {
           userId,
           linkCode: attribution.link_code,
-          subscriptionId
+          subscriptionId,
         });
       }
     } catch (error) {
@@ -559,16 +563,15 @@ export class SubscriptionService {
         .gt('current_period_end', new Date().toISOString());
 
       // Get monthly revenue
-      const { data: revenue } = await supabase
-        .rpc('calculate_monthly_revenue', {
-          target_month: new Date().getMonth() + 1,
-          target_year: new Date().getFullYear()
-        });
+      const { data: revenue } = await supabase.rpc('calculate_monthly_revenue', {
+        target_month: new Date().getMonth() + 1,
+        target_year: new Date().getFullYear(),
+      });
 
       return {
         tierCounts,
         revenue,
-        lastUpdated: new Date()
+        lastUpdated: new Date(),
       };
     } catch (error: unknown) {
       logger.error('❌ Failed to get subscription stats', { error });
@@ -598,15 +601,19 @@ export class SubscriptionService {
 
       // Check if subscription already exists
       const existing = await this.getUserSubscription(params.userId);
-      
+
       if (existing && existing.provider_subscription_id === params.purchaseToken) {
         // Update existing subscription
         const { data, error } = await supabase
           .from('user_subscriptions')
           .update({
             status: 'active',
-            current_period_end: new Date(parseInt(params.validationResult.expiryTimeMillis || params.validationResult.expires_date_ms)).toISOString(),
-            updated_at: new Date().toISOString()
+            current_period_end: new Date(
+              parseInt(
+                params.validationResult.expiryTimeMillis || params.validationResult.expires_date_ms
+              )
+            ).toISOString(),
+            updated_at: new Date().toISOString(),
           })
           .eq('id', existing.id)
           .select()
@@ -623,7 +630,11 @@ export class SubscriptionService {
           tierId,
           provider: params.platform,
           providerSubscriptionId: params.purchaseToken,
-          periodEnd: new Date(parseInt(params.validationResult.expiryTimeMillis || params.validationResult.expires_date_ms))
+          periodEnd: new Date(
+            parseInt(
+              params.validationResult.expiryTimeMillis || params.validationResult.expires_date_ms
+            )
+          ),
         });
       }
     } catch (error: unknown) {
@@ -635,7 +646,9 @@ export class SubscriptionService {
   // Update user JWT claims (for real-time feature access)
   async updateUserJWTClaims(userId: string, subscription: UserSubscription | null): Promise<void> {
     try {
-      const tier = subscription ? await this.getTierById(subscription.tier_id) : await this.getTierById(SUBSCRIPTION_TIERS.FREE.id);
+      const tier = subscription
+        ? await this.getTierById(subscription.tier_id)
+        : await this.getTierById(SUBSCRIPTION_TIERS.FREE.id);
       const features = await this.getUserFeatures(userId);
 
       // Update user metadata with subscription info
@@ -643,8 +656,8 @@ export class SubscriptionService {
         user_metadata: {
           subscription_tier: tier.slug,
           subscription_status: subscription?.status || 'free',
-          features: features
-        }
+          features: features,
+        },
       });
 
       if (error) {
@@ -664,7 +677,7 @@ export class SubscriptionService {
         .from('user_subscriptions')
         .update({
           status: 'expired',
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         })
         .eq('id', subscriptionId);
 
@@ -692,7 +705,7 @@ export class SubscriptionService {
         .from('user_subscriptions')
         .update({
           cancel_at_period_end: true,
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         })
         .eq('id', subscription.id);
 
@@ -705,10 +718,13 @@ export class SubscriptionService {
       await this.logSubscriptionHistory({
         userId,
         subscriptionId: subscription.id,
-        action: 'marked_for_cancellation'
+        action: 'marked_for_cancellation',
       });
 
-      logger.info('✅ Marked subscription for cancellation', { userId, subscriptionId: subscription.id });
+      logger.info('✅ Marked subscription for cancellation', {
+        userId,
+        subscriptionId: subscription.id,
+      });
     } catch (error: unknown) {
       logger.error('❌ Failed to mark subscription for cancellation', { error, userId });
       throw error;
@@ -723,7 +739,7 @@ export class SubscriptionService {
         userId,
         tierId: SUBSCRIPTION_TIERS.CREATOR.id,
         provider: 'manual',
-        periodEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000) // 1 year
+        periodEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year
       });
 
       // Update user profile to creator
@@ -732,7 +748,7 @@ export class SubscriptionService {
         .update({
           user_type: 'creator',
           creator_metadata: metadata,
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         })
         .eq('id', userId)
         .select()
@@ -755,30 +771,26 @@ export class SubscriptionService {
   async setupCreatorFeatures(userId: string): Promise<void> {
     try {
       // Create creator dashboard entry
-      const { error: dashboardError } = await supabase
-        .from('creator_dashboards')
-        .upsert({
-          user_id: userId,
-          total_recipes: 0,
-          total_followers: 0,
-          total_revenue: 0,
-          created_at: new Date().toISOString()
-        });
+      const { error: dashboardError } = await supabase.from('creator_dashboards').upsert({
+        user_id: userId,
+        total_recipes: 0,
+        total_followers: 0,
+        total_revenue: 0,
+        created_at: new Date().toISOString(),
+      });
 
       if (dashboardError) {
         logger.error('❌ Failed to create creator dashboard', { dashboardError, userId });
       }
 
       // Setup default creator settings
-      const { error: settingsError } = await supabase
-        .from('creator_settings')
-        .upsert({
-          user_id: userId,
-          allow_affiliate_links: true,
-          revenue_sharing_enabled: true,
-          public_profile: true,
-          created_at: new Date().toISOString()
-        });
+      const { error: settingsError } = await supabase.from('creator_settings').upsert({
+        user_id: userId,
+        allow_affiliate_links: true,
+        revenue_sharing_enabled: true,
+        public_profile: true,
+        created_at: new Date().toISOString(),
+      });
 
       if (settingsError) {
         logger.error('❌ Failed to create creator settings', { settingsError, userId });
@@ -794,4 +806,4 @@ export class SubscriptionService {
 
 // Export singleton instance
 export const subscriptionService = new SubscriptionService();
-export default subscriptionService; 
+export default subscriptionService;

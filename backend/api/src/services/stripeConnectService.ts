@@ -3,16 +3,22 @@ import { supabase } from '../index';
 import { logger } from '../utils/logger';
 
 // Initialize Stripe
-const stripe = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: '2025-05-28.basil',
-}) : null;
+const stripe = process.env.STRIPE_SECRET_KEY
+  ? new Stripe(process.env.STRIPE_SECRET_KEY, {
+      apiVersion: '2025-05-28.basil',
+    })
+  : null;
 
 // Note: CreatorStripeAccount interface removed as it's not used
 // The actual database schema is used directly through Supabase
 
 export class StripeConnectService {
   // Create Connected Account for Creator
-  async createConnectedAccount(creatorId: string, email: string, country: string = 'US'): Promise<string | null> {
+  async createConnectedAccount(
+    creatorId: string,
+    email: string,
+    country: string = 'US'
+  ): Promise<string | null> {
     if (!stripe) {
       logger.error('❌ Stripe not configured');
       return null;
@@ -27,7 +33,10 @@ export class StripeConnectService {
         .single();
 
       if (existing?.stripe_account_id) {
-        logger.info('Creator already has Stripe account', { creatorId, accountId: existing.stripe_account_id });
+        logger.info('Creator already has Stripe account', {
+          creatorId,
+          accountId: existing.stripe_account_id,
+        });
         return existing.stripe_account_id;
       }
 
@@ -42,23 +51,21 @@ export class StripeConnectService {
         business_type: 'individual',
         metadata: {
           creator_id: creatorId,
-          platform: 'cookcam'
-        }
+          platform: 'cookcam',
+        },
       });
 
       // Save account info to database
-      await supabase
-        .from('creator_stripe_accounts')
-        .insert({
-          creator_id: creatorId,
-          stripe_account_id: account.id,
-          account_status: 'pending',
-          details_submitted: false,
-          charges_enabled: false,
-          payouts_enabled: false,
-          country,
-          currency: account.default_currency || 'usd'
-        });
+      await supabase.from('creator_stripe_accounts').insert({
+        creator_id: creatorId,
+        stripe_account_id: account.id,
+        account_status: 'pending',
+        details_submitted: false,
+        charges_enabled: false,
+        payouts_enabled: false,
+        country,
+        currency: account.default_currency || 'usd',
+      });
 
       logger.info('✅ Stripe Connected Account created', { creatorId, accountId: account.id });
       return account.id;
@@ -69,7 +76,11 @@ export class StripeConnectService {
   }
 
   // Generate account onboarding link
-  async createAccountLink(accountId: string, returnUrl: string, refreshUrl: string): Promise<string | null> {
+  async createAccountLink(
+    accountId: string,
+    returnUrl: string,
+    refreshUrl: string
+  ): Promise<string | null> {
     if (!stripe) {
       logger.error('❌ Stripe not configured');
       return null;
@@ -92,7 +103,9 @@ export class StripeConnectService {
 
   // Update account status from webhook
   async updateAccountStatus(accountId: string): Promise<void> {
-    if (!stripe) {return;}
+    if (!stripe) {
+      return;
+    }
 
     try {
       const account = await stripe.accounts.retrieve(accountId);
@@ -104,7 +117,7 @@ export class StripeConnectService {
           charges_enabled: account.charges_enabled,
           payouts_enabled: account.payouts_enabled,
           account_status: this.getAccountStatus(account),
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         })
         .eq('stripe_account_id', accountId);
 
@@ -118,8 +131,12 @@ export class StripeConnectService {
 
   // Get account status based on Stripe account object
   private getAccountStatus(account: Stripe.Account): string {
-    if (!account.details_submitted) {return 'pending';}
-    if (!account.charges_enabled || !account.payouts_enabled) {return 'restricted';}
+    if (!account.details_submitted) {
+      return 'pending';
+    }
+    if (!account.charges_enabled || !account.payouts_enabled) {
+      return 'restricted';
+    }
     return 'active';
   }
 
@@ -150,9 +167,9 @@ export class StripeConnectService {
       }
 
       if (creatorAccount.account_status !== 'active') {
-        logger.error('❌ Creator account not active', { 
-          creatorId: params.creatorId, 
-          status: creatorAccount.account_status 
+        logger.error('❌ Creator account not active', {
+          creatorId: params.creatorId,
+          status: creatorAccount.account_status,
         });
         return false;
       }
@@ -166,8 +183,8 @@ export class StripeConnectService {
         metadata: {
           creator_id: params.creatorId,
           payout_id: params.payoutId,
-          platform: 'cookcam'
-        }
+          platform: 'cookcam',
+        },
       });
 
       // Update payout record with Stripe info
@@ -177,14 +194,14 @@ export class StripeConnectService {
           stripe_transfer_id: transfer.id,
           stripe_account_id: creatorAccount.stripe_account_id,
           status: 'processing',
-          processed_at: new Date().toISOString()
+          processed_at: new Date().toISOString(),
         })
         .eq('id', params.payoutId);
 
-      logger.info('✅ Payout transfer created', { 
-        creatorId: params.creatorId, 
+      logger.info('✅ Payout transfer created', {
+        creatorId: params.creatorId,
         transferId: transfer.id,
-        amount: params.amount 
+        amount: params.amount,
       });
 
       // The actual payout to bank will be handled by Stripe automatically
@@ -199,7 +216,7 @@ export class StripeConnectService {
         .from('creator_payouts')
         .update({
           status: 'failed',
-          notes: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`
+          notes: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
         })
         .eq('id', params.payoutId);
 
@@ -209,7 +226,9 @@ export class StripeConnectService {
 
   // Get creator's Stripe dashboard URL
   async getCreatorDashboardUrl(creatorId: string): Promise<string | null> {
-    if (!stripe) {return null;}
+    if (!stripe) {
+      return null;
+    }
 
     try {
       const { data: account } = await supabase
@@ -268,7 +287,7 @@ export class StripeConnectService {
         .update({
           status: 'completed',
           stripe_payout_id: payout.id,
-          processed_at: new Date().toISOString()
+          processed_at: new Date().toISOString(),
         })
         .eq('stripe_account_id', payout.destination as string)
         .eq('status', 'processing');
@@ -291,7 +310,7 @@ export class StripeConnectService {
         .update({
           status: 'failed',
           notes: `Payout failed: ${payout.failure_message || 'Unknown reason'}`,
-          stripe_payout_id: payout.id
+          stripe_payout_id: payout.id,
         })
         .eq('stripe_account_id', payout.destination as string)
         .eq('status', 'processing');
@@ -300,9 +319,9 @@ export class StripeConnectService {
         logger.error('❌ Failed to update failed payout', { error, payoutId: payout.id });
       }
 
-      logger.error('❌ Payout failed', { 
-        payoutId: payout.id, 
-        reason: payout.failure_message 
+      logger.error('❌ Payout failed', {
+        payoutId: payout.id,
+        reason: payout.failure_message,
       });
     } catch (error: unknown) {
       logger.error('❌ Error handling payout failure', { error, payoutId: payout.id });
@@ -313,10 +332,9 @@ export class StripeConnectService {
   async getCreatorBalance(creatorId: string): Promise<number> {
     try {
       // Get total unpaid earnings
-      const { data: revenue } = await supabase
-        .rpc('calculate_creator_unpaid_balance', {
-          creator_id: creatorId
-        });
+      const { data: revenue } = await supabase.rpc('calculate_creator_unpaid_balance', {
+        creator_id: creatorId,
+      });
 
       return revenue || 0;
     } catch (error: unknown) {
@@ -328,4 +346,4 @@ export class StripeConnectService {
 
 // Export singleton instance
 export const stripeConnectService = new StripeConnectService();
-export default stripeConnectService; 
+export default stripeConnectService;

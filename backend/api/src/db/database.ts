@@ -36,17 +36,19 @@ export async function executeQuery(text: string, params: unknown[] = []): Promis
 }
 
 // Helper function for transactions
-export async function executeTransaction(operations: ((client: PoolClient) => Promise<unknown>)[]): Promise<unknown[]> {
+export async function executeTransaction(
+  operations: ((client: PoolClient) => Promise<unknown>)[]
+): Promise<unknown[]> {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
     const results = [];
-    
+
     for (const operation of operations) {
       const result = await operation(client);
       results.push(result);
     }
-    
+
     await client.query('COMMIT');
     return results;
   } catch (error) {
@@ -58,4 +60,4 @@ export async function executeTransaction(operations: ((client: PoolClient) => Pr
   }
 }
 
-export default pool; 
+export default pool;

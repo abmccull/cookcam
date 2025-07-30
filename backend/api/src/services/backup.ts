@@ -32,7 +32,7 @@ export class BackupService {
       process.env.SUPABASE_SERVICE_KEY || ''
     );
     this.cacheService = new CacheService();
-    
+
     this.config = {
       enabled: process.env.BACKUP_ENABLED === 'true',
       frequency: (process.env.BACKUP_FREQUENCY as any) || 'daily',
@@ -47,9 +47,9 @@ export class BackupService {
         'user_streaks',
         'xp_transactions',
         'leaderboard',
-        'creator_profiles'
+        'creator_profiles',
       ],
-      incremental: process.env.BACKUP_INCREMENTAL === 'true'
+      incremental: process.env.BACKUP_INCREMENTAL === 'true',
     };
   }
 
@@ -65,17 +65,17 @@ export class BackupService {
       status: 'running',
       type,
       startTime: new Date(),
-      tablesBackedUp: []
+      tablesBackedUp: [],
     };
 
     try {
       logger.info('Starting backup', { backupId, type });
-      
+
       // Store backup status
       await this.cacheService.set(`backup:status:${backupId}`, status, { ttl: 86400 }); // 24h
 
       // Run backup in background
-      this.runBackup(backupId, type).catch(error => {
+      this.runBackup(backupId, type).catch((error) => {
         logger.error('Backup failed', { backupId, error });
       });
 
@@ -102,10 +102,10 @@ export class BackupService {
       // In a real implementation, this would query a backup metadata table
       // For now, we'll return cached statuses
       const backups: BackupStatus[] = [];
-      
+
       // This is a simplified implementation
       // In production, you'd store backup metadata in a database table
-      
+
       return backups;
     } catch (error) {
       logger.error('Failed to list backups', { error });
@@ -127,10 +127,10 @@ export class BackupService {
       for (const table of this.config.tables) {
         try {
           logger.info(`Backing up table: ${table}`, { backupId });
-          
+
           // Get table data
           let query = this.supabase.from(table).select('*');
-          
+
           // For incremental backups, add timestamp filter
           if (type === 'incremental') {
             const lastBackup = await this.getLastBackupTime();
@@ -140,7 +140,7 @@ export class BackupService {
           }
 
           const { data, error } = await query;
-          
+
           if (error) {
             logger.error(`Failed to backup table ${table}`, { error });
             continue;
@@ -151,17 +151,16 @@ export class BackupService {
           // 2. Compress the file
           // 3. Upload to cloud storage (AWS S3, Google Cloud Storage, etc.)
           // 4. Store backup metadata
-          
+
           const tableSize = JSON.stringify(data).length;
           totalSize += tableSize;
           tablesBackedUp.push(table);
-          
-          logger.info(`Table ${table} backed up`, { 
-            backupId, 
+
+          logger.info(`Table ${table} backed up`, {
+            backupId,
             recordCount: data?.length || 0,
-            size: tableSize 
+            size: tableSize,
           });
-          
         } catch (error) {
           logger.error(`Error backing up table ${table}`, { backupId, error });
         }
@@ -173,34 +172,33 @@ export class BackupService {
         status: 'completed',
         endTime: new Date(),
         size: totalSize,
-        tablesBackedUp
+        tablesBackedUp,
       };
 
       await this.cacheService.set(`backup:status:${backupId}`, completedStatus, { ttl: 86400 });
-      
+
       // Store last backup time
       await this.cacheService.set('backup:last_backup', new Date(), { ttl: 86400 * 30 });
 
-      logger.info('Backup completed successfully', { 
-        backupId, 
+      logger.info('Backup completed successfully', {
+        backupId,
         tablesBackedUp: tablesBackedUp.length,
-        totalSize 
+        totalSize,
       });
 
       // Clean up old backups
       await this.cleanupOldBackups();
-
     } catch (error) {
       // Update backup status to failed
       const failedStatus: BackupStatus = {
         ...status,
         status: 'failed',
         endTime: new Date(),
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
 
       await this.cacheService.set(`backup:status:${backupId}`, failedStatus, { ttl: 86400 });
-      
+
       logger.error('Backup failed', { backupId, error });
       throw error;
     }
@@ -225,7 +223,7 @@ export class BackupService {
       // 2. Find backups older than retention period
       // 3. Delete backup files from storage
       // 4. Remove metadata records
-      
+
       logger.info('Backup cleanup completed');
     } catch (error) {
       logger.error('Failed to cleanup old backups', { error });
@@ -233,20 +231,23 @@ export class BackupService {
   }
 
   // Restore from backup
-  async restoreFromBackup(backupId: string, options: {
-    tables?: string[];
-    dryRun?: boolean;
-  } = {}): Promise<{ success: boolean; message: string; affectedTables?: string[] }> {
+  async restoreFromBackup(
+    backupId: string,
+    options: {
+      tables?: string[];
+      dryRun?: boolean;
+    } = {}
+  ): Promise<{ success: boolean; message: string; affectedTables?: string[] }> {
     try {
       const { tables = this.config.tables, dryRun = false } = options;
-      
+
       logger.info('Starting restore', { backupId, tables, dryRun });
 
       if (dryRun) {
         return {
           success: true,
           message: 'Dry run completed successfully',
-          affectedTables: tables
+          affectedTables: tables,
         };
       }
 
@@ -262,14 +263,13 @@ export class BackupService {
       return {
         success: true,
         message: 'Restore completed successfully',
-        affectedTables: tables
+        affectedTables: tables,
       };
-
     } catch (error) {
       logger.error('Restore failed', { backupId, error });
       return {
         success: false,
-        message: error instanceof Error ? error.message : 'Unknown error'
+        message: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   }
@@ -294,9 +294,9 @@ export class BackupService {
 
     // In a real implementation, this would set up cron jobs or use a task scheduler
     // For now, we'll just log the intent
-    logger.info('Automatic backups scheduled', { 
+    logger.info('Automatic backups scheduled', {
       frequency: this.config.frequency,
-      retention: this.config.retention 
+      retention: this.config.retention,
     });
   }
 
@@ -310,7 +310,7 @@ export class BackupService {
       checks.push({
         name: 'Database Connection',
         success: !dbError,
-        message: dbError ? dbError.message : 'Connected successfully'
+        message: dbError ? dbError.message : 'Connected successfully',
       });
 
       // Test cache connection
@@ -320,13 +320,13 @@ export class BackupService {
         checks.push({
           name: 'Cache Connection',
           success: true,
-          message: 'Cache working properly'
+          message: 'Cache working properly',
         });
       } catch (cacheError) {
         checks.push({
           name: 'Cache Connection',
           success: false,
-          message: cacheError instanceof Error ? cacheError.message : 'Unknown error'
+          message: cacheError instanceof Error ? cacheError.message : 'Unknown error',
         });
       }
 
@@ -334,22 +334,21 @@ export class BackupService {
       checks.push({
         name: 'Backup Configuration',
         success: this.config.enabled,
-        message: this.config.enabled ? 'Backup enabled' : 'Backup disabled'
+        message: this.config.enabled ? 'Backup enabled' : 'Backup disabled',
       });
 
-      const allSuccess = checks.every(check => check.success);
+      const allSuccess = checks.every((check) => check.success);
 
       return {
         success: allSuccess,
         message: allSuccess ? 'All backup tests passed' : 'Some backup tests failed',
-        checks
+        checks,
       };
-
     } catch (error) {
       return {
         success: false,
         message: error instanceof Error ? error.message : 'Test failed',
-        checks
+        checks,
       };
     }
   }

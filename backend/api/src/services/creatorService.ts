@@ -74,8 +74,10 @@ export class CreatorService {
           .eq('link_code', linkCode)
           .single();
 
-        if (!existing) {break;}
-        
+        if (!existing) {
+          break;
+        }
+
         linkCode = generateAffiliateCode();
         attempts++;
       }
@@ -102,7 +104,7 @@ export class CreatorService {
           custom_slug: params.customSlug,
           campaign_name: params.campaignName || 'Default Campaign',
           is_active: true,
-          click_count: 0
+          click_count: 0,
         })
         .select()
         .single();
@@ -112,10 +114,10 @@ export class CreatorService {
         throw error;
       }
 
-      logger.info('✅ Affiliate link created', { 
-        creatorId: params.creatorId, 
+      logger.info('✅ Affiliate link created', {
+        creatorId: params.creatorId,
         linkCode,
-        customSlug: params.customSlug 
+        customSlug: params.customSlug,
       });
 
       return data;
@@ -146,30 +148,30 @@ export class CreatorService {
   }
 
   // Track affiliate link click
-  async trackAffiliateClick(linkCode: string, metadata?: {
-    ip_address?: string;
-    user_agent?: string;
-    referrer?: string;
-  }): Promise<void> {
+  async trackAffiliateClick(
+    linkCode: string,
+    metadata?: {
+      ip_address?: string;
+      user_agent?: string;
+      referrer?: string;
+    }
+  ): Promise<void> {
     try {
       // Record the click
-      await supabase
-        .from('affiliate_link_clicks')
-        .insert({
-          link_code: linkCode,
-          ip_address: metadata?.ip_address,
-          user_agent: metadata?.user_agent,
-          referrer: metadata?.referrer
-        });
+      await supabase.from('affiliate_link_clicks').insert({
+        link_code: linkCode,
+        ip_address: metadata?.ip_address,
+        user_agent: metadata?.user_agent,
+        referrer: metadata?.referrer,
+      });
 
       // Increment click count
-      await supabase
-        .rpc('increment', {
-          table_name: 'creator_affiliate_links',
-          column_name: 'click_count',
-          row_id: linkCode,
-          x: 1
-        });
+      await supabase.rpc('increment', {
+        table_name: 'creator_affiliate_links',
+        column_name: 'click_count',
+        row_id: linkCode,
+        x: 1,
+      });
 
       logger.info('📊 Affiliate link clicked', { linkCode });
     } catch (error: unknown) {
@@ -197,25 +199,23 @@ export class CreatorService {
       }
 
       // Record the conversion
-      const { error } = await supabase
-        .from('affiliate_conversions')
-        .insert({
-          link_code: params.linkCode,
-          creator_id: link.creator_id,
-          subscriber_id: params.subscriberId,
-          subscription_id: params.subscriptionId,
-          tier_id: params.tierId,
-          is_active: true
-        });
+      const { error } = await supabase.from('affiliate_conversions').insert({
+        link_code: params.linkCode,
+        creator_id: link.creator_id,
+        subscriber_id: params.subscriberId,
+        subscription_id: params.subscriptionId,
+        tier_id: params.tierId,
+        is_active: true,
+      });
 
       if (error) {
         throw error;
       }
 
-      logger.info('💰 Affiliate conversion recorded', { 
+      logger.info('💰 Affiliate conversion recorded', {
         linkCode: params.linkCode,
         creatorId: link.creator_id,
-        subscriberId: params.subscriberId 
+        subscriberId: params.subscriberId,
       });
 
       // Update creator's monthly revenue
@@ -227,7 +227,11 @@ export class CreatorService {
   }
 
   // Get creator's revenue for a specific month
-  async getCreatorRevenue(creatorId: string, month?: number, year?: number): Promise<CreatorRevenue | null> {
+  async getCreatorRevenue(
+    creatorId: string,
+    month?: number,
+    year?: number
+  ): Promise<CreatorRevenue | null> {
     try {
       const targetMonth = month || new Date().getMonth() + 1;
       const targetYear = year || new Date().getFullYear();
@@ -243,7 +247,11 @@ export class CreatorService {
 
       if (error && error.code === 'PGRST116') {
         // Record doesn't exist, calculate and create it
-        const newRevenue = await this.calculateAndSaveCreatorRevenue(creatorId, targetMonth, targetYear);
+        const newRevenue = await this.calculateAndSaveCreatorRevenue(
+          creatorId,
+          targetMonth,
+          targetYear
+        );
         return newRevenue;
       } else if (error) {
         throw error;
@@ -258,18 +266,20 @@ export class CreatorService {
 
   // Calculate and save creator revenue
   private async calculateAndSaveCreatorRevenue(
-    creatorId: string, 
-    month: number, 
+    creatorId: string,
+    month: number,
     year: number
   ): Promise<CreatorRevenue> {
     try {
       // Calculate revenue using the database function
-      const { data: calculation, error: calcError } = await supabase
-        .rpc('calculate_creator_monthly_revenue', {
+      const { data: calculation, error: calcError } = await supabase.rpc(
+        'calculate_creator_monthly_revenue',
+        {
           creator_id: creatorId,
           target_month: month,
-          target_year: year
-        });
+          target_year: year,
+        }
+      );
 
       if (calcError || !calculation || calculation.length === 0) {
         throw new Error('Failed to calculate revenue');
@@ -291,7 +301,7 @@ export class CreatorService {
           active_referrals: revenueData.active_referrals,
           new_referrals: 0, // TODO: Calculate new referrals
           lost_referrals: 0, // TODO: Calculate lost referrals
-          payout_status: 'pending'
+          payout_status: 'pending',
         })
         .select()
         .single();
@@ -300,11 +310,11 @@ export class CreatorService {
         throw saveError;
       }
 
-      logger.info('💰 Creator revenue calculated and saved', { 
-        creatorId, 
-        month, 
-        year, 
-        total: saved.total_earnings 
+      logger.info('💰 Creator revenue calculated and saved', {
+        creatorId,
+        month,
+        year,
+        total: saved.total_earnings,
       });
 
       return saved;
@@ -331,7 +341,8 @@ export class CreatorService {
     try {
       let query = supabase
         .from('affiliate_conversions')
-        .select(`
+        .select(
+          `
           *,
           subscriber:subscriber_id (
             id,
@@ -343,7 +354,8 @@ export class CreatorService {
             status,
             current_period_end
           )
-        `)
+        `
+        )
         .eq('creator_id', creatorId);
 
       if (activeOnly) {
@@ -373,30 +385,28 @@ export class CreatorService {
     isAnonymous?: boolean;
   }): Promise<void> {
     try {
-      if (params.amount < 0.50) {
+      if (params.amount < 0.5) {
         throw new Error('Minimum tip amount is $0.50');
       }
 
       // Record the tip
-      const { error } = await supabase
-        .from('recipe_tips')
-        .insert({
-          recipe_id: params.recipeId,
-          creator_id: params.creatorId,
-          tipper_id: params.tipperId,
-          amount: params.amount,
-          message: params.message,
-          is_anonymous: params.isAnonymous || false
-        });
+      const { error } = await supabase.from('recipe_tips').insert({
+        recipe_id: params.recipeId,
+        creator_id: params.creatorId,
+        tipper_id: params.tipperId,
+        amount: params.amount,
+        message: params.message,
+        is_anonymous: params.isAnonymous || false,
+      });
 
       if (error) {
         throw error;
       }
 
-      logger.info('💰 Recipe tip recorded', { 
+      logger.info('💰 Recipe tip recorded', {
         recipeId: params.recipeId,
         creatorId: params.creatorId,
-        amount: params.amount 
+        amount: params.amount,
       });
 
       // Update creator's monthly revenue
@@ -440,7 +450,7 @@ export class CreatorService {
           price: params.price,
           recipe_count: params.recipeIds.length,
           cover_image_url: params.coverImageUrl,
-          is_active: true
+          is_active: true,
         })
         .select()
         .single();
@@ -451,10 +461,10 @@ export class CreatorService {
 
       // TODO: Link recipes to collection
 
-      logger.info('📚 Premium collection created', { 
+      logger.info('📚 Premium collection created', {
         creatorId: params.creatorId,
         collectionId: collection.id,
-        recipeCount: params.recipeIds.length 
+        recipeCount: params.recipeIds.length,
       });
 
       return collection;
@@ -465,10 +475,7 @@ export class CreatorService {
   }
 
   // Purchase a premium collection
-  async purchaseCollection(params: {
-    collectionId: string;
-    buyerId: string;
-  }): Promise<void> {
+  async purchaseCollection(params: { collectionId: string; buyerId: string }): Promise<void> {
     try {
       // Get collection details
       const { data: collection, error: collError } = await supabase
@@ -495,23 +502,21 @@ export class CreatorService {
       }
 
       // Record the purchase
-      const { error } = await supabase
-        .from('collection_purchases')
-        .insert({
-          collection_id: params.collectionId,
-          buyer_id: params.buyerId,
-          creator_id: collection.creator_id,
-          amount: collection.price
-        });
+      const { error } = await supabase.from('collection_purchases').insert({
+        collection_id: params.collectionId,
+        buyer_id: params.buyerId,
+        creator_id: collection.creator_id,
+        amount: collection.price,
+      });
 
       if (error) {
         throw error;
       }
 
-      logger.info('💰 Collection purchased', { 
+      logger.info('💰 Collection purchased', {
         collectionId: params.collectionId,
         buyerId: params.buyerId,
-        amount: collection.price 
+        amount: collection.price,
       });
 
       // Update creator's monthly revenue
@@ -561,12 +566,12 @@ export class CreatorService {
         affiliateLinks: affiliateLinks || [],
         referrals: {
           total: referrals.length,
-          active: referrals.filter(r => r.subscription?.status === 'active').length,
-          data: referrals
+          active: referrals.filter((r) => r.subscription?.status === 'active').length,
+          data: referrals,
         },
         recipes: recipeStats || [],
         recentTips: recentTips || [],
-        lastUpdated: new Date()
+        lastUpdated: new Date(),
       };
     } catch (error: unknown) {
       logger.error('❌ Failed to get creator analytics', { error, creatorId });
@@ -599,7 +604,7 @@ export class CreatorService {
           creator_id: params.creatorId,
           amount: params.amount,
           method: params.method,
-          status: 'pending'
+          status: 'pending',
         })
         .select()
         .single();
@@ -608,10 +613,10 @@ export class CreatorService {
         throw error;
       }
 
-      logger.info('💸 Payout requested', { 
+      logger.info('💸 Payout requested', {
         creatorId: params.creatorId,
         amount: params.amount,
-        method: params.method 
+        method: params.method,
       });
 
       // Process payout through Stripe Connect if method is stripe
@@ -620,7 +625,7 @@ export class CreatorService {
           creatorId: params.creatorId,
           amount: params.amount,
           payoutId: data.id,
-          description: `CookCam creator payout - ${new Date().toLocaleDateString()}`
+          description: `CookCam creator payout - ${new Date().toLocaleDateString()}`,
         });
 
         if (!success) {
@@ -681,4 +686,4 @@ export class CreatorService {
 
 // Export singleton instance
 export const creatorService = new CreatorService();
-export default creatorService; 
+export default creatorService;

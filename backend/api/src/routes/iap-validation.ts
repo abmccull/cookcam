@@ -31,21 +31,24 @@ interface AndroidReceiptValidationRequest {
 type ReceiptValidationRequest = AppleReceiptValidationRequest | AndroidReceiptValidationRequest;
 
 // Validate Apple App Store receipt
-async function validateAppleReceipt(receiptData: string, isProduction: boolean = true): Promise<any> {
+async function validateAppleReceipt(
+  receiptData: string,
+  isProduction: boolean = true
+): Promise<any> {
   const url = isProduction ? APPLE_VERIFY_URL_PRODUCTION : APPLE_VERIFY_URL_SANDBOX;
-  
+
   try {
     const requestBody = {
       'receipt-data': receiptData,
-      'password': APPLE_SHARED_SECRET,
-      'exclude-old-transactions': true
+      password: APPLE_SHARED_SECRET,
+      'exclude-old-transactions': true,
     };
 
     const response = await axios.post(url, requestBody, {
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
       },
-      timeout: 10000
+      timeout: 10000,
     });
 
     const { status, receipt, latest_receipt_info } = response.data;
@@ -63,20 +66,20 @@ async function validateAppleReceipt(receiptData: string, isProduction: boolean =
         success: true,
         receipt: receipt,
         latestReceiptInfo: latest_receipt_info,
-        environment: isProduction ? 'production' : 'sandbox'
+        environment: isProduction ? 'production' : 'sandbox',
       };
     } else {
       return {
         success: false,
         status,
-        error: getAppleStatusError(status)
+        error: getAppleStatusError(status),
       };
     }
   } catch (error) {
     logger.error('❌ Apple receipt validation failed:', error);
     return {
       success: false,
-      error: 'Network error validating receipt'
+      error: 'Network error validating receipt',
     };
   }
 }
@@ -90,13 +93,16 @@ async function validateGooglePlayPurchase(productId: string, purchaseToken: stri
 
     // Parse service account key
     const serviceAccount = JSON.parse(GOOGLE_SERVICE_ACCOUNT_KEY);
-    
+
     // Generate JWT for Google API authentication
     const googleAuth = await getGoogleAccessToken(serviceAccount);
-    
+
     // Determine if it's a subscription or one-time product
-    const isSubscription = productId.includes('monthly') || productId.includes('yearly') || productId.includes('creator');
-    
+    const isSubscription =
+      productId.includes('monthly') ||
+      productId.includes('yearly') ||
+      productId.includes('creator');
+
     let apiUrl: string;
     if (isSubscription) {
       apiUrl = `https://androidpublisher.googleapis.com/androidpublisher/v3/applications/${GOOGLE_PLAY_PACKAGE_NAME}/purchases/subscriptions/${productId}/tokens/${purchaseToken}`;
@@ -106,10 +112,10 @@ async function validateGooglePlayPurchase(productId: string, purchaseToken: stri
 
     const response = await axios.get(apiUrl, {
       headers: {
-        'Authorization': `Bearer ${googleAuth.access_token}`,
-        'Content-Type': 'application/json'
+        Authorization: `Bearer ${googleAuth.access_token}`,
+        'Content-Type': 'application/json',
       },
-      timeout: 10000
+      timeout: 10000,
     });
 
     const purchaseData = response.data;
@@ -118,29 +124,31 @@ async function validateGooglePlayPurchase(productId: string, purchaseToken: stri
     if (isSubscription) {
       // For subscriptions, check if it's active
       const isValid = purchaseData.paymentState === 1; // 1 = Received
-      const isActive = purchaseData.autoRenewing === true || 
-                      (purchaseData.expiryTimeMillis && parseInt(purchaseData.expiryTimeMillis) > Date.now());
-      
+      const isActive =
+        purchaseData.autoRenewing === true ||
+        (purchaseData.expiryTimeMillis && parseInt(purchaseData.expiryTimeMillis) > Date.now());
+
       return {
         success: isValid,
         purchaseData,
         isActive,
-        expiryTime: purchaseData.expiryTimeMillis ? new Date(parseInt(purchaseData.expiryTimeMillis)) : null
+        expiryTime: purchaseData.expiryTimeMillis
+          ? new Date(parseInt(purchaseData.expiryTimeMillis))
+          : null,
       };
     } else {
       // For one-time products
       const isValid = purchaseData.purchaseState === 0; // 0 = Purchased
       return {
         success: isValid,
-        purchaseData
+        purchaseData,
       };
     }
-
   } catch (error: any) {
     logger.error('❌ Google Play validation failed:', error);
     return {
       success: false,
-      error: error.response?.data?.error?.message || 'Failed to validate Google Play purchase'
+      error: error.response?.data?.error?.message || 'Failed to validate Google Play purchase',
     };
   }
 }
@@ -149,7 +157,7 @@ async function validateGooglePlayPurchase(productId: string, purchaseToken: stri
 async function getGoogleAccessToken(serviceAccount: any): Promise<{ access_token: string }> {
   const jwtHeader = {
     alg: 'RS256',
-    typ: 'JWT'
+    typ: 'JWT',
   };
 
   const now = Math.floor(Date.now() / 1000);
@@ -158,30 +166,39 @@ async function getGoogleAccessToken(serviceAccount: any): Promise<{ access_token
     scope: 'https://www.googleapis.com/auth/androidpublisher',
     aud: 'https://oauth2.googleapis.com/token',
     exp: now + 3600,
-    iat: now
+    iat: now,
   };
 
   // Create JWT
   const headerBase64 = Buffer.from(JSON.stringify(jwtHeader)).toString('base64url');
   const payloadBase64 = Buffer.from(JSON.stringify(jwtPayload)).toString('base64url');
-  
+
   const signatureInput = `${headerBase64}.${payloadBase64}`;
-  const signature = crypto.sign('RSA-SHA256', Buffer.from(signatureInput), serviceAccount.private_key);
+  const signature = crypto.sign(
+    'RSA-SHA256',
+    Buffer.from(signatureInput),
+    serviceAccount.private_key
+  );
   const signatureBase64 = signature.toString('base64url');
-  
+
   const jwt = `${headerBase64}.${payloadBase64}.${signatureBase64}`;
 
   // Exchange JWT for access token
   const tokenResponse = await axios.post('https://oauth2.googleapis.com/token', {
     grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
-    assertion: jwt
+    assertion: jwt,
   });
 
   return tokenResponse.data;
 }
 
 // Update user subscription in database
-async function updateUserSubscription(userId: string, productId: string, platform: string, validationData: any) {
+async function updateUserSubscription(
+  userId: string,
+  productId: string,
+  platform: string,
+  validationData: any
+) {
   try {
     // Determine subscription tier from product ID
     let tierId = 2; // Regular by default
@@ -194,13 +211,13 @@ async function updateUserSubscription(userId: string, productId: string, platfor
     if (platform === 'ios') {
       // For iOS, use the expiration date from receipt
       const latestTransaction = validationData.latestReceiptInfo?.[0];
-      currentPeriodEnd = latestTransaction ? 
-        new Date(parseInt(latestTransaction.expires_date_ms)) : 
-        new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days from now
+      currentPeriodEnd = latestTransaction
+        ? new Date(parseInt(latestTransaction.expires_date_ms))
+        : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days from now
     } else {
       // For Android, use expiry time from purchase data
-      currentPeriodEnd = validationData.expiryTime || 
-        new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+      currentPeriodEnd =
+        validationData.expiryTime || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
     }
 
     // Check if subscription already exists
@@ -219,10 +236,11 @@ async function updateUserSubscription(userId: string, productId: string, platfor
           status: 'active',
           current_period_end: currentPeriodEnd.toISOString(),
           provider: platform,
-          provider_subscription_id: platform === 'ios' ? 
-            validationData.latestReceiptInfo?.[0]?.original_transaction_id :
-            validationData.purchaseData.orderId,
-          updated_at: new Date().toISOString()
+          provider_subscription_id:
+            platform === 'ios'
+              ? validationData.latestReceiptInfo?.[0]?.original_transaction_id
+              : validationData.purchaseData.orderId,
+          updated_at: new Date().toISOString(),
         })
         .eq('user_id', userId);
 
@@ -231,19 +249,18 @@ async function updateUserSubscription(userId: string, productId: string, platfor
       }
     } else {
       // Create new subscription
-      const { error } = await supabase
-        .from('user_subscriptions')
-        .insert({
-          user_id: userId,
-          tier_id: tierId,
-          status: 'active',
-          current_period_start: new Date().toISOString(),
-          current_period_end: currentPeriodEnd.toISOString(),
-          provider: platform,
-          provider_subscription_id: platform === 'ios' ? 
-            validationData.latestReceiptInfo?.[0]?.original_transaction_id :
-            validationData.purchaseData.orderId,
-        });
+      const { error } = await supabase.from('user_subscriptions').insert({
+        user_id: userId,
+        tier_id: tierId,
+        status: 'active',
+        current_period_start: new Date().toISOString(),
+        current_period_end: currentPeriodEnd.toISOString(),
+        provider: platform,
+        provider_subscription_id:
+          platform === 'ios'
+            ? validationData.latestReceiptInfo?.[0]?.original_transaction_id
+            : validationData.purchaseData.orderId,
+      });
 
       if (error) {
         throw error;
@@ -256,7 +273,7 @@ async function updateUserSubscription(userId: string, productId: string, platfor
         .from('profiles')
         .update({
           user_type: 'creator',
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         })
         .eq('id', userId);
 
@@ -286,9 +303,9 @@ router.post('/validate-receipt', authenticateUser, async (req: Request, res: Res
     if (platform === 'ios') {
       const { receipt } = req.body as AppleReceiptValidationRequest;
       if (!receipt) {
-        return res.status(400).json({ 
-          success: false, 
-          error: 'Receipt data is required for iOS validation' 
+        return res.status(400).json({
+          success: false,
+          error: 'Receipt data is required for iOS validation',
         });
       }
 
@@ -296,17 +313,17 @@ router.post('/validate-receipt', authenticateUser, async (req: Request, res: Res
     } else if (platform === 'android') {
       const { purchaseToken } = req.body as AndroidReceiptValidationRequest;
       if (!purchaseToken) {
-        return res.status(400).json({ 
-          success: false, 
-          error: 'Purchase token is required for Android validation' 
+        return res.status(400).json({
+          success: false,
+          error: 'Purchase token is required for Android validation',
         });
       }
 
       validationResult = await validateGooglePlayPurchase(productId, purchaseToken);
     } else {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Platform must be either "ios" or "android"' 
+      return res.status(400).json({
+        success: false,
+        error: 'Platform must be either "ios" or "android"',
       });
     }
 
@@ -320,21 +337,20 @@ router.post('/validate-receipt', authenticateUser, async (req: Request, res: Res
         subscription: {
           platform,
           productId,
-          status: 'active'
-        }
+          status: 'active',
+        },
       });
     } else {
       res.status(400).json({
         success: false,
-        error: validationResult.error || 'Receipt validation failed'
+        error: validationResult.error || 'Receipt validation failed',
       });
     }
-
   } catch (error) {
     logger.error('❌ Receipt validation error:', error);
     res.status(500).json({
       success: false,
-      error: 'Internal server error during validation'
+      error: 'Internal server error during validation',
     });
   }
 });
@@ -345,15 +361,16 @@ function getAppleStatusError(status: number): string {
     21000: 'The App Store could not read the JSON object you provided.',
     21002: 'The data in the receipt-data property was malformed or missing.',
     21003: 'The receipt could not be authenticated.',
-    21004: 'The shared secret you provided does not match the shared secret on file for your account.',
+    21004:
+      'The shared secret you provided does not match the shared secret on file for your account.',
     21005: 'The receipt server is not currently available.',
     21006: 'This receipt is valid but the subscription has expired.',
     21007: 'This receipt is from the sandbox environment.',
     21008: 'This receipt is from the production environment.',
-    21010: 'This receipt could not be authorized.'
+    21010: 'This receipt could not be authorized.',
   };
-  
+
   return errors[status] || `Unknown status code: ${status}`;
 }
 
-export default router; 
+export default router;

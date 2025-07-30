@@ -24,18 +24,21 @@ export class GooglePlayService {
 
   constructor() {
     this.packageName = process.env.ANDROID_PACKAGE_NAME || 'com.cookcam.app';
-    
+
     // Use service account key or Application Default Credentials
     this.auth = new GoogleAuth({
       keyFile: process.env.GOOGLE_SERVICE_ACCOUNT_KEY_FILE,
-      scopes: ['https://www.googleapis.com/auth/androidpublisher']
+      scopes: ['https://www.googleapis.com/auth/androidpublisher'],
     });
   }
 
   /**
    * Validate a subscription by getting its details
    */
-  async validateSubscription(subscriptionId: string, purchaseToken: string): Promise<GooglePlaySubscription | null> {
+  async validateSubscription(
+    subscriptionId: string,
+    purchaseToken: string
+  ): Promise<GooglePlaySubscription | null> {
     try {
       return await this.getSubscription(subscriptionId, purchaseToken);
     } catch (error: any) {
@@ -49,16 +52,19 @@ export class GooglePlayService {
   /**
    * Get subscription details from Google Play
    */
-  async getSubscription(subscriptionId: string, purchaseToken: string): Promise<GooglePlaySubscription> {
+  async getSubscription(
+    subscriptionId: string,
+    purchaseToken: string
+  ): Promise<GooglePlaySubscription> {
     const accessToken = await this.getAccessToken();
-    
+
     const url = `${this.baseUrl}/applications/${this.packageName}/purchases/subscriptions/${subscriptionId}/tokens/${purchaseToken}`;
-    
+
     const response = await axios.get(url, {
       headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json'
-      }
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
     });
 
     return response.data;
@@ -69,15 +75,19 @@ export class GooglePlayService {
    */
   async acknowledgeSubscription(subscriptionId: string, purchaseToken: string): Promise<void> {
     const accessToken = await this.getAccessToken();
-    
+
     const url = `${this.baseUrl}/applications/${this.packageName}/purchases/subscriptions/${subscriptionId}/tokens/${purchaseToken}:acknowledge`;
-    
-    await axios.post(url, {}, {
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json'
+
+    await axios.post(
+      url,
+      {},
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
       }
-    });
+    );
   }
 
   /**
@@ -85,39 +95,47 @@ export class GooglePlayService {
    */
   async cancelSubscription(subscriptionId: string, purchaseToken: string): Promise<void> {
     const accessToken = await this.getAccessToken();
-    
+
     const url = `${this.baseUrl}/applications/${this.packageName}/purchases/subscriptions/${subscriptionId}/tokens/${purchaseToken}:cancel`;
-    
-    await axios.post(url, {}, {
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json'
+
+    await axios.post(
+      url,
+      {},
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
       }
-    });
+    );
   }
 
   /**
    * Defer a subscription (extend the expiration)
    */
   async deferSubscription(
-    subscriptionId: string, 
-    purchaseToken: string, 
+    subscriptionId: string,
+    purchaseToken: string,
     newExpiryTime: Date
   ): Promise<void> {
     const accessToken = await this.getAccessToken();
-    
+
     const url = `${this.baseUrl}/applications/${this.packageName}/purchases/subscriptions/${subscriptionId}/tokens/${purchaseToken}:defer`;
-    
-    await axios.post(url, {
-      deferralInfo: {
-        expectedExpiryTimeMillis: newExpiryTime.getTime().toString()
+
+    await axios.post(
+      url,
+      {
+        deferralInfo: {
+          expectedExpiryTimeMillis: newExpiryTime.getTime().toString(),
+        },
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
       }
-    }, {
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json'
-      }
-    });
+    );
   }
 
   /**
@@ -126,13 +144,13 @@ export class GooglePlayService {
   private async getAccessToken(): Promise<string> {
     const client = await this.auth.getClient();
     const tokenResponse = await client.getAccessToken();
-    
+
     if (!tokenResponse.token) {
       throw new Error('Failed to get Google Play access token');
     }
-    
+
     return tokenResponse.token;
   }
 }
 
-export const googlePlayService = new GooglePlayService(); 
+export const googlePlayService = new GooglePlayService();

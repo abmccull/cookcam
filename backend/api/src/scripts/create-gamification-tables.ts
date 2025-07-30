@@ -11,7 +11,7 @@ const supabase = createClient(
 
 async function createGamificationTables() {
   console.log('🎮 Creating CookCam Gamification Tables...');
-  
+
   const tables = [
     {
       name: 'users',
@@ -34,7 +34,7 @@ async function createGamificationTables() {
           created_at TIMESTAMPTZ DEFAULT now(),
           updated_at TIMESTAMPTZ DEFAULT now()
         );
-      `
+      `,
     },
     {
       name: 'user_progress',
@@ -50,7 +50,7 @@ async function createGamificationTables() {
           metadata JSONB DEFAULT '{}',
           created_at TIMESTAMPTZ DEFAULT now()
         );
-      `
+      `,
     },
     {
       name: 'streaks',
@@ -64,7 +64,7 @@ async function createGamificationTables() {
           created_at TIMESTAMPTZ DEFAULT now(),
           UNIQUE(user_id, streak_date)
         );
-      `
+      `,
     },
     {
       name: 'achievements',
@@ -81,7 +81,7 @@ async function createGamificationTables() {
           requirements JSONB NOT NULL,
           created_at TIMESTAMPTZ DEFAULT now()
         );
-      `
+      `,
     },
     {
       name: 'user_achievements',
@@ -95,7 +95,7 @@ async function createGamificationTables() {
           created_at TIMESTAMPTZ DEFAULT now(),
           PRIMARY KEY(user_id, achievement_id)
         );
-      `
+      `,
     },
     {
       name: 'mystery_boxes',
@@ -108,7 +108,7 @@ async function createGamificationTables() {
           reward_value JSONB NOT NULL,
           opened_at TIMESTAMPTZ DEFAULT now()
         );
-      `
+      `,
     },
     {
       name: 'daily_checkins',
@@ -123,7 +123,7 @@ async function createGamificationTables() {
           created_at TIMESTAMPTZ DEFAULT now(),
           UNIQUE(user_id, checkin_date)
         );
-      `
+      `,
     },
     {
       name: 'recipes',
@@ -152,7 +152,7 @@ async function createGamificationTables() {
           created_at TIMESTAMPTZ DEFAULT now(),
           updated_at TIMESTAMPTZ DEFAULT now()
         );
-      `
+      `,
     },
     {
       name: 'recipe_claims',
@@ -165,7 +165,7 @@ async function createGamificationTables() {
           claimed_at TIMESTAMPTZ DEFAULT now(),
           UNIQUE(recipe_id)
         );
-      `
+      `,
     },
     {
       name: 'recipe_ratings',
@@ -185,7 +185,7 @@ async function createGamificationTables() {
           created_at TIMESTAMPTZ DEFAULT now(),
           UNIQUE(recipe_id, user_id)
         );
-      `
+      `,
     },
     {
       name: 'favorites',
@@ -198,7 +198,7 @@ async function createGamificationTables() {
           created_at TIMESTAMPTZ DEFAULT now(),
           PRIMARY KEY(user_id, recipe_id)
         );
-      `
+      `,
     },
     {
       name: 'creator_tiers',
@@ -210,7 +210,7 @@ async function createGamificationTables() {
           tier_name TEXT NOT NULL,
           achieved_at TIMESTAMPTZ DEFAULT now()
         );
-      `
+      `,
     },
     {
       name: 'referral_codes',
@@ -222,7 +222,7 @@ async function createGamificationTables() {
           uses INT DEFAULT 0,
           created_at TIMESTAMPTZ DEFAULT now()
         );
-      `
+      `,
     },
     {
       name: 'commissions',
@@ -238,7 +238,7 @@ async function createGamificationTables() {
           paid_at TIMESTAMPTZ,
           created_at TIMESTAMPTZ DEFAULT now()
         );
-      `
+      `,
     },
     {
       name: 'leaderboards',
@@ -254,7 +254,7 @@ async function createGamificationTables() {
           updated_at TIMESTAMPTZ DEFAULT now(),
           UNIQUE(type, period, user_id)
         );
-      `
+      `,
     },
     {
       name: 'challenges',
@@ -270,7 +270,7 @@ async function createGamificationTables() {
           end_date DATE NOT NULL,
           created_at TIMESTAMPTZ DEFAULT now()
         );
-      `
+      `,
     },
     {
       name: 'user_challenges',
@@ -284,7 +284,7 @@ async function createGamificationTables() {
           created_at TIMESTAMPTZ DEFAULT now(),
           PRIMARY KEY(user_id, challenge_id)
         );
-      `
+      `,
     },
     {
       name: 'scans',
@@ -299,8 +299,8 @@ async function createGamificationTables() {
           scan_metadata JSONB,
           created_at TIMESTAMPTZ DEFAULT now()
         );
-      `
-    }
+      `,
+    },
   ];
 
   // Create indexes for performance
@@ -313,16 +313,16 @@ async function createGamificationTables() {
     'CREATE INDEX IF NOT EXISTS idx_user_progress_user ON user_progress(user_id, created_at DESC);',
     'CREATE INDEX IF NOT EXISTS idx_streaks_user_date ON streaks(user_id, streak_date DESC);',
     'CREATE INDEX IF NOT EXISTS idx_achievements_category ON achievements(category, rarity);',
-    'CREATE INDEX IF NOT EXISTS idx_recipe_ratings_recipe ON recipe_ratings(recipe_id, overall_rating DESC);'
+    'CREATE INDEX IF NOT EXISTS idx_recipe_ratings_recipe ON recipe_ratings(recipe_id, overall_rating DESC);',
   ];
 
   try {
     // Create tables
     for (const table of tables) {
       console.log(`📝 Creating table: ${table.name}`);
-      
+
       const { error } = await supabase.rpc('exec_sql', {
-        sql: table.sql
+        sql: table.sql,
       });
 
       if (error) {
@@ -336,7 +336,7 @@ async function createGamificationTables() {
     console.log('\n📊 Creating performance indexes...');
     for (const indexSQL of indexes) {
       const { error } = await supabase.rpc('exec_sql', {
-        sql: indexSQL
+        sql: indexSQL,
       });
 
       if (error) {
@@ -356,7 +356,7 @@ async function createGamificationTables() {
         category: 'scanning',
         xp_reward: 50,
         rarity: 'common',
-        requirements: { scans: 1 }
+        requirements: { scans: 1 },
       },
       {
         key: 'recipe_master',
@@ -365,7 +365,7 @@ async function createGamificationTables() {
         category: 'recipes',
         xp_reward: 200,
         rarity: 'rare',
-        requirements: { recipes_generated: 10 }
+        requirements: { recipes_generated: 10 },
       },
       {
         key: 'streak_warrior',
@@ -374,7 +374,7 @@ async function createGamificationTables() {
         category: 'engagement',
         xp_reward: 300,
         rarity: 'epic',
-        requirements: { streak_days: 7 }
+        requirements: { streak_days: 7 },
       },
       {
         key: 'social_butterfly',
@@ -383,14 +383,12 @@ async function createGamificationTables() {
         category: 'social',
         xp_reward: 100,
         rarity: 'uncommon',
-        requirements: { follows: 5 }
-      }
+        requirements: { follows: 5 },
+      },
     ];
 
     for (const achievement of defaultAchievements) {
-      const { error } = await supabase
-        .from('achievements')
-        .insert(achievement);
+      const { error } = await supabase.from('achievements').insert(achievement);
 
       if (error && !error.message.includes('duplicate key')) {
         console.error(`❌ Error inserting achievement ${achievement.key}:`, error);
@@ -408,7 +406,6 @@ async function createGamificationTables() {
     console.log('   1. Test API endpoints');
     console.log('   2. Connect frontend to backend');
     console.log('   3. Enable RLS policies');
-
   } catch (error) {
     console.error('❌ Migration failed:', error);
     process.exit(1);
@@ -428,4 +425,4 @@ if (require.main === module) {
     });
 }
 
-export { createGamificationTables }; 
+export { createGamificationTables };

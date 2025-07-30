@@ -31,7 +31,7 @@ global.testUtils = {
   generateTestToken: (_userId: string = 'test-user-id') => {
     return 'test-jwt-token';
   },
-  
+
   // Generate test user data
   generateTestUser: (overrides = {}) => ({
     id: 'test-user-id',
@@ -41,7 +41,7 @@ global.testUtils = {
     xp: 0,
     ...overrides,
   }),
-  
+
   // Generate test recipe data
   generateTestRecipe: (overrides = {}) => ({
     id: 'test-recipe-id',

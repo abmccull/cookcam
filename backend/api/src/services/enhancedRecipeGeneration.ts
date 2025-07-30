@@ -78,10 +78,30 @@ interface GeneratedRecipe {
 
 // Common pantry staples that we assume users have
 const PANTRY_STAPLES = [
-  'salt', 'black pepper', 'olive oil', 'garlic', 'onion', 'water',
-  'butter', 'flour', 'sugar', 'vinegar', 'lemon juice', 'soy sauce',
-  'paprika', 'cumin', 'oregano', 'thyme', 'bay leaves', 'vegetable oil',
-  'white rice', 'brown rice', 'pasta', 'bread', 'eggs', 'milk'
+  'salt',
+  'black pepper',
+  'olive oil',
+  'garlic',
+  'onion',
+  'water',
+  'butter',
+  'flour',
+  'sugar',
+  'vinegar',
+  'lemon juice',
+  'soy sauce',
+  'paprika',
+  'cumin',
+  'oregano',
+  'thyme',
+  'bay leaves',
+  'vegetable oil',
+  'white rice',
+  'brown rice',
+  'pasta',
+  'bread',
+  'eggs',
+  'milk',
 ];
 
 interface MultipleRecipesResponse {
@@ -100,7 +120,7 @@ export class EnhancedRecipeGenerationService {
     if (!process.env.OPENAI_API_KEY) {
       throw new Error('OPENAI_API_KEY environment variable is required');
     }
-    
+
     this.openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
       timeout: 90000, // 1.5 minutes timeout for multiple recipes
@@ -108,19 +128,21 @@ export class EnhancedRecipeGenerationService {
   }
 
   // NEW: Generate 3 diverse recipes
-  async generateMultipleRecipes(options: RecipeGenerationOptions): Promise<MultipleRecipesResponse> {
+  async generateMultipleRecipes(
+    options: RecipeGenerationOptions
+  ): Promise<MultipleRecipesResponse> {
     try {
       logger.info('🍳 Generating 3 diverse recipes', {
         ingredients: options.ingredients,
         preferences: options.userPreferences,
-        type: options.recipeType
+        type: options.recipeType,
       });
 
       const prompt = this.buildDiverseRecipesPrompt(options);
-      
+
       logger.info('📤 Sending multiple recipes request to OpenAI...', {
         model: 'gpt-4o-mini',
-        promptLength: prompt.length
+        promptLength: prompt.length,
       });
 
       const response = await this.openai.chat.completions.create({
@@ -128,16 +150,16 @@ export class EnhancedRecipeGenerationService {
         messages: [
           {
             role: 'system',
-            content: this.getMultiRecipeSystemPrompt()
+            content: this.getMultiRecipeSystemPrompt(),
           },
           {
             role: 'user',
-            content: prompt
-          }
+            content: prompt,
+          },
         ],
         temperature: 0.8, // Higher temperature for more diversity
         max_tokens: 8000, // Increased for 3 complete recipes with detailed instructions
-        response_format: { type: 'json_object' }
+        response_format: { type: 'json_object' },
       });
 
       const content = response.choices[0]?.message?.content;
@@ -146,7 +168,7 @@ export class EnhancedRecipeGenerationService {
       }
 
       logger.info('🔄 Parsing multiple recipes response...', {
-        contentLength: content.length
+        contentLength: content.length,
       });
 
       // Debug logging: Log the first and last 500 characters to see if content is truncated
@@ -155,7 +177,7 @@ export class EnhancedRecipeGenerationService {
         last500Chars: content.substring(Math.max(0, content.length - 500)),
         startsWithBrace: content.trim().startsWith('{'),
         endsWithBrace: content.trim().endsWith('}'),
-        fullContentLength: content.length
+        fullContentLength: content.length,
       });
 
       let result: MultipleRecipesResponse;
@@ -167,11 +189,11 @@ export class EnhancedRecipeGenerationService {
           contentPreview: content.substring(0, 1000),
           contentSuffix: content.substring(Math.max(0, content.length - 1000)),
           contentLength: content.length,
-          parseErrorMessage: (parseError as Error).message
+          parseErrorMessage: (parseError as Error).message,
         });
         throw new Error(`JSON parsing failed: ${(parseError as Error).message}`);
       }
-      
+
       // Validate we got 3 recipes
       if (!result.recipes || result.recipes.length !== 3) {
         logger.warn('⚠️ Expected 3 recipes, got:', { recipeCount: result.recipes?.length });
@@ -179,7 +201,7 @@ export class EnhancedRecipeGenerationService {
 
       logger.info('✅ Successfully generated multiple recipes', {
         recipeCount: result.recipes?.length,
-        titles: result.recipes?.map(r => r.title)
+        titles: result.recipes?.map((r) => r.title),
       });
 
       return result;
@@ -405,11 +427,21 @@ Be creative with flavor combinations while respecting dietary restrictions and p
     // Add nutrition goals
     if (nutritionGoals) {
       prompt += `\n🎯 Nutrition Goals:\n`;
-      if (nutritionGoals.calories) {prompt += `- Target calories: ${nutritionGoals.calories}\n`;}
-      if (nutritionGoals.protein) {prompt += `- Minimum protein: ${nutritionGoals.protein}g\n`;}
-      if (nutritionGoals.lowCarb) {prompt += `- Low carb (under 20g net carbs)\n`;}
-      if (nutritionGoals.lowFat) {prompt += `- Low fat (under 10g fat)\n`;}
-      if (nutritionGoals.highFiber) {prompt += `- High fiber (over 8g fiber)\n`;}
+      if (nutritionGoals.calories) {
+        prompt += `- Target calories: ${nutritionGoals.calories}\n`;
+      }
+      if (nutritionGoals.protein) {
+        prompt += `- Minimum protein: ${nutritionGoals.protein}g\n`;
+      }
+      if (nutritionGoals.lowCarb) {
+        prompt += `- Low carb (under 20g net carbs)\n`;
+      }
+      if (nutritionGoals.lowFat) {
+        prompt += `- Low fat (under 10g fat)\n`;
+      }
+      if (nutritionGoals.highFiber) {
+        prompt += `- High fiber (over 8g fiber)\n`;
+      }
     }
 
     // Add context
@@ -486,7 +518,10 @@ Return the recipe as a JSON object with this exact structure:
     return prompt;
   }
 
-  private async validateAndEnhanceRecipe(recipe: GeneratedRecipe, options: RecipeGenerationOptions): Promise<GeneratedRecipe> {
+  private async validateAndEnhanceRecipe(
+    recipe: GeneratedRecipe,
+    options: RecipeGenerationOptions
+  ): Promise<GeneratedRecipe> {
     // Validate required fields
     if (!recipe.title || !recipe.ingredients || !recipe.instructions) {
       throw new Error('Generated recipe is missing required fields');
@@ -496,19 +531,25 @@ Return the recipe as a JSON object with this exact structure:
     const enhanced = { ...recipe };
 
     // Adjust serving size if specified
-    if (options.userPreferences?.servingSize && options.userPreferences.servingSize !== recipe.metadata.servings) {
+    if (
+      options.userPreferences?.servingSize &&
+      options.userPreferences.servingSize !== recipe.metadata.servings
+    ) {
       enhanced.metadata.servings = options.userPreferences.servingSize;
       // Note: In a production system, you might want to adjust ingredient quantities proportionally
     }
 
     // Add dietary tags based on ingredients analysis
-    enhanced.metadata.dietaryTags = this.analyzeDietaryTags(recipe.ingredients, options.userPreferences?.dietaryRestrictions);
+    enhanced.metadata.dietaryTags = this.analyzeDietaryTags(
+      recipe.ingredients,
+      options.userPreferences?.dietaryRestrictions
+    );
 
     // Validate nutrition values are reasonable
     if (enhanced.nutrition.calories < 50 || enhanced.nutrition.calories > 2000) {
-      logger.warn('⚠️ Generated recipe has unusual calorie count', { 
+      logger.warn('⚠️ Generated recipe has unusual calorie count', {
         calories: enhanced.nutrition.calories,
-        title: enhanced.title 
+        title: enhanced.title,
       });
     }
 
@@ -522,18 +563,20 @@ Return the recipe as a JSON object with this exact structure:
 
   private analyzeDietaryTags(ingredients: any[], dietaryRestrictions?: string[]): string[] {
     const tags: string[] = [];
-    const ingredientNames = ingredients.map(ing => ing.name.toLowerCase());
+    const ingredientNames = ingredients.map((ing) => ing.name.toLowerCase());
 
     // Check for common dietary patterns
-    const hasAnyMeat = ingredientNames.some(name => 
-      ['chicken', 'beef', 'pork', 'lamb', 'turkey', 'ham', 'bacon', 'sausage'].some(meat => name.includes(meat))
+    const hasAnyMeat = ingredientNames.some((name) =>
+      ['chicken', 'beef', 'pork', 'lamb', 'turkey', 'ham', 'bacon', 'sausage'].some((meat) =>
+        name.includes(meat)
+      )
     );
 
-    const hasAnyDairy = ingredientNames.some(name => 
-      ['milk', 'cheese', 'butter', 'cream', 'yogurt'].some(dairy => name.includes(dairy))
+    const hasAnyDairy = ingredientNames.some((name) =>
+      ['milk', 'cheese', 'butter', 'cream', 'yogurt'].some((dairy) => name.includes(dairy))
     );
 
-    const hasEggs = ingredientNames.some(name => name.includes('egg'));
+    const hasEggs = ingredientNames.some((name) => name.includes('egg'));
 
     if (!hasAnyMeat && !hasAnyDairy && !hasEggs) {
       tags.push('vegan');
@@ -543,7 +586,7 @@ Return the recipe as a JSON object with this exact structure:
 
     // Add restriction-based tags
     if (dietaryRestrictions) {
-      dietaryRestrictions.forEach(restriction => {
+      dietaryRestrictions.forEach((restriction) => {
         if (!tags.includes(restriction.toLowerCase())) {
           tags.push(restriction.toLowerCase());
         }
@@ -567,40 +610,52 @@ Return the recipe as a JSON object with this exact structure:
 
     // Factor in techniques (look for advanced cooking terms)
     const advancedTerms = ['sauté', 'braise', 'deglaze', 'temper', 'fold', 'emulsify', 'julienne'];
-    const instructionText = recipe.instructions.map(i => i.instruction).join(' ').toLowerCase();
-    const hasAdvancedTechniques = advancedTerms.some(term => instructionText.includes(term));
-    
-    if (hasAdvancedTechniques) {complexity += 2;}
+    const instructionText = recipe.instructions
+      .map((i) => i.instruction)
+      .join(' ')
+      .toLowerCase();
+    const hasAdvancedTechniques = advancedTerms.some((term) => instructionText.includes(term));
+
+    if (hasAdvancedTechniques) {
+      complexity += 2;
+    }
 
     // Determine skill level
-    if (complexity >= 5) {return 'advanced';}
-    if (complexity >= 3) {return 'intermediate';}
+    if (complexity >= 5) {
+      return 'advanced';
+    }
+    if (complexity >= 3) {
+      return 'intermediate';
+    }
     return 'beginner';
   }
 
   // Method to generate multiple recipe variations
-  async generateRecipeVariations(baseRecipe: GeneratedRecipe, count: number = 3): Promise<GeneratedRecipe[]> {
+  async generateRecipeVariations(
+    baseRecipe: GeneratedRecipe,
+    count: number = 3
+  ): Promise<GeneratedRecipe[]> {
     const variations: GeneratedRecipe[] = [];
 
     for (let i = 0; i < count; i++) {
       try {
         const variationPrompt = this.buildVariationPrompt(baseRecipe, i + 1);
-        
+
         const response = await this.openai.chat.completions.create({
           model: 'gpt-4o-mini',
           messages: [
             {
               role: 'system',
-              content: this.getSystemPrompt()
+              content: this.getSystemPrompt(),
             },
             {
               role: 'user',
-              content: variationPrompt
-            }
+              content: variationPrompt,
+            },
           ],
           temperature: 0.8, // Higher temperature for more creativity
           max_tokens: 2500,
-          response_format: { type: 'json_object' }
+          response_format: { type: 'json_object' },
         });
 
         const content = response.choices[0]?.message?.content;
@@ -622,14 +677,14 @@ Return the recipe as a JSON object with this exact structure:
       'Create a more indulgent version with richer flavors and ingredients',
       'Create a quicker version that can be made in under 30 minutes',
       'Create a version using different cuisine flavors (e.g., Asian, Mexican, Mediterranean)',
-      'Create a version suitable for meal prep and batch cooking'
+      'Create a version suitable for meal prep and batch cooking',
     ];
 
     const selectedVariation = variationTypes[variationNumber - 1] || variationTypes[0];
 
     return `Based on this original recipe:
 Title: ${baseRecipe.title}
-Ingredients: ${baseRecipe.ingredients.map(i => `${i.amount} ${i.unit} ${i.name}`).join(', ')}
+Ingredients: ${baseRecipe.ingredients.map((i) => `${i.amount} ${i.unit} ${i.name}`).join(', ')}
 
 ${selectedVariation}
 
@@ -649,9 +704,12 @@ export const getEnhancedRecipeService = (): EnhancedRecipeGenerationService => {
 
 // For backwards compatibility, keep the named export but make it lazy
 export const enhancedRecipeService = {
-  generateRecipe: (options: RecipeGenerationOptions) => getEnhancedRecipeService().generateRecipe(options),
-  generateMultipleRecipes: (options: RecipeGenerationOptions) => getEnhancedRecipeService().generateMultipleRecipes(options),
-  generateRecipeVariations: (baseRecipe: GeneratedRecipe, count?: number) => getEnhancedRecipeService().generateRecipeVariations(baseRecipe, count)
+  generateRecipe: (options: RecipeGenerationOptions) =>
+    getEnhancedRecipeService().generateRecipe(options),
+  generateMultipleRecipes: (options: RecipeGenerationOptions) =>
+    getEnhancedRecipeService().generateMultipleRecipes(options),
+  generateRecipeVariations: (baseRecipe: GeneratedRecipe, count?: number) =>
+    getEnhancedRecipeService().generateRecipeVariations(baseRecipe, count),
 };
 
-export default enhancedRecipeService; 
+export default enhancedRecipeService;

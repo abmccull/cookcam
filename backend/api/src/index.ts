@@ -43,8 +43,8 @@ export const supabaseServiceRole = createClient(
   {
     auth: {
       autoRefreshToken: false,
-      persistSession: false
-    }
+      persistSession: false,
+    },
   }
 );
 
@@ -52,17 +52,13 @@ export const supabaseServiceRole = createClient(
 export const createAuthenticatedClient = (userJwt: string) => {
   // This client is now properly scoped to the user's request by passing their JWT
   // in the Authorization header for all subsequent requests.
-  const client = createClient(
-    process.env.SUPABASE_URL || '',
-    process.env.SUPABASE_ANON_KEY || '',
-    {
-      global: {
-        headers: {
-          Authorization: `Bearer ${userJwt}`,
-        },
+  const client = createClient(process.env.SUPABASE_URL || '', process.env.SUPABASE_ANON_KEY || '', {
+    global: {
+      headers: {
+        Authorization: `Bearer ${userJwt}`,
       },
-    }
-  );
+    },
+  });
   logger.info('Created authenticated Supabase client for a user request.');
   return client;
 };
@@ -71,7 +67,7 @@ export const createAuthenticatedClient = (userJwt: string) => {
 logger.info('Supabase clients initialized', {
   hasAnonKey: !!process.env.SUPABASE_ANON_KEY,
   hasServiceRoleKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
-  securityMode: 'user-context-aware'
+  securityMode: 'user-context-aware',
 });
 
 // Initialize Real-time service
@@ -92,10 +88,12 @@ app.use(securityHeaders);
 app.use(rateLimiter());
 
 // Middleware
-app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:8081',
-  credentials: true
-}));
+app.use(
+  cors({
+    origin: process.env.CORS_ORIGIN || 'http://localhost:8081',
+    credentials: true,
+  })
+);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(morgan('combined'));
@@ -104,10 +102,14 @@ app.use(morgan('combined'));
 app.use(sanitizeInput);
 
 // API Documentation
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
-  customSiteTitle: 'CookCam API Documentation',
-  customCss: '.swagger-ui .topbar { display: none }',
-}));
+app.use(
+  '/api-docs',
+  swaggerUi.serve,
+  swaggerUi.setup(swaggerSpec, {
+    customSiteTitle: 'CookCam API Documentation',
+    customCss: '.swagger-ui .topbar { display: none }',
+  })
+);
 
 // Security metrics endpoint (protected)
 // TODO: Implement proper admin role system before enabling this endpoint
@@ -118,7 +120,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
 //     res.status(403).json({ error: 'Access denied' });
 //     return;
 //   }
-//   
+//
 //   const metrics = await securityMonitoring.getSecurityMetrics();
 //   res.json(metrics);
 // });
@@ -132,8 +134,8 @@ app.get('/health', (req, res): void => {
     version: '1.0.0',
     websocket: {
       connected_users: realTimeService.getConnectionCount(),
-      status: 'active'
-    }
+      status: 'active',
+    },
   });
 });
 
@@ -185,12 +187,12 @@ app.use(errorHandler);
 
 // Start server with HTTP server instead of Express app
 httpServer.listen(PORT, () => {
-  logger.info('CookCam API server started', { 
-    port: PORT, 
+  logger.info('CookCam API server started', {
+    port: PORT,
     environment: process.env.NODE_ENV || 'development',
-    websocket: 'enabled'
+    websocket: 'enabled',
   });
-  
+
   // Start monitoring if in production
   if (process.env.NODE_ENV === 'production') {
     import('./services/monitoring').then(({ monitoringService }) => {

@@ -75,16 +75,15 @@ router.post('/suggestions', authenticateUser, async (req: Request, res: Response
     const userId = (req as any).user.id;
     const token = req.headers.authorization?.replace('Bearer ', '') || '';
     const userClient = createAuthenticatedClient(token);
-    
-    const { 
-      detectedIngredients, 
-      dietaryTags, 
-      cuisinePreferences, 
-      timeAvailable, 
-      skillLevel 
-    } = req.body;
 
-    if (!detectedIngredients || !Array.isArray(detectedIngredients) || detectedIngredients.length === 0) {
+    const { detectedIngredients, dietaryTags, cuisinePreferences, timeAvailable, skillLevel } =
+      req.body;
+
+    if (
+      !detectedIngredients ||
+      !Array.isArray(detectedIngredients) ||
+      detectedIngredients.length === 0
+    ) {
       return res.status(400).json({ error: 'Detected ingredients array is required' });
     }
 
@@ -95,7 +94,7 @@ router.post('/suggestions', authenticateUser, async (req: Request, res: Response
       dietaryTags: dietaryTags || ['NONE'],
       cuisinePreferences: cuisinePreferences || ['SURPRISE_ME'],
       timeAvailable: timeAvailable || 'FLEXIBLE',
-      skillLevel: skillLevel || 'SURPRISE_ME'
+      skillLevel: skillLevel || 'SURPRISE_ME',
     };
 
     // Generate recipe suggestions using OpenAI
@@ -104,12 +103,14 @@ router.post('/suggestions', authenticateUser, async (req: Request, res: Response
     // Store the input for potential full recipe generation
     const { data: sessionData, error: sessionError } = await userClient
       .from('recipe_sessions')
-      .insert([{
-        user_id: userId,
-        input_data: recipeInput,
-        suggestions: suggestions,
-        created_at: new Date().toISOString()
-      }])
+      .insert([
+        {
+          user_id: userId,
+          input_data: recipeInput,
+          suggestions: suggestions,
+          created_at: new Date().toISOString(),
+        },
+      ])
       .select()
       .single();
 
@@ -123,21 +124,23 @@ router.post('/suggestions', authenticateUser, async (req: Request, res: Response
       p_user_id: userId,
       p_xp_amount: 20,
       p_action: 'recipe_suggestions_generated',
-      p_metadata: { 
+      p_metadata: {
         session_id: sessionData?.id,
         ingredients_count: detectedIngredients.length,
-        suggestions_count: suggestions.length 
-      }
+        suggestions_count: suggestions.length,
+      },
     });
 
     res.json({
       session_id: sessionData?.id,
       suggestions,
       xp_awarded: 20,
-      message: 'Recipe suggestions generated successfully'
+      message: 'Recipe suggestions generated successfully',
     });
   } catch (error: unknown) {
-    logger.error('Generate suggestions error', { error: error instanceof Error ? error.message : 'Unknown error' });
+    logger.error('Generate suggestions error', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
     res.status(500).json({ error: 'Failed to generate recipe suggestions' });
   }
 });
@@ -148,7 +151,7 @@ router.post('/generate-full', authenticateUser, async (req: Request, res: Respon
     const userId = (req as any).user.id;
     const token = req.headers.authorization?.replace('Bearer ', '') || '';
     const userClient = createAuthenticatedClient(token);
-    
+
     const { selectedTitle, sessionId } = req.body;
 
     if (!selectedTitle) {
@@ -157,7 +160,7 @@ router.post('/generate-full', authenticateUser, async (req: Request, res: Respon
 
     // Get the original input from the session
     let originalInput: RecipeInput;
-    
+
     if (sessionId) {
       const { data: session, error: sessionError } = await userClient
         .from('recipe_sessions')
@@ -169,7 +172,7 @@ router.post('/generate-full', authenticateUser, async (req: Request, res: Respon
       if (sessionError || !session) {
         return res.status(404).json({ error: 'Recipe session not found' });
       }
-      
+
       originalInput = session.input_data;
     } else {
       // Fallback if no session ID provided
@@ -185,35 +188,39 @@ router.post('/generate-full', authenticateUser, async (req: Request, res: Respon
     // Store the generated recipe
     const { data: recipe, error: recipeError } = await userClient
       .from('recipes')
-      .insert([{
-        title: fullRecipe.title,
-        description: `A ${fullRecipe.cuisine} dish featuring ${originalInput.detectedIngredients.join(', ')}`,
-        prep_time: Math.floor(fullRecipe.totalTimeMinutes * 0.3), // Estimate 30% prep time
-        cook_time: Math.ceil(fullRecipe.totalTimeMinutes * 0.7),  // Estimate 70% cook time
-        difficulty: fullRecipe.difficulty.toLowerCase(),
-        servings: fullRecipe.servings,
-        ingredients: fullRecipe.ingredients,
-        instructions: fullRecipe.steps.map(step => step.instruction),
-        nutrition: {
-          calories: fullRecipe.caloriesPerServing,
-          protein: fullRecipe.macros.protein_g,
-          carbs: fullRecipe.macros.carbs_g,
-          fat: fullRecipe.macros.fat_g
+      .insert([
+        {
+          title: fullRecipe.title,
+          description: `A ${fullRecipe.cuisine} dish featuring ${originalInput.detectedIngredients.join(', ')}`,
+          prep_time: Math.floor(fullRecipe.totalTimeMinutes * 0.3), // Estimate 30% prep time
+          cook_time: Math.ceil(fullRecipe.totalTimeMinutes * 0.7), // Estimate 70% cook time
+          difficulty: fullRecipe.difficulty.toLowerCase(),
+          servings: fullRecipe.servings,
+          ingredients: fullRecipe.ingredients,
+          instructions: fullRecipe.steps.map((step) => step.instruction),
+          nutrition: {
+            calories: fullRecipe.caloriesPerServing,
+            protein: fullRecipe.macros.protein_g,
+            carbs: fullRecipe.macros.carbs_g,
+            fat: fullRecipe.macros.fat_g,
+          },
+          tags: originalInput.cuisinePreferences?.filter((c) => c !== 'SURPRISE_ME') || [
+            fullRecipe.cuisine,
+          ],
+          created_by: userId,
+          is_generated: true,
+          cuisine: fullRecipe.cuisine,
+          ai_metadata: {
+            chef_camillo_version: '1.0',
+            session_id: sessionId,
+            original_ingredients: originalInput.detectedIngredients,
+            social_caption: fullRecipe.socialCaption,
+            finishing_tip: fullRecipe.finishingTip,
+            techniques: fullRecipe.steps.filter((s) => s.technique).map((s) => s.technique),
+            pro_tips: fullRecipe.steps.filter((s) => s.proTip).map((s) => s.proTip),
+          },
         },
-        tags: originalInput.cuisinePreferences?.filter(c => c !== 'SURPRISE_ME') || [fullRecipe.cuisine],
-        created_by: userId,
-        is_generated: true,
-        cuisine: fullRecipe.cuisine,
-        ai_metadata: {
-          chef_camillo_version: '1.0',
-          session_id: sessionId,
-          original_ingredients: originalInput.detectedIngredients,
-          social_caption: fullRecipe.socialCaption,
-          finishing_tip: fullRecipe.finishingTip,
-          techniques: fullRecipe.steps.filter(s => s.technique).map(s => s.technique),
-          pro_tips: fullRecipe.steps.filter(s => s.proTip).map(s => s.proTip)
-        }
-      }])
+      ])
       .select()
       .single();
 
@@ -231,11 +238,11 @@ router.post('/generate-full', authenticateUser, async (req: Request, res: Respon
       p_user_id: userId,
       p_xp_amount: 100,
       p_action: 'full_recipe_generated',
-      p_metadata: { 
+      p_metadata: {
         recipe_id: recipe.id,
         session_id: sessionId,
-        selected_title: selectedTitle
-      }
+        selected_title: selectedTitle,
+      },
     });
 
     res.json({
@@ -243,10 +250,12 @@ router.post('/generate-full', authenticateUser, async (req: Request, res: Respon
       full_recipe: fullRecipe,
       stored_recipe: recipe,
       xp_awarded: 100,
-      message: 'Full recipe generated successfully'
+      message: 'Full recipe generated successfully',
     });
   } catch (error: unknown) {
-    logger.error('Generate full recipe error', { error: error instanceof Error ? error.message : 'Unknown error' });
+    logger.error('Generate full recipe error', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
     res.status(500).json({ error: 'Failed to generate full recipe' });
   }
 });
@@ -257,13 +266,13 @@ router.post('/generate', authenticateUser, async (req: Request, res: Response) =
     const userId = (req as any).user.id;
     const token = req.headers.authorization?.replace('Bearer ', '') || '';
     const userClient = createAuthenticatedClient(token);
-    
-    const { 
-      ingredients, 
-      detectedIngredients, 
-      preferences, 
-      recipeType, 
-      nutritionGoals, 
+
+    const {
+      ingredients,
+      detectedIngredients,
+      preferences,
+      recipeType,
+      nutritionGoals,
       context,
       // Handle frontend format (top-level preference fields)
       dietaryTags,
@@ -275,43 +284,57 @@ router.post('/generate', authenticateUser, async (req: Request, res: Response) =
       mealPrepEnabled,
       mealPrepPortions,
       selectedAppliances,
-      mealType
+      mealType,
     } = req.body;
-    
+
     // Handle both 'ingredients' and 'detectedIngredients' field names for compatibility
     const ingredientsList = ingredients || detectedIngredients;
-    
+
     // Map frontend preferences format to backend format with enhanced data
     const userPreferences = preferences || {
       dietaryRestrictions: dietaryTags,
       cuisinePreferences: cuisinePreferences,
-      availableTime: timeAvailable === 'quick' ? 20 : timeAvailable === 'medium' ? 35 : timeAvailable === 'long' ? 60 : undefined,
-      skillLevel: skillLevel === 'easy' ? 'beginner' : skillLevel === 'medium' ? 'intermediate' : skillLevel === 'hard' ? 'advanced' : undefined,
+      availableTime:
+        timeAvailable === 'quick'
+          ? 20
+          : timeAvailable === 'medium'
+            ? 35
+            : timeAvailable === 'long'
+              ? 60
+              : undefined,
+      skillLevel:
+        skillLevel === 'easy'
+          ? 'beginner'
+          : skillLevel === 'medium'
+            ? 'intermediate'
+            : skillLevel === 'hard'
+              ? 'advanced'
+              : undefined,
       // Enhanced preferences
       servingSize: servingSize || 2,
       mealPrepEnabled: mealPrepEnabled || false,
-      mealPrepPortions: mealPrepEnabled ? (mealPrepPortions || 4) : undefined,
+      mealPrepPortions: mealPrepEnabled ? mealPrepPortions || 4 : undefined,
       availableAppliances: selectedAppliances || ['oven', 'stove'],
       cookingContext: {
         isMealPrep: mealPrepEnabled,
         targetPortions: mealPrepEnabled ? mealPrepPortions : servingSize,
-        kitchenSetup: selectedAppliances || ['oven', 'stove']
-      }
+        kitchenSetup: selectedAppliances || ['oven', 'stove'],
+      },
     };
-    
+
     logger.info('🍳 Enhanced recipe generation request', {
       userId: userId,
       ingredients: ingredientsList?.length,
       hasPreferences: !!userPreferences,
       mappedPreferences: userPreferences,
       recipeType,
-      requestBody: req.body
+      requestBody: req.body,
     });
 
     if (!ingredientsList || !Array.isArray(ingredientsList) || ingredientsList.length === 0) {
       return res.status(400).json({
         success: false,
-        error: 'Ingredients list is required (as "ingredients" or "detectedIngredients")'
+        error: 'Ingredients list is required (as "ingredients" or "detectedIngredients")',
       });
     }
 
@@ -321,7 +344,7 @@ router.post('/generate', authenticateUser, async (req: Request, res: Response) =
       userPreferences: userPreferences,
       recipeType: mealType || recipeType, // Use mealType from frontend or fallback to recipeType
       nutritionGoals,
-      context
+      context,
     });
 
     // Store the recipes and analytics data
@@ -329,41 +352,46 @@ router.post('/generate', authenticateUser, async (req: Request, res: Response) =
       try {
         const { data: recipeRecord, error: recipeError } = await userClient
           .from('recipes')
-          .insert([{
-            title: recipe.title,
-            description: recipe.description,
-            prep_time: recipe.metadata.prepTime,
-            cook_time: recipe.metadata.cookTime,
-            difficulty: recipe.metadata.difficulty,
-            servings: recipe.metadata.servings,
-            ingredients: recipe.ingredients,
-            instructions: recipe.instructions.map(inst => inst.instruction),
-            nutrition: recipe.nutrition,
-            tags: [
-              ...recipe.metadata.dietaryTags,
-              recipe.metadata.cuisineType,
-              recipe.metadata.cookingMethod,
-              'AI Generated'
-            ],
-            created_by: userId,
-            is_generated: true,
-            cuisine: recipe.metadata.cuisineType,
-            ai_metadata: {
-              enhanced_generation_version: '2.0',
-              cooking_method: recipe.metadata.cookingMethod,
-              ingredients_used: recipe.ingredientsUsed,
-              ingredients_skipped: recipe.ingredientsSkipped,
-              skip_reason: recipe.skipReason,
-              recipe_variation: index + 1,
-              total_variations: multipleRecipesResult.recipes.length,
-              ingredient_analysis: multipleRecipesResult.ingredientAnalysis
-            }
-          }])
+          .insert([
+            {
+              title: recipe.title,
+              description: recipe.description,
+              prep_time: recipe.metadata.prepTime,
+              cook_time: recipe.metadata.cookTime,
+              difficulty: recipe.metadata.difficulty,
+              servings: recipe.metadata.servings,
+              ingredients: recipe.ingredients,
+              instructions: recipe.instructions.map((inst) => inst.instruction),
+              nutrition: recipe.nutrition,
+              tags: [
+                ...recipe.metadata.dietaryTags,
+                recipe.metadata.cuisineType,
+                recipe.metadata.cookingMethod,
+                'AI Generated',
+              ],
+              created_by: userId,
+              is_generated: true,
+              cuisine: recipe.metadata.cuisineType,
+              ai_metadata: {
+                enhanced_generation_version: '2.0',
+                cooking_method: recipe.metadata.cookingMethod,
+                ingredients_used: recipe.ingredientsUsed,
+                ingredients_skipped: recipe.ingredientsSkipped,
+                skip_reason: recipe.skipReason,
+                recipe_variation: index + 1,
+                total_variations: multipleRecipesResult.recipes.length,
+                ingredient_analysis: multipleRecipesResult.ingredientAnalysis,
+              },
+            },
+          ])
           .select()
           .single();
 
         if (recipeError) {
-          logger.error('Recipe storage error', { error: recipeError.message, recipeTitle: recipe.title });
+          logger.error('Recipe storage error', {
+            error: recipeError.message,
+            recipeTitle: recipe.title,
+          });
           return null;
         }
 
@@ -375,25 +403,25 @@ router.post('/generate', authenticateUser, async (req: Request, res: Response) =
     });
 
     const storedRecipes = await Promise.all(recipePromises);
-    const successfulRecipes = storedRecipes.filter(r => r !== null);
+    const successfulRecipes = storedRecipes.filter((r) => r !== null);
 
     // Award XP for generating diverse recipes
     await supabase.rpc('add_user_xp', {
       p_user_id: userId,
       p_xp_amount: 30, // Higher XP for multiple recipes
       p_action: 'diverse_recipes_generated',
-      p_metadata: { 
+      p_metadata: {
         recipes_count: multipleRecipesResult.recipes.length,
         ingredients_count: ingredientsList.length,
-        ingredient_analysis: multipleRecipesResult.ingredientAnalysis
-      }
+        ingredient_analysis: multipleRecipesResult.ingredientAnalysis,
+      },
     });
 
     logger.info('✅ Successfully generated and stored diverse recipes', {
       userId,
       recipesGenerated: multipleRecipesResult.recipes.length,
       recipesStored: successfulRecipes.length,
-      titles: multipleRecipesResult.recipes.map(r => r.title)
+      titles: multipleRecipesResult.recipes.map((r) => r.title),
     });
 
     // Return the multiple recipes result
@@ -403,16 +431,15 @@ router.post('/generate', authenticateUser, async (req: Request, res: Response) =
       data: {
         recipes: multipleRecipesResult.recipes,
         ingredientAnalysis: multipleRecipesResult.ingredientAnalysis,
-        storedRecipes: successfulRecipes
-      }
+        storedRecipes: successfulRecipes,
+      },
     });
-
   } catch (error: unknown) {
     logger.error('❌ Enhanced multiple recipe generation failed', { error });
     res.status(500).json({
       success: false,
       error: 'Failed to generate diverse recipes',
-      details: error instanceof Error ? error.message : 'Unknown error'
+      details: error instanceof Error ? error.message : 'Unknown error',
     });
   }
 });
@@ -423,30 +450,30 @@ router.post('/generate-previews', authenticateUser, async (req: Request, res: Re
     const userId = (req as any).user.id;
     const token = req.headers.authorization?.replace('Bearer ', '') || '';
     const userClient = createAuthenticatedClient(token);
-    
-    const { 
-      detectedIngredients, 
-      userPreferences, 
-      sessionId 
-    } = req.body;
-    
+
+    const { detectedIngredients, userPreferences, sessionId } = req.body;
+
     logger.info('🚀 Preview generation request', {
       userId: userId,
       ingredients: detectedIngredients?.length,
-      sessionId: sessionId
+      sessionId: sessionId,
     });
 
-    if (!detectedIngredients || !Array.isArray(detectedIngredients) || detectedIngredients.length === 0) {
+    if (
+      !detectedIngredients ||
+      !Array.isArray(detectedIngredients) ||
+      detectedIngredients.length === 0
+    ) {
       return res.status(400).json({
         success: false,
-        error: 'Detected ingredients array is required'
+        error: 'Detected ingredients array is required',
       });
     }
 
     if (!userPreferences) {
       return res.status(400).json({
         success: false,
-        error: 'User preferences are required'
+        error: 'User preferences are required',
       });
     }
 
@@ -456,35 +483,37 @@ router.post('/generate-previews', authenticateUser, async (req: Request, res: Re
     const previewResult = await getPreviewService().generatePreviews({
       detectedIngredients,
       userPreferences,
-      sessionId: finalSessionId
+      sessionId: finalSessionId,
     });
 
     // Store cooking session with authenticated user client
     const { data: sessionData, error: sessionError } = await userClient
       .from('cooking_sessions')
-      .insert([{
-        session_id: finalSessionId,
-        user_id: userId,
-        original_ingredients: detectedIngredients,
-        user_preferences: userPreferences,
-        previews_generated: previewResult.previews.length,
-        completed: false
-      }])
+      .insert([
+        {
+          session_id: finalSessionId,
+          user_id: userId,
+          original_ingredients: detectedIngredients,
+          user_preferences: userPreferences,
+          previews_generated: previewResult.previews.length,
+          completed: false,
+        },
+      ])
       .select()
       .single();
 
     if (sessionError) {
-      logger.error('❌ Session storage error', { 
+      logger.error('❌ Session storage error', {
         error: sessionError.message,
         sessionId: finalSessionId,
-        userId: userId
+        userId: userId,
       });
       // Continue without storing session - not critical for preview generation
     } else {
       logger.info('✅ Cooking session stored successfully', {
         sessionId: finalSessionId,
         userId: userId,
-        sessionDataId: sessionData?.id
+        sessionDataId: sessionData?.id,
       });
     }
 
@@ -493,23 +522,28 @@ router.post('/generate-previews', authenticateUser, async (req: Request, res: Re
       try {
         const { data: previewRecord, error: previewError } = await userClient
           .from('recipe_previews')
-          .insert([{
-            preview_id: preview.id,
-            session_id: finalSessionId,
-            user_id: userId,
-            title: preview.title,
-            description: preview.description,
-            estimated_time: preview.estimatedTime,
-            difficulty: preview.difficulty,
-            cuisine_type: preview.cuisineType,
-            main_ingredients: preview.mainIngredients,
-            appeal_factors: preview.appealFactors
-          }])
+          .insert([
+            {
+              preview_id: preview.id,
+              session_id: finalSessionId,
+              user_id: userId,
+              title: preview.title,
+              description: preview.description,
+              estimated_time: preview.estimatedTime,
+              difficulty: preview.difficulty,
+              cuisine_type: preview.cuisineType,
+              main_ingredients: preview.mainIngredients,
+              appeal_factors: preview.appealFactors,
+            },
+          ])
           .select()
           .single();
 
         if (previewError) {
-          logger.error('Preview storage error', { error: previewError.message, previewTitle: preview.title });
+          logger.error('Preview storage error', {
+            error: previewError.message,
+            previewTitle: preview.title,
+          });
           return null;
         }
 
@@ -528,18 +562,18 @@ router.post('/generate-previews', authenticateUser, async (req: Request, res: Re
       p_user_id: userId,
       p_xp_amount: 15,
       p_action: 'recipe_previews_generated',
-      p_metadata: { 
+      p_metadata: {
         session_id: finalSessionId,
         previews_count: previewResult.previews.length,
-        ingredients_count: detectedIngredients.length
-      }
+        ingredients_count: detectedIngredients.length,
+      },
     });
 
     logger.info('✅ Successfully generated recipe previews', {
       userId,
       sessionId: finalSessionId,
       previewsGenerated: previewResult.previews.length,
-      previewsStored: successfulPreviews.length
+      previewsStored: successfulPreviews.length,
     });
 
     res.status(201).json({
@@ -548,21 +582,20 @@ router.post('/generate-previews', authenticateUser, async (req: Request, res: Re
       data: {
         sessionId: finalSessionId,
         previews: previewResult.previews,
-        storedPreviews: successfulPreviews
+        storedPreviews: successfulPreviews,
       },
-      xp_awarded: 15
+      xp_awarded: 15,
+    });
+  } catch (error: unknown) {
+    logger.error('❌ Preview generation failed', {
+      error: error instanceof Error ? error.message : error,
+      userId: (req as any).user?.id,
     });
 
-  } catch (error: unknown) {
-    logger.error('❌ Preview generation failed', { 
-      error: error instanceof Error ? error.message : error,
-      userId: (req as any).user?.id 
-    });
-    
     res.status(500).json({
       success: false,
       error: 'Failed to generate recipe previews',
-      details: error instanceof Error ? error.message : 'Unknown error'
+      details: error instanceof Error ? error.message : 'Unknown error',
     });
   }
 });
@@ -573,29 +606,26 @@ router.post('/generate-detailed', authenticateUser, async (req: Request, res: Re
     const userId = (req as any).user.id;
     const token = req.headers.authorization?.replace('Bearer ', '') || '';
     const userClient = createAuthenticatedClient(token);
-    
-    const { 
-      selectedPreview, 
-      sessionId 
-    } = req.body;
-    
+
+    const { selectedPreview, sessionId } = req.body;
+
     logger.info('🍳 Detailed recipe generation request', {
       userId: userId,
       recipeTitle: selectedPreview?.title,
-      sessionId: sessionId
+      sessionId: sessionId,
     });
 
     if (!selectedPreview) {
       return res.status(400).json({
         success: false,
-        error: 'Selected preview recipe is required'
+        error: 'Selected preview recipe is required',
       });
     }
 
     if (!sessionId) {
       return res.status(400).json({
         success: false,
-        error: 'Session ID is required'
+        error: 'Session ID is required',
       });
     }
 
@@ -621,7 +651,7 @@ router.post('/generate-detailed', authenticateUser, async (req: Request, res: Re
         userId: userId,
         sessionError: sessionError?.message,
         userRecentSessions: userSessions || [],
-        debugError: debugError?.message
+        debugError: debugError?.message,
       });
 
       return res.status(404).json({
@@ -629,8 +659,8 @@ router.post('/generate-detailed', authenticateUser, async (req: Request, res: Re
         error: 'Cooking session not found',
         details: {
           requested_session: sessionId,
-          user_recent_sessions: userSessions?.map((s: any) => s.session_id) || []
-        }
+          user_recent_sessions: userSessions?.map((s: any) => s.session_id) || [],
+        },
       });
     }
 
@@ -639,33 +669,35 @@ router.post('/generate-detailed', authenticateUser, async (req: Request, res: Re
       selectedPreview,
       originalIngredients: session.original_ingredients,
       userPreferences: session.user_preferences,
-      sessionId
+      sessionId,
     });
 
     // Store the detailed recipe in recipes table
     const { data: recipeRecord, error: recipeError } = await userClient
       .from('recipes')
-      .insert([{
-        title: detailedResult.recipe.title,
-        description: detailedResult.recipe.description,
-        prep_time: detailedResult.recipe.prepTime,
-        cook_time: detailedResult.recipe.cookTime,
-        difficulty: detailedResult.recipe.difficulty,
-        servings: detailedResult.recipe.servings,
-        ingredients: detailedResult.recipe.ingredients,
-        instructions: detailedResult.recipe.instructions.map(inst => inst.instruction),
-        nutrition: detailedResult.recipe.nutritionEstimate,
-        tags: detailedResult.recipe.dietaryTags,
-        created_by: userId,
-        is_generated: true,
-        cuisine: detailedResult.recipe.cuisineType,
-        ai_metadata: {
-          session_id: sessionId,
-          preview_id: selectedPreview.id,
-          detailed_instructions_count: detailedResult.recipe.instructions.length,
-          tips_count: detailedResult.recipe.tips.length
-        }
-      }])
+      .insert([
+        {
+          title: detailedResult.recipe.title,
+          description: detailedResult.recipe.description,
+          prep_time: detailedResult.recipe.prepTime,
+          cook_time: detailedResult.recipe.cookTime,
+          difficulty: detailedResult.recipe.difficulty,
+          servings: detailedResult.recipe.servings,
+          ingredients: detailedResult.recipe.ingredients,
+          instructions: detailedResult.recipe.instructions.map((inst) => inst.instruction),
+          nutrition: detailedResult.recipe.nutritionEstimate,
+          tags: detailedResult.recipe.dietaryTags,
+          created_by: userId,
+          is_generated: true,
+          cuisine: detailedResult.recipe.cuisineType,
+          ai_metadata: {
+            session_id: sessionId,
+            preview_id: selectedPreview.id,
+            detailed_instructions_count: detailedResult.recipe.instructions.length,
+            tips_count: detailedResult.recipe.tips.length,
+          },
+        },
+      ])
       .select()
       .single();
 
@@ -673,7 +705,7 @@ router.post('/generate-detailed', authenticateUser, async (req: Request, res: Re
       logger.error('Recipe storage error', { error: recipeError.message });
       return res.status(500).json({
         success: false,
-        error: 'Failed to store detailed recipe'
+        error: 'Failed to store detailed recipe',
       });
     }
 
@@ -684,7 +716,7 @@ router.post('/generate-detailed', authenticateUser, async (req: Request, res: Re
         detailed_recipe_id: recipeRecord.id,
         selected_preview_id: selectedPreview.id,
         completed: true,
-        completed_at: new Date().toISOString()
+        completed_at: new Date().toISOString(),
       })
       .eq('session_id', sessionId)
       .eq('user_id', userId);
@@ -702,18 +734,18 @@ router.post('/generate-detailed', authenticateUser, async (req: Request, res: Re
       p_user_id: userId,
       p_xp_amount: 50,
       p_action: 'detailed_recipe_generated',
-      p_metadata: { 
+      p_metadata: {
         session_id: sessionId,
         recipe_id: recipeRecord.id,
-        recipe_title: detailedResult.recipe.title
-      }
+        recipe_title: detailedResult.recipe.title,
+      },
     });
 
     logger.info('✅ Successfully generated detailed recipe', {
       userId,
       sessionId,
       recipeId: recipeRecord.id,
-      recipeTitle: detailedResult.recipe.title
+      recipeTitle: detailedResult.recipe.title,
     });
 
     res.status(201).json({
@@ -722,21 +754,20 @@ router.post('/generate-detailed', authenticateUser, async (req: Request, res: Re
       data: {
         recipe: detailedResult.recipe,
         stored_recipe: recipeRecord,
-        session_completed: true
+        session_completed: true,
       },
-      xp_awarded: 50
+      xp_awarded: 50,
+    });
+  } catch (error: unknown) {
+    logger.error('❌ Detailed recipe generation failed', {
+      error: error instanceof Error ? error.message : error,
+      userId: (req as any).user?.id,
     });
 
-  } catch (error: unknown) {
-    logger.error('❌ Detailed recipe generation failed', { 
-      error: error instanceof Error ? error.message : error,
-      userId: (req as any).user?.id 
-    });
-    
     res.status(500).json({
       success: false,
       error: 'Failed to generate detailed recipe',
-      details: error instanceof Error ? error.message : 'Unknown error'
+      details: error instanceof Error ? error.message : 'Unknown error',
     });
   }
 });
@@ -759,7 +790,7 @@ router.post('/:recipeId/variations', authenticateUser, async (req: Request, res:
     if (fetchError || !originalRecipe) {
       return res.status(404).json({
         success: false,
-        error: 'Recipe not found'
+        error: 'Recipe not found',
       });
     }
 
@@ -773,21 +804,20 @@ router.post('/:recipeId/variations', authenticateUser, async (req: Request, res:
       success: true,
       data: {
         original: originalRecipe,
-        variations
+        variations,
       },
-      message: `Generated ${variations.length} recipe variations`
+      message: `Generated ${variations.length} recipe variations`,
     });
-
   } catch (error: unknown) {
-    logger.error('❌ Recipe variation generation failed', { 
+    logger.error('❌ Recipe variation generation failed', {
       error,
       recipeId: req.params.recipeId,
-      userId: (req as any).user?.id 
+      userId: (req as any).user?.id,
     });
-    
+
     res.status(500).json({
       success: false,
-      error: 'Failed to generate recipe variations'
+      error: 'Failed to generate recipe variations',
     });
   }
 });
@@ -795,15 +825,14 @@ router.post('/:recipeId/variations', authenticateUser, async (req: Request, res:
 // Test endpoint for recipe suggestions (no auth required)
 router.post('/test-suggestions', async (req: Request, res: Response) => {
   try {
-    const { 
-      detectedIngredients, 
-      dietaryTags, 
-      cuisinePreferences, 
-      timeAvailable, 
-      skillLevel 
-    } = req.body;
+    const { detectedIngredients, dietaryTags, cuisinePreferences, timeAvailable, skillLevel } =
+      req.body;
 
-    if (!detectedIngredients || !Array.isArray(detectedIngredients) || detectedIngredients.length === 0) {
+    if (
+      !detectedIngredients ||
+      !Array.isArray(detectedIngredients) ||
+      detectedIngredients.length === 0
+    ) {
       return res.status(400).json({ error: 'Detected ingredients array is required' });
     }
 
@@ -814,7 +843,7 @@ router.post('/test-suggestions', async (req: Request, res: Response) => {
       dietaryTags: dietaryTags || ['NONE'],
       cuisinePreferences: cuisinePreferences || ['SURPRISE_ME'],
       timeAvailable: timeAvailable || 'FLEXIBLE',
-      skillLevel: skillLevel || 'SURPRISE_ME'
+      skillLevel: skillLevel || 'SURPRISE_ME',
     };
 
     // Generate recipe suggestions using OpenAI
@@ -823,13 +852,13 @@ router.post('/test-suggestions', async (req: Request, res: Response) => {
     res.json({
       suggestions,
       message: 'Recipe suggestions generated successfully (test mode)',
-      input_used: recipeInput
+      input_used: recipeInput,
     });
   } catch (error: unknown) {
     logger.error('Test suggestions error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Failed to generate recipe suggestions',
-      details: error instanceof Error ? error.message : 'Unknown error'
+      details: error instanceof Error ? error.message : 'Unknown error',
     });
   }
 });
@@ -848,13 +877,13 @@ router.post('/test-full-recipe', async (req: Request, res: Response) => {
 
     res.json({
       full_recipe: fullRecipe,
-      message: 'Full recipe generated successfully (test mode)'
+      message: 'Full recipe generated successfully (test mode)',
     });
   } catch (error: unknown) {
     logger.error('Test full recipe error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Failed to generate full recipe',
-      details: error instanceof Error ? error.message : 'Unknown error'
+      details: error instanceof Error ? error.message : 'Unknown error',
     });
   }
 });
@@ -867,7 +896,8 @@ router.get('/', async (req, res) => {
 
     let query = supabase
       .from('recipes')
-      .select(`
+      .select(
+        `
         *,
         recipe_ingredients (
           id,
@@ -885,21 +915,25 @@ router.get('/', async (req, res) => {
             sodium_mg_per_100g
           )
         )
-      `, { count: 'exact' })
+      `,
+        { count: 'exact' }
+      )
       .order('created_at', { ascending: false });
 
     if (user_id) {
       query = query.eq('user_id', user_id);
     }
 
-    const { data, error, count } = await query
-      .range(offset, offset + parseInt(limit as string) - 1);
+    const { data, error, count } = await query.range(
+      offset,
+      offset + parseInt(limit as string) - 1
+    );
 
     if (error) {
       logger.error('Database error:', error);
       return res.status(500).json({
         success: false,
-        error: 'Failed to fetch recipes'
+        error: 'Failed to fetch recipes',
       });
     }
 
@@ -911,16 +945,15 @@ router.get('/', async (req, res) => {
           page: parseInt(page as string),
           limit: parseInt(limit as string),
           total: count || 0,
-          totalPages: Math.ceil((count || 0) / parseInt(limit as string))
-        }
-      }
+          totalPages: Math.ceil((count || 0) / parseInt(limit as string)),
+        },
+      },
     });
-
   } catch (error: unknown) {
     logger.error('Fetch recipes error:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to fetch recipes'
+      error: 'Failed to fetch recipes',
     });
   }
 });
@@ -932,7 +965,8 @@ router.get('/:id', async (req, res) => {
 
     const { data, error } = await supabase
       .from('recipes')
-      .select(`
+      .select(
+        `
         *,
         recipe_ingredients (
           id,
@@ -950,7 +984,8 @@ router.get('/:id', async (req, res) => {
             sodium_mg_per_100g
           )
         )
-      `)
+      `
+      )
       .eq('id', id)
       .single();
 
@@ -958,26 +993,25 @@ router.get('/:id', async (req, res) => {
       if (error.code === 'PGRST116') {
         return res.status(404).json({
           success: false,
-          error: 'Recipe not found'
+          error: 'Recipe not found',
         });
       }
       logger.error('Database error:', error);
       return res.status(500).json({
         success: false,
-        error: 'Failed to fetch recipe'
+        error: 'Failed to fetch recipe',
       });
     }
 
     res.json({
       success: true,
-      data: data
+      data: data,
     });
-
   } catch (error: unknown) {
     logger.error('Fetch recipe error:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to fetch recipe'
+      error: 'Failed to fetch recipe',
     });
   }
 });
@@ -991,7 +1025,8 @@ router.get('/:id/nutrition', async (req, res) => {
     // Get recipe with ingredients
     const { data: recipe, error } = await supabase
       .from('recipes')
-      .select(`
+      .select(
+        `
         *,
         recipe_ingredients (
           id,
@@ -1009,7 +1044,8 @@ router.get('/:id/nutrition', async (req, res) => {
             sodium_mg_per_100g
           )
         )
-      `)
+      `
+      )
       .eq('id', id)
       .single();
 
@@ -1017,13 +1053,13 @@ router.get('/:id/nutrition', async (req, res) => {
       if (error.code === 'PGRST116') {
         return res.status(404).json({
           success: false,
-          error: 'Recipe not found'
+          error: 'Recipe not found',
         });
       }
       logger.error('Database error:', error);
       return res.status(500).json({
         success: false,
-        error: 'Failed to fetch recipe'
+        error: 'Failed to fetch recipe',
       });
     }
 
@@ -1036,17 +1072,24 @@ router.get('/:id/nutrition', async (req, res) => {
           servings: parseInt(servings as string),
           nutrition: {
             totals: { calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0, fiber_g: 0, sodium_mg: 0 },
-            breakdown: []
+            breakdown: [],
           },
-          per_serving: { calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0, fiber_g: 0, sodium_mg: 0 }
-        }
+          per_serving: {
+            calories: 0,
+            protein_g: 0,
+            carbs_g: 0,
+            fat_g: 0,
+            fiber_g: 0,
+            sodium_mg: 0,
+          },
+        },
       });
     }
 
     // Calculate nutrition
     const nutrition = calculateNutrition(recipe.recipe_ingredients);
     const servingCount = parseInt(servings as string);
-    
+
     // Calculate per-serving values
     const perServing = {
       calories: Math.round((nutrition.totals.calories / servingCount) * 10) / 10,
@@ -1054,7 +1097,7 @@ router.get('/:id/nutrition', async (req, res) => {
       carbs_g: Math.round((nutrition.totals.carbs_g / servingCount) * 10) / 10,
       fat_g: Math.round((nutrition.totals.fat_g / servingCount) * 10) / 10,
       fiber_g: Math.round((nutrition.totals.fiber_g / servingCount) * 10) / 10,
-      sodium_mg: Math.round((nutrition.totals.sodium_mg / servingCount) * 10) / 10
+      sodium_mg: Math.round((nutrition.totals.sodium_mg / servingCount) * 10) / 10,
     };
 
     res.json({
@@ -1064,15 +1107,14 @@ router.get('/:id/nutrition', async (req, res) => {
         recipe_name: recipe.name,
         servings: servingCount,
         nutrition,
-        per_serving: perServing
-      }
+        per_serving: perServing,
+      },
     });
-
   } catch (error: unknown) {
     logger.error('Recipe nutrition analysis error:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to calculate recipe nutrition'
+      error: 'Failed to calculate recipe nutrition',
     });
   }
 });
@@ -1086,7 +1128,8 @@ router.post('/:id/save-nutrition', async (req, res) => {
     // Get recipe with ingredients
     const { data: recipe, error: fetchError } = await supabase
       .from('recipes')
-      .select(`
+      .select(
+        `
         *,
         recipe_ingredients (
           id,
@@ -1104,14 +1147,15 @@ router.post('/:id/save-nutrition', async (req, res) => {
             sodium_mg_per_100g
           )
         )
-      `)
+      `
+      )
       .eq('id', id)
       .single();
 
     if (fetchError) {
       return res.status(404).json({
         success: false,
-        error: 'Recipe not found'
+        error: 'Recipe not found',
       });
     }
 
@@ -1135,7 +1179,7 @@ router.post('/:id/save-nutrition', async (req, res) => {
         carbs_g_per_serving: nutrition.totals.carbs_g / servingCount,
         fat_g_per_serving: nutrition.totals.fat_g / servingCount,
         fiber_g_per_serving: nutrition.totals.fiber_g / servingCount,
-        sodium_mg_per_serving: nutrition.totals.sodium_mg / servingCount
+        sodium_mg_per_serving: nutrition.totals.sodium_mg / servingCount,
       })
       .select()
       .single();
@@ -1144,20 +1188,19 @@ router.post('/:id/save-nutrition', async (req, res) => {
       logger.error('Save nutrition error:', saveError);
       return res.status(500).json({
         success: false,
-        error: 'Failed to save nutrition data'
+        error: 'Failed to save nutrition data',
       });
     }
 
     res.json({
       success: true,
-      data: savedNutrition
+      data: savedNutrition,
     });
-
   } catch (error: unknown) {
     logger.error('Save recipe nutrition error:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to save recipe nutrition'
+      error: 'Failed to save recipe nutrition',
     });
   }
 });
@@ -1191,12 +1234,12 @@ router.post('/:recipeId/save', authenticateUser, async (req: Request, res: Respo
       res.json({ message: 'Recipe unsaved successfully', saved: false });
     } else {
       // Save
-      const { error } = await supabase
-        .from('saved_recipes')
-        .insert([{
+      const { error } = await supabase.from('saved_recipes').insert([
+        {
           user_id: userId,
-          recipe_id: recipeId
-        }]);
+          recipe_id: recipeId,
+        },
+      ]);
 
       if (error) {
         return res.status(500).json({ error: 'Failed to save recipe' });
@@ -1222,13 +1265,13 @@ router.post('/:recipeId/rate', authenticateUser, async (req: Request, res: Respo
     }
 
     // Upsert rating
-    const { error } = await supabase
-      .from('recipe_ratings')
-      .upsert([{
+    const { error } = await supabase.from('recipe_ratings').upsert([
+      {
         user_id: userId,
         recipe_id: recipeId,
-        rating: rating
-      }]);
+        rating: rating,
+      },
+    ]);
 
     if (error) {
       return res.status(500).json({ error: 'Failed to rate recipe' });
@@ -1251,30 +1294,35 @@ router.get('/saved/my', authenticateUser, async (req: Request, res: Response) =>
 
     const { data: savedRecipes, error } = await supabase
       .from('saved_recipes')
-      .select(`
+      .select(
+        `
         created_at,
         recipe:recipe_id (
           *,
           creator:created_by (id, name, avatar_url, level)
         )
-      `)
+      `
+      )
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
-      .range(parseInt(offset as string), parseInt(offset as string) + parseInt(limit as string) - 1);
+      .range(
+        parseInt(offset as string),
+        parseInt(offset as string) + parseInt(limit as string) - 1
+      );
 
     if (error) {
-      logger.error('Supabase error fetching saved recipes:', { 
-        error: error.message, 
-        code: error.code, 
+      logger.error('Supabase error fetching saved recipes:', {
+        error: error.message,
+        code: error.code,
         details: error.details,
-        userId 
+        userId,
       });
       return res.status(500).json({ error: 'Failed to fetch saved recipes' });
     }
 
-    logger.debug('Successfully fetched saved recipes:', { 
-      count: savedRecipes?.length || 0, 
-      userId 
+    logger.debug('Successfully fetched saved recipes:', {
+      count: savedRecipes?.length || 0,
+      userId,
     });
 
     res.json({ saved_recipes: savedRecipes || [] });
@@ -1303,8 +1351,8 @@ router.post('/test-nutrition', async (req, res) => {
           carbs_g_per_100g: 3.9,
           fat_g_per_100g: 0.2,
           fiber_g_per_100g: 1.2,
-          sodium_mg_per_100g: 5
-        }
+          sodium_mg_per_100g: 5,
+        },
       },
       {
         quantity: 1,
@@ -1318,8 +1366,8 @@ router.post('/test-nutrition', async (req, res) => {
           carbs_g_per_100g: 9.3,
           fat_g_per_100g: 0.1,
           fiber_g_per_100g: 1.7,
-          sodium_mg_per_100g: 4
-        }
+          sodium_mg_per_100g: 4,
+        },
       },
       {
         quantity: 2,
@@ -1333,16 +1381,16 @@ router.post('/test-nutrition', async (req, res) => {
           carbs_g_per_100g: 0,
           fat_g_per_100g: 100,
           fiber_g_per_100g: 0,
-          sodium_mg_per_100g: 2
-        }
-      }
+          sodium_mg_per_100g: 2,
+        },
+      },
     ];
 
     const servings = 2;
 
     // Calculate nutrition
     const nutrition = calculateNutrition(mockRecipeIngredients);
-    
+
     // Calculate per-serving values
     const perServing = {
       calories: Math.round((nutrition.totals.calories / servings) * 10) / 10,
@@ -1350,7 +1398,7 @@ router.post('/test-nutrition', async (req, res) => {
       carbs_g: Math.round((nutrition.totals.carbs_g / servings) * 10) / 10,
       fat_g: Math.round((nutrition.totals.fat_g / servings) * 10) / 10,
       fiber_g: Math.round((nutrition.totals.fiber_g / servings) * 10) / 10,
-      sodium_mg: Math.round((nutrition.totals.sodium_mg / servings) * 10) / 10
+      sodium_mg: Math.round((nutrition.totals.sodium_mg / servings) * 10) / 10,
     };
 
     res.json({
@@ -1360,79 +1408,84 @@ router.post('/test-nutrition', async (req, res) => {
         servings: servings,
         nutrition,
         per_serving: perServing,
-        message: 'This is a test with mock nutritional data'
-      }
+        message: 'This is a test with mock nutritional data',
+      },
     });
-
   } catch (error: unknown) {
     logger.error('Test nutrition analysis error:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to test nutrition analysis'
+      error: 'Failed to test nutrition analysis',
     });
   }
 });
 
 // Upload completed recipe photo
-router.post('/:recipeId/upload-completion-photo', authenticateUser, async (req: Request, res: Response) => {
-  try {
-    const { recipeId } = req.params;
-    const userId = (req as any).user.id;
-    const { imageData, description } = req.body;
-
-    if (!imageData) {
-      return res.status(400).json({ error: 'Image data is required' });
-    }
-
-    // In demo mode, simulate photo upload
-    if (req.headers['demo-mode'] || userId.startsWith('demo_')) {
-      const mockPhotoUrl = `https://images.unsplash.com/photo-${Date.now()}?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80`;
-      
-      return res.json({
-        photoUrl: mockPhotoUrl,
-        uploadedAt: new Date(),
-        message: 'Demo photo uploaded successfully'
-      });
-    }
-
-    // Production: Save to database and cloud storage
-    const { data: photo, error } = await supabase
-      .from('recipe_completion_photos')
-      .insert([{
-        recipe_id: recipeId,
-        user_id: userId,
-        photo_url: imageData, // In production, this would be uploaded to cloud storage first
-        description: description || null,
-        uploaded_at: new Date()
-      }])
-      .select()
-      .single();
-
-    if (error) {
-      return res.status(400).json({ error: error.message });
-    }
-
-    // Award XP for sharing completion photo
+router.post(
+  '/:recipeId/upload-completion-photo',
+  authenticateUser,
+  async (req: Request, res: Response) => {
     try {
-      await supabase.rpc('add_user_xp', {
-        p_user_id: userId,
-        p_xp_amount: 75,
-        p_action: 'RECIPE_COMPLETION_PHOTO',
-        p_metadata: { recipe_id: recipeId }
-      });
-    } catch (xpError) {
-      logger.error('XP award error:', xpError);
-    }
+      const { recipeId } = req.params;
+      const userId = (req as any).user.id;
+      const { imageData, description } = req.body;
 
-    res.json({
-      photo,
-      message: 'Recipe completion photo uploaded successfully'
-    });
-  } catch (error: unknown) {
-    logger.error('Upload completion photo error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+      if (!imageData) {
+        return res.status(400).json({ error: 'Image data is required' });
+      }
+
+      // In demo mode, simulate photo upload
+      if (req.headers['demo-mode'] || userId.startsWith('demo_')) {
+        const mockPhotoUrl = `https://images.unsplash.com/photo-${Date.now()}?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80`;
+
+        return res.json({
+          photoUrl: mockPhotoUrl,
+          uploadedAt: new Date(),
+          message: 'Demo photo uploaded successfully',
+        });
+      }
+
+      // Production: Save to database and cloud storage
+      const { data: photo, error } = await supabase
+        .from('recipe_completion_photos')
+        .insert([
+          {
+            recipe_id: recipeId,
+            user_id: userId,
+            photo_url: imageData, // In production, this would be uploaded to cloud storage first
+            description: description || null,
+            uploaded_at: new Date(),
+          },
+        ])
+        .select()
+        .single();
+
+      if (error) {
+        return res.status(400).json({ error: error.message });
+      }
+
+      // Award XP for sharing completion photo
+      try {
+        await supabase.rpc('add_user_xp', {
+          p_user_id: userId,
+          p_xp_amount: 75,
+          p_action: 'RECIPE_COMPLETION_PHOTO',
+          p_metadata: { recipe_id: recipeId },
+        });
+      } catch (xpError) {
+        logger.error('XP award error:', xpError);
+      }
+
+      res.json({
+        photo,
+        message: 'Recipe completion photo uploaded successfully',
+      });
+    } catch (error: unknown) {
+      logger.error('Upload completion photo error:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
   }
-});
+);
 
 // Get completion photos for a recipe
 router.get('/:recipeId/completion-photos', async (req: Request, res: Response) => {
@@ -1445,43 +1498,48 @@ router.get('/:recipeId/completion-photos', async (req: Request, res: Response) =
       const mockPhotos = [
         {
           id: 1,
-          photo_url: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
+          photo_url:
+            'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
           user_name: 'Chef Sarah',
           uploaded_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-          description: 'Turned out amazing! Added extra herbs.'
+          description: 'Turned out amazing! Added extra herbs.',
         },
         {
           id: 2,
-          photo_url: 'https://images.unsplash.com/photo-1565299507177-b0ac66763828?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
+          photo_url:
+            'https://images.unsplash.com/photo-1565299507177-b0ac66763828?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
           user_name: 'FoodLover42',
           uploaded_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-          description: 'Family loved it! Making again next week.'
+          description: 'Family loved it! Making again next week.',
         },
         {
           id: 3,
-          photo_url: 'https://images.unsplash.com/photo-1565299585323-38174c26008d?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
+          photo_url:
+            'https://images.unsplash.com/photo-1565299585323-38174c26008d?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
           user_name: 'HomeCook',
           uploaded_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-          description: null
-        }
+          description: null,
+        },
       ];
-      
+
       return res.json({
         photos: mockPhotos.slice(Number(offset), Number(offset) + Number(limit)),
-        total: mockPhotos.length
+        total: mockPhotos.length,
       });
     }
 
     // Production: Get from database
     const { data: photos, error } = await supabase
       .from('recipe_completion_photos')
-      .select(`
+      .select(
+        `
         id,
         photo_url,
         description,
         uploaded_at,
         user:users(name)
-      `)
+      `
+      )
       .eq('recipe_id', recipeId)
       .order('uploaded_at', { ascending: false })
       .range(Number(offset), Number(offset) + Number(limit) - 1);
@@ -1492,7 +1550,7 @@ router.get('/:recipeId/completion-photos', async (req: Request, res: Response) =
 
     res.json({
       photos: photos || [],
-      total: photos?.length || 0
+      total: photos?.length || 0,
     });
   } catch (error: unknown) {
     logger.error('Get completion photos error:', error);
@@ -1503,32 +1561,32 @@ router.get('/:recipeId/completion-photos', async (req: Request, res: Response) =
 // Helper function to convert units to grams
 function convertToGrams(quantity: number, unit: string): number {
   const conversions: { [key: string]: number } = {
-    'g': 1,
-    'gram': 1,
-    'grams': 1,
-    'kg': 1000,
-    'kilogram': 1000,
-    'kilograms': 1000,
-    'oz': 28.35,
-    'ounce': 28.35,
-    'ounces': 28.35,
-    'lb': 453.59,
-    'pound': 453.59,
-    'pounds': 453.59,
-    'cup': 240, // Approximate for most ingredients
-    'cups': 240,
-    'tbsp': 15,
-    'tablespoon': 15,
-    'tablespoons': 15,
-    'tsp': 5,
-    'teaspoon': 5,
-    'teaspoons': 5,
-    'ml': 1, // Assuming 1ml ≈ 1g for most liquid ingredients
-    'milliliter': 1,
-    'milliliters': 1,
-    'l': 1000,
-    'liter': 1000,
-    'liters': 1000
+    g: 1,
+    gram: 1,
+    grams: 1,
+    kg: 1000,
+    kilogram: 1000,
+    kilograms: 1000,
+    oz: 28.35,
+    ounce: 28.35,
+    ounces: 28.35,
+    lb: 453.59,
+    pound: 453.59,
+    pounds: 453.59,
+    cup: 240, // Approximate for most ingredients
+    cups: 240,
+    tbsp: 15,
+    tablespoon: 15,
+    tablespoons: 15,
+    tsp: 5,
+    teaspoon: 5,
+    teaspoons: 5,
+    ml: 1, // Assuming 1ml ≈ 1g for most liquid ingredients
+    milliliter: 1,
+    milliliters: 1,
+    l: 1000,
+    liter: 1000,
+    liters: 1000,
   };
 
   const multiplier = conversions[unit.toLowerCase()] || 100; // Default to 100g if unknown
@@ -1548,7 +1606,9 @@ function calculateNutrition(recipeIngredients: RecipeIngredient[]): NutritionCal
 
   recipeIngredients.forEach((recipeIngredient: RecipeIngredient) => {
     const ingredient = recipeIngredient.ingredient;
-    if (!ingredient) {return;}
+    if (!ingredient) {
+      return;
+    }
 
     const gramsAmount = convertToGrams(recipeIngredient.quantity, recipeIngredient.unit);
     const factor = gramsAmount / 100; // Convert to per-100g values
@@ -1563,7 +1623,7 @@ function calculateNutrition(recipeIngredients: RecipeIngredient[]): NutritionCal
       carbs: (ingredient.carbs_g_per_100g || 0) * factor,
       fat: (ingredient.fat_g_per_100g || 0) * factor,
       fiber: (ingredient.fiber_g_per_100g || 0) * factor,
-      sodium: (ingredient.sodium_mg_per_100g || 0) * factor
+      sodium: (ingredient.sodium_mg_per_100g || 0) * factor,
     };
 
     totalCalories += ingredientNutrition.calories;
@@ -1583,9 +1643,9 @@ function calculateNutrition(recipeIngredients: RecipeIngredient[]): NutritionCal
       carbs_g: Math.round(totalCarbs * 10) / 10,
       fat_g: Math.round(totalFat * 10) / 10,
       fiber_g: Math.round(totalFiber * 10) / 10,
-      sodium_mg: Math.round(totalSodium * 10) / 10
+      sodium_mg: Math.round(totalSodium * 10) / 10,
     },
-    breakdown: ingredientBreakdown
+    breakdown: ingredientBreakdown,
   };
 }
 
@@ -1616,19 +1676,19 @@ router.post('/:recipeId/favorite', authenticateUser, async (req: Request, res: R
         return res.status(500).json({ error: 'Failed to remove recipe from favorites' });
       }
 
-      res.json({ 
+      res.json({
         success: true,
-        message: 'Recipe removed from favorites', 
-        favorited: false 
+        message: 'Recipe removed from favorites',
+        favorited: false,
       });
     } else {
       // Add to favorites
-      const { error } = await supabase
-        .from('recipe_favorites')
-        .insert([{
+      const { error } = await supabase.from('recipe_favorites').insert([
+        {
           user_id: userId,
-          recipe_id: recipeId
-        }]);
+          recipe_id: recipeId,
+        },
+      ]);
 
       if (error) {
         logger.error('Add favorite error:', error);
@@ -1641,17 +1701,17 @@ router.post('/:recipeId/favorite', authenticateUser, async (req: Request, res: R
           p_user_id: userId,
           p_xp_amount: 10,
           p_action: 'recipe_favorited',
-          p_metadata: { recipe_id: recipeId }
+          p_metadata: { recipe_id: recipeId },
         });
       } catch (xpError) {
         logger.error('XP award error for favorite:', xpError);
         // Continue despite XP error
       }
 
-      res.json({ 
+      res.json({
         success: true,
-        message: 'Recipe added to favorites', 
-        favorited: true 
+        message: 'Recipe added to favorites',
+        favorited: true,
       });
     }
   } catch (error: unknown) {
@@ -1668,34 +1728,36 @@ router.post('/calculate-smart-nutrition', async (req, res) => {
     if (!ingredients || !Array.isArray(ingredients)) {
       return res.status(400).json({
         success: false,
-        error: 'Ingredients array is required'
+        error: 'Ingredients array is required',
       });
     }
 
-    logger.info('🧠 Calculating smart nutrition with fuzzy matching...', { 
+    logger.info('🧠 Calculating smart nutrition with fuzzy matching...', {
       ingredientCount: ingredients.length,
-      servings 
+      servings,
     });
 
     // Import the smart nutrition service
     const { calculateSmartNutrition } = await import('../services/smartNutritionService');
-    
+
     // Calculate nutrition using fuzzy matching
     const result = await calculateSmartNutrition(ingredients, servings);
 
     // Log match quality for monitoring
     const totalIngredients = ingredients.length;
     const matchedIngredients = result.ingredientBreakdown.length;
-    const averageConfidence = result.ingredientBreakdown.length > 0 
-      ? result.ingredientBreakdown.reduce((sum, item) => sum + item.confidence, 0) / result.ingredientBreakdown.length
-      : 0;
+    const averageConfidence =
+      result.ingredientBreakdown.length > 0
+        ? result.ingredientBreakdown.reduce((sum, item) => sum + item.confidence, 0) /
+          result.ingredientBreakdown.length
+        : 0;
 
     logger.info('🎯 Smart nutrition calculation complete', {
       totalIngredients,
       matchedIngredients,
       unmatchedCount: result.unmatchedIngredients.length,
       averageConfidence: Math.round(averageConfidence * 100) / 100,
-      totalCalories: result.totalNutrition.calories
+      totalCalories: result.totalNutrition.calories,
     });
 
     res.json({
@@ -1706,16 +1768,15 @@ router.post('/calculate-smart-nutrition', async (req, res) => {
           totalIngredients,
           matchedIngredients,
           matchRate: Math.round((matchedIngredients / totalIngredients) * 100),
-          averageConfidence: Math.round(averageConfidence * 100)
-        }
-      }
+          averageConfidence: Math.round(averageConfidence * 100),
+        },
+      },
     });
-
   } catch (error: unknown) {
     logger.error('Smart nutrition calculation error:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to calculate smart nutrition'
+      error: 'Failed to calculate smart nutrition',
     });
   }
 });
@@ -1734,7 +1795,7 @@ router.post('/test-smart-nutrition', async (req, res) => {
       { item: 'mozzarella cheese', quantity: '100 g' },
       { item: 'balsamic vinegar', quantity: '1 tsp' },
       { item: 'salt', quantity: '1/2 tsp' },
-      { item: 'black pepper', quantity: '1/4 tsp' }
+      { item: 'black pepper', quantity: '1/4 tsp' },
     ];
 
     const servings = 2;
@@ -1746,9 +1807,11 @@ router.post('/test-smart-nutrition', async (req, res) => {
     // Calculate match statistics
     const totalIngredients = mockAIIngredients.length;
     const matchedIngredients = result.ingredientBreakdown.length;
-    const averageConfidence = result.ingredientBreakdown.length > 0 
-      ? result.ingredientBreakdown.reduce((sum, item) => sum + item.confidence, 0) / result.ingredientBreakdown.length
-      : 0;
+    const averageConfidence =
+      result.ingredientBreakdown.length > 0
+        ? result.ingredientBreakdown.reduce((sum, item) => sum + item.confidence, 0) /
+          result.ingredientBreakdown.length
+        : 0;
 
     res.json({
       success: true,
@@ -1760,116 +1823,125 @@ router.post('/test-smart-nutrition', async (req, res) => {
           totalIngredients,
           matchedIngredients,
           matchRate: Math.round((matchedIngredients / totalIngredients) * 100),
-          averageConfidence: Math.round(averageConfidence * 100)
+          averageConfidence: Math.round(averageConfidence * 100),
         },
-        message: 'Smart nutrition test completed with fuzzy ingredient matching'
-      }
+        message: 'Smart nutrition test completed with fuzzy ingredient matching',
+      },
     });
-
   } catch (error: unknown) {
     logger.error('Test smart nutrition error:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to test smart nutrition'
+      error: 'Failed to test smart nutrition',
     });
   }
 });
 
 // Enhanced recipe generation with smart nutrition calculation
-router.post('/generate-full-with-smart-nutrition', authenticateUser, async (req: Request, res: Response) => {
-  try {
-    const userId = (req as any).user.id;
-    const { sessionId, selectedTitle } = req.body;
+router.post(
+  '/generate-full-with-smart-nutrition',
+  authenticateUser,
+  async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user.id;
+      const { sessionId, selectedTitle } = req.body;
 
-    // Get the original recipe generation data
-    const { data: sessionData, error: sessionError } = await supabase
-      .from('cooking_sessions')
-      .select('*')
-      .eq('session_id', sessionId)
-      .eq('user_id', userId)
-      .single();
+      // Get the original recipe generation data
+      const { data: sessionData, error: sessionError } = await supabase
+        .from('cooking_sessions')
+        .select('*')
+        .eq('session_id', sessionId)
+        .eq('user_id', userId)
+        .single();
 
-    if (sessionError || !sessionData) {
-      return res.status(404).json({ error: 'Recipe session not found' });
-    }
-
-    // Generate full recipe using AI service
-    const fullRecipe = await generateFullRecipe(selectedTitle, sessionData.original_ingredients);
-
-    // Calculate accurate nutrition using smart fuzzy matching
-    const { calculateSmartNutrition } = await import('../services/smartNutritionService');
-    const smartNutrition = await calculateSmartNutrition(fullRecipe.ingredients, fullRecipe.servings);
-
-    // Store the recipe with both AI estimates and database-calculated nutrition
-    const { data: recipe, error: recipeError } = await supabase
-      .from('recipes')
-      .insert([{
-        title: fullRecipe.title,
-        description: `A ${fullRecipe.cuisine} dish featuring ${sessionData.original_ingredients.detectedIngredients.join(', ')}`,
-        prep_time: Math.floor(fullRecipe.totalTimeMinutes * 0.3),
-        cook_time: Math.ceil(fullRecipe.totalTimeMinutes * 0.7),
-        difficulty: fullRecipe.difficulty.toLowerCase(),
-        servings: fullRecipe.servings,
-        ingredients: fullRecipe.ingredients,
-        instructions: fullRecipe.steps.map(step => step.instruction),
-        nutrition: {
-          // AI estimates
-          ai_calories: fullRecipe.caloriesPerServing,
-          ai_protein: fullRecipe.macros.protein_g,
-          ai_carbs: fullRecipe.macros.carbs_g,
-          ai_fat: fullRecipe.macros.fat_g,
-          // Database-calculated values
-          db_calories: smartNutrition.perServing.calories,
-          db_protein: smartNutrition.perServing.protein_g,
-          db_carbs: smartNutrition.perServing.carbs_g,
-          db_fat: smartNutrition.perServing.fat_g,
-          db_sodium: smartNutrition.perServing.sodium_mg,
-          // Match quality metrics
-          ingredient_match_rate: Math.round((smartNutrition.ingredientBreakdown.length / fullRecipe.ingredients.length) * 100),
-          unmatched_ingredients: smartNutrition.unmatchedIngredients
-        },
-        tags: [fullRecipe.cuisine],
-        created_by: userId,
-        is_generated: true,
-        cuisine: fullRecipe.cuisine,
-        ai_metadata: {
-          chef_camillo_version: '1.0',
-          session_id: sessionId,
-          original_ingredients: sessionData.original_ingredients,
-          social_caption: fullRecipe.socialCaption,
-          finishing_tip: fullRecipe.finishingTip,
-          nutrition_method: 'smart_fuzzy_matching'
-        }
-      }])
-      .select()
-      .single();
-
-    if (recipeError) {
-      logger.error('Recipe storage error', { error: recipeError.message });
-      return res.status(500).json({ error: 'Failed to store recipe' });
-    }
-
-    res.json({
-      success: true,
-      recipe: {
-        ...recipe,
-        smartNutrition: smartNutrition,
-        nutritionComparison: {
-          ai_estimate: {
-            calories: fullRecipe.caloriesPerServing,
-            protein: fullRecipe.macros.protein_g,
-            carbs: fullRecipe.macros.carbs_g,
-            fat: fullRecipe.macros.fat_g
-          },
-          database_calculated: smartNutrition.perServing
-        }
+      if (sessionError || !sessionData) {
+        return res.status(404).json({ error: 'Recipe session not found' });
       }
-    });
 
-  } catch (error: unknown) {
-    logger.error('Enhanced recipe generation error:', error);
-    res.status(500).json({ error: 'Failed to generate recipe with smart nutrition' });
+      // Generate full recipe using AI service
+      const fullRecipe = await generateFullRecipe(selectedTitle, sessionData.original_ingredients);
+
+      // Calculate accurate nutrition using smart fuzzy matching
+      const { calculateSmartNutrition } = await import('../services/smartNutritionService');
+      const smartNutrition = await calculateSmartNutrition(
+        fullRecipe.ingredients,
+        fullRecipe.servings
+      );
+
+      // Store the recipe with both AI estimates and database-calculated nutrition
+      const { data: recipe, error: recipeError } = await supabase
+        .from('recipes')
+        .insert([
+          {
+            title: fullRecipe.title,
+            description: `A ${fullRecipe.cuisine} dish featuring ${sessionData.original_ingredients.detectedIngredients.join(', ')}`,
+            prep_time: Math.floor(fullRecipe.totalTimeMinutes * 0.3),
+            cook_time: Math.ceil(fullRecipe.totalTimeMinutes * 0.7),
+            difficulty: fullRecipe.difficulty.toLowerCase(),
+            servings: fullRecipe.servings,
+            ingredients: fullRecipe.ingredients,
+            instructions: fullRecipe.steps.map((step) => step.instruction),
+            nutrition: {
+              // AI estimates
+              ai_calories: fullRecipe.caloriesPerServing,
+              ai_protein: fullRecipe.macros.protein_g,
+              ai_carbs: fullRecipe.macros.carbs_g,
+              ai_fat: fullRecipe.macros.fat_g,
+              // Database-calculated values
+              db_calories: smartNutrition.perServing.calories,
+              db_protein: smartNutrition.perServing.protein_g,
+              db_carbs: smartNutrition.perServing.carbs_g,
+              db_fat: smartNutrition.perServing.fat_g,
+              db_sodium: smartNutrition.perServing.sodium_mg,
+              // Match quality metrics
+              ingredient_match_rate: Math.round(
+                (smartNutrition.ingredientBreakdown.length / fullRecipe.ingredients.length) * 100
+              ),
+              unmatched_ingredients: smartNutrition.unmatchedIngredients,
+            },
+            tags: [fullRecipe.cuisine],
+            created_by: userId,
+            is_generated: true,
+            cuisine: fullRecipe.cuisine,
+            ai_metadata: {
+              chef_camillo_version: '1.0',
+              session_id: sessionId,
+              original_ingredients: sessionData.original_ingredients,
+              social_caption: fullRecipe.socialCaption,
+              finishing_tip: fullRecipe.finishingTip,
+              nutrition_method: 'smart_fuzzy_matching',
+            },
+          },
+        ])
+        .select()
+        .single();
+
+      if (recipeError) {
+        logger.error('Recipe storage error', { error: recipeError.message });
+        return res.status(500).json({ error: 'Failed to store recipe' });
+      }
+
+      res.json({
+        success: true,
+        recipe: {
+          ...recipe,
+          smartNutrition: smartNutrition,
+          nutritionComparison: {
+            ai_estimate: {
+              calories: fullRecipe.caloriesPerServing,
+              protein: fullRecipe.macros.protein_g,
+              carbs: fullRecipe.macros.carbs_g,
+              fat: fullRecipe.macros.fat_g,
+            },
+            database_calculated: smartNutrition.perServing,
+          },
+        },
+      });
+    } catch (error: unknown) {
+      logger.error('Enhanced recipe generation error:', error);
+      res.status(500).json({ error: 'Failed to generate recipe with smart nutrition' });
+    }
   }
-});
+);
 
-export default router; 
+export default router;

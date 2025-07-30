@@ -17,8 +17,8 @@ declare global {
 
 // Middleware to check user's subscription status
 export async function checkSubscriptionMiddleware(
-  req: Request, 
-  res: Response, 
+  req: Request,
+  res: Response,
   next: NextFunction
 ): Promise<void> {
   try {
@@ -32,20 +32,20 @@ export async function checkSubscriptionMiddleware(
 
     // Get user's subscription tier
     const tier = await subscriptionService.getUserTier(userId);
-    
+
     // Get user's available features
     const features = await subscriptionService.getUserFeatures(userId);
 
     // Attach to request for use in route handlers
     req.subscription = {
       tier: tier.slug,
-      features
+      features,
     };
 
-    logger.debug('User subscription check', { 
-      userId, 
+    logger.debug('User subscription check', {
+      userId,
       tier: tier.slug,
-      featureCount: features.length 
+      featureCount: features.length,
     });
 
     next();
@@ -75,11 +75,11 @@ export function requireTier(tierSlug: string) {
       const requiredTierIndex = tierHierarchy.indexOf(tierSlug);
 
       if (userTierIndex < requiredTierIndex) {
-        res.status(403).json({ 
+        res.status(403).json({
           error: 'Upgrade required',
           message: `This feature requires a ${tierSlug} subscription or higher`,
           currentTier: userTier.slug,
-          requiredTier: tierSlug
+          requiredTier: tierSlug,
         });
         return;
       }
@@ -106,11 +106,11 @@ export function requireFeature(featureKey: string) {
       const hasAccess = await subscriptionService.hasFeatureAccess(userId, featureKey);
 
       if (!hasAccess) {
-        res.status(403).json({ 
+        res.status(403).json({
           error: 'Feature not available',
           message: 'Your subscription plan does not include this feature',
           feature: featureKey,
-          upgradeUrl: '/subscription/upgrade'
+          upgradeUrl: '/subscription/upgrade',
         });
         return;
       }
@@ -124,9 +124,7 @@ export function requireFeature(featureKey: string) {
 }
 
 // Middleware to check rate limits based on subscription tier
-export async function checkSubscriptionLimits(
-  limitType: 'recipes' | 'scans' | 'collections'
-) {
+export async function checkSubscriptionLimits(limitType: 'recipes' | 'scans' | 'collections') {
   return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const authReq = req as AuthenticatedRequest;
@@ -150,7 +148,7 @@ export async function checkSubscriptionLimits(
             next();
             return;
           }
-          
+
           // TODO: Get current month's recipe count
           // currentUsage = await getMonthlyRecipeCount(userId);
           break;
@@ -161,7 +159,7 @@ export async function checkSubscriptionLimits(
             next();
             return;
           }
-          
+
           // TODO: Get current month's scan count
           // currentUsage = await getMonthlyScanCount(userId);
           break;
@@ -172,7 +170,7 @@ export async function checkSubscriptionLimits(
             next();
             return;
           }
-          
+
           // TODO: Get total collections count
           // currentUsage = await getCollectionsCount(userId);
           break;
@@ -184,7 +182,7 @@ export async function checkSubscriptionLimits(
           message: `You have reached your ${limitType} limit for this month`,
           limit,
           usage: currentUsage,
-          upgradeUrl: '/subscription/upgrade'
+          upgradeUrl: '/subscription/upgrade',
         });
         return;
       }
@@ -207,13 +205,16 @@ export async function isCreator(req: Request, res: Response, next: NextFunction)
     }
 
     const userId = authReq.user.id;
-    const hasCreatorAccess = await subscriptionService.hasFeatureAccess(userId, FEATURES.CREATOR_DASHBOARD);
+    const hasCreatorAccess = await subscriptionService.hasFeatureAccess(
+      userId,
+      FEATURES.CREATOR_DASHBOARD
+    );
 
     if (!hasCreatorAccess) {
       res.status(403).json({
         error: 'Creator access required',
         message: 'Upgrade to Creator tier to access this feature',
-        upgradeUrl: '/subscription/upgrade?tier=creator'
+        upgradeUrl: '/subscription/upgrade?tier=creator',
       });
       return;
     }
@@ -231,5 +232,5 @@ export default {
   requireTier,
   requireFeature,
   checkSubscriptionLimits,
-  isCreator
-}; 
+  isCreator,
+};

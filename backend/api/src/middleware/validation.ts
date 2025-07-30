@@ -22,7 +22,9 @@ export const sanitizeString = (input: string): string => {
 
 // Sanitize array input
 export const sanitizeArray = (input: unknown[]): unknown[] => {
-  if (!Array.isArray(input)) {return [];}
+  if (!Array.isArray(input)) {
+    return [];
+  }
   return input.slice(0, 100); // Limit array size
 };
 
@@ -42,8 +44,8 @@ export const validateAuthInput = (req: Request, res: Response, next: NextFunctio
   // Validate password
   if (password) {
     if (!ValidationRules.password(password)) {
-      res.status(400).json({ 
-        error: 'Password must be at least 8 characters long' 
+      res.status(400).json({
+        error: 'Password must be at least 8 characters long',
       });
       return;
     }
@@ -80,23 +82,33 @@ export const validateRecipeInput = (req: Request, res: Response, next: NextFunct
       res.status(400).json({ error: 'Ingredients must be an array' });
       return;
     }
-    req.body.ingredients = sanitizeArray(ingredients).map(ing => {
+    req.body.ingredients = sanitizeArray(ingredients).map((ing) => {
       const ingredient = ing as Record<string, unknown>;
       return {
         ...ingredient,
-        name: ingredient.name && typeof ingredient.name === 'string' ? sanitizeString(ingredient.name) : ''
+        name:
+          ingredient.name && typeof ingredient.name === 'string'
+            ? sanitizeString(ingredient.name)
+            : '',
       };
     });
   }
 
   // Validate preferences
   if (preferences) {
-    const validPreferences = ['vegan', 'vegetarian', 'gluten-free', 'dairy-free', 'low-carb', 'keto'];
+    const validPreferences = [
+      'vegan',
+      'vegetarian',
+      'gluten-free',
+      'dairy-free',
+      'low-carb',
+      'keto',
+    ];
     if (!Array.isArray(preferences)) {
       res.status(400).json({ error: 'Preferences must be an array' });
       return;
     }
-    req.body.preferences = preferences.filter(pref => validPreferences.includes(pref));
+    req.body.preferences = preferences.filter((pref) => validPreferences.includes(pref));
   }
 
   next();
@@ -132,7 +144,8 @@ export const validateScanInput = (req: Request, res: Response, next: NextFunctio
   const { image_data, detected_ingredients } = req.body;
 
   // Validate image data size (limit to 10MB base64)
-  if (image_data && image_data.length > 10 * 1024 * 1024 * 1.37) { // Base64 is ~37% larger
+  if (image_data && image_data.length > 10 * 1024 * 1024 * 1.37) {
+    // Base64 is ~37% larger
     res.status(400).json({ error: 'Image size too large (max 10MB)' });
     return;
   }
@@ -172,4 +185,4 @@ export const sanitizeInput = (req: Request, res: Response, next: NextFunction): 
   }
 
   next();
-}; 
+};

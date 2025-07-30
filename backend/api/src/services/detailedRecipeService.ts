@@ -83,14 +83,14 @@ export class DetailedRecipeService {
     try {
       logger.info('🍳 Generating detailed recipe...', {
         recipeTitle: request.selectedPreview.title,
-        sessionId: request.sessionId
+        sessionId: request.sessionId,
       });
 
       const prompt = this.buildDetailedPrompt(request);
-      
+
       logger.info('📤 Sending detailed recipe request to OpenAI...', {
         promptLength: prompt.length,
-        maxTokens: 4000
+        maxTokens: 4000,
       });
 
       const response = await this.openai.chat.completions.create({
@@ -98,12 +98,13 @@ export class DetailedRecipeService {
         messages: [
           {
             role: 'system',
-            content: 'You are a professional chef instructor. Generate detailed, clear cooking instructions with tips and techniques. Return only valid JSON in the exact format requested.'
+            content:
+              'You are a professional chef instructor. Generate detailed, clear cooking instructions with tips and techniques. Return only valid JSON in the exact format requested.',
           },
           {
             role: 'user',
-            content: prompt
-          }
+            content: prompt,
+          },
         ],
         max_tokens: 2500, // Reduced for faster response
         temperature: 0.6,
@@ -116,7 +117,7 @@ export class DetailedRecipeService {
       }
 
       logger.info('🔄 Parsing detailed recipe response...', {
-        contentLength: content.length
+        contentLength: content.length,
       });
 
       // Debug logging for detailed content
@@ -124,7 +125,7 @@ export class DetailedRecipeService {
         first300Chars: content.substring(0, 300),
         last300Chars: content.substring(Math.max(0, content.length - 300)),
         startsWithBrace: content.trim().startsWith('{'),
-        endsWithBrace: content.trim().endsWith('}')
+        endsWithBrace: content.trim().endsWith('}'),
       });
 
       let result;
@@ -133,7 +134,7 @@ export class DetailedRecipeService {
       } catch (parseError) {
         logger.error('❌ JSON parsing failed for detailed recipe:', {
           error: parseError,
-          contentSample: content.substring(0, 500)
+          contentSample: content.substring(0, 500),
         });
         throw new Error('Invalid JSON response from OpenAI for detailed recipe');
       }
@@ -144,18 +145,17 @@ export class DetailedRecipeService {
       logger.info('✅ Successfully generated detailed recipe', {
         recipeTitle: detailedRecipe.title,
         stepCount: detailedRecipe.instructions.length,
-        sessionId: request.sessionId
+        sessionId: request.sessionId,
       });
 
       return {
         sessionId: request.sessionId,
-        recipe: detailedRecipe
+        recipe: detailedRecipe,
       };
-
     } catch (error: unknown) {
       logger.error('❌ Error generating detailed recipe:', {
         error: error instanceof Error ? error.message : error,
-        sessionId: request.sessionId
+        sessionId: request.sessionId,
       });
       throw error;
     }
@@ -164,9 +164,10 @@ export class DetailedRecipeService {
   private buildDetailedPrompt(request: DetailedRequest): string {
     const ingredients = request.originalIngredients.join(', ');
     const appliances = request.userPreferences.selectedAppliances.join(', ');
-    const dietary = request.userPreferences.dietaryTags.length > 0 
-      ? request.userPreferences.dietaryTags.join(', ') 
-      : 'none';
+    const dietary =
+      request.userPreferences.dietaryTags.length > 0
+        ? request.userPreferences.dietaryTags.join(', ')
+        : 'none';
 
     return `Generate a complete detailed recipe based on this preview:
 
@@ -246,12 +247,23 @@ Requirements:
       title: result.title || request.selectedPreview.title,
       description: result.description || request.selectedPreview.description,
       prepTime: typeof result.prepTime === 'number' ? result.prepTime : 15,
-      cookTime: typeof result.cookTime === 'number' ? result.cookTime : request.selectedPreview.estimatedTime,
-      totalTime: typeof result.totalTime === 'number' ? result.totalTime : request.selectedPreview.estimatedTime,
-      difficulty: ['easy', 'medium', 'hard'].includes(result.difficulty) ? result.difficulty : request.selectedPreview.difficulty as any,
-      servings: typeof result.servings === 'number' ? result.servings : request.userPreferences.servingSize,
+      cookTime:
+        typeof result.cookTime === 'number'
+          ? result.cookTime
+          : request.selectedPreview.estimatedTime,
+      totalTime:
+        typeof result.totalTime === 'number'
+          ? result.totalTime
+          : request.selectedPreview.estimatedTime,
+      difficulty: ['easy', 'medium', 'hard'].includes(result.difficulty)
+        ? result.difficulty
+        : (request.selectedPreview.difficulty as any),
+      servings:
+        typeof result.servings === 'number' ? result.servings : request.userPreferences.servingSize,
       cuisineType: result.cuisineType || request.selectedPreview.cuisineType,
-      dietaryTags: Array.isArray(result.dietaryTags) ? result.dietaryTags : request.userPreferences.dietaryTags,
+      dietaryTags: Array.isArray(result.dietaryTags)
+        ? result.dietaryTags
+        : request.userPreferences.dietaryTags,
       ingredients: this.validateIngredients(result.ingredients || []),
       instructions: this.validateInstructions(result.instructions || []),
       tips: Array.isArray(result.tips) ? result.tips : ['Cook with love and patience!'],
@@ -259,8 +271,8 @@ Requirements:
         calories: 400,
         protein: '20g',
         carbs: '30g',
-        fat: '15g'
-      }
+        fat: '15g',
+      },
     };
   }
 
@@ -269,7 +281,7 @@ Requirements:
       name: ing.name || `Ingredient ${index + 1}`,
       amount: ing.amount || '1',
       unit: ing.unit || 'piece',
-      source: ['detected', 'pantry', 'store'].includes(ing.source) ? ing.source : 'detected'
+      source: ['detected', 'pantry', 'store'].includes(ing.source) ? ing.source : 'detected',
     }));
   }
 
@@ -282,7 +294,7 @@ Requirements:
       tips: inst.tips || undefined,
       technique: inst.technique || undefined,
       equipment: inst.equipment || undefined,
-      safety: inst.safety || undefined
+      safety: inst.safety || undefined,
     }));
   }
-} 
+}

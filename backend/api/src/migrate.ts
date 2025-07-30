@@ -5,43 +5,40 @@ import dotenv from 'dotenv';
 // Load environment variables
 dotenv.config({ path: '../../.env' });
 
-const supabase = createClient(
-  process.env.SUPABASE_URL || '',
-  process.env.SUPABASE_ANON_KEY || ''
-);
+const supabase = createClient(process.env.SUPABASE_URL || '', process.env.SUPABASE_ANON_KEY || '');
 
 async function checkTablesExist() {
   console.log('🔍 Checking existing tables...');
-  
+
   const { data, error } = await supabase
     .from('information_schema.tables')
     .select('table_name')
     .eq('table_schema', 'public');
-    
+
   if (error) {
     console.error('Error checking tables:', error);
     return false;
   }
-  
-  const tableNames = data?.map(t => t.table_name) || [];
+
+  const tableNames = data?.map((t) => t.table_name) || [];
   console.log('Existing tables:', tableNames);
-  
+
   // Check if we already have the main tables
   const requiredTables = ['users', 'recipes', 'mystery_boxes', 'user_progress'];
-  const missingTables = requiredTables.filter(table => !tableNames.includes(table));
-  
+  const missingTables = requiredTables.filter((table) => !tableNames.includes(table));
+
   if (missingTables.length === 0) {
     console.log('✅ All required tables already exist!');
     return true;
   }
-  
+
   console.log('Missing tables:', missingTables);
   return false;
 }
 
 async function createEssentialTables() {
   console.log('🏗️ Creating essential tables for CookCam...');
-  
+
   // Create users table
   const createUsersSQL = `
     CREATE TABLE IF NOT EXISTS users (
@@ -168,23 +165,23 @@ async function createEssentialTables() {
     { name: 'recipe_sessions', sql: createRecipeSessionsSQL },
     { name: 'ingredient_scans', sql: createScansSQL },
     { name: 'saved_recipes', sql: createSavedRecipesSQL },
-    { name: 'recipe_ratings', sql: createRatingsSQL }
+    { name: 'recipe_ratings', sql: createRatingsSQL },
   ];
 
   for (const table of tables) {
     try {
       console.log(`Creating ${table.name} table...`);
       await supabase.from('_').select('*').limit(0);
-      
+
       // Use RPC to execute raw SQL (if available) or try direct execution
       const response = await fetch(`${process.env.SUPABASE_URL}/rest/v1/rpc/exec`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.SUPABASE_ANON_KEY}`,
-          'apikey': process.env.SUPABASE_ANON_KEY || ''
+          Authorization: `Bearer ${process.env.SUPABASE_ANON_KEY}`,
+          apikey: process.env.SUPABASE_ANON_KEY || '',
         },
-        body: JSON.stringify({ query: table.sql })
+        body: JSON.stringify({ query: table.sql }),
       });
 
       if (!response.ok) {
@@ -201,13 +198,13 @@ async function createEssentialTables() {
 
 async function main() {
   console.log('🚀 CookCam Database Setup\n');
-  
+
   const tablesExist = await checkTablesExist();
-  
+
   if (!tablesExist) {
     await createEssentialTables();
   }
-  
+
   console.log('\n✨ Database setup complete! Your CookCam backend is ready to use.');
   console.log('\n📌 Next steps:');
   console.log('1. Test the API endpoints');
@@ -215,4 +212,4 @@ async function main() {
   console.log('3. Start creating recipes with Chef Camillo!');
 }
 
-main().catch(console.error); 
+main().catch(console.error);

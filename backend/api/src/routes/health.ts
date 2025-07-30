@@ -10,7 +10,7 @@ router.get('/', async (req: Request, res: Response) => {
     status: 'healthy',
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV || 'development',
-    version: process.env.APP_VERSION || '1.0.0'
+    version: process.env.APP_VERSION || '1.0.0',
   });
 });
 
@@ -18,11 +18,10 @@ router.get('/', async (req: Request, res: Response) => {
 router.get('/detailed', async (req: Request, res: Response) => {
   try {
     const health = await monitoringService.getHealthStatus();
-    
+
     // Set appropriate HTTP status based on health
-    const httpStatus = health.status === 'healthy' ? 200 : 
-                      health.status === 'degraded' ? 200 : 503;
-    
+    const httpStatus = health.status === 'healthy' ? 200 : health.status === 'degraded' ? 200 : 503;
+
     res.status(httpStatus).json(health);
   } catch (error: unknown) {
     logger.error('Health check failed', { error });
@@ -33,7 +32,7 @@ router.get('/detailed', async (req: Request, res: Response) => {
       uptime: process.uptime(),
       database: { status: 'error', message: 'Connection failed' },
       memory: process.memoryUsage(),
-      version: '1.0.0'
+      version: '1.0.0',
     });
   }
 });
@@ -42,11 +41,11 @@ router.get('/detailed', async (req: Request, res: Response) => {
 router.get('/ready', async (req: Request, res: Response) => {
   try {
     const health = await monitoringService.getHealthStatus();
-    
+
     // Only ready if all critical services are up
-    const isReady = health.services.database.status === 'up' &&
-                   health.services.storage.status === 'up';
-    
+    const isReady =
+      health.services.database.status === 'up' && health.services.storage.status === 'up';
+
     if (isReady) {
       res.json({ ready: true });
     } else {
@@ -73,7 +72,7 @@ router.get('/metrics', async (req: Request, res: Response) => {
     logger.error('Health check error', { error });
     res.status(500).json({
       error: 'Failed to get metrics',
-      message: error instanceof Error ? error.message : 'Unknown error'
+      message: error instanceof Error ? error.message : 'Unknown error',
     });
   }
 });
@@ -89,7 +88,7 @@ router.get('/db', async (req: Request, res: Response) => {
     res.status(503).json({
       status: 'down',
       error: error instanceof Error ? error.message : 'Unknown error',
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   }
 });
@@ -105,7 +104,7 @@ router.get('/cache', async (req: Request, res: Response) => {
     res.status(503).json({
       status: 'down',
       error: error instanceof Error ? error.message : 'Unknown error',
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   }
 });
@@ -119,9 +118,9 @@ router.get('/security', async (req: Request, res: Response) => {
     logger.error('Security metrics check failed', { error });
     res.status(500).json({
       error: 'Failed to get security metrics',
-      message: error instanceof Error ? error.message : 'Unknown error'
+      message: error instanceof Error ? error.message : 'Unknown error',
     });
   }
 });
 
-export default router; 
+export default router;

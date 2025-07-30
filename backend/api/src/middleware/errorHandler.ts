@@ -15,7 +15,7 @@ declare global {
 
 // Request ID middleware
 export const requestIdMiddleware = (req: Request, res: Response, next: NextFunction): void => {
-  req.id = req.headers['x-request-id'] as string || uuidv4();
+  req.id = (req.headers['x-request-id'] as string) || uuidv4();
   res.setHeader('X-Request-ID', req.id);
   next();
 };
@@ -90,9 +90,8 @@ export const errorHandler = (
   // Prepare error response
   const errorResponse: ErrorResponse = {
     error: code,
-    message: process.env.NODE_ENV === 'production' && !isOperational
-      ? 'Something went wrong'
-      : message,
+    message:
+      process.env.NODE_ENV === 'production' && !isOperational ? 'Something went wrong' : message,
     code,
     statusCode,
     ...(req.id && { requestId: req.id }),
@@ -113,13 +112,11 @@ export const errorHandler = (
 };
 
 // Async error handler wrapper
-export const asyncHandler = (fn: Function) => (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
-  return Promise.resolve(fn(req, res, next)).catch(next);
-};
+export const asyncHandler =
+  (fn: Function) =>
+  (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    return Promise.resolve(fn(req, res, next)).catch(next);
+  };
 
 // Not found handler
 export const notFoundHandler = (req: Request, res: Response): void => {
@@ -145,7 +142,7 @@ interface ValidationError {
 
 export const formatValidationErrors = (errors: ValidationError[]): string => {
   return errors
-    .map(err => {
+    .map((err) => {
       if (err.param) {
         return `${err.param}: ${err.msg}`;
       }
@@ -174,15 +171,15 @@ export const handleDatabaseError = (error: { code?: string; message?: string }):
 
 // External service error handler
 export const handleExternalServiceError = (service: string, error: unknown): AppError => {
-  const axiosError = error as { 
-    response?: { 
-      status: number; 
-      data?: { message?: string }; 
+  const axiosError = error as {
+    response?: {
+      status: number;
+      data?: { message?: string };
     };
     request?: unknown;
     message?: string;
   };
-  
+
   if (axiosError.response) {
     // The request was made and the server responded with a status code
     const status = axiosError.response.status;

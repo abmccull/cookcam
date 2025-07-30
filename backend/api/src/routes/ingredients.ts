@@ -16,8 +16,8 @@ async function searchUSDAFoods(query: string, limit: number = 5) {
       params: {
         query,
         pageSize: limit,
-        api_key: USDA_API_KEY
-      }
+        api_key: USDA_API_KEY,
+      },
     });
     return response.data;
   } catch (error: unknown) {
@@ -31,8 +31,8 @@ async function getUSDAFoodDetails(fdcId: number) {
   try {
     const response = await axios.get(`${USDA_BASE_URL}/food/${fdcId}`, {
       params: {
-        api_key: USDA_API_KEY
-      }
+        api_key: USDA_API_KEY,
+      },
     });
     return response.data;
   } catch (error: unknown) {
@@ -43,10 +43,12 @@ async function getUSDAFoodDetails(fdcId: number) {
 
 // Helper function to extract nutrition data
 function extractNutritionalData(food: any) {
-  if (!food.foodNutrients) {return {};}
+  if (!food.foodNutrients) {
+    return {};
+  }
 
   const nutrition: any = {};
-  
+
   food.foodNutrients.forEach((nutrient: any) => {
     const nutrientId = nutrient.nutrient.id;
     const amount = nutrient.amount;
@@ -93,11 +95,11 @@ router.get('/search', async (req, res) => {
   try {
     const { q, query, limit = 20 } = req.query;
     const searchQuery = q || query; // Support both 'q' and 'query' parameters for backward compatibility
-    
+
     if (!searchQuery || typeof searchQuery !== 'string') {
       return res.status(400).json({
         success: false,
-        error: 'Query parameter (q or query) is required'
+        error: 'Query parameter (q or query) is required',
       });
     }
 
@@ -112,7 +114,7 @@ router.get('/search', async (req, res) => {
       logger.error('Database search error:', error);
       return res.status(500).json({
         success: false,
-        error: 'Failed to search ingredients'
+        error: 'Failed to search ingredients',
       });
     }
 
@@ -121,15 +123,14 @@ router.get('/search', async (req, res) => {
       data: {
         source: 'local',
         results: results || [],
-        total: results?.length || 0
-      }
+        total: results?.length || 0,
+      },
     });
-
   } catch (error: unknown) {
     logger.error('Search error:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to search ingredients'
+      error: 'Failed to search ingredients',
     });
   }
 });
@@ -139,26 +140,25 @@ router.get('/usda/search', async (req, res) => {
   try {
     const { q, query, limit = 10 } = req.query;
     const searchQuery = q || query; // Support both 'q' and 'query' parameters for backward compatibility
-    
+
     if (!searchQuery || typeof searchQuery !== 'string') {
       return res.status(400).json({
         success: false,
-        error: 'Query parameter (q or query) is required'
+        error: 'Query parameter (q or query) is required',
       });
     }
 
     const results = await searchUSDAFoods(searchQuery, parseInt(limit as string));
-    
+
     res.json({
       success: true,
-      data: results
+      data: results,
     });
-
   } catch (error: unknown) {
     logger.error('USDA search error:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to search USDA database'
+      error: 'Failed to search USDA database',
     });
   }
 });
@@ -180,7 +180,7 @@ router.post('/:id/sync-usda', async (req, res) => {
       logger.error('❌ Fetch error:', getError);
       return res.status(404).json({
         success: false,
-        error: 'Ingredient not found'
+        error: 'Ingredient not found',
       });
     }
 
@@ -189,28 +189,31 @@ router.post('/:id/sync-usda', async (req, res) => {
     // Search USDA for this ingredient
     const usdaResults = await searchUSDAFoods(ingredient.name, 10); // Get more results
     logger.info(`🔍 USDA search results: ${usdaResults.foods?.length || 0} found`);
-    
+
     if (!usdaResults.foods || usdaResults.foods.length === 0) {
       return res.status(404).json({
         success: false,
-        error: 'No USDA data found for this ingredient'
+        error: 'No USDA data found for this ingredient',
       });
     }
 
     // Find the best match (prefer Survey/Foundation data over Branded)
-    const bestMatch = usdaResults.foods.find((food: any) => 
-      food.dataType === 'Survey (FNDDS)' || food.dataType === 'Foundation'
-    ) || usdaResults.foods[0]; // Fall back to first result if no Survey/Foundation data
-    
-    logger.info(`🎯 Best match: ${bestMatch.description} (FDC ID: ${bestMatch.fdcId}, Type: ${bestMatch.dataType})`);
-    
+    const bestMatch =
+      usdaResults.foods.find(
+        (food: any) => food.dataType === 'Survey (FNDDS)' || food.dataType === 'Foundation'
+      ) || usdaResults.foods[0]; // Fall back to first result if no Survey/Foundation data
+
+    logger.info(
+      `🎯 Best match: ${bestMatch.description} (FDC ID: ${bestMatch.fdcId}, Type: ${bestMatch.dataType})`
+    );
+
     const foodDetails = await getUSDAFoodDetails(bestMatch.fdcId);
     logger.info(`📊 Food details received, nutrients: ${foodDetails.foodNutrients?.length || 0}`);
-    
+
     // Update the ingredient with USDA data
     const updateData = {
       fdc_id: bestMatch.fdcId,
-      usda_sync_date: new Date().toISOString()
+      usda_sync_date: new Date().toISOString(),
     };
     logger.info('📤 Update data (simplified):', updateData);
 
@@ -224,7 +227,7 @@ router.post('/:id/sync-usda', async (req, res) => {
       return res.status(500).json({
         success: false,
         error: 'Failed to update ingredient',
-        details: updateError.message
+        details: updateError.message,
       });
     }
 
@@ -256,7 +259,7 @@ router.post('/:id/sync-usda', async (req, res) => {
       logger.error('❌ Fetch updated ingredient error:', finalFetchError);
       return res.status(500).json({
         success: false,
-        error: 'Failed to fetch updated ingredient'
+        error: 'Failed to fetch updated ingredient',
       });
     }
 
@@ -269,18 +272,17 @@ router.post('/:id/sync-usda', async (req, res) => {
         usda_match: {
           fdcId: bestMatch.fdcId,
           description: bestMatch.description,
-          dataType: bestMatch.dataType
+          dataType: bestMatch.dataType,
         },
-        nutrition: nutritionData
-      }
+        nutrition: nutritionData,
+      },
     });
-
   } catch (error: unknown) {
     logger.error('❌ USDA sync error:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to sync with USDA data',
-      details: error instanceof Error ? error.message : 'Unknown error'
+      details: error instanceof Error ? error.message : 'Unknown error',
     });
   }
 });
@@ -291,23 +293,22 @@ router.get('/', async (req, res) => {
     const { page = 1, limit = 20, category } = req.query;
     const offset = (parseInt(page as string) - 1) * parseInt(limit as string);
 
-    let query = supabase
-      .from('ingredients')
-      .select('*', { count: 'exact' })
-      .order('name');
+    let query = supabase.from('ingredients').select('*', { count: 'exact' }).order('name');
 
     if (category) {
       query = query.eq('category', category);
     }
 
-    const { data, error, count } = await query
-      .range(offset, offset + parseInt(limit as string) - 1);
+    const { data, error, count } = await query.range(
+      offset,
+      offset + parseInt(limit as string) - 1
+    );
 
     if (error) {
       logger.error('Database error:', error);
       return res.status(500).json({
         success: false,
-        error: 'Failed to fetch ingredients'
+        error: 'Failed to fetch ingredients',
       });
     }
 
@@ -319,16 +320,15 @@ router.get('/', async (req, res) => {
           page: parseInt(page as string),
           limit: parseInt(limit as string),
           total: count || 0,
-          totalPages: Math.ceil((count || 0) / parseInt(limit as string))
-        }
-      }
+          totalPages: Math.ceil((count || 0) / parseInt(limit as string)),
+        },
+      },
     });
-
   } catch (error: unknown) {
     logger.error('Fetch ingredients error:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to fetch ingredients'
+      error: 'Failed to fetch ingredients',
     });
   }
 });
@@ -338,38 +338,33 @@ router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
 
-    const { data, error } = await supabase
-      .from('ingredients')
-      .select('*')
-      .eq('id', id)
-      .single();
+    const { data, error } = await supabase.from('ingredients').select('*').eq('id', id).single();
 
     if (error) {
       if (error.code === 'PGRST116') {
         return res.status(404).json({
           success: false,
-          error: 'Ingredient not found'
+          error: 'Ingredient not found',
         });
       }
       logger.error('Database error:', error);
       return res.status(500).json({
         success: false,
-        error: 'Failed to fetch ingredient'
+        error: 'Failed to fetch ingredient',
       });
     }
 
     res.json({
       success: true,
-      data: data
+      data: data,
     });
-
   } catch (error: unknown) {
     logger.error('Fetch ingredient error:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to fetch ingredient'
+      error: 'Failed to fetch ingredient',
     });
   }
 });
 
-export default router; 
+export default router;

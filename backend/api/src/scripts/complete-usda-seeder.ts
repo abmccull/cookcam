@@ -84,7 +84,7 @@ class CompleteUSDASeeder {
       errors: [],
       successfulInserts: 0,
       skippedDuplicates: 0,
-      batchBuffer: []
+      batchBuffer: [],
     };
     this.startTime = Date.now();
   }
@@ -94,19 +94,23 @@ class CompleteUSDASeeder {
     try {
       const data = await fs.readFile(PROGRESS_FILE, 'utf8');
       this.progress = JSON.parse(data);
-      console.log(`📂 Resuming from: ${this.progress.processedItems}/${this.progress.totalItems} items`);
-      console.log(`📄 Current: ${this.progress.currentDataType}, Page ${this.progress.currentPage}`);
+      console.log(
+        `📂 Resuming from: ${this.progress.processedItems}/${this.progress.totalItems} items`
+      );
+      console.log(
+        `📄 Current: ${this.progress.currentDataType}, Page ${this.progress.currentPage}`
+      );
     } catch {
       console.log('📝 Starting fresh complete USDA seeding process...');
       console.log('🔍 Getting total USDA item count for all data types...');
-      
+
       let totalItems = 0;
       for (const dataType of DATA_TYPES) {
         const count = await this.getDataTypeItemCount(dataType);
         totalItems += count;
         console.log(`   ${dataType}: ${count.toLocaleString()} items`);
       }
-      
+
       this.progress = {
         totalItems,
         processedItems: 0,
@@ -118,9 +122,9 @@ class CompleteUSDASeeder {
         errors: [],
         successfulInserts: 0,
         skippedDuplicates: 0,
-        batchBuffer: []
+        batchBuffer: [],
       };
-      
+
       console.log(`📊 Total USDA items found: ${totalItems.toLocaleString()}`);
       await this.saveProgress();
     }
@@ -129,16 +133,18 @@ class CompleteUSDASeeder {
   // Save current progress
   async saveProgress(): Promise<void> {
     this.progress.lastUpdateTime = new Date().toISOString();
-    
+
     // Calculate estimated completion
     if (this.progress.processedItems > 0) {
       const elapsedMs = Date.now() - this.startTime;
       const itemsPerMs = this.progress.processedItems / elapsedMs;
       const remainingItems = this.progress.totalItems - this.progress.processedItems;
       const estimatedRemainingMs = remainingItems / itemsPerMs;
-      
+
       if (isFinite(estimatedRemainingMs) && estimatedRemainingMs > 0) {
-        this.progress.estimatedCompletion = new Date(Date.now() + estimatedRemainingMs).toISOString();
+        this.progress.estimatedCompletion = new Date(
+          Date.now() + estimatedRemainingMs
+        ).toISOString();
       }
     }
 
@@ -150,18 +156,18 @@ class CompleteUSDASeeder {
     try {
       const data = await this.makeAPIRequest(`${USDA_BASE_URL}/foods/list`, {
         dataType: [dataType],
-        pageSize: 1
+        pageSize: 1,
       });
-      
+
       return data.totalPages * PAGE_SIZE || 0;
     } catch (_error) {
       console.log(`⚠️ Could not get count for ${dataType}, estimating...`);
       // Fallback estimates based on known USDA data
       const estimates: { [key: string]: number } = {
-        'Foundation': 2000,
+        Foundation: 2000,
         'SR Legacy': 8000,
         'Survey (FNDDS)': 7000,
-        'Branded': 600000
+        Branded: 600000,
       };
       return estimates[dataType] || 1000;
     }
@@ -171,13 +177,13 @@ class CompleteUSDASeeder {
   async getFoodsPage(dataType: string, page: number): Promise<USDAFood[]> {
     try {
       console.log(`📄 Fetching ${dataType} page ${page} (${PAGE_SIZE} items)...`);
-      
+
       const data = await this.makeAPIRequest(`${USDA_BASE_URL}/foods/list`, {
         dataType: [dataType],
         pageNumber: page,
         pageSize: PAGE_SIZE,
         sortBy: 'fdcId',
-        sortOrder: 'asc'
+        sortOrder: 'asc',
       });
 
       return data.foods || [];
@@ -189,11 +195,13 @@ class CompleteUSDASeeder {
 
   // Extract nutritional data using correct USDA nutrient IDs
   extractNutritionalData(food: USDAFood): any {
-    if (!food.foodNutrients) {return {};}
+    if (!food.foodNutrients) {
+      return {};
+    }
 
     const nutrition: any = {};
-    
-    food.foodNutrients.forEach(nutrient => {
+
+    food.foodNutrients.forEach((nutrient) => {
       const nutrientId = nutrient.nutrient.id;
       const amount = nutrient.amount;
 
@@ -238,17 +246,17 @@ class CompleteUSDASeeder {
   // Map USDA categories to your system
   mapUSDACategory(food: USDAFood): string {
     const dataType = food.dataType;
-    
+
     // First check if there's a specific food category
     if (food.foodCategory) {
       const lowerCategory = food.foodCategory.toLowerCase();
-      
+
       const categoryMap: { [key: string]: string } = {
         'vegetables and vegetable products': 'Vegetables',
         'fruits and fruit juices': 'Fruits',
         'dairy and egg products': 'Dairy',
         'poultry products': 'Meat & Poultry',
-        'beef products': 'Meat & Poultry', 
+        'beef products': 'Meat & Poultry',
         'pork products': 'Meat & Poultry',
         'lamb, veal, and game products': 'Meat & Poultry',
         'finfish and shellfish products': 'Seafood',
@@ -258,35 +266,40 @@ class CompleteUSDASeeder {
         'baked products': 'Baked Goods',
         'fats and oils': 'Oils',
         'spices and herbs': 'Seasonings',
-        'beverages': 'Beverages',
-        'sweets': 'Desserts',
-        'snacks': 'Snacks',
+        beverages: 'Beverages',
+        sweets: 'Desserts',
+        snacks: 'Snacks',
         'soups, sauces, and gravies': 'Condiments',
         'meals, entrees, and side dishes': 'Prepared Foods',
-        'fast foods': 'Fast Food'
+        'fast foods': 'Fast Food',
       };
-      
+
       if (categoryMap[lowerCategory]) {
         return categoryMap[lowerCategory];
       }
-      
+
       return food.foodCategory;
     }
 
     // Fallback based on data type
     switch (dataType) {
-      case 'Foundation': return 'Foundation Foods';
-      case 'SR Legacy': return 'Standard Reference';
-      case 'Survey (FNDDS)': return 'Survey Foods';
-      case 'Branded': return 'Packaged Foods';
-      default: return 'Other';
+      case 'Foundation':
+        return 'Foundation Foods';
+      case 'SR Legacy':
+        return 'Standard Reference';
+      case 'Survey (FNDDS)':
+        return 'Survey Foods';
+      case 'Branded':
+        return 'Packaged Foods';
+      default:
+        return 'Other';
     }
   }
 
   // Generate dietary flags based on food data
   generateDietaryFlags(food: USDAFood): string[] {
     const flags: string[] = [];
-    
+
     // Basic flags that apply to most whole foods
     if (food.dataType === 'Foundation' || food.dataType === 'SR Legacy') {
       // Foundation and SR Legacy foods are typically whole foods
@@ -300,55 +313,59 @@ class CompleteUSDASeeder {
         flags.push('vegan', 'vegetarian', 'high-fat');
       }
     }
-    
+
     // Check ingredients for common dietary restrictions (for branded foods)
     if (food.ingredients) {
       const ingredients = food.ingredients.toLowerCase();
-      
-      if (ingredients.includes('milk') || ingredients.includes('dairy') || 
-          ingredients.includes('cheese') || ingredients.includes('cream')) {
+
+      if (
+        ingredients.includes('milk') ||
+        ingredients.includes('dairy') ||
+        ingredients.includes('cheese') ||
+        ingredients.includes('cream')
+      ) {
         flags.push('contains-dairy');
       }
-      
+
       if (ingredients.includes('wheat') || ingredients.includes('gluten')) {
         flags.push('contains-gluten');
       }
-      
+
       if (ingredients.includes('soy')) {
         flags.push('contains-soy');
       }
-      
+
       if (ingredients.includes('egg')) {
         flags.push('contains-eggs');
       }
     }
-    
+
     return flags;
   }
 
   // Generate searchable tags
   generateTags(food: USDAFood): string[] {
     const tags: string[] = [];
-    
+
     // Add data type as tag
     tags.push(food.dataType.toLowerCase().replace(/[^a-z0-9]/g, '-'));
-    
+
     // Add category-based tags
     if (food.foodCategory) {
       tags.push(food.foodCategory.toLowerCase().replace(/[^a-z0-9]/g, '-'));
     }
-    
+
     // Add brand for branded foods
     if (food.brandOwner) {
       tags.push('branded', food.brandOwner.toLowerCase().replace(/[^a-z0-9]/g, '-'));
     }
-    
+
     // Add scientific name components if available
     if (food.scientificName) {
       const scientificParts = food.scientificName.toLowerCase().split(' ');
       tags.push(...scientificParts);
     }
-    
+
     return tags.slice(0, 10); // Limit to prevent overly long arrays
   }
 
@@ -358,12 +375,11 @@ class CompleteUSDASeeder {
     const category = this.mapUSDACategory(food);
     const dietaryFlags = this.generateDietaryFlags(food);
     const tags = this.generateTags(food);
-    
+
     // Truncate description if too long
-    const name = food.description.length > 500 ? 
-      food.description.substring(0, 497) + '...' : 
-      food.description;
-    
+    const name =
+      food.description.length > 500 ? food.description.substring(0, 497) + '...' : food.description;
+
     // Create searchable text
     const searchableText = [
       name,
@@ -371,8 +387,10 @@ class CompleteUSDASeeder {
       food.brandOwner || '',
       food.scientificName || '',
       food.additionalDescriptions || '',
-      tags.join(' ')
-    ].join(' ').toLowerCase();
+      tags.join(' '),
+    ]
+      .join(' ')
+      .toLowerCase();
 
     return {
       name,
@@ -383,7 +401,7 @@ class CompleteUSDASeeder {
       dietary_flags: JSON.stringify(dietaryFlags),
       usda_data_type: food.dataType,
       usda_sync_date: new Date().toISOString(),
-      ...nutritionData
+      ...nutritionData,
     };
   }
 
@@ -392,9 +410,9 @@ class CompleteUSDASeeder {
     try {
       const { data, error } = await supabase
         .from('ingredients')
-        .upsert(ingredientsData, { 
+        .upsert(ingredientsData, {
           onConflict: 'fdc_id',
-          ignoreDuplicates: false
+          ignoreDuplicates: false,
         })
         .select('id');
 
@@ -413,37 +431,38 @@ class CompleteUSDASeeder {
   // Process a batch of foods
   async processBatch(foods: USDAFood[]): Promise<void> {
     console.log(`📦 Processing batch of ${foods.length} foods...`);
-    
+
     const ingredientsToInsert: any[] = [];
-    
+
     for (const food of foods) {
       try {
         // Prepare ingredient data
         const ingredientData = this.prepareIngredientData(food);
         ingredientsToInsert.push(ingredientData);
-        
+
         this.progress.processedItems++;
-        
+
         // Add to batch buffer
         this.progress.batchBuffer.push(ingredientData);
-        
+
         // Insert when batch is full
         if (this.progress.batchBuffer.length >= BATCH_INSERT_SIZE) {
           const inserted = await this.batchInsertIngredients(this.progress.batchBuffer);
           this.progress.successfulInserts += inserted;
           this.progress.batchBuffer = [];
-          
+
           console.log(`✅ Batch inserted ${inserted} ingredients`);
         }
-        
+
         // Save progress periodically
         if (this.progress.processedItems % SAVE_PROGRESS_EVERY === 0) {
           await this.saveProgress();
           this.printProgress();
         }
-
       } catch (_error) {
-        this.progress.errors.push(`Error processing ${food.description}: ${(_error as Error).message}`);
+        this.progress.errors.push(
+          `Error processing ${food.description}: ${(_error as Error).message}`
+        );
         console.error(`❌ Error processing ${food.description}:`, _error);
       }
     }
@@ -453,16 +472,18 @@ class CompleteUSDASeeder {
   printProgress(): void {
     const percentage = ((this.progress.processedItems / this.progress.totalItems) * 100).toFixed(2);
     const elapsedHours = ((Date.now() - this.startTime) / (1000 * 60 * 60)).toFixed(1);
-    
+
     console.log(`\n📊 Progress Report:`);
-    console.log(`   🔄 ${this.progress.processedItems.toLocaleString()}/${this.progress.totalItems.toLocaleString()} (${percentage}%)`);
+    console.log(
+      `   🔄 ${this.progress.processedItems.toLocaleString()}/${this.progress.totalItems.toLocaleString()} (${percentage}%)`
+    );
     console.log(`   📂 Current: ${this.progress.currentDataType}`);
     console.log(`   📄 Page: ${this.progress.currentPage}`);
     console.log(`   ✅ Success: ${this.progress.successfulInserts.toLocaleString()}`);
     console.log(`   ❌ Errors: ${this.progress.errors.length.toLocaleString()}`);
     console.log(`   ⏱️  Time elapsed: ${elapsedHours}h`);
     console.log(`   🔢 Buffer: ${this.progress.batchBuffer.length} items`);
-    
+
     if (this.progress.estimatedCompletion) {
       const eta = new Date(this.progress.estimatedCompletion);
       console.log(`   🎯 ETA: ${eta.toLocaleDateString()} ${eta.toLocaleTimeString()}`);
@@ -472,7 +493,7 @@ class CompleteUSDASeeder {
 
   // Delay helper
   async delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   // Main seeding process
@@ -481,36 +502,41 @@ class CompleteUSDASeeder {
       console.log('🚀 Starting complete USDA database seeding...');
       console.log(`🔑 Using API key: ${USDA_API_KEY.substring(0, 8)}...`);
       console.log(`⚡ Rate limit: ${REQUESTS_PER_HOUR} requests/hour`);
-      
+
       await this.loadProgress();
-      
+
       // Process each data type
-      for (let typeIndex = this.progress.currentDataTypeIndex; typeIndex < DATA_TYPES.length; typeIndex++) {
+      for (
+        let typeIndex = this.progress.currentDataTypeIndex;
+        typeIndex < DATA_TYPES.length;
+        typeIndex++
+      ) {
         const dataType = DATA_TYPES[typeIndex]!;
         this.progress.currentDataType = dataType;
         this.progress.currentDataTypeIndex = typeIndex;
-        
+
         console.log(`\n🎯 Processing ${dataType} foods...`);
-        
+
         // Get total pages for this data type
         const sampleData = await this.makeAPIRequest(`${USDA_BASE_URL}/foods/list`, {
           dataType: [dataType],
-          pageSize: 1
+          pageSize: 1,
         });
-        
+
         const totalPages = sampleData.totalPages || 1;
         console.log(`📄 Total pages for ${dataType}: ${totalPages.toLocaleString()}`);
-        
+
         // Process pages for this data type
-        const startPage = typeIndex === this.progress.currentDataTypeIndex ? this.progress.currentPage : 1;
-        
+        const startPage =
+          typeIndex === this.progress.currentDataTypeIndex ? this.progress.currentPage : 1;
+
         for (let page = startPage; page <= totalPages; page++) {
           try {
             this.progress.currentPage = page;
-            
+
             // Get foods for this page
             const foods = await this.getFoodsPage(dataType, page);
-            
+
             if (foods.length === 0) {
               console.log(`⚠️ No more foods found for ${dataType}, moving to next type...`);
               break;
@@ -519,14 +545,15 @@ class CompleteUSDASeeder {
             // Process this page
             await this.processBatch(foods);
             await this.saveProgress();
-
           } catch (_error) {
             console.error(`❌ Error processing ${dataType} page ${page}:`, _error);
-            this.progress.errors.push(`Error processing ${dataType} page ${page}: ${(_error as Error).message}`);
+            this.progress.errors.push(
+              `Error processing ${dataType} page ${page}: ${(_error as Error).message}`
+            );
             await this.saveProgress();
           }
         }
-        
+
         // Reset page for next data type
         this.progress.currentPage = 1;
       }
@@ -541,7 +568,6 @@ class CompleteUSDASeeder {
 
       console.log('\n🎉 Complete USDA database seeding finished!');
       this.printProgress();
-
     } catch (_error) {
       console.error('❌ Fatal error in seeding process:', _error);
       await this.saveProgress();
@@ -558,12 +584,12 @@ class CompleteUSDASeeder {
       try {
         // Add delay between requests to respect rate limits
         await this.delay(DELAY_BETWEEN_REQUESTS);
-        
+
         const response = await axios.get(url, {
           params: { ...params, api_key: USDA_API_KEY },
-          timeout: 30000
+          timeout: 30000,
         });
-        
+
         return response.data;
       } catch (error: any) {
         if (error.response?.status === 429) {
@@ -571,21 +597,27 @@ class CompleteUSDASeeder {
           const retryAfter = error.response.headers['retry-after'];
           const retryDelaySeconds = retryAfter ? parseInt(retryAfter) : 3600;
           const retryDelayMs = retryDelaySeconds * 1000;
-          
-          console.log(`\n🚫 Rate Limited! Waiting ${Math.round(retryDelaySeconds/60)} minutes...`);
-          
+
+          console.log(
+            `\n🚫 Rate Limited! Waiting ${Math.round(retryDelaySeconds / 60)} minutes...`
+          );
+
           if (retryDelayMs > MAX_RETRY_DELAY) {
-            console.log(`⏰ Rate limit too long, stopping. Resume with: npm run seed-usda:complete:resume`);
-            throw new Error(`Rate limited for ${Math.round(retryDelaySeconds/3600)} hours`);
+            console.log(
+              `⏰ Rate limit too long, stopping. Resume with: npm run seed-usda:complete:resume`
+            );
+            throw new Error(`Rate limited for ${Math.round(retryDelaySeconds / 3600)} hours`);
           }
-          
+
           await this.delay(retryDelayMs);
           retryCount++;
           continue;
         }
-        
+
         if (retryCount < maxRetries - 1) {
-          console.log(`⚠️ Request failed, retrying in 30 seconds... (${retryCount + 1}/${maxRetries})`);
+          console.log(
+            `⚠️ Request failed, retrying in 30 seconds... (${retryCount + 1}/${maxRetries})`
+          );
           await this.delay(30000);
           retryCount++;
         } else {
@@ -593,7 +625,7 @@ class CompleteUSDASeeder {
         }
       }
     }
-    
+
     throw new Error('Max retries exceeded');
   }
 
@@ -614,24 +646,24 @@ class CompleteUSDASeeder {
 async function main() {
   const args = process.argv.slice(2);
   const command = args[0] || 'run';
-  
+
   const seeder = new CompleteUSDASeeder();
-  
+
   switch (command) {
     case 'run':
       await seeder.run();
       break;
-      
+
     case 'resume':
       await seeder.resume();
       break;
-      
+
     case 'status':
       const status = await seeder.getStatus();
       console.log('📊 Current Status:');
       console.log(JSON.stringify(status, null, 2));
       break;
-      
+
     default:
       console.log('Usage: npm run seed-usda:complete [run|resume|status]');
       console.log('  run    - Start fresh complete seeding process');
@@ -646,4 +678,4 @@ if (require.main === module) {
   main().catch(console.error);
 }
 
-export { CompleteUSDASeeder }; 
+export { CompleteUSDASeeder };

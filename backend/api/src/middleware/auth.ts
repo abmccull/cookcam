@@ -4,7 +4,8 @@ import { logger } from '../utils/logger';
 import { supabase } from '../index';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-jwt-secret-key-for-development';
-const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'fallback-refresh-secret-key-for-development';
+const JWT_REFRESH_SECRET =
+  process.env.JWT_REFRESH_SECRET || 'fallback-refresh-secret-key-for-development';
 const JWT_EXPIRY = process.env.JWT_EXPIRY || '1h';
 const JWT_REFRESH_EXPIRY = process.env.JWT_REFRESH_EXPIRY || '7d';
 
@@ -57,10 +58,14 @@ export interface AuthenticatedRequest extends Request {
   isFreeTier?: boolean;
 }
 
-export const authenticateUser = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+export const authenticateUser = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
   try {
     const authHeader = req.headers.authorization;
-    
+
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       res.status(401).json({ error: 'Authentication required' });
       return;
@@ -68,67 +73,76 @@ export const authenticateUser = async (req: AuthenticatedRequest, res: Response,
 
     const token = authHeader.substring(7);
 
-      // Demo mode removed - using Supabase auth only
+    // Demo mode removed - using Supabase auth only
 
     // Production mode - use Supabase auth validation
     try {
       logger.info('🔐 Validating Supabase token:', {
         tokenLength: token.length,
-        tokenPrefix: token.substring(0, 20) + '...'
+        tokenPrefix: token.substring(0, 20) + '...',
       });
 
-      const { data: { user }, error } = await supabase.auth.getUser(token);
-      
+      const {
+        data: { user },
+        error,
+      } = await supabase.auth.getUser(token);
+
       if (error || !user) {
         logger.warn('❌ Supabase token validation failed:', {
           error: error?.message,
           hasUser: !!user,
-          tokenPrefix: token.substring(0, 20) + '...'
+          tokenPrefix: token.substring(0, 20) + '...',
         });
-        res.status(401).json({ 
+        res.status(401).json({
           error: 'Token expired or invalid',
           code: 'TOKEN_EXPIRED',
-          message: 'Please refresh your session'
+          message: 'Please refresh your session',
         });
         return;
       }
 
       logger.info('✅ Supabase token validation successful:', {
         userId: user.id,
-        email: user.email
+        email: user.email,
       });
 
-      req.user = { 
-        id: user.id, 
-        ...(user.email && { email: user.email })
+      req.user = {
+        id: user.id,
+        ...(user.email && { email: user.email }),
       };
       next();
     } catch (validationError: unknown) {
       logger.error('❌ Supabase token validation error:', {
         error: validationError instanceof Error ? validationError.message : 'Unknown error',
-        tokenPrefix: token.substring(0, 20) + '...'
+        tokenPrefix: token.substring(0, 20) + '...',
       });
-      
-      res.status(401).json({ 
+
+      res.status(401).json({
         error: 'Token expired or invalid',
         code: 'TOKEN_EXPIRED',
-        message: 'Please refresh your session'
+        message: 'Please refresh your session',
       });
       return;
     }
   } catch (error: unknown) {
-    logger.error('Auth middleware error', { error: error instanceof Error ? error.message : 'Unknown error' });
+    logger.error('Auth middleware error', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
     res.status(401).json({ error: 'Authentication failed' });
     return;
   }
 };
 
 // Optional authentication - allows both authenticated and guest users
-export const optionalAuth = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+export const optionalAuth = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
   try {
     logger.debug('OptionalAuth middleware called for:', { path: req.path });
     const authHeader = req.headers.authorization;
-    
+
     // No auth header = continue as guest
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       logger.debug('No auth header - continuing as guest');
@@ -143,8 +157,11 @@ export const optionalAuth = async (req: AuthenticatedRequest, res: Response, nex
 
     // Production mode - use Supabase auth validation for optional auth
     try {
-      const { data: { user }, error } = await supabase.auth.getUser(token);
-      
+      const {
+        data: { user },
+        error,
+      } = await supabase.auth.getUser(token);
+
       if (error || !user) {
         logger.debug('Invalid token - continuing as guest');
         req.user = undefined;
@@ -152,9 +169,9 @@ export const optionalAuth = async (req: AuthenticatedRequest, res: Response, nex
         return next();
       } else {
         logger.debug('Valid token - authenticated user');
-        req.user = { 
-          id: user.id, 
-          ...(user.email && { email: user.email })
+        req.user = {
+          id: user.id,
+          ...(user.email && { email: user.email }),
         };
         req.isFreeTier = false;
         return next();
@@ -167,11 +184,13 @@ export const optionalAuth = async (req: AuthenticatedRequest, res: Response, nex
       next();
     }
   } catch (error: unknown) {
-    logger.error('Optional auth middleware error', { error: error instanceof Error ? error.message : 'Unknown error' });
+    logger.error('Optional auth middleware error', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
     // Even on error, continue as guest
     logger.debug('Error in optionalAuth - continuing as guest');
     req.user = undefined;
     req.isFreeTier = true;
     next();
   }
-}; 
+};

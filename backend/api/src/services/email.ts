@@ -16,70 +16,70 @@ interface EmailOptions {
 
 export class EmailService {
   private defaultFrom: string;
-  
+
   constructor() {
     this.defaultFrom = process.env.EMAIL_FROM || 'noreply@cookcam.app';
   }
-  
+
   // Welcome email for new users
   async sendWelcomeEmail(email: string, name: string): Promise<void> {
     const template = this.getWelcomeTemplate(name);
-    
+
     await this.sendEmail({
       to: email,
       subject: template.subject,
       html: template.html,
-      text: template.text
+      text: template.text,
     });
   }
-  
+
   // Password reset email
   async sendPasswordResetEmail(email: string, resetToken: string): Promise<void> {
     const resetLink = `${process.env.APP_URL}/reset-password?token=${resetToken}`;
     const template = this.getPasswordResetTemplate(resetLink);
-    
+
     await this.sendEmail({
       to: email,
       subject: template.subject,
       html: template.html,
-      text: template.text
+      text: template.text,
     });
   }
-  
+
   // Recipe shared notification
   async sendRecipeSharedEmail(
-    recipientEmail: string, 
-    senderName: string, 
+    recipientEmail: string,
+    senderName: string,
     recipeTitle: string,
     recipeId: string
   ): Promise<void> {
     const recipeLink = `${process.env.APP_URL}/recipe/${recipeId}`;
     const template = this.getRecipeSharedTemplate(senderName, recipeTitle, recipeLink);
-    
+
     await this.sendEmail({
       to: recipientEmail,
       subject: template.subject,
       html: template.html,
-      text: template.text
+      text: template.text,
     });
   }
-  
+
   // Achievement unlocked email
   async sendAchievementEmail(
-    email: string, 
-    achievementName: string, 
+    email: string,
+    achievementName: string,
     xpReward: number
   ): Promise<void> {
     const template = this.getAchievementTemplate(achievementName, xpReward);
-    
+
     await this.sendEmail({
       to: email,
       subject: template.subject,
       html: template.html,
-      text: template.text
+      text: template.text,
     });
   }
-  
+
   // Weekly digest email
   async sendWeeklyDigest(
     email: string,
@@ -91,39 +91,37 @@ export class EmailService {
     }
   ): Promise<void> {
     const template = this.getWeeklyDigestTemplate(stats);
-    
+
     await this.sendEmail({
       to: email,
       subject: template.subject,
       html: template.html,
-      text: template.text
+      text: template.text,
     });
   }
-  
+
   // Core email sending function (mock implementation)
   private async sendEmail(options: EmailOptions): Promise<void> {
     // In production, integrate with SendGrid, AWS SES, or similar
     console.log('📧 Sending email:', {
       to: options.to,
       subject: options.subject,
-      from: options.from || this.defaultFrom
+      from: options.from || this.defaultFrom,
     });
-    
+
     // Log email activity
     try {
-      await supabase
-        .from('email_logs')
-        .insert({
-          recipient: options.to,
-          subject: options.subject,
-          type: this.getEmailType(options.subject),
-          sent_at: new Date().toISOString(),
-          status: 'sent'
-        });
+      await supabase.from('email_logs').insert({
+        recipient: options.to,
+        subject: options.subject,
+        type: this.getEmailType(options.subject),
+        sent_at: new Date().toISOString(),
+        status: 'sent',
+      });
     } catch (error: unknown) {
       console.error('Email logging error:', error);
     }
-    
+
     // TODO: Implement actual email sending
     // Example with SendGrid:
     // const sgMail = require('@sendgrid/mail');
@@ -136,7 +134,7 @@ export class EmailService {
     //   html: options.html,
     // });
   }
-  
+
   // Email templates
   private getWelcomeTemplate(name: string): EmailTemplate {
     return {
@@ -154,10 +152,10 @@ export class EmailService {
         <p>Start by scanning your first ingredients!</p>
         <a href="${process.env.APP_URL}" style="background-color: #4CAF50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Open CookCam</a>
       `,
-      text: `Welcome to CookCam, ${name}! We're excited to have you join our community. Start by scanning your first ingredients!`
+      text: `Welcome to CookCam, ${name}! We're excited to have you join our community. Start by scanning your first ingredients!`,
     };
   }
-  
+
   private getPasswordResetTemplate(resetLink: string): EmailTemplate {
     return {
       subject: 'Reset your CookCam password',
@@ -169,11 +167,15 @@ export class EmailService {
         <p>This link will expire in 1 hour.</p>
         <p>If you didn't request this, you can safely ignore this email.</p>
       `,
-      text: `Password reset requested. Visit this link to reset: ${resetLink}. This link expires in 1 hour.`
+      text: `Password reset requested. Visit this link to reset: ${resetLink}. This link expires in 1 hour.`,
     };
   }
-  
-  private getRecipeSharedTemplate(senderName: string, recipeTitle: string, recipeLink: string): EmailTemplate {
+
+  private getRecipeSharedTemplate(
+    senderName: string,
+    recipeTitle: string,
+    recipeLink: string
+  ): EmailTemplate {
     return {
       subject: `${senderName} shared a recipe with you!`,
       html: `
@@ -182,10 +184,10 @@ export class EmailService {
         <p>Check out this delicious recipe on CookCam.</p>
         <a href="${recipeLink}" style="background-color: #FF9800; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">View Recipe</a>
       `,
-      text: `${senderName} shared "${recipeTitle}" with you. View it here: ${recipeLink}`
+      text: `${senderName} shared "${recipeTitle}" with you. View it here: ${recipeLink}`,
     };
   }
-  
+
   private getAchievementTemplate(achievementName: string, xpReward: number): EmailTemplate {
     return {
       subject: `🏆 Achievement Unlocked: ${achievementName}!`,
@@ -196,10 +198,10 @@ export class EmailService {
         <p>You earned <strong>${xpReward} XP</strong>!</p>
         <p>Keep cooking to unlock more achievements!</p>
       `,
-      text: `Congratulations! You unlocked "${achievementName}" and earned ${xpReward} XP!`
+      text: `Congratulations! You unlocked "${achievementName}" and earned ${xpReward} XP!`,
     };
   }
-  
+
   private getWeeklyDigestTemplate(stats: any): EmailTemplate {
     return {
       subject: `Your CookCam Weekly Digest 📊`,
@@ -214,18 +216,28 @@ export class EmailService {
         </ul>
         <p>Keep up the great work!</p>
       `,
-      text: `Your week: ${stats.recipesCreated} recipes, ${stats.scansCompleted} scans, ${stats.xpEarned} XP, ${stats.currentStreak} day streak!`
+      text: `Your week: ${stats.recipesCreated} recipes, ${stats.scansCompleted} scans, ${stats.xpEarned} XP, ${stats.currentStreak} day streak!`,
     };
   }
-  
+
   private getEmailType(subject: string): string {
-    if (subject.includes('Welcome')) {return 'welcome';}
-    if (subject.includes('Password')) {return 'password_reset';}
-    if (subject.includes('shared')) {return 'recipe_shared';}
-    if (subject.includes('Achievement')) {return 'achievement';}
-    if (subject.includes('Digest')) {return 'weekly_digest';}
+    if (subject.includes('Welcome')) {
+      return 'welcome';
+    }
+    if (subject.includes('Password')) {
+      return 'password_reset';
+    }
+    if (subject.includes('shared')) {
+      return 'recipe_shared';
+    }
+    if (subject.includes('Achievement')) {
+      return 'achievement';
+    }
+    if (subject.includes('Digest')) {
+      return 'weekly_digest';
+    }
     return 'other';
   }
 }
 
-export const emailService = new EmailService(); 
+export const emailService = new EmailService();

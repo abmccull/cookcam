@@ -11,35 +11,39 @@ const router = Router();
 router.post('/generate', authenticateUser, async (req, res) => {
   try {
     const { ingredients, dietaryPreferences, cuisineType } = req.body;
-    
+
     // Generate cache key based on request parameters
     const cacheKey = `suggestions:${JSON.stringify({ ingredients, dietaryPreferences, cuisineType })}`;
-    
+
     // Try to get from cache
     const cachedSuggestions = await cacheService.get(cacheKey, CacheNamespaces.RECIPES);
-    
+
     if (cachedSuggestions) {
       logger.info('Recipe suggestions served from cache');
       return res.json({
         success: true,
         data: cachedSuggestions,
-        cached: true
+        cached: true,
       });
     }
-    
+
     // If not in cache, generate new suggestions
-    const suggestions = await generateRecipeSuggestions({ ingredients, dietaryPreferences, cuisineType });
-    
+    const suggestions = await generateRecipeSuggestions({
+      ingredients,
+      dietaryPreferences,
+      cuisineType,
+    });
+
     // Cache the results
     await cacheService.set(cacheKey, suggestions, {
       namespace: CacheNamespaces.RECIPES,
-      ttl: CacheTTL.MEDIUM // 30 minutes
+      ttl: CacheTTL.MEDIUM, // 30 minutes
     });
-    
+
     res.json({
       success: true,
       data: suggestions,
-      cached: false
+      cached: false,
     });
   } catch (error) {
     logger.error('Error generating recipes:', error);
@@ -52,7 +56,7 @@ router.get('/popular', async (req, res) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 20;
-    
+
     // Use cache wrapper for the database query
     const getPopularRecipes = cacheService.wrap(
       async (page: number, limit: number) => {
@@ -61,7 +65,7 @@ router.get('/popular', async (req, res) => {
           .select('*, creator:users!creator_id(name, avatar_url)')
           .order('views_count', { ascending: false })
           .range((page - 1) * limit, page * limit - 1);
-          
+
         if (error) {
           throw error;
         }
@@ -70,14 +74,14 @@ router.get('/popular', async (req, res) => {
       (page, limit) => `popular:${page}:${limit}`, // Key generator
       { namespace: CacheNamespaces.RECIPES, ttl: CacheTTL.SHORT } // 5 minutes
     );
-    
+
     const recipes = await getPopularRecipes(page, limit);
-    
+
     res.json({
       success: true,
       data: recipes,
       page,
-      limit
+      limit,
     });
   } catch (error) {
     logger.error('Error fetching popular recipes:', error);
@@ -91,15 +95,17 @@ class RecipeService {
   async getRecipeById(recipeId: string) {
     const { data, error } = await supabase
       .from('recipes')
-      .select(`
+      .select(
+        `
         *,
         creator:users!creator_id(name, avatar_url),
         ingredients:recipe_ingredients(*),
         steps:recipe_steps(*)
-      `)
+      `
+      )
       .eq('id', recipeId)
       .single();
-      
+
     if (error) {
       throw error;
     }
@@ -112,14 +118,14 @@ const recipeService = new RecipeService();
 router.get('/:id', async (req, res) => {
   try {
     const recipe = await recipeService.getRecipeById(req.params.id);
-    
+
     if (!recipe) {
       return res.status(404).json({ error: 'Recipe not found' });
     }
-    
+
     res.json({
       success: true,
-      data: recipe
+      data: recipe,
     });
   } catch (error) {
     logger.error('Error fetching recipe:', error);
@@ -132,7 +138,7 @@ router.put('/:id', authenticateUser, async (req, res) => {
   try {
     const { id } = req.params;
     const updates = req.body;
-    
+
     // Update recipe in database
     const { data, error } = await supabase
       .from('recipes')
@@ -140,19 +146,19 @@ router.put('/:id', authenticateUser, async (req, res) => {
       .eq('id', id)
       .select()
       .single();
-      
+
     if (error) {
       throw error;
     }
-    
+
     // Invalidate related caches
     await cacheService.del(`recipe-details:[\"${id}\"]`);
     await cacheService.invalidate(`${CacheNamespaces.RECIPES}:popular:*`);
     await cacheService.invalidate(`${CacheNamespaces.RECIPES}:suggestions:*`);
-    
+
     res.json({
       success: true,
-      data
+      data,
     });
   } catch (error) {
     logger.error('Error updating recipe:', error);
@@ -167,12 +173,12 @@ router.get('/admin/cache-stats', authenticateUser, async (req: AuthenticatedRequ
     if (req.user?.email !== 'admin@cookcam.ai') {
       return res.status(403).json({ error: 'Forbidden' });
     }
-    
+
     const stats = await cacheService.getStats();
-    
+
     res.json({
       success: true,
-      data: stats
+      data: stats,
     });
   } catch (error) {
     logger.error('Error getting cache stats:', error);

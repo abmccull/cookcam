@@ -58,28 +58,28 @@ const requireAdmin = (req: any, res: Response, next: any) => {
 router.post('/start', authenticateUser, requireAdmin, async (req: Request, res: Response) => {
   try {
     const { type = 'full' } = req.body;
-    
+
     if (!['full', 'incremental'].includes(type)) {
       return res.status(400).json({ error: 'Invalid backup type' });
     }
 
     const backupId = await backupService.startBackup(type);
-    
-    logger.info('Backup started via API', { 
-      backupId, 
-      type, 
-      userId: (req as any).user?.id 
+
+    logger.info('Backup started via API', {
+      backupId,
+      type,
+      userId: (req as any).user?.id,
     });
 
     res.json({
       backupId,
-      message: `${type} backup started successfully`
+      message: `${type} backup started successfully`,
     });
   } catch (error) {
     logger.error('Failed to start backup via API', { error });
     res.status(500).json({
       error: 'Failed to start backup',
-      message: error instanceof Error ? error.message : 'Unknown error'
+      message: error instanceof Error ? error.message : 'Unknown error',
     });
   }
 });
@@ -106,30 +106,35 @@ router.post('/start', authenticateUser, requireAdmin, async (req: Request, res: 
  *       403:
  *         description: Admin access required
  */
-router.get('/status/:backupId', authenticateUser, requireAdmin, async (req: Request, res: Response) => {
-  try {
-    const { backupId } = req.params;
-    
-    if (!backupId) {
-      res.status(400).json({ error: 'Backup ID is required' });
-      return;
-    }
-    
-    const status = await backupService.getBackupStatus(backupId);
-    
-    if (!status) {
-      return res.status(404).json({ error: 'Backup not found' });
-    }
+router.get(
+  '/status/:backupId',
+  authenticateUser,
+  requireAdmin,
+  async (req: Request, res: Response) => {
+    try {
+      const { backupId } = req.params;
 
-    res.json(status);
-  } catch (error) {
-    logger.error('Failed to get backup status', { error });
-    res.status(500).json({
-      error: 'Failed to get backup status',
-      message: error instanceof Error ? error.message : 'Unknown error'
-    });
+      if (!backupId) {
+        res.status(400).json({ error: 'Backup ID is required' });
+        return;
+      }
+
+      const status = await backupService.getBackupStatus(backupId);
+
+      if (!status) {
+        return res.status(404).json({ error: 'Backup not found' });
+      }
+
+      res.json(status);
+    } catch (error) {
+      logger.error('Failed to get backup status', { error });
+      res.status(500).json({
+        error: 'Failed to get backup status',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
   }
-});
+);
 
 /**
  * @swagger
@@ -155,16 +160,16 @@ router.get('/list', authenticateUser, requireAdmin, async (req: Request, res: Re
   try {
     const limit = parseInt(req.query.limit as string) || 10;
     const backups = await backupService.listRecentBackups(limit);
-    
+
     res.json({
       backups,
-      count: backups.length
+      count: backups.length,
     });
   } catch (error) {
     logger.error('Failed to list backups', { error });
     res.status(500).json({
       error: 'Failed to list backups',
-      message: error instanceof Error ? error.message : 'Unknown error'
+      message: error instanceof Error ? error.message : 'Unknown error',
     });
   }
 });
@@ -205,17 +210,17 @@ router.get('/list', authenticateUser, requireAdmin, async (req: Request, res: Re
 router.post('/restore', authenticateUser, requireAdmin, async (req: Request, res: Response) => {
   try {
     const { backupId, tables, dryRun = false } = req.body;
-    
+
     if (!backupId) {
       return res.status(400).json({ error: 'Backup ID is required' });
     }
 
     const result = await backupService.restoreFromBackup(backupId, { tables, dryRun });
-    
-    logger.info('Restore operation completed', { 
-      backupId, 
-      result, 
-      userId: (req as any).user?.id 
+
+    logger.info('Restore operation completed', {
+      backupId,
+      result,
+      userId: (req as any).user?.id,
     });
 
     res.json(result);
@@ -223,7 +228,7 @@ router.post('/restore', authenticateUser, requireAdmin, async (req: Request, res
     logger.error('Failed to restore from backup', { error });
     res.status(500).json({
       error: 'Failed to restore from backup',
-      message: error instanceof Error ? error.message : 'Unknown error'
+      message: error instanceof Error ? error.message : 'Unknown error',
     });
   }
 });
@@ -250,7 +255,7 @@ router.get('/config', authenticateUser, requireAdmin, async (req: Request, res: 
     logger.error('Failed to get backup config', { error });
     res.status(500).json({
       error: 'Failed to get backup configuration',
-      message: error instanceof Error ? error.message : 'Unknown error'
+      message: error instanceof Error ? error.message : 'Unknown error',
     });
   }
 });
@@ -292,21 +297,21 @@ router.put('/config', authenticateUser, requireAdmin, async (req: Request, res: 
   try {
     const updates = req.body;
     backupService.updateConfig(updates);
-    
-    logger.info('Backup configuration updated', { 
-      updates, 
-      userId: (req as any).user?.id 
+
+    logger.info('Backup configuration updated', {
+      updates,
+      userId: (req as any).user?.id,
     });
 
     res.json({
       message: 'Configuration updated successfully',
-      config: backupService.getConfig()
+      config: backupService.getConfig(),
     });
   } catch (error) {
     logger.error('Failed to update backup config', { error });
     res.status(500).json({
       error: 'Failed to update backup configuration',
-      message: error instanceof Error ? error.message : 'Unknown error'
+      message: error instanceof Error ? error.message : 'Unknown error',
     });
   }
 });
@@ -328,14 +333,14 @@ router.put('/config', authenticateUser, requireAdmin, async (req: Request, res: 
 router.post('/test', authenticateUser, requireAdmin, async (req: Request, res: Response) => {
   try {
     const testResults = await backupService.testBackup();
-    
+
     const statusCode = testResults.success ? 200 : 500;
     res.status(statusCode).json(testResults);
   } catch (error) {
     logger.error('Failed to test backup system', { error });
     res.status(500).json({
       error: 'Failed to test backup system',
-      message: error instanceof Error ? error.message : 'Unknown error'
+      message: error instanceof Error ? error.message : 'Unknown error',
     });
   }
 });

@@ -47,14 +47,14 @@ export class RecipePreviewService {
     try {
       logger.info('🚀 Generating recipe previews...', {
         ingredientCount: request.detectedIngredients.length,
-        sessionId: request.sessionId
+        sessionId: request.sessionId,
       });
 
       const prompt = this.buildPreviewPrompt(request);
-      
+
       logger.info('📤 Sending preview request to OpenAI...', {
         promptLength: prompt.length,
-        maxTokens: 2000
+        maxTokens: 2000,
       });
 
       const response = await this.openai.chat.completions.create({
@@ -62,16 +62,17 @@ export class RecipePreviewService {
         messages: [
           {
             role: 'system',
-            content: 'You are a professional chef assistant. Generate recipe previews that are appealing and accurate. Return only valid JSON.'
+            content:
+              'You are a professional chef assistant. Generate recipe previews that are appealing and accurate. Return only valid JSON.',
           },
           {
             role: 'user',
-            content: prompt
-          }
+            content: prompt,
+          },
         ],
         max_tokens: 2000, // Reduced for faster response
         temperature: 0.7,
-        response_format: { type: 'json_object' }
+        response_format: { type: 'json_object' },
       });
 
       const content = response.choices[0]?.message?.content;
@@ -80,7 +81,7 @@ export class RecipePreviewService {
       }
 
       logger.info('🔄 Parsing preview response...', {
-        contentLength: content.length
+        contentLength: content.length,
       });
 
       // Debug logging for preview content
@@ -88,7 +89,7 @@ export class RecipePreviewService {
         first200Chars: content.substring(0, 200),
         last200Chars: content.substring(Math.max(0, content.length - 200)),
         startsWithBrace: content.trim().startsWith('{'),
-        endsWithBrace: content.trim().endsWith('}')
+        endsWithBrace: content.trim().endsWith('}'),
       });
 
       let result;
@@ -97,7 +98,7 @@ export class RecipePreviewService {
       } catch (parseError) {
         logger.error('❌ JSON parsing failed for previews:', {
           error: parseError,
-          contentSample: content.substring(0, 500)
+          contentSample: content.substring(0, 500),
         });
         throw new Error('Invalid JSON response from OpenAI for previews');
       }
@@ -107,18 +108,17 @@ export class RecipePreviewService {
 
       logger.info('✅ Successfully generated recipe previews', {
         previewCount: previews.length,
-        sessionId: request.sessionId
+        sessionId: request.sessionId,
       });
 
       return {
         sessionId: request.sessionId,
-        previews
+        previews,
       };
-
     } catch (error: unknown) {
       logger.error('❌ Error generating recipe previews:', {
         error: error instanceof Error ? error.message : error,
-        sessionId: request.sessionId
+        sessionId: request.sessionId,
       });
       throw error;
     }
@@ -128,9 +128,10 @@ export class RecipePreviewService {
     const ingredients = request.detectedIngredients?.join(', ') || '';
     const cuisines = request.userPreferences?.cuisinePreferences?.join(', ') || 'any';
     const appliances = request.userPreferences?.selectedAppliances?.join(', ') || 'any';
-    const dietary = (request.userPreferences?.dietaryTags?.length || 0) > 0 
-      ? request.userPreferences.dietaryTags.join(', ') 
-      : 'none';
+    const dietary =
+      (request.userPreferences?.dietaryTags?.length || 0) > 0
+        ? request.userPreferences.dietaryTags.join(', ')
+        : 'none';
     const mealType = request.userPreferences?.mealType || 'main dish';
 
     return `Generate 3 diverse ${mealType} recipe previews using these ingredients: ${ingredients}
@@ -176,10 +177,14 @@ Requirements:
       title: recipe.title || 'Untitled Recipe',
       description: recipe.description || 'A delicious recipe using your ingredients.',
       estimatedTime: typeof recipe.estimatedTime === 'number' ? recipe.estimatedTime : 30,
-      difficulty: ['easy', 'medium', 'hard'].includes(recipe.difficulty) ? recipe.difficulty : 'easy',
+      difficulty: ['easy', 'medium', 'hard'].includes(recipe.difficulty)
+        ? recipe.difficulty
+        : 'easy',
       cuisineType: recipe.cuisineType || 'International',
       mainIngredients: Array.isArray(recipe.mainIngredients) ? recipe.mainIngredients : [],
-      appealFactors: Array.isArray(recipe.appealFactors) ? recipe.appealFactors : ['Delicious', 'Easy to make']
+      appealFactors: Array.isArray(recipe.appealFactors)
+        ? recipe.appealFactors
+        : ['Delicious', 'Easy to make'],
     }));
   }
-} 
+}

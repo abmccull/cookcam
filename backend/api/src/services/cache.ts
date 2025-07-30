@@ -16,13 +16,13 @@ export class CacheService {
   private redis?: Redis;
   private isRedisAvailable: boolean = false;
   private defaultTTL = 3600; // 1 hour
-  
+
   constructor() {
     this.memoryCache = new Map();
     this.initializeRedis();
     this.startCleanupInterval();
   }
-  
+
   private initializeRedis(): void {
     try {
       this.redis = new Redis({
@@ -60,49 +60,52 @@ export class CacheService {
       });
 
       // Test connection
-      this.redis.ping().then(() => {
-        this.isRedisAvailable = true;
-      }).catch((err) => {
-        logger.error('Redis ping failed:', err);
-        this.isRedisAvailable = false;
-      });
+      this.redis
+        .ping()
+        .then(() => {
+          this.isRedisAvailable = true;
+        })
+        .catch((err) => {
+          logger.error('Redis ping failed:', err);
+          this.isRedisAvailable = false;
+        });
     } catch (error) {
       logger.error('Failed to initialize Redis:', error);
       this.isRedisAvailable = false;
     }
   }
-  
+
   // Get key with namespace
   private getKey(key: string, namespace?: string): string {
     return namespace ? `${namespace}:${key}` : key;
   }
-  
+
   // Set cache value
   async set(key: string, value: unknown, options: CacheOptions = {}): Promise<void> {
     const { ttl = this.defaultTTL, namespace } = options;
     const fullKey = this.getKey(key, namespace);
-    
+
     try {
       if (this.isRedisAvailable && this.redis) {
         const serialized = JSON.stringify(value);
         await this.redis.setex(fullKey, ttl, serialized);
       } else {
         // Fallback to memory cache
-        const expires = Date.now() + (ttl * 1000);
+        const expires = Date.now() + ttl * 1000;
         this.memoryCache.set(fullKey, { value, expires });
       }
     } catch (error) {
       logger.error('Cache set error:', error);
       // Fallback to memory cache on error
-      const expires = Date.now() + (ttl * 1000);
+      const expires = Date.now() + ttl * 1000;
       this.memoryCache.set(fullKey, { value, expires });
     }
   }
-  
+
   // Get cache value
   async get<T = any>(key: string, namespace?: string): Promise<T | null> {
     const fullKey = this.getKey(key, namespace);
-    
+
     try {
       if (this.isRedisAvailable && this.redis) {
         const data = await this.redis.get(fullKey);
@@ -110,13 +113,15 @@ export class CacheService {
       } else {
         // Fallback to memory cache
         const item = this.memoryCache.get(fullKey);
-        if (!item) {return null;}
-        
+        if (!item) {
+          return null;
+        }
+
         if (Date.now() > item.expires) {
           this.memoryCache.delete(fullKey);
           return null;
         }
-        
+
         return item.value as T;
       }
     } catch (error) {
@@ -129,11 +134,11 @@ export class CacheService {
       return item.value as T;
     }
   }
-  
+
   // Delete cache value
   async del(key: string, namespace?: string): Promise<void> {
     const fullKey = this.getKey(key, namespace);
-    
+
     try {
       if (this.isRedisAvailable && this.redis) {
         await this.redis.del(fullKey);
@@ -144,7 +149,7 @@ export class CacheService {
       this.memoryCache.delete(fullKey);
     }
   }
-  
+
   // Clear entire namespace or all cache
   async clear(namespace?: string): Promise<void> {
     try {
@@ -159,7 +164,7 @@ export class CacheService {
           await this.redis.flushdb();
         }
       }
-      
+
       // Also clear memory cache
       if (namespace) {
         const prefix = `${namespace}:`;
@@ -175,7 +180,7 @@ export class CacheService {
       logger.error('Cache clear error:', error);
     }
   }
-  
+
   // Invalidate cache by pattern
   async invalidate(pattern: string): Promise<void> {
     try {
@@ -185,7 +190,7 @@ export class CacheService {
           await this.redis.del(...keys);
         }
       }
-      
+
       // Also invalidate in memory cache
       const regex = new RegExp(pattern.replace(/\*/g, '.*'));
       for (const key of this.memoryCache.keys()) {
@@ -197,11 +202,11 @@ export class CacheService {
       logger.error('Cache invalidate error:', error);
     }
   }
-  
+
   // Get or set pattern
   async getOrSet<T = any>(
-    key: string, 
-    factory: () => Promise<T>, 
+    key: string,
+    factory: () => Promise<T>,
     options: CacheOptions = {}
   ): Promise<T> {
     const cached = await this.get<T>(key, options.namespace);
@@ -209,13 +214,13 @@ export class CacheService {
       logger.debug(`Cache hit for ${key}`);
       return cached;
     }
-    
+
     logger.debug(`Cache miss for ${key}`);
     const value = await factory();
     await this.set(key, value, options);
     return value;
   }
-  
+
   // Cache wrapper for functions
   wrap<T extends (...args: any[]) => Promise<any>>(
     fn: T,
@@ -227,7 +232,7 @@ export class CacheService {
       return this.getOrSet(key, () => fn(...args), options);
     }) as T;
   }
-  
+
   // Cache decorator
   static cacheable(keyPrefix: string, ttl?: number) {
     return function (target: any, propertyName: string, descriptor: PropertyDescriptor) {
@@ -236,7 +241,7 @@ export class CacheService {
       descriptor.value = async function (...args: any[]) {
         const cache = cacheService;
         const key = `${keyPrefix}:${JSON.stringify(args)}`;
-        
+
         // Try to get from cache
         const cached = await cache.get(key);
         if (cached !== null) {
@@ -247,17 +252,17 @@ export class CacheService {
         // Execute original method
         logger.debug(`Cache miss for ${propertyName}`);
         const result = await originalMethod.apply(this, args);
-        
+
         // Store in cache
         await cache.set(key, result, { ttl });
-        
+
         return result;
       };
 
       return descriptor;
     };
   }
-  
+
   // Cleanup expired entries (for memory cache)
   private cleanup(): void {
     const now = Date.now();
@@ -267,14 +272,14 @@ export class CacheService {
       }
     }
   }
-  
+
   // Start cleanup interval
   private startCleanupInterval(): void {
     setInterval(() => this.cleanup(), 60000); // Clean every minute
   }
-  
+
   // Get cache stats
-  async getStats(): Promise<{ 
+  async getStats(): Promise<{
     type: string;
     isRedisAvailable: boolean;
     memoryCacheSize: number;
@@ -295,7 +300,7 @@ export class CacheService {
         if (usedMemory && usedMemory[1]) {
           stats.redisMemoryUsage = parseInt(usedMemory[1]);
         }
-        
+
         const dbSize = await this.redis.dbsize();
         stats.redisCacheSize = dbSize;
       } catch (error) {
@@ -308,8 +313,10 @@ export class CacheService {
 
   // Health check
   async healthCheck(): Promise<boolean> {
-    if (!this.redis) {return true;} // Memory cache is always healthy
-    
+    if (!this.redis) {
+      return true;
+    } // Memory cache is always healthy
+
     try {
       await this.redis.ping();
       return true;
@@ -337,11 +344,11 @@ export const CacheNamespaces = {
 
 // Common TTL values (in seconds)
 export const CacheTTL = {
-  SHORT: 300,      // 5 minutes
-  MEDIUM: 1800,    // 30 minutes
-  LONG: 3600,      // 1 hour
-  DAY: 86400,      // 24 hours
-  WEEK: 604800     // 7 days
+  SHORT: 300, // 5 minutes
+  MEDIUM: 1800, // 30 minutes
+  LONG: 3600, // 1 hour
+  DAY: 86400, // 24 hours
+  WEEK: 604800, // 7 days
 } as const;
 
 // Export default instance

@@ -6,7 +6,7 @@ export enum LogLevel {
   ERROR = 'error',
   WARN = 'warn',
   INFO = 'info',
-  DEBUG = 'debug'
+  DEBUG = 'debug',
 }
 
 class Logger {
@@ -18,14 +18,15 @@ class Logger {
       timestamp,
       level: level.toUpperCase(),
       message,
-      ...context
+      ...context,
     };
 
     if (this.isDevelopment) {
       // Pretty format for development
-      const contextStr = context && Object.keys(context).length > 0 
-        ? `\n  Context: ${JSON.stringify(context, null, 2)}`
-        : '';
+      const contextStr =
+        context && Object.keys(context).length > 0
+          ? `\n  Context: ${JSON.stringify(context, null, 2)}`
+          : '';
       return `[${timestamp}] ${level.toUpperCase()}: ${message}${contextStr}`;
     } else {
       // JSON format for production (better for log aggregation)
@@ -38,27 +39,29 @@ class Logger {
       return {
         error: error.message,
         stack: error.stack,
-        name: error.name
+        name: error.name,
       };
     }
-    
+
     if (error && typeof error === 'object' && 'message' in error) {
       return {
         error: (error as any).message,
-        details: JSON.stringify(error)
+        details: JSON.stringify(error),
       };
     }
-    
+
     return {
-      error: String(error)
+      error: String(error),
     };
   }
 
   error(message: string, errorOrContext?: unknown): void {
     let context: LogContext;
-    
-    if (errorOrContext instanceof Error || 
-        (errorOrContext && typeof errorOrContext === 'object' && 'message' in errorOrContext)) {
+
+    if (
+      errorOrContext instanceof Error ||
+      (errorOrContext && typeof errorOrContext === 'object' && 'message' in errorOrContext)
+    ) {
       context = this.formatError(errorOrContext);
     } else if (errorOrContext && typeof errorOrContext === 'object') {
       context = errorOrContext as LogContext;
@@ -67,7 +70,7 @@ class Logger {
     } else {
       context = {};
     }
-    
+
     console.error(this.formatMessage(LogLevel.ERROR, message, context));
   }
 
@@ -115,4 +118,4 @@ class Logger {
 export const logger = new Logger();
 
 // Export for testing or when you need a new instance
-export { Logger }; 
+export { Logger };

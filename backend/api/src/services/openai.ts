@@ -74,7 +74,7 @@ export async function generateRecipeSuggestions(input: RecipeInput): Promise<Rec
     dietaryTags: input.dietaryTags || ['NONE'],
     cuisinePreferences: input.cuisinePreferences || ['SURPRISE_ME'],
     timeAvailable: input.timeAvailable || 'FLEXIBLE',
-    skillLevel: input.skillLevel || 'SURPRISE_ME'
+    skillLevel: input.skillLevel || 'SURPRISE_ME',
   };
 
   const taskPrompt = `TASK
@@ -102,7 +102,10 @@ Return JSON in this exact format:
       model: 'gpt-4o-mini',
       messages: [
         { role: 'system', content: CHEF_CAMILLO_SYSTEM_PROMPT },
-        { role: 'user', content: `USER INPUT\n${JSON.stringify(userInput, null, 2)}\n\n${taskPrompt}` }
+        {
+          role: 'user',
+          content: `USER INPUT\n${JSON.stringify(userInput, null, 2)}\n\n${taskPrompt}`,
+        },
       ],
       temperature: 0.7,
       max_tokens: 1000,
@@ -121,7 +124,10 @@ Return JSON in this exact format:
   }
 }
 
-export async function generateFullRecipe(selectedTitle: string, originalInput: RecipeInput): Promise<FullRecipe> {
+export async function generateFullRecipe(
+  selectedTitle: string,
+  originalInput: RecipeInput
+): Promise<FullRecipe> {
   const secondCallPrompt = `TASK
 
 The user selected: "${selectedTitle}"
@@ -162,7 +168,10 @@ Important:
       model: 'gpt-4o-mini',
       messages: [
         { role: 'system', content: CHEF_CAMILLO_SYSTEM_PROMPT },
-        { role: 'user', content: `Original ingredients: ${JSON.stringify(originalInput, null, 2)}\n\n${secondCallPrompt}` }
+        {
+          role: 'user',
+          content: `Original ingredients: ${JSON.stringify(originalInput, null, 2)}\n\n${secondCallPrompt}`,
+        },
       ],
       temperature: 0.7,
       max_tokens: 2000,
@@ -179,4 +188,4 @@ Important:
     console.error('Error generating full recipe:', error);
     throw new Error('Failed to generate full recipe');
   }
-} 
+}

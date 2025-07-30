@@ -76,16 +76,19 @@ class USDAService {
   private checkRateLimit(): boolean {
     const now = new Date();
     const hoursPassed = (now.getTime() - this.lastReset.getTime()) / (1000 * 60 * 60);
-    
+
     if (hoursPassed >= 1) {
       this.requestCount = 0;
       this.lastReset = now;
     }
-    
+
     return this.requestCount < this.rateLimit;
   }
 
-  private async makeRequest(endpoint: string, params: Record<string, unknown> = {}): Promise<unknown> {
+  private async makeRequest(
+    endpoint: string,
+    params: Record<string, unknown> = {}
+  ): Promise<unknown> {
     if (!this.checkRateLimit()) {
       throw new Error('USDA API rate limit exceeded. Try again in an hour.');
     }
@@ -94,9 +97,9 @@ class USDAService {
       const response = await axios.get(`${this.baseUrl}${endpoint}`, {
         params: {
           api_key: this.apiKey,
-          ...params
+          ...params,
         },
-        timeout: 10000
+        timeout: 10000,
       });
 
       this.requestCount++;
@@ -109,8 +112,8 @@ class USDAService {
 
   // Search for foods by query
   async searchFoods(
-    query: string, 
-    dataType: string[] = ['Foundation', 'SR Legacy'], 
+    query: string,
+    dataType: string[] = ['Foundation', 'SR Legacy'],
     pageSize: number = 25,
     pageNumber: number = 1
   ): Promise<USDASearchResponse> {
@@ -120,7 +123,7 @@ class USDAService {
       pageSize,
       pageNumber,
       sortBy: 'fdcId',
-      sortOrder: 'asc'
+      sortOrder: 'asc',
     };
 
     return this.makeRequest('/foods/search', params) as Promise<USDASearchResponse>;
@@ -135,7 +138,7 @@ class USDAService {
   async getMultipleFoods(fdcIds: number[]): Promise<USDAFood[]> {
     const params = {
       fdcIds: fdcIds.join(','),
-      nutrients: ['203', '204', '205', '208', '269', '291', '301', '303', '401'] // Common nutrients
+      nutrients: ['203', '204', '205', '208', '269', '291', '301', '303', '401'], // Common nutrients
     };
 
     return this.makeRequest('/foods', params) as Promise<USDAFood[]>;
@@ -143,11 +146,13 @@ class USDAService {
 
   // Extract standardized nutritional data per 100g
   extractNutritionalData(food: USDAFood): NutritionalData {
-    if (!food.foodNutrients) {return {};}
+    if (!food.foodNutrients) {
+      return {};
+    }
 
     const nutrition: NutritionalData = {};
-    
-    food.foodNutrients.forEach(nutrient => {
+
+    food.foodNutrients.forEach((nutrient) => {
       const nutrientId = nutrient.nutrient.id;
       const amount = nutrient.amount;
 
@@ -191,7 +196,7 @@ class USDAService {
   // Store USDA food data in our database
   async storeFoodData(pool: Pool, food: USDAFood): Promise<void> {
     const client = await pool.connect();
-    
+
     try {
       await client.query('BEGIN');
 
@@ -236,7 +241,7 @@ class USDAService {
         food.scientificName || null,
         food.commonNames || null,
         food.additionalDescriptions || null,
-        'USDA FDC API'
+        'USDA FDC API',
       ]);
 
       // Store nutrients
@@ -248,13 +253,13 @@ class USDAService {
             VALUES ($1, $2, $3, $4, $5)
             ON CONFLICT (nutrient_id) DO NOTHING
           `;
-          
+
           await client.query(insertNutrientQuery, [
             nutrient.nutrient.id,
             nutrient.nutrient.name,
             nutrient.nutrient.unitName,
             nutrient.nutrient.number,
-            nutrient.nutrient.rank
+            nutrient.nutrient.rank,
           ]);
 
           // Then store food nutrient relationship
@@ -284,7 +289,7 @@ class USDAService {
             nutrient.max || null,
             nutrient.median || null,
             nutrient.footnote || null,
-            nutrient.minYearAcquired || null
+            nutrient.minYearAcquired || null,
           ]);
         }
       }
@@ -303,7 +308,7 @@ class USDAService {
     try {
       // Search for the ingredient in USDA database
       const searchResults = await this.searchFoods(ingredientName, ['Foundation', 'SR Legacy'], 5);
-      
+
       if (searchResults.foods.length === 0) {
         console.log(`No USDA data found for ingredient: ${ingredientName}`);
         return null;
@@ -311,21 +316,21 @@ class USDAService {
 
       // Get the best match (first result, typically highest relevance)
       const bestMatch = searchResults.foods[0];
-      
+
       if (!bestMatch) {
         console.log(`No valid match found for ingredient: ${ingredientName}`);
         return null;
       }
-      
+
       // Get detailed food information
       const detailedFood = await this.getFoodDetails(bestMatch.fdcId);
-      
+
       // Store in USDA tables
       await this.storeFoodData(pool, detailedFood);
-      
+
       // Extract nutritional data
       const nutrition = this.extractNutritionalData(detailedFood);
-      
+
       // Update our ingredients table
       const updateIngredientQuery = `
         UPDATE ingredients 
@@ -358,11 +363,13 @@ class USDAService {
         nutrition.calcium || null,
         nutrition.iron || null,
         nutrition.vitaminC || null,
-        ingredientName
+        ingredientName,
       ]);
 
       if (result.rows.length > 0) {
-        console.log(`Successfully synced ingredient "${ingredientName}" with USDA FDC ID: ${detailedFood.fdcId}`);
+        console.log(
+          `Successfully synced ingredient "${ingredientName}" with USDA FDC ID: ${detailedFood.fdcId}`
+        );
         return detailedFood.fdcId;
       } else {
         // Create new ingredient if not found
@@ -395,13 +402,14 @@ class USDAService {
           nutrition.sodium || null,
           nutrition.calcium || null,
           nutrition.iron || null,
-          nutrition.vitaminC || null
+          nutrition.vitaminC || null,
         ]);
 
-        console.log(`Created new ingredient "${detailedFood.description}" with USDA FDC ID: ${detailedFood.fdcId}`);
+        console.log(
+          `Created new ingredient "${detailedFood.description}" with USDA FDC ID: ${detailedFood.fdcId}`
+        );
         return detailedFood.fdcId;
       }
-
     } catch (error: unknown) {
       console.error(`Failed to sync ingredient "${ingredientName}" with USDA:`, error);
       return null;
@@ -409,46 +417,52 @@ class USDAService {
   }
 
   // Batch sync multiple ingredients
-  async batchSyncIngredients(pool: Pool, ingredientNames: string[]): Promise<{ [key: string]: number | null }> {
+  async batchSyncIngredients(
+    pool: Pool,
+    ingredientNames: string[]
+  ): Promise<{ [key: string]: number | null }> {
     const results: { [key: string]: number | null } = {};
-    
+
     for (const ingredientName of ingredientNames) {
       // Add delay to respect rate limits
       if (this.requestCount > 0) {
-        await new Promise(resolve => setTimeout(resolve, 100)); // 100ms delay
+        await new Promise((resolve) => setTimeout(resolve, 100)); // 100ms delay
       }
-      
+
       results[ingredientName] = await this.syncIngredientWithUSDA(pool, ingredientName);
     }
-    
+
     return results;
   }
 
   // Search our local ingredients database with USDA fallback
-  async searchIngredientsWithFallback(pool: Pool, query: string, limit: number = 10): Promise<any[]> {
+  async searchIngredientsWithFallback(
+    pool: Pool,
+    query: string,
+    limit: number = 10
+  ): Promise<any[]> {
     // First search local database
     const localSearchQuery = `
       SELECT * FROM search_ingredients($1, $2)
     `;
-    
+
     const localResults = await pool.query(localSearchQuery, [query, limit]);
-    
+
     if (localResults.rows.length >= limit) {
       return localResults.rows;
     }
-    
+
     // If we don't have enough local results, search USDA and sync
     try {
       const usdaResults = await this.searchFoods(query, ['Foundation', 'SR Legacy'], 5);
-      
+
       for (const food of usdaResults.foods.slice(0, 3)) {
         await this.syncIngredientWithUSDA(pool, food.description);
       }
-      
+
       // Search again after syncing
       const updatedResults = await pool.query(localSearchQuery, [query, limit]);
       return updatedResults.rows;
-      
     } catch (error: unknown) {
       console.error('USDA fallback search failed:', error);
       return localResults.rows;
@@ -456,4 +470,4 @@ class USDAService {
   }
 }
 
-export default USDAService; 
+export default USDAService;
