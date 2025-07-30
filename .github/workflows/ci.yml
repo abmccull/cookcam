@@ -171,6 +171,9 @@ jobs:
   security-scan:
     name: Security Scan
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
     
     steps:
       - name: Checkout code
@@ -186,8 +189,16 @@ jobs:
           
       - name: Upload Trivy scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v3
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         with:
           sarif_file: 'trivy-results.sarif'
+          
+      - name: Display Trivy scan results (for PRs from forks)
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository
+        run: |
+          echo "Security scan results (not uploaded due to fork PR limitations):"
+          cat trivy-results.sarif | jq '.runs[0].results[] | {ruleId: .ruleId, message: .message.text, severity: .level}'
+        continue-on-error: true
           
       - name: Run npm audit on backend
         working-directory: backend/api

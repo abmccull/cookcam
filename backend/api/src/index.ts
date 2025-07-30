@@ -1,4 +1,4 @@
-import express, { Request, Response } from 'express';
+import express, { Response } from 'express';
 import http from 'http';
 import cors from 'cors';
 import morgan from 'morgan';
@@ -110,17 +110,18 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
 }));
 
 // Security metrics endpoint (protected)
-app.get('/api/v1/security/metrics', authenticateUser, async (req: AuthenticatedRequest, res: Response) => {
-  // Only allow admins to access security metrics
-  if ((req as any).user?.role !== 'admin') {
-    await securityMonitoring.logUnauthorizedAccess(req, 'security_metrics');
-    res.status(403).json({ error: 'Access denied' });
-    return;
-  }
-  
-  const metrics = await securityMonitoring.getSecurityMetrics();
-  res.json(metrics);
-});
+// TODO: Implement proper admin role system before enabling this endpoint
+// app.get('/api/v1/security/metrics', authenticateUser, async (req: AuthenticatedRequest, res: Response) => {
+//   // Only allow admins to access security metrics
+//   if ((req as AuthenticatedRequest).user?.role !== 'admin') {
+//     await securityMonitoring.logUnauthorizedAccess(req, 'security_metrics');
+//     res.status(403).json({ error: 'Access denied' });
+//     return;
+//   }
+//   
+//   const metrics = await securityMonitoring.getSecurityMetrics();
+//   res.json(metrics);
+// });
 
 // Health check endpoint
 app.get('/health', (req, res): void => {

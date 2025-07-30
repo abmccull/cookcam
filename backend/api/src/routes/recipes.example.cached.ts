@@ -181,7 +181,7 @@ router.get('/admin/cache-stats', authenticateUser, async (req: AuthenticatedRequ
 });
 
 // Placeholder function - would be imported from OpenAI service
-async function generateRecipeSuggestions(params: any) {
+async function generateRecipeSuggestions(_params: any) {
   // Implementation would go here
   return [];
 }

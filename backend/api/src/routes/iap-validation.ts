@@ -226,7 +226,9 @@ async function updateUserSubscription(userId: string, productId: string, platfor
         })
         .eq('user_id', userId);
 
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
     } else {
       // Create new subscription
       const { error } = await supabase
@@ -243,7 +245,9 @@ async function updateUserSubscription(userId: string, productId: string, platfor
             validationData.purchaseData.orderId,
         });
 
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
     }
 
     // Update user profile if it's a creator subscription

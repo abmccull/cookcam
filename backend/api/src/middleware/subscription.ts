@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { logger } from '../utils/logger';
 import { subscriptionService, FEATURES } from '../services/subscriptionService';
+import { AuthenticatedRequest } from './auth';
 
 // Extend Request to include user subscription info
 declare global {
@@ -22,11 +23,12 @@ export async function checkSubscriptionMiddleware(
 ): Promise<void> {
   try {
     // Skip for unauthenticated requests
-    if (!(req as any).user) {
+    const authReq = req as AuthenticatedRequest;
+    if (!authReq.user) {
       return next();
     }
 
-    const userId = (req as any).user.id;
+    const userId = authReq.user.id;
 
     // Get user's subscription tier
     const tier = await subscriptionService.getUserTier(userId);
@@ -58,12 +60,13 @@ export async function checkSubscriptionMiddleware(
 export function requireTier(tierSlug: string) {
   return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      if (!(req as any).user) {
+      const authReq = req as AuthenticatedRequest;
+      if (!authReq.user) {
         res.status(401).json({ error: 'Authentication required' });
         return;
       }
 
-      const userId = (req as any).user.id;
+      const userId = authReq.user.id;
       const userTier = await subscriptionService.getUserTier(userId);
 
       // Check if user has required tier or higher
@@ -93,12 +96,13 @@ export function requireTier(tierSlug: string) {
 export function requireFeature(featureKey: string) {
   return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      if (!(req as any).user) {
+      const authReq = req as AuthenticatedRequest;
+      if (!authReq.user) {
         res.status(401).json({ error: 'Authentication required' });
         return;
       }
 
-      const userId = (req as any).user.id;
+      const userId = authReq.user.id;
       const hasAccess = await subscriptionService.hasFeatureAccess(userId, featureKey);
 
       if (!hasAccess) {
@@ -125,14 +129,15 @@ export async function checkSubscriptionLimits(
 ) {
   return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      if (!(req as any).user) {
+      const authReq = req as AuthenticatedRequest;
+      if (!authReq.user) {
         res.status(401).json({ error: 'Authentication required' });
         return;
       }
 
-      const userId = (req as any).user.id;
+      const userId = authReq.user.id;
       const tier = await subscriptionService.getUserTier(userId);
-      const features = tier.features as any;
+      const features = tier.features;
 
       // Check limits based on tier features
       let limit: number;
@@ -195,12 +200,13 @@ export async function checkSubscriptionLimits(
 // Helper to check if user is a creator
 export async function isCreator(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    if (!(req as any).user) {
+    const authReq = req as AuthenticatedRequest;
+    if (!authReq.user) {
       res.status(401).json({ error: 'Authentication required' });
       return;
     }
 
-    const userId = (req as any).user.id;
+    const userId = authReq.user.id;
     const hasCreatorAccess = await subscriptionService.hasFeatureAccess(userId, FEATURES.CREATOR_DASHBOARD);
 
     if (!hasCreatorAccess) {

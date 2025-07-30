@@ -173,11 +173,20 @@ export const handleDatabaseError = (error: { code?: string; message?: string }):
 };
 
 // External service error handler
-export const handleExternalServiceError = (service: string, error: any): AppError => {
-  if (error.response) {
+export const handleExternalServiceError = (service: string, error: unknown): AppError => {
+  const axiosError = error as { 
+    response?: { 
+      status: number; 
+      data?: { message?: string }; 
+    };
+    request?: unknown;
+    message?: string;
+  };
+  
+  if (axiosError.response) {
     // The request was made and the server responded with a status code
-    const status = error.response.status;
-    const message = error.response.data?.message || error.message;
+    const status = axiosError.response.status;
+    const message = axiosError.response.data?.message || axiosError.message;
 
     if (status === 429) {
       return new AppError(`${service} rate limit exceeded`, 429, 'RATE_LIMIT_ERROR');
@@ -188,7 +197,7 @@ export const handleExternalServiceError = (service: string, error: any): AppErro
     }
 
     return new AppError(`${service} error: ${message}`, 502, 'SERVICE_ERROR');
-  } else if (error.request) {
+  } else if (axiosError.request) {
     // The request was made but no response was received
     return new AppError(`Cannot connect to ${service}`, 503, 'SERVICE_UNAVAILABLE');
   }

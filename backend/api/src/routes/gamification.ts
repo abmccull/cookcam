@@ -321,7 +321,7 @@ router.get('/rank/:userId?', authenticateUser, async (req: Request, res: Respons
           period_xp: data[0]?.period_xp || 0
         });
       }
-    } catch (funcError) {
+    } catch {
       logger.debug('Using fallback rank calculation');
     }
 

@@ -1727,9 +1727,9 @@ router.post('/test-smart-nutrition', async (req, res) => {
 
     // Sample AI-generated recipe ingredients (typical format from OpenAI)
     const mockAIIngredients = [
-      { item: "ripe tomatoes", quantity: "250 g" },
-      { item: "red onion", quantity: "1 medium" },
-      { item: "olive oil", quantity: "2 tbsp" },
+      { item: 'ripe tomatoes', quantity: '250 g' },
+      { item: 'red onion', quantity: '1 medium' },
+      { item: 'olive oil', quantity: '2 tbsp' },
       { item: "fresh basil leaves", quantity: "10 pieces" },
       { item: "mozzarella cheese", quantity: "100 g" },
       { item: "balsamic vinegar", quantity: "1 tsp" },
