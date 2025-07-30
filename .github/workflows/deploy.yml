@@ -15,6 +15,12 @@ jobs:
     name: Run Tests
     uses: ./.github/workflows/ci.yml
     secrets: inherit
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+      checks: write
+      pull-requests: write
 
   build-and-push:
     name: Build and Push Docker Image
