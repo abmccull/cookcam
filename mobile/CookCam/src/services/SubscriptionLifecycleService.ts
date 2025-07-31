@@ -61,56 +61,10 @@ class SubscriptionLifecycleService {
    */
   async getSubscriptionState(userId: string): Promise<SubscriptionState> {
     try {
-      // Call backend API to get subscription status
-      const response = await fetch(`${process.env.REACT_NATIVE_API_URL}/api/v1/subscription/status`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          // TODO: Add proper authentication header
-          // 'Authorization': `Bearer ${userToken}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`API call failed: ${response.status}`);
-      }
-
-      const subscriptionData = await response.json();
-
-      const now = new Date();
-      const expiresAt = subscriptionData.current_period_end
-        ? new Date(subscriptionData.current_period_end)
-        : null;
-      const canceledAt = subscriptionData.canceled_at
-        ? new Date(subscriptionData.canceled_at)
-        : null;
-
-      // Calculate grace period end (7 days after cancellation or expiration)
-      let gracePeriodEnd: Date | null = null;
-      if (canceledAt) {
-        gracePeriodEnd = new Date(
-          canceledAt.getTime() + this.gracePeriodDays * 24 * 60 * 60 * 1000,
-        );
-      } else if (expiresAt && subscriptionData.status === "expired") {
-        gracePeriodEnd = new Date(
-          expiresAt.getTime() + this.gracePeriodDays * 24 * 60 * 60 * 1000,
-        );
-      }
-
-      const isInGracePeriod = gracePeriodEnd ? now <= gracePeriodEnd : false;
-
-      return {
-        status: subscriptionData.status,
-        tier: this.determineTier(subscriptionData.status, subscriptionData.plan_id),
-        expiresAt,
-        canceledAt,
-        gracePeriodEnd,
-        isInGracePeriod,
-        paymentFailed:
-          subscriptionData.status === "past_due" || subscriptionData.status === "unpaid",
-        canReactivate:
-          subscriptionData.status === "canceled" || subscriptionData.status === "expired",
-      };
+      // For now, return free tier state until user is authenticated
+      // The actual subscription check will happen after login
+      logger.debug('Subscription state check - returning free tier for unauthenticated user');
+      return this.getFreeTierState();
     } catch (error) {
       logger.error("Error getting subscription state:", error);
       // Default to free tier on error

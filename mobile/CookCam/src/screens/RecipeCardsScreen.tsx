@@ -150,6 +150,13 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
         sessionId: sessionId,
       });
 
+      logger.debug("📦 Raw detailed recipe response:", {
+        success: detailedResponse.success,
+        hasData: !!detailedResponse.data,
+        dataKeys: detailedResponse.data ? Object.keys(detailedResponse.data) : [],
+        fullResponse: JSON.stringify(detailedResponse, null, 2)
+      });
+
       // Handle response validation with flexible structure
       const responseData = detailedResponse.data?.data || detailedResponse.data;
       
