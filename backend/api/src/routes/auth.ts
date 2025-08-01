@@ -1,11 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { supabase, createAuthenticatedClient } from '../index';
-import {
-  authenticateUser,
-  generateAccessToken,
-  generateRefreshToken,
-  verifyRefreshToken,
-} from '../middleware/auth';
+import { authenticateUser } from '../middleware/auth';
 import { authRateLimiter } from '../middleware/security';
 import { validateAuthInput } from '../middleware/validation';
 import { logger } from '../utils/logger';
@@ -166,7 +161,7 @@ router.post('/signup', authRateLimiter, validateAuthInput, async (req: Request, 
 
     logger.debug('Supabase signup completed', {
       success: !!authData?.user,
-      hasError: !!authError
+      hasError: !!authError,
     });
 
     if (authError) {
@@ -174,7 +169,7 @@ router.post('/signup', authRateLimiter, validateAuthInput, async (req: Request, 
       logger.error('Supabase signup error:', {
         message: authError.message,
         code: (authError as any).code,
-        status: (authError as any).status
+        status: (authError as any).status,
       });
 
       const errorMessage =
@@ -220,6 +215,8 @@ router.post('/signup', authRateLimiter, validateAuthInput, async (req: Request, 
 
     res.status(201).json({
       user: authData.user,
+      token: authData.session?.access_token,
+      refreshToken: authData.session?.refresh_token,
       session: authData.session,
       message: 'User created successfully',
     });
@@ -236,8 +233,8 @@ router.post('/signup', authRateLimiter, validateAuthInput, async (req: Request, 
   }
 });
 
-// Sign in a user
-router.post('/signin', authRateLimiter, validateAuthInput, async (req: Request, res: Response) => {
+// Sign in a user (login is alias for signin)
+router.post('/login', authRateLimiter, validateAuthInput, async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
 
@@ -259,6 +256,8 @@ router.post('/signin', authRateLimiter, validateAuthInput, async (req: Request, 
 
     res.json({
       user: data.user,
+      token: data.session?.access_token,
+      refreshToken: data.session?.refresh_token,
       session: data.session,
       message: 'Signed in successfully',
     });
@@ -273,16 +272,16 @@ router.post('/signin', authRateLimiter, validateAuthInput, async (req: Request, 
   }
 });
 
-// Sign out a user
-router.post('/signout', authenticateUser, async (req: Request, res: Response) => {
+// Sign out a user (logout is alias for signout)
+router.post('/logout', authenticateUser, async (req: Request, res: Response) => {
   try {
     const { error } = await supabase.auth.signOut();
 
     if (error) {
-      return res.status(400).json({ error: error.message });
+      return res.status(500).json({ error: error.message });
     }
 
-    res.json({ message: 'Signed out successfully' });
+    res.json({ message: 'Logged out successfully' });
   } catch (error: unknown) {
     logger.error('Signout error', { error });
     res.status(500).json({ error: 'Internal server error' });
@@ -292,41 +291,31 @@ router.post('/signout', authenticateUser, async (req: Request, res: Response) =>
 // Refresh access token
 router.post('/refresh', authRateLimiter, async (req: Request, res: Response) => {
   try {
-    const { refresh_token } = req.body;
+    const { refresh_token, refreshToken } = req.body;
+    const token = refresh_token || refreshToken;
 
-    if (!refresh_token) {
+    if (!token) {
       return res.status(400).json({ error: 'Refresh token is required' });
     }
 
-    // Verify refresh token
-    try {
-      const decoded = verifyRefreshToken(refresh_token);
+    // Use Supabase's session refresh
+    const { data, error } = await supabase.auth.setSession({
+      access_token: '', // We need the refresh token to get a new session
+      refresh_token: token,
+    });
 
-      // Get user from database
-      const { data: user, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', decoded.userId)
-        .single();
-
-      if (error || !user) {
-        return res.status(401).json({ error: 'User not found' });
-      }
-
-      // Generate new tokens
-      const accessToken = generateAccessToken(user.id, user.email);
-      const newRefreshToken = generateRefreshToken(user.id, user.email);
-
-      res.json({
-        access_token: accessToken,
-        refresh_token: newRefreshToken,
-        expires_in: 3600, // 1 hour
-        user,
-      });
-    } catch (error: unknown) {
-      logger.error('Invalid refresh token attempt', { error });
-      return res.status(401).json({ error: 'Invalid or expired refresh token' });
+    if (error || !data.session) {
+      return res.status(401).json({ error: 'Invalid refresh token' });
     }
+
+    res.json({
+      token: data.session.access_token,
+      refreshToken: data.session.refresh_token,
+      access_token: data.session.access_token,
+      refresh_token: data.session.refresh_token,
+      expires_in: data.session.expires_in,
+      user: data.session.user,
+    });
   } catch (error: unknown) {
     logger.error('Refresh token error', { error });
     res.status(500).json({ error: 'Internal server error' });

@@ -253,9 +253,16 @@ describe('Auth Routes', () => {
         next();
       });
 
-      (supabase.auth.getUser as jest.Mock).mockResolvedValue({
-        data: { user: mockUser },
-        error: null,
+      // Mock database query for user profile
+      (supabase.from as jest.Mock).mockReturnValue({
+        select: jest.fn().mockReturnValue({
+          eq: jest.fn().mockReturnValue({
+            single: jest.fn().mockResolvedValue({
+              data: mockUser,
+              error: null,
+            }),
+          }),
+        }),
       });
 
       const response = await request(app)

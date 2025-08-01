@@ -1,4 +1,4 @@
-import { generateRecipeSuggestions, generateFullRecipe } from '../openai';
+import { generateRecipeSuggestions, generateFullRecipe, resetOpenAIClient } from '../openai';
 import OpenAI from 'openai';
 
 // Mock OpenAI
@@ -11,6 +11,12 @@ describe('OpenAI Service', () => {
   beforeEach(() => {
     // Set up environment
     process.env.OPENAI_API_KEY = 'test-api-key';
+
+    // Reset client cache
+    resetOpenAIClient();
+
+    // Clear all mocks
+    jest.resetAllMocks();
 
     // Setup mock
     mockCreate = jest.fn();
@@ -28,6 +34,7 @@ describe('OpenAI Service', () => {
 
   afterEach(() => {
     jest.clearAllMocks();
+    resetOpenAIClient();
     delete process.env.OPENAI_API_KEY;
   });
 
@@ -273,16 +280,12 @@ describe('OpenAI Service', () => {
   });
 
   describe('environment configuration', () => {
-    it('should throw error if OPENAI_API_KEY is not set', () => {
+    it('should throw error if OPENAI_API_KEY is not set', async () => {
       delete process.env.OPENAI_API_KEY;
 
-      // Clear the module cache to ensure fresh import
-      jest.resetModules();
-
-      expect(() => {
-        const { generateRecipeSuggestions } = require('../openai');
-        generateRecipeSuggestions({ detectedIngredients: ['test'] });
-      }).toThrow('OPENAI_API_KEY environment variable is required');
+      await expect(
+        generateRecipeSuggestions({ detectedIngredients: ['test'] })
+      ).rejects.toThrow('OPENAI_API_KEY environment variable is required');
     });
   });
 });

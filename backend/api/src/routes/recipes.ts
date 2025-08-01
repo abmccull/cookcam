@@ -775,7 +775,7 @@ router.post('/generate-detailed', authenticateUser, async (req: Request, res: Re
   } catch (error: unknown) {
     // Clear the timeout on error as well
     clearTimeout(requestTimeout);
-    
+
     logger.error('❌ Detailed recipe generation failed', {
       error: error instanceof Error ? error.message : error,
       userId: (req as any).user?.id,

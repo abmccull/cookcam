@@ -15,6 +15,11 @@ function getOpenAIClient(): OpenAI {
   return openaiClient;
 }
 
+// For testing purposes
+export function resetOpenAIClient() {
+  openaiClient = null;
+}
+
 export interface RecipeInput {
   detectedIngredients: string[];
   assumedStaples?: string[];
@@ -68,6 +73,10 @@ Your job is to turn the user's on-hand ingredients into safe, tasty, and fun rec
 • Return ONLY valid JSON that matches the schema provided.`;
 
 export async function generateRecipeSuggestions(input: RecipeInput): Promise<RecipeSuggestion[]> {
+  // Check for API key at runtime, not import time
+  if (!process.env.OPENAI_API_KEY) {
+    throw new Error('OPENAI_API_KEY environment variable is required');
+  }
   const userInput = {
     detectedIngredients: input.detectedIngredients,
     assumedStaples: input.assumedStaples || ['salt', 'black pepper', 'olive oil'],
@@ -128,6 +137,10 @@ export async function generateFullRecipe(
   selectedTitle: string,
   originalInput: RecipeInput
 ): Promise<FullRecipe> {
+  // Check for API key at runtime, not import time
+  if (!process.env.OPENAI_API_KEY) {
+    throw new Error('OPENAI_API_KEY environment variable is required');
+  }
   const secondCallPrompt = `TASK
 
 The user selected: "${selectedTitle}"

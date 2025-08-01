@@ -86,7 +86,7 @@ export const authenticateUser = async (
 
       if (error || !user) {
         logger.warn('❌ Supabase token validation failed:', {
-          error: error?.message
+          error: error?.message,
         });
         res.status(401).json({
           error: 'Token expired or invalid',
@@ -105,7 +105,7 @@ export const authenticateUser = async (
       next();
     } catch (validationError: unknown) {
       logger.error('❌ Supabase token validation error:', {
-        error: validationError instanceof Error ? validationError.message : 'Unknown error'
+        error: validationError instanceof Error ? validationError.message : 'Unknown error',
       });
 
       res.status(401).json({
