@@ -4,7 +4,7 @@
  */
 
 import { ViewStyle, TextStyle } from 'react-native';
-import { tokens } from './tokens';
+import tokens from './tokens';
 
 // Layout Mixins
 export const layout = {
