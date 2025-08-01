@@ -283,9 +283,9 @@ describe('OpenAI Service', () => {
     it('should throw error if OPENAI_API_KEY is not set', async () => {
       delete process.env.OPENAI_API_KEY;
 
-      await expect(
-        generateRecipeSuggestions({ detectedIngredients: ['test'] })
-      ).rejects.toThrow('OPENAI_API_KEY environment variable is required');
+      await expect(generateRecipeSuggestions({ detectedIngredients: ['test'] })).rejects.toThrow(
+        'OPENAI_API_KEY environment variable is required'
+      );
     });
   });
 });
