@@ -138,7 +138,7 @@ jobs:
           
       - name: Install dependencies
         working-directory: mobile/CookCam
-        run: npm ci
+        run: npm ci --legacy-peer-deps
         
       - name: Run TypeScript check
         working-directory: mobile/CookCam
