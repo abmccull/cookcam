@@ -34,7 +34,6 @@ import logger from "../utils/logger";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAuth } from "../context/AuthContext";
 
-
 interface CookingStep {
   id: number;
   instruction: string;
@@ -552,8 +551,10 @@ const CookModeScreen: React.FC<CookModeScreenProps> = ({
       try {
         const storageKey = `completed_recipes_${user.id}`;
         const existingCompleted = await AsyncStorage.getItem(storageKey);
-        let completedIds = existingCompleted ? JSON.parse(existingCompleted) : [];
-        
+        let completedIds = existingCompleted
+          ? JSON.parse(existingCompleted)
+          : [];
+
         if (!completedIds.includes(recipe.id)) {
           completedIds.push(recipe.id);
           await AsyncStorage.setItem(storageKey, JSON.stringify(completedIds));
@@ -632,7 +633,7 @@ const CookModeScreen: React.FC<CookModeScreenProps> = ({
           text: "Finish",
           onPress: () => {
             // Navigate to home screen (Camera tab)
-            navigation.navigate('Main', { screen: 'Camera' });
+            navigation.navigate("Main", { screen: "Camera" });
           },
           style: "cancel",
         },

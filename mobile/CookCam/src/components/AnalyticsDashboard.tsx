@@ -14,7 +14,6 @@ import { useSubscription } from "../context/SubscriptionContext";
 import FeatureGate from "./FeatureGate";
 import logger from "../utils/logger";
 
-
 const { width: screenWidth } = Dimensions.get("window");
 
 // Types for dashboard data

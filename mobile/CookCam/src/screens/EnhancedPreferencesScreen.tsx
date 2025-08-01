@@ -13,7 +13,7 @@ import {
   StatusBar,
   Platform,
 } from "react-native";
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView } from "react-native-safe-area-context";
 import {
   Users,
   ChefHat,
@@ -249,13 +249,13 @@ const EnhancedPreferencesScreen: React.FC<EnhancedPreferencesScreenProps> = ({
           value: "breakfast",
         },
         {
-          label: "🥙 Lunch", 
+          label: "🥙 Lunch",
           subtitle: "Midday fuel",
           value: "lunch",
         },
         {
           label: "🍽️ Dinner",
-          subtitle: "Main evening meal", 
+          subtitle: "Main evening meal",
           value: "dinner",
         },
         {
@@ -930,10 +930,10 @@ const EnhancedPreferencesScreen: React.FC<EnhancedPreferencesScreenProps> = ({
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-      <StatusBar 
-        barStyle="dark-content" 
-        backgroundColor="#F8F8FF" 
+    <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor="#F8F8FF"
         translucent={false}
       />
       {/* Header */}
@@ -1591,7 +1591,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "700",
     color: "#FFFFFF",
-    },
+  },
   servingIconContainer: {
     alignItems: "center",
     justifyContent: "center",

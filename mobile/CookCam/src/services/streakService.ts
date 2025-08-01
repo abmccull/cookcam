@@ -1,5 +1,5 @@
-import { supabase } from './supabaseClient';
-import logger from '../utils/logger';
+import { supabase } from "./supabaseClient";
+import logger from "../utils/logger";
 
 export class StreakService {
   /**
@@ -7,19 +7,19 @@ export class StreakService {
    */
   static async updateStreak(userId: string): Promise<boolean> {
     try {
-      const { error } = await supabase.rpc('update_user_streak', {
-        p_user_id: userId
+      const { error } = await supabase.rpc("update_user_streak", {
+        p_user_id: userId,
       });
 
       if (error) {
-        logger.error('Failed to update streak:', error);
+        logger.error("Failed to update streak:", error);
         return false;
       }
 
-      logger.info('Streak updated successfully');
+      logger.info("Streak updated successfully");
       return true;
     } catch (error) {
-      logger.error('Error updating streak:', error);
+      logger.error("Error updating streak:", error);
       return false;
     }
   }
@@ -30,18 +30,18 @@ export class StreakService {
   static async getStreakData(userId: string) {
     try {
       const { data, error } = await supabase
-        .from('user_streaks')
-        .select('*')
-        .eq('user_id', userId)
+        .from("user_streaks")
+        .select("*")
+        .eq("user_id", userId)
         .single();
 
-      if (error && error.code !== 'PGRST116') {
+      if (error && error.code !== "PGRST116") {
         throw error;
       }
 
       return data;
     } catch (error) {
-      logger.error('Failed to get streak data:', error);
+      logger.error("Failed to get streak data:", error);
       return null;
     }
   }
@@ -50,23 +50,23 @@ export class StreakService {
    * Gets the user's cooking history for a date range
    */
   static async getCookingHistory(
-    userId: string, 
-    startDate: string, 
-    endDate: string
+    userId: string,
+    startDate: string,
+    endDate: string,
   ) {
     try {
       const { data, error } = await supabase
-        .from('daily_cooks')
-        .select('*')
-        .eq('user_id', userId)
-        .gte('cook_date', startDate)
-        .lte('cook_date', endDate)
-        .order('cook_date', { ascending: true });
+        .from("daily_cooks")
+        .select("*")
+        .eq("user_id", userId)
+        .gte("cook_date", startDate)
+        .lte("cook_date", endDate)
+        .order("cook_date", { ascending: true });
 
       if (error) throw error;
       return data || [];
     } catch (error) {
-      logger.error('Failed to get cooking history:', error);
+      logger.error("Failed to get cooking history:", error);
       return [];
     }
   }
@@ -76,19 +76,19 @@ export class StreakService {
    */
   static async useFreezeToken(userId: string, date: string): Promise<boolean> {
     try {
-      const { data, error } = await supabase.rpc('use_freeze_token', {
+      const { data, error } = await supabase.rpc("use_freeze_token", {
         p_user_id: userId,
-        p_date: date
+        p_date: date,
       });
 
       if (error) {
-        logger.error('Failed to use freeze token:', error);
+        logger.error("Failed to use freeze token:", error);
         return false;
       }
 
       return data || false;
     } catch (error) {
-      logger.error('Error using freeze token:', error);
+      logger.error("Error using freeze token:", error);
       return false;
     }
   }
@@ -98,22 +98,22 @@ export class StreakService {
    */
   static async hasCookedToday(userId: string): Promise<boolean> {
     try {
-      const today = new Date().toISOString().split('T')[0];
-      
+      const today = new Date().toISOString().split("T")[0];
+
       const { data, error } = await supabase
-        .from('daily_cooks')
-        .select('id')
-        .eq('user_id', userId)
-        .eq('cook_date', today)
+        .from("daily_cooks")
+        .select("id")
+        .eq("user_id", userId)
+        .eq("cook_date", today)
         .single();
 
-      if (error && error.code !== 'PGRST116') {
+      if (error && error.code !== "PGRST116") {
         throw error;
       }
 
       return !!data;
     } catch (error) {
-      logger.error('Failed to check if cooked today:', error);
+      logger.error("Failed to check if cooked today:", error);
       return false;
     }
   }
@@ -125,46 +125,46 @@ export class StreakService {
     return [
       {
         days: 3,
-        name: 'Starter Chef',
-        reward: '10 XP',
-        description: 'Cook for 3 days in a row'
+        name: "Starter Chef",
+        reward: "10 XP",
+        description: "Cook for 3 days in a row",
       },
       {
         days: 7,
-        name: 'Week Warrior',
-        reward: '50 XP + Freeze Token',
-        description: 'Complete a full week'
+        name: "Week Warrior",
+        reward: "50 XP + Freeze Token",
+        description: "Complete a full week",
       },
       {
         days: 14,
-        name: 'Fortnight Fighter',
-        reward: '100 XP + Recipe Pack',
-        description: 'Two weeks of dedication'
+        name: "Fortnight Fighter",
+        reward: "100 XP + Recipe Pack",
+        description: "Two weeks of dedication",
       },
       {
         days: 30,
-        name: 'Monthly Master',
-        reward: 'Exclusive Recipes + Badge',
-        description: 'A full month of cooking'
+        name: "Monthly Master",
+        reward: "Exclusive Recipes + Badge",
+        description: "A full month of cooking",
       },
       {
         days: 60,
-        name: 'Culinary Champion',
-        reward: 'Creator Features Access',
-        description: 'Two months strong'
+        name: "Culinary Champion",
+        reward: "Creator Features Access",
+        description: "Two months strong",
       },
       {
         days: 100,
-        name: 'Century Chef',
-        reward: 'Lifetime Achievement Badge',
-        description: '100 days of culinary excellence'
+        name: "Century Chef",
+        reward: "Lifetime Achievement Badge",
+        description: "100 days of culinary excellence",
       },
       {
         days: 365,
-        name: 'Legendary Chef',
-        reward: 'Hall of Fame + Special Title',
-        description: 'A full year of cooking mastery'
-      }
+        name: "Legendary Chef",
+        reward: "Hall of Fame + Special Title",
+        description: "A full year of cooking mastery",
+      },
     ];
   }
 
@@ -173,12 +173,12 @@ export class StreakService {
    */
   static async checkAndAwardMilestones(userId: string, currentStreak: number) {
     const milestones = this.getStreakMilestones();
-    
+
     for (const milestone of milestones) {
       if (currentStreak === milestone.days) {
         // Log achievement (you can expand this to actually award XP, badges, etc.)
         logger.info(`User ${userId} reached ${milestone.name} milestone!`);
-        
+
         // TODO: Award XP, unlock features, send notifications, etc.
         // This would integrate with your gamification system
       }

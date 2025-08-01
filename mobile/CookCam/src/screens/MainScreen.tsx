@@ -12,11 +12,11 @@ import {
 } from "react-native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../App";
-import { 
-  Camera, 
-  ChefHat, 
-  Heart, 
-  Trophy, 
+import {
+  Camera,
+  ChefHat,
+  Heart,
+  Trophy,
   Plus,
   Zap,
   Flame,
@@ -24,7 +24,7 @@ import {
   Users,
   TrendingUp,
   Gift,
-  Calendar
+  Calendar,
 } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
 
@@ -59,12 +59,15 @@ interface MainScreenProps {
 
 const MainScreen: React.FC<MainScreenProps> = ({ navigation }) => {
   const { user } = useAuth();
-  const { xp, level, streak, badges, addXP, levelProgress, nextLevelXP } = useGamification();
-  
+  const { xp, level, streak, badges, addXP, levelProgress, nextLevelXP } =
+    useGamification();
+
   // State - only for UI interactions, no mock data
   const [showDailyCheckIn, setShowDailyCheckIn] = useState(false);
   const [hasCheckedInToday, setHasCheckedInToday] = useState(false);
-  const [celebratedAchievements, setCelebratedAchievements] = useState<Set<string>>(new Set());
+  const [celebratedAchievements, setCelebratedAchievements] = useState<
+    Set<string>
+  >(new Set());
 
   // Animation refs
   const heroScale = useRef(new Animated.Value(0.95)).current;
@@ -158,29 +161,32 @@ const MainScreen: React.FC<MainScreenProps> = ({ navigation }) => {
 
   const handleQuickAction = (action: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    
+
     switch (action) {
-      case 'favorites':
+      case "favorites":
         navigation.navigate("Favorites");
         break;
-      case 'leaderboard':
+      case "leaderboard":
         navigation.navigate("Leaderboard");
         break;
-      case 'create':
+      case "create":
         navigation.navigate("Creator");
         break;
-      case 'discover':
+      case "discover":
         navigation.navigate("Discover");
         break;
       default:
-        Alert.alert("Coming Soon!", "This feature is being prepared for you! 🎉");
+        Alert.alert(
+          "Coming Soon!",
+          "This feature is being prepared for you! 🎉",
+        );
     }
   };
 
   const getGreeting = () => {
     const hour = new Date().getHours();
-    const name = user?.name || user?.email?.split('@')[0] || "Chef";
-    
+    const name = user?.name || user?.email?.split("@")[0] || "Chef";
+
     if (hour < 12) return `Good morning, ${name}! ☀️`;
     if (hour < 17) return `Good afternoon, ${name}! 🌤️`;
     return `Good evening, ${name}! 🌙`;
@@ -206,7 +212,10 @@ const MainScreen: React.FC<MainScreenProps> = ({ navigation }) => {
   const getRecentAchievement = () => {
     const achievementKey = `level-${correctLevel}`;
     if (correctLevel >= 10 && !celebratedAchievements.has(achievementKey)) {
-      return { text: "👑 Reached Level 10 - Master Chef!", key: achievementKey };
+      return {
+        text: "👑 Reached Level 10 - Master Chef!",
+        key: achievementKey,
+      };
     }
     if (correctLevel >= 8 && !celebratedAchievements.has(achievementKey)) {
       return { text: "⭐ Reached Level 8!", key: achievementKey };
@@ -214,11 +223,23 @@ const MainScreen: React.FC<MainScreenProps> = ({ navigation }) => {
     if (streak >= 7 && !celebratedAchievements.has(`streak-${streak}`)) {
       return { text: "🔥 7-day cooking streak!", key: `streak-${streak}` };
     }
-    if (badges.length >= 5 && !celebratedAchievements.has(`badges-${badges.length}`)) {
-      return { text: "🏆 Badge collector supreme!", key: `badges-${badges.length}` };
+    if (
+      badges.length >= 5 &&
+      !celebratedAchievements.has(`badges-${badges.length}`)
+    ) {
+      return {
+        text: "🏆 Badge collector supreme!",
+        key: `badges-${badges.length}`,
+      };
     }
-    if (xp >= 2500 && !celebratedAchievements.has(`xp-${Math.floor(xp/500)*500}`)) {
-      return { text: "🌟 Amazing progress!", key: `xp-${Math.floor(xp/500)*500}` };
+    if (
+      xp >= 2500 &&
+      !celebratedAchievements.has(`xp-${Math.floor(xp / 500) * 500}`)
+    ) {
+      return {
+        text: "🌟 Amazing progress!",
+        key: `xp-${Math.floor(xp / 500) * 500}`,
+      };
     }
     return null;
   };
@@ -227,34 +248,38 @@ const MainScreen: React.FC<MainScreenProps> = ({ navigation }) => {
 
   const handleAchievementCelebration = () => {
     if (!recentAchievement) return;
-    
+
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     Alert.alert("🎉 Achievement Unlocked!", recentAchievement.text);
-    
+
     // Mark this achievement as celebrated
-    setCelebratedAchievements(prev => new Set([...prev, recentAchievement.key]));
+    setCelebratedAchievements(
+      (prev) => new Set([...prev, recentAchievement.key]),
+    );
   };
 
   return (
     <SafeScreen style={styles.container}>
-      <ScrollView 
+      <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
         {/* Hero Section */}
-        <Animated.View 
+        <Animated.View
           style={[
             styles.heroSection,
             {
               opacity: heroOpacity,
-              transform: [{ scale: heroScale }]
-            }
+              transform: [{ scale: heroScale }],
+            },
           ]}
         >
           <View style={styles.greetingContainer}>
             <Text style={styles.greeting}>{getGreeting()}</Text>
-            <Text style={styles.motivationalText}>Ready to create something delicious?</Text>
+            <Text style={styles.motivationalText}>
+              Ready to create something delicious?
+            </Text>
           </View>
 
           {/* Level & XP Display - Using corrected level calculation */}
@@ -265,26 +290,25 @@ const MainScreen: React.FC<MainScreenProps> = ({ navigation }) => {
             </View>
             <View style={styles.xpContainer}>
               <View style={styles.xpProgressBar}>
-                <View 
+                <View
                   style={[
-                    styles.xpProgressFill, 
-                    { width: `${levelProgress}%` }
-                  ]} 
+                    styles.xpProgressFill,
+                    { width: `${levelProgress}%` },
+                  ]}
                 />
               </View>
-              <Text style={styles.xpText}>{xp} XP • {getXPToNextLevel()} to level {correctLevel + 1}</Text>
+              <Text style={styles.xpText}>
+                {xp} XP • {getXPToNextLevel()} to level {correctLevel + 1}
+              </Text>
             </View>
           </View>
         </Animated.View>
 
         {/* Stats Row */}
-        <Animated.View 
-          style={[
-            styles.statsRow,
-            { transform: [{ translateY: statsSlide }] }
-          ]}
+        <Animated.View
+          style={[styles.statsRow, { transform: [{ translateY: statsSlide }] }]}
         >
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.statCard}
             onPress={() => navigation.navigate("Profile")}
             activeOpacity={0.8}
@@ -294,7 +318,7 @@ const MainScreen: React.FC<MainScreenProps> = ({ navigation }) => {
             <Text style={styles.statLabel}>Day Streak</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.statCard}
             onPress={() => navigation.navigate("Profile")}
             activeOpacity={0.8}
@@ -304,7 +328,7 @@ const MainScreen: React.FC<MainScreenProps> = ({ navigation }) => {
             <Text style={styles.statLabel}>Badges</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.statCard}
             onPress={() => navigation.navigate("Profile")}
             activeOpacity={0.8}
@@ -317,19 +341,21 @@ const MainScreen: React.FC<MainScreenProps> = ({ navigation }) => {
 
         {/* Recent Achievement Banner - only show if user has real achievements */}
         {recentAchievement && (
-          <Animated.View 
+          <Animated.View
             style={[
               styles.achievementBanner,
-              { transform: [{ scale: achievementPulse }] }
+              { transform: [{ scale: achievementPulse }] },
             ]}
           >
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.achievementContent}
               onPress={handleAchievementCelebration}
               activeOpacity={0.9}
             >
               <Zap size={20} color="#FF6B35" />
-              <Text style={styles.achievementText}>{recentAchievement.text}</Text>
+              <Text style={styles.achievementText}>
+                {recentAchievement.text}
+              </Text>
               <Text style={styles.achievementAction}>Tap to celebrate! 🎉</Text>
             </TouchableOpacity>
           </Animated.View>
@@ -351,7 +377,9 @@ const MainScreen: React.FC<MainScreenProps> = ({ navigation }) => {
                 <Camera size={40} color="#FFFFFF" />
                 <View style={styles.scanTextContainer}>
                   <Text style={styles.scanTitle}>Scan Your Ingredients</Text>
-                  <Text style={styles.scanSubtitle}>Point your camera & discover recipes ✨</Text>
+                  <Text style={styles.scanSubtitle}>
+                    Point your camera & discover recipes ✨
+                  </Text>
                 </View>
               </View>
               <View style={styles.xpBadge}>
@@ -364,14 +392,16 @@ const MainScreen: React.FC<MainScreenProps> = ({ navigation }) => {
 
         {/* Daily Check-In Section - only show if not checked in today */}
         {!hasCheckedInToday && (
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.dailyCheckInCard}
             onPress={handleDailyCheckIn}
             activeOpacity={0.8}
           >
             <View style={styles.dailyCheckInHeader}>
               <Calendar size={24} color="#66BB6A" />
-              <Text style={styles.dailyCheckInTitle}>Daily Fridge Check-In</Text>
+              <Text style={styles.dailyCheckInTitle}>
+                Daily Fridge Check-In
+              </Text>
               <Text style={styles.dailyCheckInXP}>+5 XP</Text>
             </View>
             <Text style={styles.dailyCheckInSubtitle}>
@@ -381,44 +411,42 @@ const MainScreen: React.FC<MainScreenProps> = ({ navigation }) => {
         )}
 
         {/* Daily Check-In Component */}
-        {showDailyCheckIn && (
-          <DailyCheckIn />
-        )}
+        {showDailyCheckIn && <DailyCheckIn />}
 
         {/* Quick Actions Grid */}
         <View style={styles.quickActionsContainer}>
           <Text style={styles.sectionTitle}>Quick Actions</Text>
           <View style={styles.quickActionsGrid}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.quickActionCard}
-              onPress={() => handleQuickAction('favorites')}
+              onPress={() => handleQuickAction("favorites")}
               activeOpacity={0.8}
             >
               <Heart size={24} color="#E91E63" />
               <Text style={styles.quickActionText}>My Favorites</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.quickActionCard}
-              onPress={() => handleQuickAction('leaderboard')}
+              onPress={() => handleQuickAction("leaderboard")}
               activeOpacity={0.8}
             >
               <Trophy size={24} color="#FFB800" />
               <Text style={styles.quickActionText}>Leaderboard</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.quickActionCard}
-              onPress={() => handleQuickAction('create')}
+              onPress={() => handleQuickAction("create")}
               activeOpacity={0.8}
             >
               <Plus size={24} color="#4CAF50" />
               <Text style={styles.quickActionText}>Create Recipe</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.quickActionCard}
-              onPress={() => handleQuickAction('discover')}
+              onPress={() => handleQuickAction("discover")}
               activeOpacity={0.8}
             >
               <TrendingUp size={24} color="#9C27B0" />

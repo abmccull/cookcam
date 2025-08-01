@@ -1,40 +1,40 @@
-import 'react-native-gesture-handler/jestSetup';
+import "react-native-gesture-handler/jestSetup";
 
 // Mock AsyncStorage
-jest.mock('@react-native-async-storage/async-storage', () =>
-  require('@react-native-async-storage/async-storage/jest/async-storage-mock')
+jest.mock("@react-native-async-storage/async-storage", () =>
+  require("@react-native-async-storage/async-storage/jest/async-storage-mock"),
 );
 
 // Mock react-native-reanimated
-jest.mock('react-native-reanimated', () => {
-  const Reanimated = require('react-native-reanimated/mock');
+jest.mock("react-native-reanimated", () => {
+  const Reanimated = require("react-native-reanimated/mock");
   Reanimated.default.call = () => {};
   return Reanimated;
 });
 
 // Mock @expo/vector-icons
-jest.mock('@expo/vector-icons', () => ({
-  Ionicons: 'MockedIonicons',
-  MaterialIcons: 'MockedMaterialIcons',
-  FontAwesome: 'MockedFontAwesome',
-  AntDesign: 'MockedAntDesign',
+jest.mock("@expo/vector-icons", () => ({
+  Ionicons: "MockedIonicons",
+  MaterialIcons: "MockedMaterialIcons",
+  FontAwesome: "MockedFontAwesome",
+  AntDesign: "MockedAntDesign",
 }));
 
 // Mock Expo modules
-jest.mock('expo-constants', () => ({
+jest.mock("expo-constants", () => ({
   default: {
     expoConfig: {
       extra: {
-        SUPABASE_URL: 'https://test.supabase.co',
-        SUPABASE_ANON_KEY: 'test-anon-key',
+        SUPABASE_URL: "https://test.supabase.co",
+        SUPABASE_ANON_KEY: "test-anon-key",
       },
     },
   },
 }));
 
 // Mock Dimensions
-jest.mock('react-native', () => {
-  const RN = jest.requireActual('react-native');
+jest.mock("react-native", () => {
+  const RN = jest.requireActual("react-native");
   return {
     ...RN,
     Dimensions: {
@@ -44,7 +44,7 @@ jest.mock('react-native', () => {
 });
 
 // Mock react-native-safe-area-context
-jest.mock('react-native-safe-area-context', () => {
+jest.mock("react-native-safe-area-context", () => {
   const inset = { top: 0, right: 0, bottom: 0, left: 0 };
   return {
     SafeAreaProvider: ({ children }: { children: React.ReactNode }) => children,
@@ -55,7 +55,7 @@ jest.mock('react-native-safe-area-context', () => {
 });
 
 // Mock navigation
-jest.mock('@react-navigation/native', () => ({
+jest.mock("@react-navigation/native", () => ({
   useNavigation: () => ({
     navigate: jest.fn(),
     goBack: jest.fn(),

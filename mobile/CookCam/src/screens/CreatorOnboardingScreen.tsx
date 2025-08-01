@@ -39,7 +39,6 @@ import * as SecureStore from "expo-secure-store";
 import * as Haptics from "expo-haptics";
 import logger from "../utils/logger";
 
-
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
 interface CreatorOnboardingScreenProps {
@@ -74,7 +73,9 @@ const CreatorOnboardingScreen: React.FC<CreatorOnboardingScreenProps> = ({
   const [loading, setLoading] = useState(false);
   const [completed, setCompleted] = useState(false);
   const [stripeAccountId, setStripeAccountId] = useState<string | null>(null);
-  const [kycStatus, setKycStatus] = useState<'none' | 'creating' | 'onboarding' | 'complete' | 'error'>('none');
+  const [kycStatus, setKycStatus] = useState<
+    "none" | "creating" | "onboarding" | "complete" | "error"
+  >("none");
 
   const stripeConnectService = StripeConnectService.getInstance();
 
@@ -209,95 +210,98 @@ const CreatorOnboardingScreen: React.FC<CreatorOnboardingScreenProps> = ({
   const startStripeKYC = async () => {
     try {
       setLoading(true);
-      setKycStatus('creating');
+      setKycStatus("creating");
 
       // Check if already has Stripe account
       const stripeService = StripeConnectService.getInstance();
-      
+
       try {
         const existingStatus = await stripeService.getAccountStatus();
         if (existingStatus.isConnected) {
           // Already connected, skip to completion
-          setKycStatus('complete');
+          setKycStatus("complete");
           setLoading(false);
           return;
         }
       } catch (error) {
         // No existing account, continue with creation
-        logger.debug('No existing Stripe account found, creating new one');
+        logger.debug("No existing Stripe account found, creating new one");
       }
 
       // Create new Stripe Connect account
       const result = await stripeService.createConnectAccount({
-        userId: user?.id || '',
-        email: user?.email || '',
-        country: 'US',
+        userId: user?.id || "",
+        email: user?.email || "",
+        country: "US",
       });
 
       if (!result.success) {
-        throw new Error('Failed to create Stripe account');
+        throw new Error("Failed to create Stripe account");
       }
 
       // Store account ID for status checking
       setStripeAccountId(result.accountId);
-      
+
       // If we got an onboarding URL directly, use it
       if (result.onboardingUrl) {
-        setKycStatus('onboarding');
-        
+        setKycStatus("onboarding");
+
         // Open onboarding URL in browser
         await Linking.openURL(result.onboardingUrl);
-        
+
         // Start polling for completion
         const pollInterval = setInterval(async () => {
           try {
             const status = await stripeService.getAccountStatus();
             if (status.isConnected) {
               clearInterval(pollInterval);
-              setKycStatus('complete');
+              setKycStatus("complete");
               setLoading(false);
-              
+
               // Show success and auto-advance
               setTimeout(() => {
                 handleNext();
               }, 2000);
             }
           } catch (error) {
-            logger.error('Error polling Stripe status:', error);
+            logger.error("Error polling Stripe status:", error);
           }
         }, 3000); // Poll every 3 seconds
 
         // Stop polling after 10 minutes
-        setTimeout(() => {
-          clearInterval(pollInterval);
-          if (kycStatus !== 'complete') {
-            setKycStatus('error');
-            setLoading(false);
-          }
-        }, 10 * 60 * 1000);
-        
+        setTimeout(
+          () => {
+            clearInterval(pollInterval);
+            if (kycStatus !== "complete") {
+              setKycStatus("error");
+              setLoading(false);
+            }
+          },
+          10 * 60 * 1000,
+        );
       } else {
         // Fallback: Create account link manually
-        setKycStatus('onboarding');
-        
+        setKycStatus("onboarding");
+
         const accountLink = await stripeService.createAccountLink(
           result.accountId,
-          'cookcam://creator-onboarding-complete',
-          'cookcam://creator-onboarding-refresh'
+          "cookcam://creator-onboarding-complete",
+          "cookcam://creator-onboarding-refresh",
         );
-        
+
         await Linking.openURL(accountLink.url);
       }
-
     } catch (error: unknown) {
-      logger.error('Stripe KYC setup failed:', error);
-      setKycStatus('error');
+      logger.error("Stripe KYC setup failed:", error);
+      setKycStatus("error");
       setLoading(false);
-      
+
       Alert.alert(
-        'Setup Failed',
-        error instanceof Error ? error.message : 'Failed to setup Stripe account. Please try again.',
-        [{ text: 'OK' }]
+        "Setup Failed",
+        error instanceof Error
+          ? error.message
+          : "Failed to setup Stripe account. Please try again.",
+        [{ text: "OK" }],
       );
     }
   };
@@ -419,7 +423,8 @@ const CreatorOnboardingScreen: React.FC<CreatorOnboardingScreenProps> = ({
       logger.error("Creator onboarding error:", error);
 
       // Enhanced error handling for development vs production
-      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
       const isDevelopmentContext =
         __DEV__ || errorMessage.includes("subscription");
 
@@ -549,39 +554,48 @@ const CreatorOnboardingScreen: React.FC<CreatorOnboardingScreenProps> = ({
   const renderStripeKYC = () => (
     <View style={styles.kycContainer}>
       <Text style={styles.kycTitle}>Setup Creator Payouts</Text>
-      
-      {kycStatus === 'none' && (
+
+      {kycStatus === "none" && (
         <>
           <View style={styles.kycBenefits}>
             <View style={styles.benefitRow}>
               <DollarSign size={20} color="#66BB6A" />
-              <Text style={styles.benefitText}>30% revenue share on subscriptions</Text>
+              <Text style={styles.benefitText}>
+                30% revenue share on subscriptions
+              </Text>
             </View>
             <View style={styles.benefitRow}>
               <Shield size={20} color="#66BB6A" />
-              <Text style={styles.benefitText}>Secure payments via Stripe Connect</Text>
+              <Text style={styles.benefitText}>
+                Secure payments via Stripe Connect
+              </Text>
             </View>
             <View style={styles.benefitRow}>
               <Clock size={20} color="#66BB6A" />
               <Text style={styles.benefitText}>Weekly automatic payouts</Text>
             </View>
           </View>
-          
+
           <View style={styles.kycInfo}>
             <Text style={styles.kycInfoTitle}>What's Required:</Text>
-            <Text style={styles.kycInfoText}>• Basic personal information{'\n'}• Government-issued ID{'\n'}• Bank account details</Text>
+            <Text style={styles.kycInfoText}>
+              • Basic personal information{"\n"}• Government-issued ID{"\n"}•
+              Bank account details
+            </Text>
           </View>
         </>
       )}
-      
-      {kycStatus === 'creating' && (
+
+      {kycStatus === "creating" && (
         <View style={styles.kycLoading}>
           <ActivityIndicator size="large" color="#FF6B35" />
-          <Text style={styles.kycLoadingText}>Setting up your payout account...</Text>
+          <Text style={styles.kycLoadingText}>
+            Setting up your payout account...
+          </Text>
         </View>
       )}
-      
-      {kycStatus === 'onboarding' && (
+
+      {kycStatus === "onboarding" && (
         <View style={styles.kycOnboarding}>
           <ExternalLink size={32} color="#FF6B35" />
           <Text style={styles.kycOnboardingTitle}>Complete Verification</Text>
@@ -597,13 +611,13 @@ const CreatorOnboardingScreen: React.FC<CreatorOnboardingScreenProps> = ({
                   const stripeService = StripeConnectService.getInstance();
                   const status = await stripeService.getAccountStatus();
                   if (status.isConnected) {
-                    setKycStatus('complete');
+                    setKycStatus("complete");
                   } else {
-                    setKycStatus('onboarding');
+                    setKycStatus("onboarding");
                   }
                 } catch (error) {
-                  logger.error('Error checking status:', error);
-                  setKycStatus('error');
+                  logger.error("Error checking status:", error);
+                  setKycStatus("error");
                 } finally {
                   setLoading(false);
                 }
@@ -619,24 +633,27 @@ const CreatorOnboardingScreen: React.FC<CreatorOnboardingScreenProps> = ({
           </TouchableOpacity>
         </View>
       )}
-      
-      {kycStatus === 'complete' && (
+
+      {kycStatus === "complete" && (
         <View style={styles.kycComplete}>
           <CheckCircle size={32} color="#66BB6A" />
           <Text style={styles.kycCompleteTitle}>Verification Complete!</Text>
-          <Text style={styles.kycCompleteText}>Your payout account is ready to receive earnings</Text>
+          <Text style={styles.kycCompleteText}>
+            Your payout account is ready to receive earnings
+          </Text>
         </View>
       )}
-      
-      {kycStatus === 'error' && (
+
+      {kycStatus === "error" && (
         <View style={styles.kycError}>
           <Text style={styles.kycErrorTitle}>Setup Error</Text>
           <Text style={styles.kycErrorText}>
-            We encountered an issue setting up your payout account. Please try again.
+            We encountered an issue setting up your payout account. Please try
+            again.
           </Text>
           <TouchableOpacity
             style={styles.retryButton}
-            onPress={() => setKycStatus('none')}
+            onPress={() => setKycStatus("none")}
           >
             <Text style={styles.retryButtonText}>Try Again</Text>
           </TouchableOpacity>

@@ -1,7 +1,6 @@
 import { Platform } from "react-native";
 import logger from "./logger";
 
-
 // Type definitions
 type HapticFeedbackType =
   | "impactLight"
@@ -29,7 +28,7 @@ class HapticFeedback {
   private initialize() {
     try {
       // Try to import the native module
-       
+
       const ReactNativeHapticFeedback = require("react-native-haptic-feedback");
       this.nativeModule = ReactNativeHapticFeedback;
       this.isAvailable = true;
@@ -42,7 +41,9 @@ class HapticFeedback {
 
   trigger(type: HapticFeedbackType, options?: HapticOptions) {
     if (!this.isAvailable || !this.nativeModule) {
-      logger.debug(`🔇 HapticFeedback: Skipping ${type} (module not available)`);
+      logger.debug(
+        `🔇 HapticFeedback: Skipping ${type} (module not available)`,
+      );
       return;
     }
 

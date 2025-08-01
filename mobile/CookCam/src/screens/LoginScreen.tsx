@@ -70,13 +70,13 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 
     try {
       await login(email, password);
-      
+
       // After successful login, offer to enable biometric authentication
       // This will be shown only once per session
       setTimeout(() => {
         setShowBiometricModal(true);
       }, 1000);
-      
+
       // Navigation will be handled by the auth state change in App.tsx
     } catch (error) {
       Alert.alert(
@@ -88,7 +88,10 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     }
   };
 
-  const handleBiometricLogin = async (credentials: { email: string; token: string }) => {
+  const handleBiometricLogin = async (credentials: {
+    email: string;
+    token: string;
+  }) => {
     try {
       setLoading(true);
       logger.debug("🔐 Starting biometric login process...");
@@ -99,7 +102,9 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
       logger.error("❌ Biometric login failed:", error);
       Alert.alert(
         "Biometric Login Failed",
-        error instanceof Error ? error.message : "Please try logging in with your password."
+        error instanceof Error
+          ? error.message
+          : "Please try logging in with your password.",
       );
     } finally {
       setLoading(false);
@@ -114,19 +119,25 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   const handleEnableBiometric = async () => {
     try {
       logger.debug("🔐 User clicked Enable biometric login");
-      
+
       // Use the enableBiometricLogin method which gets the session directly
       // We don't need to manually get the token
       await enableBiometricLogin(email, ""); // Empty token since enableBiometricLogin gets session internally
-      
+
       // Trigger refresh of biometric component
-      setBiometricRefreshTrigger(prev => prev + 1);
-      
+      setBiometricRefreshTrigger((prev) => prev + 1);
+
       logger.debug("✅ Biometric login setup completed successfully");
     } catch (error) {
       logger.error("❌ Failed to enable biometric login:", error);
-      const errorMessage = error instanceof Error ? error.message : "Failed to enable biometric login";
-      Alert.alert("Error", `${errorMessage}. You can enable it later in settings.`);
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Failed to enable biometric login";
+      Alert.alert(
+        "Error",
+        `${errorMessage}. You can enable it later in settings.`,
+      );
       throw error; // Re-throw so modal can handle it
     }
   };
@@ -147,8 +158,8 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
       const capabilities = await biometricService.checkBiometricCapabilities();
       const isEnabled = await biometricService.isBiometricEnabled();
       const credentials = await biometricService.getStoredCredentials();
-      
-      logger.debug('🔍 Biometric Debug Status:', {
+
+      logger.debug("🔍 Biometric Debug Status:", {
         capabilities: {
           isAvailable: capabilities.isAvailable,
           hasHardware: capabilities.hasHardware,
@@ -162,7 +173,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
         hasRefreshToken: !!credentials?.refreshToken,
       });
     } catch (error) {
-      logger.error('❌ Debug biometric status error:', error);
+      logger.error("❌ Debug biometric status error:", error);
     }
   };
 

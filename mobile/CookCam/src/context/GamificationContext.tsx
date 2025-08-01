@@ -12,7 +12,6 @@ import { StreakService } from "../services/streakService";
 import * as SecureStore from "expo-secure-store";
 import logger from "../utils/logger";
 
-
 interface Badge {
   id: string;
   name: string;
@@ -116,19 +115,22 @@ export const XP_VALUES = {
 const generateLevelThresholds = (): number[] => {
   const thresholds = [0]; // Level 0 baseline
   let totalXP = 0;
-  
+
   for (let level = 1; level <= 100; level++) {
     // Progressive formula: 100 + (level * 50) + (level^2 * 10)
     // This creates a nice curve that's challenging but achievable
     const baseXP = 100;
     const linearMultiplier = 50;
     const quadraticMultiplier = 10;
-    
-    const xpForThisLevel = baseXP + (level * linearMultiplier) + Math.pow(level, 2) * quadraticMultiplier;
+
+    const xpForThisLevel =
+      baseXP +
+      level * linearMultiplier +
+      Math.pow(level, 2) * quadraticMultiplier;
     totalXP += Math.round(xpForThisLevel);
     thresholds.push(totalXP);
   }
-  
+
   return thresholds;
 };
 
@@ -141,11 +143,16 @@ if (__DEV__) {
   for (let i = 1; i <= Math.min(15, LEVEL_THRESHOLDS.length - 1); i++) {
     const currentThreshold = LEVEL_THRESHOLDS[i];
     const previousThreshold = LEVEL_THRESHOLDS[i - 1];
-    if (currentThreshold === undefined || previousThreshold === undefined) continue;
+    if (currentThreshold === undefined || previousThreshold === undefined)
+      continue;
     const xpForLevel = currentThreshold - previousThreshold;
-    logger.debug(`Level ${i}: ${xpForLevel} XP (Total: ${LEVEL_THRESHOLDS[i]})`);
+    logger.debug(
+      `Level ${i}: ${xpForLevel} XP (Total: ${LEVEL_THRESHOLDS[i]})`,
+    );
   }
-  logger.debug(`...Level 100: Total XP needed: ${LEVEL_THRESHOLDS[100]?.toLocaleString()}`);
+  logger.debug(
+    `...Level 100: Total XP needed: ${LEVEL_THRESHOLDS[100]?.toLocaleString()}`,
+  );
 }
 
 // Available badges
@@ -267,7 +274,7 @@ export const GamificationProvider: React.FC<GamificationProviderProps> = ({
   const [recipesShared, setRecipesShared] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [lastChecked, setLastChecked] = useState<number | null>(null);
-  
+
   // Track the last user ID to prevent unnecessary loads
   const lastUserIdRef = useRef<string | null>(null);
 
@@ -281,11 +288,11 @@ export const GamificationProvider: React.FC<GamificationProviderProps> = ({
 
   useEffect(() => {
     const currentUserId = user?.id || null;
-    
+
     // Only run effect if user ID actually changed
     if (currentUserId !== lastUserIdRef.current) {
       lastUserIdRef.current = currentUserId;
-      
+
       if (currentUserId && !isLoading) {
         // Only load once per user change
         if (!lastChecked || lastChecked === 0) {
@@ -320,7 +327,7 @@ export const GamificationProvider: React.FC<GamificationProviderProps> = ({
 
     // Only load if we haven't checked recently (within 5 minutes)
     const now = Date.now();
-    if (lastChecked && (now - lastChecked < 5 * 60 * 1000)) {
+    if (lastChecked && now - lastChecked < 5 * 60 * 1000) {
       logger.debug("🎮 Skipping gamification load - checked recently");
       return;
     }
@@ -341,14 +348,14 @@ export const GamificationProvider: React.FC<GamificationProviderProps> = ({
           // Only update state if values have actually changed
           const newXP = user_stats.total_xp || user_stats.current_xp || 0;
           const newLevel = user_stats.level || 1;
-          
+
           if (newXP !== xp) {
             setXP(newXP);
           }
           if (newLevel !== level) {
             setLevel(newLevel);
           }
-          
+
           // Note: Don't call updateUser here to prevent infinite loop
           // The Auth context will be updated when needed
 
@@ -393,14 +400,14 @@ export const GamificationProvider: React.FC<GamificationProviderProps> = ({
     // Handle edge cases
     if (totalXP < 0) return 1;
     if (totalXP >= LEVEL_THRESHOLDS[LEVEL_THRESHOLDS.length - 1]) return 100;
-    
+
     // Find the current level based on total XP
     for (let level = 1; level < LEVEL_THRESHOLDS.length; level++) {
       if (totalXP < LEVEL_THRESHOLDS[level]) {
         return level; // Return the level they're currently working towards
       }
     }
-    
+
     return 100; // Max level
   };
 
@@ -408,27 +415,35 @@ export const GamificationProvider: React.FC<GamificationProviderProps> = ({
     // Handle edge cases
     if (currentLevel >= 100) return 100; // Max level reached
     if (currentLevel < 1) return 0;
-    
+
     const currentLevelThreshold = LEVEL_THRESHOLDS[currentLevel - 1] || 0;
     const nextLevelThreshold = LEVEL_THRESHOLDS[currentLevel];
-    
+
     if (!nextLevelThreshold) return 100; // If no next level, show complete
-    
+
     const xpInCurrentLevel = totalXP - currentLevelThreshold;
     const xpNeededForNextLevel = nextLevelThreshold - currentLevelThreshold;
-    
-    const progress = Math.min((xpInCurrentLevel / xpNeededForNextLevel) * 100, 100);
+
+    const progress = Math.min(
+      (xpInCurrentLevel / xpNeededForNextLevel) * 100,
+      100,
+    );
     return Math.max(progress, 0);
   };
 
   const getNextLevelXP = (currentLevel: number): number => {
     // If at max level, return current threshold
     if (currentLevel >= 100) {
-      return LEVEL_THRESHOLDS[100] || LEVEL_THRESHOLDS[LEVEL_THRESHOLDS.length - 1];
+      return (
+        LEVEL_THRESHOLDS[100] || LEVEL_THRESHOLDS[LEVEL_THRESHOLDS.length - 1]
+      );
     }
-    
+
     // Return XP needed for next level
-    return LEVEL_THRESHOLDS[currentLevel] || LEVEL_THRESHOLDS[LEVEL_THRESHOLDS.length - 1];
+    return (
+      LEVEL_THRESHOLDS[currentLevel] ||
+      LEVEL_THRESHOLDS[LEVEL_THRESHOLDS.length - 1]
+    );
   };
 
   const addXP = async (amount: number, reason: string) => {
@@ -542,20 +557,20 @@ export const GamificationProvider: React.FC<GamificationProviderProps> = ({
 
   const checkStreak = async () => {
     if (!user) return;
-    
+
     try {
       // Update streak in database
       const success = await StreakService.updateStreak(user.id);
-      
+
       if (success) {
         // Get updated streak data
         const streakData = await StreakService.getStreakData(user.id);
-        
+
         if (streakData) {
           const newStreak = streakData.current_streak;
           setStreak(newStreak);
           updateUser({ streak: newStreak });
-          
+
           // Check for streak badges and milestones
           if (newStreak === 7) {
             await unlockBadge("streak_7");
@@ -567,17 +582,17 @@ export const GamificationProvider: React.FC<GamificationProviderProps> = ({
             await unlockBadge("century_chef");
             await addXP(500, "CENTURY_STREAK_BONUS");
           }
-          
+
           // Add daily streak bonus XP
           const streakBonus = Math.min(newStreak * 2, 50); // Cap at 50 XP
           await addXP(streakBonus, "DAILY_STREAK_BONUS");
-          
+
           // Check and award milestone rewards
           await StreakService.checkAndAwardMilestones(user.id, newStreak);
         }
       }
     } catch (error) {
-      logger.error('Failed to update streak:', error);
+      logger.error("Failed to update streak:", error);
       // Fallback to local increment
       const newStreak = streak + 1;
       setStreak(newStreak);
@@ -587,23 +602,23 @@ export const GamificationProvider: React.FC<GamificationProviderProps> = ({
 
   const useFreeze = async (): Promise<boolean> => {
     if (!user) return false;
-    
+
     try {
       // Use freeze token for yesterday
       const yesterday = new Date();
       yesterday.setDate(yesterday.getDate() - 1);
-      const yesterdayStr = yesterday.toISOString().split('T')[0];
-      
+      const yesterdayStr = yesterday.toISOString().split("T")[0];
+
       const success = await StreakService.useFreezeToken(user.id, yesterdayStr);
-      
+
       if (success) {
         setFreezeTokens(Math.max(0, freezeTokens - 1));
         return true;
       }
     } catch (error) {
-      logger.error('Failed to use freeze token:', error);
+      logger.error("Failed to use freeze token:", error);
     }
-    
+
     return false;
   };
 

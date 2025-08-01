@@ -83,16 +83,18 @@ const XPHeader: React.FC = React.memo(() => {
   }, [navigation]);
 
   // Memoized animated style
-  const pulseStyle = useMemo(() => [
-    styles.xpBarContainer,
-    { transform: [{ scale: pulseAnim }] },
-  ], [pulseAnim]);
+  const pulseStyle = useMemo(
+    () => [styles.xpBarContainer, { transform: [{ scale: pulseAnim }] }],
+    [pulseAnim],
+  );
 
-  const progressWidth = useMemo(() => 
-    progressAnim.interpolate({
-      inputRange: [0, 100],
-      outputRange: ["0%", "100%"],
-    }), [progressAnim]
+  const progressWidth = useMemo(
+    () =>
+      progressAnim.interpolate({
+        inputRange: [0, 100],
+        outputRange: ["0%", "100%"],
+      }),
+    [progressAnim],
   );
 
   return (
@@ -131,10 +133,7 @@ const XPHeader: React.FC = React.memo(() => {
           <Animated.View style={pulseStyle}>
             <View style={styles.xpBarBg}>
               <Animated.View
-                style={[
-                  styles.xpBarFill,
-                  { width: progressWidth },
-                ]}
+                style={[styles.xpBarFill, { width: progressWidth }]}
               />
               <View style={styles.xpBarShine} />
             </View>
@@ -154,7 +153,7 @@ const XPHeader: React.FC = React.memo(() => {
 });
 
 // Add display name for debugging
-XPHeader.displayName = 'XPHeader';
+XPHeader.displayName = "XPHeader";
 
 const styles = StyleSheet.create({
   wrapper: {

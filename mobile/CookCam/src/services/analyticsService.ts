@@ -473,7 +473,6 @@ export const analyticsService = new AnalyticsService();
 import { useEffect } from "react";
 import logger from "../utils/logger";
 
-
 export function useAnalytics() {
   useEffect(() => {
     // Track when component mounts

@@ -17,7 +17,6 @@ import * as SecureStore from "expo-secure-store";
 import logger from "../utils/logger";
 import SubscriptionService from "../services/subscriptionService";
 
-
 interface PlanPaywallScreenProps {
   navigation: NativeStackNavigationProp<RootStackParamList>;
   route: RouteProp<RootStackParamList, "PlanPaywall">;
@@ -27,14 +26,23 @@ const PlanPaywallScreen: React.FC<PlanPaywallScreenProps> = ({
   navigation,
   route,
 }) => {
-  const [selectedPlan, setSelectedPlan] = useState<"consumer" | "creator">("consumer");
+  const [selectedPlan, setSelectedPlan] = useState<"consumer" | "creator">(
+    "consumer",
+  );
   const [isStartingTrial, setIsStartingTrial] = useState(false);
 
   // Get params from route or use defaults
-  const { source, feature, selectedPlan: routeSelectedPlan, tempData } = route.params || {};
-  
+  const {
+    source,
+    feature,
+    selectedPlan: routeSelectedPlan,
+    tempData,
+  } = route.params || {};
+
   // Use route param if provided, otherwise use state
-  const currentSelectedPlan = (routeSelectedPlan || selectedPlan) as "consumer" | "creator";
+  const currentSelectedPlan = (routeSelectedPlan || selectedPlan) as
+    | "consumer"
+    | "creator";
 
   const planDetails = {
     consumer: {
@@ -81,15 +89,20 @@ const PlanPaywallScreen: React.FC<PlanPaywallScreenProps> = ({
 
       // Initialize the subscription service
       const subscriptionService = SubscriptionService.getInstance();
-      
+
       // 1. Initialize Apple/Google subscription based on plan
-      const productId = currentSelectedPlan === "creator" ? "creator_monthly" : "premium_monthly";
-      
+      const productId =
+        currentSelectedPlan === "creator"
+          ? "creator_monthly"
+          : "premium_monthly";
+
       try {
         // Start the IAP purchase process
         await subscriptionService.purchaseProduct(productId);
-        const purchaseResult: { success: boolean; error?: string } = { success: true };
-        
+        const purchaseResult: { success: boolean; error?: string } = {
+          success: true,
+        };
+
         if (!purchaseResult.success) {
           throw new Error(purchaseResult.error || "Purchase failed");
         }
@@ -114,10 +127,9 @@ const PlanPaywallScreen: React.FC<PlanPaywallScreenProps> = ({
             routes: [{ name: "MainTabs" }],
           });
         }
-        
       } catch (purchaseError) {
         logger.error("IAP purchase failed:", purchaseError);
-        
+
         // Offer free trial option as fallback
         Alert.alert(
           "Payment Issue",
@@ -130,17 +142,16 @@ const PlanPaywallScreen: React.FC<PlanPaywallScreenProps> = ({
                 // Set limited free trial mode
                 await SecureStore.setItemAsync("freeTrialMode", "true");
                 await SecureStore.setItemAsync("onboardingCompleted", "true");
-                
+
                 navigation.reset({
                   index: 0,
                   routes: [{ name: "MainTabs" }],
                 });
-              }
-            }
-          ]
+              },
+            },
+          ],
         );
       }
-      
     } catch (error) {
       logger.error("Trial start error:", error);
       Alert.alert(

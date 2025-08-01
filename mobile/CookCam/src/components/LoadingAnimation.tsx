@@ -30,7 +30,7 @@ const LoadingAnimation: React.FC<LoadingAnimationProps> = ({
 
   useEffect(() => {
     logger.debug(`🎬 LoadingAnimation: visible=${visible}`);
-    
+
     if (visible) {
       // Start pulsing animation when loading
       const pulse = Animated.loop(
@@ -106,11 +106,13 @@ const LoadingAnimation: React.FC<LoadingAnimationProps> = ({
             <Text style={styles.subtitle}>{content.subtitle}</Text>
 
             <View style={styles.stepsContainer}>
-              {content.steps.map((step: { icon: string; text: string }, index: number) => (
-                <Text key={index} style={styles.stepText}>
-                  {step.icon} {step.text}
-                </Text>
-              ))}
+              {content.steps.map(
+                (step: { icon: string; text: string }, index: number) => (
+                  <Text key={index} style={styles.stepText}>
+                    {step.icon} {step.text}
+                  </Text>
+                ),
+              )}
             </View>
           </View>
         </Animated.View>
@@ -141,8 +143,8 @@ const styles = StyleSheet.create({
     elevation: 15,
     borderWidth: 2,
     borderColor: "#FFB800",
-    maxWidth: '85%',
-    minWidth: '70%',
+    maxWidth: "85%",
+    minWidth: "70%",
   },
   content: {
     alignItems: "center",

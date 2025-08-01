@@ -15,7 +15,7 @@ import {
   Star,
   Calendar,
 } from "lucide-react-native";
-import * as ImagePicker from 'expo-image-picker';
+import * as ImagePicker from "expo-image-picker";
 import * as Haptics from "expo-haptics";
 import * as SecureStore from "expo-secure-store";
 import { useGamification } from "../context/GamificationContext";
@@ -99,7 +99,7 @@ const DailyCheckIn: React.FC = () => {
   const generateWeeklyProgress = async () => {
     const days: CheckInDay[] = [];
     const today = new Date();
-    
+
     // Get the start of the current week (Sunday)
     const startOfWeek = new Date(today);
     const dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
@@ -123,7 +123,7 @@ const DailyCheckIn: React.FC = () => {
       const dateString = date.toDateString();
 
       // Check if this day already has check-in data
-      const existingDay = existingData.find(d => d.date === dateString);
+      const existingDay = existingData.find((d) => d.date === dateString);
 
       days.push({
         date: dateString,
@@ -137,11 +137,11 @@ const DailyCheckIn: React.FC = () => {
 
   const requestCameraPermissions = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status !== 'granted') {
+    if (status !== "granted") {
       Alert.alert(
-        'Camera Permission Required',
-        'Please allow camera access to take photos of your fridge contents.',
-        [{ text: 'OK' }]
+        "Camera Permission Required",
+        "Please allow camera access to take photos of your fridge contents.",
+        [{ text: "OK" }],
       );
       return false;
     }
@@ -259,7 +259,7 @@ const DailyCheckIn: React.FC = () => {
       Alert.alert(
         "Check-In Complete! 📸",
         "Thanks for sharing your fridge contents! +5 XP awarded.",
-        [{ text: "Awesome!" }]
+        [{ text: "Awesome!" }],
       );
     } catch (error) {
       logger.error("Error processing photo:", error);
@@ -396,9 +396,14 @@ const DailyCheckIn: React.FC = () => {
             Based on your fridge, try making:
           </Text>
           <Text style={styles.recipeName}>{suggestedRecipe}</Text>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.viewRecipeButton}
-            onPress={() => Alert.alert("Coming Soon!", "Full recipe functionality will be available soon! 🍽️")}
+            onPress={() =>
+              Alert.alert(
+                "Coming Soon!",
+                "Full recipe functionality will be available soon! 🍽️",
+              )
+            }
           >
             <Text style={styles.viewRecipeText}>View Recipe</Text>
             <Star size={16} color="#FF6B35" />

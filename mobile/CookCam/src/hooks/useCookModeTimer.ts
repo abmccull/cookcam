@@ -3,7 +3,7 @@
  * Handles timer logic, play/pause, and step timing
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from "react";
 
 interface UseCookModeTimerProps {
   initialTime: number;
@@ -67,4 +67,4 @@ export const useCookModeTimer = ({
     isTimerRunning: isPlaying && timeRemaining > 0,
     isTimerComplete: timeRemaining === 0,
   };
-}; 
+};

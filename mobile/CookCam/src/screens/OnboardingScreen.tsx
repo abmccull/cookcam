@@ -9,12 +9,7 @@ import {
   ScrollView,
   Alert,
 } from "react-native";
-import {
-  Camera,
-  ChefHat,
-  Trophy,
-  ChevronRight,
-} from "lucide-react-native";
+import { Camera, ChefHat, Trophy, ChevronRight } from "lucide-react-native";
 // import Animated, {
 //   useAnimatedStyle,
 //   useSharedValue,
@@ -66,7 +61,9 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
     },
   ];
 
-  const handleScroll = (event: { nativeEvent: { contentOffset: { x: number } } }) => {
+  const handleScroll = (event: {
+    nativeEvent: { contentOffset: { x: number } };
+  }) => {
     const offsetX = event.nativeEvent.contentOffset.x;
     const page = Math.round(offsetX / SCREEN_WIDTH);
     setCurrentPage(page);
@@ -118,11 +115,11 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
       requiredFeature: "onboarding_complete",
       onContinue: () => {
         // This will be handled by AccountGateScreen
-      }
+      },
     });
   };
 
-  const renderPage = (item: typeof onboardingData[0], index: number) => {
+  const renderPage = (item: (typeof onboardingData)[0], index: number) => {
     const Icon = item.icon;
 
     // const animatedStyle = useAnimatedStyle(() => {

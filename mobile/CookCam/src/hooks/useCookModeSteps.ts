@@ -3,9 +3,9 @@
  * Handles step navigation, completion tracking, and step data management
  */
 
-import { useState, useCallback, useMemo } from 'react';
-import { CookingStep } from '../types/cookMode';
-import logger from '../utils/logger';
+import { useState, useCallback, useMemo } from "react";
+import { CookingStep } from "../types/cookMode";
+import logger from "../utils/logger";
 
 interface UseCookModeStepsProps {
   initialSteps: CookingStep[];
@@ -37,30 +37,33 @@ export const useCookModeSteps = ({ initialSteps }: UseCookModeStepsProps) => {
   // Navigate to next step
   const goToNextStep = useCallback(() => {
     if (currentStep < steps.length - 1) {
-      setCurrentStep(prev => prev + 1);
-      logger.debug('🔄 Advanced to next step:', currentStep + 1);
+      setCurrentStep((prev) => prev + 1);
+      logger.debug("🔄 Advanced to next step:", currentStep + 1);
     }
   }, [currentStep, steps.length]);
 
   // Navigate to previous step
   const goToPreviousStep = useCallback(() => {
     if (currentStep > 0) {
-      setCurrentStep(prev => prev - 1);
-      logger.debug('🔄 Went back to step:', currentStep - 1);
+      setCurrentStep((prev) => prev - 1);
+      logger.debug("🔄 Went back to step:", currentStep - 1);
     }
   }, [currentStep]);
 
   // Jump to specific step
-  const goToStep = useCallback((stepIndex: number) => {
-    if (stepIndex >= 0 && stepIndex < steps.length) {
-      setCurrentStep(stepIndex);
-      logger.debug('🔄 Jumped to step:', stepIndex);
-    }
-  }, [steps.length]);
+  const goToStep = useCallback(
+    (stepIndex: number) => {
+      if (stepIndex >= 0 && stepIndex < steps.length) {
+        setCurrentStep(stepIndex);
+        logger.debug("🔄 Jumped to step:", stepIndex);
+      }
+    },
+    [steps.length],
+  );
 
   // Mark current step as completed
   const completeCurrentStep = useCallback(() => {
-    setSteps(prevSteps => {
+    setSteps((prevSteps) => {
       const newSteps = [...prevSteps];
       if (newSteps[currentStep]) {
         newSteps[currentStep] = {
@@ -71,23 +74,23 @@ export const useCookModeSteps = ({ initialSteps }: UseCookModeStepsProps) => {
       return newSteps;
     });
 
-    setCompletedSteps(prev => Math.max(prev, currentStep + 1));
-    logger.debug('✅ Completed step:', currentStep);
+    setCompletedSteps((prev) => Math.max(prev, currentStep + 1));
+    logger.debug("✅ Completed step:", currentStep);
   }, [currentStep]);
 
   // Reset all steps
   const resetSteps = useCallback(() => {
-    setSteps(prevSteps => 
-      prevSteps.map(step => ({ ...step, completed: false }))
+    setSteps((prevSteps) =>
+      prevSteps.map((step) => ({ ...step, completed: false })),
     );
     setCurrentStep(0);
     setCompletedSteps(0);
-    logger.debug('🔄 Reset all steps');
+    logger.debug("🔄 Reset all steps");
   }, []);
 
   // Check if all steps are completed
   const isAllStepsCompleted = useMemo(() => {
-    return steps.every(step => step.completed);
+    return steps.every((step) => step.completed);
   }, [steps]);
 
   // Check if current step is the last step
@@ -113,23 +116,23 @@ export const useCookModeSteps = ({ initialSteps }: UseCookModeStepsProps) => {
     currentStepData,
     nextStepPreview,
     progress,
-    
+
     // Navigation
     goToNextStep,
     goToPreviousStep,
     goToStep,
-    
+
     // Step management
     completeCurrentStep,
     resetSteps,
-    
+
     // Status checks
     isAllStepsCompleted,
     isLastStep,
     canGoNext,
     canGoPrevious,
-    
+
     // Metadata
     totalSteps: steps.length,
   };
-}; 
+};

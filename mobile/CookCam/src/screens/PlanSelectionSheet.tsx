@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -7,7 +7,7 @@ import {
   SafeAreaView,
   ScrollView,
   Dimensions,
-} from 'react-native';
+} from "react-native";
 import {
   Camera,
   DollarSign,
@@ -16,75 +16,77 @@ import {
   Check,
   TrendingUp,
   ChefHat,
-} from 'lucide-react-native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RouteProp } from '@react-navigation/native';
-import { RootStackParamList } from '../App';
-import logger from '../utils/logger';
+} from "lucide-react-native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { RouteProp } from "@react-navigation/native";
+import { RootStackParamList } from "../App";
+import logger from "../utils/logger";
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
 interface PlanSelectionSheetProps {
   navigation: NativeStackNavigationProp<RootStackParamList>;
-  route: RouteProp<RootStackParamList, 'PlanSelection'>;
+  route: RouteProp<RootStackParamList, "PlanSelection">;
 }
 
 const PlanSelectionSheet: React.FC<PlanSelectionSheetProps> = ({
   navigation,
 }) => {
-  const [selectedPlan, setSelectedPlan] = useState<'consumer' | 'creator'>('consumer');
+  const [selectedPlan, setSelectedPlan] = useState<"consumer" | "creator">(
+    "consumer",
+  );
 
   const planOptions = [
     {
-      id: 'consumer',
-      name: 'Get Cooking',
-      price: '$3.99',
-      period: 'month',
-      description: 'Perfect for home cooks who want AI-powered recipes',
+      id: "consumer",
+      name: "Get Cooking",
+      price: "$3.99",
+      period: "month",
+      description: "Perfect for home cooks who want AI-powered recipes",
       icon: Camera,
-      color: '#66BB6A',
+      color: "#66BB6A",
       features: [
-        'Unlimited ingredient scanning',
-        'AI recipe generation',
-        'Step-by-step cook mode',
-        'Save favorite recipes',
-        'Nutrition information',
+        "Unlimited ingredient scanning",
+        "AI recipe generation",
+        "Step-by-step cook mode",
+        "Save favorite recipes",
+        "Nutrition information",
       ],
     },
     {
-      id: 'creator',
-      name: 'Creator Pro',
-      price: '$9.99',
-      period: 'month',
-      description: 'For food creators who want to monetize their content',
+      id: "creator",
+      name: "Creator Pro",
+      price: "$9.99",
+      period: "month",
+      description: "For food creators who want to monetize their content",
       icon: DollarSign,
-      color: '#FF6B35',
+      color: "#FF6B35",
       features: [
-        'Everything in Get Cooking',
-        'Creator dashboard & analytics',
-        'Publish premium recipes',
-        'Earn 30% revenue share',
-        'Referral tracking & bonuses',
-        'Priority support',
+        "Everything in Get Cooking",
+        "Creator dashboard & analytics",
+        "Publish premium recipes",
+        "Earn 30% revenue share",
+        "Referral tracking & bonuses",
+        "Priority support",
       ],
     },
   ];
 
-  const handlePlanSelect = (planId: 'consumer' | 'creator') => {
+  const handlePlanSelect = (planId: "consumer" | "creator") => {
     setSelectedPlan(planId);
   };
 
   const handleContinue = () => {
-    logger.debug('🎯 Selected plan:', selectedPlan);
-    
+    logger.debug("🎯 Selected plan:", selectedPlan);
+
     // Navigate to paywall with selected plan
-    navigation.navigate('PlanPaywall', {
+    navigation.navigate("PlanPaywall", {
       selectedPlan,
-      source: 'plan_selection',
+      source: "plan_selection",
     });
   };
 
-  const renderPlanCard = (plan: typeof planOptions[0]) => {
+  const renderPlanCard = (plan: (typeof planOptions)[0]) => {
     const isSelected = selectedPlan === plan.id;
     const IconComponent = plan.icon;
 
@@ -94,9 +96,9 @@ const PlanSelectionSheet: React.FC<PlanSelectionSheetProps> = ({
         style={[
           styles.planCard,
           isSelected && styles.selectedPlanCard,
-          { borderColor: isSelected ? plan.color : '#E0E0E0' },
+          { borderColor: isSelected ? plan.color : "#E0E0E0" },
         ]}
-        onPress={() => handlePlanSelect(plan.id as 'consumer' | 'creator')}
+        onPress={() => handlePlanSelect(plan.id as "consumer" | "creator")}
       >
         <View style={styles.planHeader}>
           <View style={[styles.planIcon, { backgroundColor: plan.color }]}>
@@ -127,7 +129,7 @@ const PlanSelectionSheet: React.FC<PlanSelectionSheetProps> = ({
           ))}
         </View>
 
-        {plan.id === 'creator' && (
+        {plan.id === "creator" && (
           <View style={styles.revenueHighlight}>
             <Star size={16} color="#FFC107" />
             <Text style={styles.revenueText}>
@@ -168,18 +170,19 @@ const PlanSelectionSheet: React.FC<PlanSelectionSheetProps> = ({
         <TouchableOpacity
           style={[
             styles.continueButton,
-            { backgroundColor: planOptions.find(p => p.id === selectedPlan)?.color },
+            {
+              backgroundColor: planOptions.find((p) => p.id === selectedPlan)
+                ?.color,
+            },
           ]}
           onPress={handleContinue}
         >
-          <Text style={styles.continueButtonText}>
-            Start Free Trial
-          </Text>
+          <Text style={styles.continueButtonText}>Start Free Trial</Text>
         </TouchableOpacity>
 
         <Text style={styles.footerNote}>
-          You won't be charged until after your free trial ends.
-          Cancel anytime in your device settings.
+          You won't be charged until after your free trial ends. Cancel anytime
+          in your device settings.
         </Text>
       </View>
     </SafeAreaView>
@@ -189,25 +192,25 @@ const PlanSelectionSheet: React.FC<PlanSelectionSheetProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F8FF',
+    backgroundColor: "#F8F8FF",
   },
   header: {
     paddingHorizontal: 24,
     paddingTop: 24,
     paddingBottom: 16,
-    alignItems: 'center',
+    alignItems: "center",
   },
   title: {
     fontSize: 28,
-    fontWeight: 'bold',
-    color: '#2D1B69',
+    fontWeight: "bold",
+    color: "#2D1B69",
     marginBottom: 8,
-    textAlign: 'center',
+    textAlign: "center",
   },
   subtitle: {
     fontSize: 16,
-    color: '#8E8E93',
-    textAlign: 'center',
+    color: "#8E8E93",
+    textAlign: "center",
     lineHeight: 22,
   },
   scrollView: {
@@ -218,12 +221,12 @@ const styles = StyleSheet.create({
     paddingTop: 16,
   },
   planCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderRadius: 16,
     padding: 20,
     marginBottom: 16,
     borderWidth: 2,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: {
       width: 0,
       height: 2,
@@ -238,16 +241,16 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   planHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 12,
   },
   planIcon: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginRight: 16,
   },
   planInfo: {
@@ -255,34 +258,34 @@ const styles = StyleSheet.create({
   },
   planName: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#2D1B69',
+    fontWeight: "bold",
+    color: "#2D1B69",
     marginBottom: 4,
   },
   priceContainer: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
+    flexDirection: "row",
+    alignItems: "baseline",
   },
   planPrice: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#2D1B69',
+    fontWeight: "bold",
+    color: "#2D1B69",
   },
   planPeriod: {
     fontSize: 16,
-    color: '#8E8E93',
+    color: "#8E8E93",
     marginLeft: 2,
   },
   checkmark: {
     width: 24,
     height: 24,
     borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   planDescription: {
     fontSize: 16,
-    color: '#8E8E93',
+    color: "#8E8E93",
     lineHeight: 22,
     marginBottom: 16,
   },
@@ -290,43 +293,43 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   featureRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 8,
   },
   featureText: {
     fontSize: 16,
-    color: '#2D1B69',
+    color: "#2D1B69",
     marginLeft: 12,
     flex: 1,
   },
   revenueHighlight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFF8E1',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFF8E1",
     padding: 12,
     borderRadius: 8,
     marginTop: 8,
   },
   revenueText: {
     fontSize: 14,
-    color: '#F57C00',
-    fontWeight: '600',
+    color: "#F57C00",
+    fontWeight: "600",
     marginLeft: 8,
   },
   trialInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     paddingHorizontal: 24,
     paddingVertical: 16,
   },
   trialText: {
     fontSize: 16,
-    color: '#FF6B35',
-    fontWeight: '600',
+    color: "#FF6B35",
+    fontWeight: "600",
     marginLeft: 8,
-    textAlign: 'center',
+    textAlign: "center",
   },
   footer: {
     paddingHorizontal: 24,
@@ -336,18 +339,18 @@ const styles = StyleSheet.create({
   continueButton: {
     paddingVertical: 16,
     borderRadius: 12,
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 16,
   },
   continueButtonText: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
+    fontWeight: "bold",
+    color: "#FFFFFF",
   },
   footerNote: {
     fontSize: 14,
-    color: '#8E8E93',
-    textAlign: 'center',
+    color: "#8E8E93",
+    textAlign: "center",
     lineHeight: 20,
   },
 });

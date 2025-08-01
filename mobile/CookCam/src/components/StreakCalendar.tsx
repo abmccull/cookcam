@@ -112,22 +112,22 @@ const StreakCalendar: React.FC = () => {
   const loadStreakData = async () => {
     try {
       setLoading(true);
-      
+
       // Get user's streak data
       const { data: streak, error: streakError } = await supabase
-        .from('user_streaks')
-        .select('*')
-        .eq('user_id', user?.id)
+        .from("user_streaks")
+        .select("*")
+        .eq("user_id", user?.id)
         .single();
 
-      if (streakError && streakError.code !== 'PGRST116') {
+      if (streakError && streakError.code !== "PGRST116") {
         throw streakError;
       }
 
       // If no streak exists, create one
       if (!streak) {
         const { data: newStreak, error: createError } = await supabase
-          .from('user_streaks')
+          .from("user_streaks")
           .insert({
             user_id: user?.id,
             current_streak: 0,
@@ -143,23 +143,30 @@ const StreakCalendar: React.FC = () => {
       }
 
       // Get this month's cooking records
-      const startOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
-      const endOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
-      
+      const startOfMonth = new Date(
+        currentMonth.getFullYear(),
+        currentMonth.getMonth(),
+        1,
+      );
+      const endOfMonth = new Date(
+        currentMonth.getFullYear(),
+        currentMonth.getMonth() + 1,
+        0,
+      );
+
       const { data: cooks, error: cooksError } = await supabase
-        .from('daily_cooks')
-        .select('*')
-        .eq('user_id', user?.id)
-        .gte('cook_date', startOfMonth.toISOString().split('T')[0])
-        .lte('cook_date', endOfMonth.toISOString().split('T')[0])
-        .order('cook_date', { ascending: true });
+        .from("daily_cooks")
+        .select("*")
+        .eq("user_id", user?.id)
+        .gte("cook_date", startOfMonth.toISOString().split("T")[0])
+        .lte("cook_date", endOfMonth.toISOString().split("T")[0])
+        .order("cook_date", { ascending: true });
 
       if (cooksError) throw cooksError;
       setDailyCooks(cooks || []);
-
     } catch (error) {
-      logger.error('Failed to load streak data:', error);
-      Alert.alert('Error', 'Failed to load streak data');
+      logger.error("Failed to load streak data:", error);
+      Alert.alert("Error", "Failed to load streak data");
     } finally {
       setLoading(false);
     }
@@ -169,34 +176,44 @@ const StreakCalendar: React.FC = () => {
     try {
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
-      if (!streakData || streakData.freeze_tokens_used >= streakData.total_freeze_tokens) {
-        Alert.alert('No Shields Available', 'You have used all your streak shields.');
+      if (
+        !streakData ||
+        streakData.freeze_tokens_used >= streakData.total_freeze_tokens
+      ) {
+        Alert.alert(
+          "No Shields Available",
+          "You have used all your streak shields.",
+        );
         return;
       }
 
       // Use freeze token for yesterday
       const yesterday = new Date();
       yesterday.setDate(yesterday.getDate() - 1);
-      const yesterdayStr = yesterday.toISOString().split('T')[0];
+      const yesterdayStr = yesterday.toISOString().split("T")[0];
 
-      const { data, error } = await supabase
-        .rpc('use_freeze_token', {
-          p_user_id: user?.id,
-          p_date: yesterdayStr
-        });
+      const { data, error } = await supabase.rpc("use_freeze_token", {
+        p_user_id: user?.id,
+        p_date: yesterdayStr,
+      });
 
       if (error) throw error;
 
       if (data) {
-        Alert.alert('Shield Used!', 'Your streak has been protected for yesterday.');
+        Alert.alert(
+          "Shield Used!",
+          "Your streak has been protected for yesterday.",
+        );
         await loadStreakData(); // Reload data
       } else {
-        Alert.alert('Shield Failed', 'Unable to use shield. You may have already cooked yesterday.');
+        Alert.alert(
+          "Shield Failed",
+          "Unable to use shield. You may have already cooked yesterday.",
+        );
       }
-
     } catch (error) {
-      logger.error('Failed to use freeze token:', error);
-      Alert.alert('Error', 'Failed to use streak shield');
+      logger.error("Failed to use freeze token:", error);
+      Alert.alert("Error", "Failed to use streak shield");
     }
   };
 
@@ -209,15 +226,25 @@ const StreakCalendar: React.FC = () => {
   };
 
   const isDateCooked = (date: number) => {
-    const dateStr = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), date)
-      .toISOString().split('T')[0];
-    return dailyCooks.some(cook => cook.cook_date === dateStr);
+    const dateStr = new Date(
+      currentMonth.getFullYear(),
+      currentMonth.getMonth(),
+      date,
+    )
+      .toISOString()
+      .split("T")[0];
+    return dailyCooks.some((cook) => cook.cook_date === dateStr);
   };
 
   const isDateFrozen = (date: number) => {
-    const dateStr = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), date)
-      .toISOString().split('T')[0];
-    const cook = dailyCooks.find(c => c.cook_date === dateStr);
+    const dateStr = new Date(
+      currentMonth.getFullYear(),
+      currentMonth.getMonth(),
+      date,
+    )
+      .toISOString()
+      .split("T")[0];
+    const cook = dailyCooks.find((c) => c.cook_date === dateStr);
     return cook?.freeze_used || false;
   };
 
@@ -228,8 +255,8 @@ const StreakCalendar: React.FC = () => {
 
     const isCooked = isDateCooked(day);
     const isFrozen = isDateFrozen(day);
-    const isToday = 
-      day === new Date().getDate() && 
+    const isToday =
+      day === new Date().getDate() &&
       currentMonth.getMonth() === new Date().getMonth() &&
       currentMonth.getFullYear() === new Date().getFullYear();
 
@@ -284,7 +311,7 @@ const StreakCalendar: React.FC = () => {
         weeks.push(
           <View key={`week-${weeks.length}`} style={styles.calendarWeek}>
             {week}
-          </View>
+          </View>,
         );
         week = [];
       }
@@ -310,17 +337,16 @@ const StreakCalendar: React.FC = () => {
 
   const currentStreak = streakData?.current_streak || 0;
   const longestStreak = streakData?.longest_streak || 0;
-  const freezeTokensLeft = (streakData?.total_freeze_tokens || 3) - (streakData?.freeze_tokens_used || 0);
+  const freezeTokensLeft =
+    (streakData?.total_freeze_tokens || 3) -
+    (streakData?.freeze_tokens_used || 0);
 
   return (
     <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
       <View style={styles.header}>
         <View style={styles.streakInfo}>
           <Animated.View
-            style={[
-              styles.streakBadge,
-              { transform: [{ scale: pulseAnim }] },
-            ]}
+            style={[styles.streakBadge, { transform: [{ scale: pulseAnim }] }]}
           >
             <Flame size={32} color="#FF6B6B" />
             <Text style={styles.streakNumber}>{currentStreak}</Text>
@@ -338,9 +364,7 @@ const StreakCalendar: React.FC = () => {
           onPress={handleUseFreeze}
           disabled={freezeTokensLeft === 0}
         >
-          <Animated.View
-            style={{ transform: [{ scale: shieldScale }] }}
-          >
+          <Animated.View style={{ transform: [{ scale: shieldScale }] }}>
             <Shield
               size={24}
               color={freezeTokensLeft > 0 ? "#4ECDC4" : "#666"}
@@ -355,9 +379,9 @@ const StreakCalendar: React.FC = () => {
           <Text style={styles.monthArrow}>‹</Text>
         </TouchableOpacity>
         <Text style={styles.monthText}>
-          {currentMonth.toLocaleDateString('en-US', {
-            month: 'long',
-            year: 'numeric',
+          {currentMonth.toLocaleDateString("en-US", {
+            month: "long",
+            year: "numeric",
           })}
         </Text>
         <TouchableOpacity onPress={() => changeMonth(1)}>
@@ -367,7 +391,7 @@ const StreakCalendar: React.FC = () => {
 
       <View style={styles.calendar}>
         <View style={styles.calendarHeader}>
-          {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, index) => (
+          {["S", "M", "T", "W", "T", "F", "S"].map((day, index) => (
             <Text key={index} style={styles.calendarHeaderText}>
               {day}
             </Text>
@@ -389,10 +413,7 @@ const StreakCalendar: React.FC = () => {
           {streakRewards.map((reward, index) => (
             <View
               key={index}
-              style={[
-                styles.rewardItem,
-                reward.earned && styles.rewardEarned,
-              ]}
+              style={[styles.rewardItem, reward.earned && styles.rewardEarned]}
             >
               <Text style={styles.rewardIcon}>{reward.icon}</Text>
               <View style={styles.rewardInfo}>
@@ -421,8 +442,8 @@ const styles = StyleSheet.create({
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     backgroundColor: "#1A1A1A",
   },
   header: {

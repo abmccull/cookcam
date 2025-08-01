@@ -28,7 +28,6 @@ import logger from "../utils/logger";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../App";
 
-
 interface NotificationCategory {
   id: string;
   title: string;
@@ -39,12 +38,15 @@ interface NotificationCategory {
 }
 
 interface NotificationPreferencesScreenProps {
-  navigation: NativeStackNavigationProp<RootStackParamList, "NotificationPreferences">;
+  navigation: NativeStackNavigationProp<
+    RootStackParamList,
+    "NotificationPreferences"
+  >;
 }
 
-const NotificationPreferencesScreen: React.FC<NotificationPreferencesScreenProps> = ({
-  navigation,
-}) => {
+const NotificationPreferencesScreen: React.FC<
+  NotificationPreferencesScreenProps
+> = ({ navigation }) => {
   const [masterEnabled, setMasterEnabled] = useState(true);
   const [categories, setCategories] = useState<NotificationCategory[]>([
     {

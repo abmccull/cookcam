@@ -215,7 +215,7 @@ const RecipeRatingModal: React.FC<RecipeRatingModalProps> = ({
             </View>
 
             {/* Add Photos Button */}
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.addPhotoButton}
               onPress={() => setShowPhotoModal(true)}
             >
@@ -255,7 +255,7 @@ const RecipeRatingModal: React.FC<RecipeRatingModalProps> = ({
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
-      
+
       {/* Recipe Completion Photo Modal */}
       {showPhotoModal && (
         <RecipeCompletionPhoto

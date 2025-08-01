@@ -1,7 +1,7 @@
-import React from 'react';
-import { View, StyleSheet } from 'react-native';
-import SafeScreen from './SafeScreen';
-import XPHeader from './XPHeader';
+import React from "react";
+import { View, StyleSheet } from "react-native";
+import SafeScreen from "./SafeScreen";
+import XPHeader from "./XPHeader";
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -11,15 +11,13 @@ const AppShell: React.FC<AppShellProps> = React.memo(({ children }) => {
   return (
     <SafeScreen style={styles.container}>
       <XPHeader />
-      <View style={styles.content}>
-        {children}
-      </View>
+      <View style={styles.content}>{children}</View>
     </SafeScreen>
   );
 });
 
 // Add display name for debugging
-AppShell.displayName = 'AppShell';
+AppShell.displayName = "AppShell";
 
 const styles = StyleSheet.create({
   container: {
@@ -30,4 +28,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default AppShell; 
+export default AppShell;

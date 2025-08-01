@@ -5,7 +5,6 @@ import { supabase } from "./supabaseClient";
 import getEnvVars from "../config/env";
 import logger from "../utils/logger";
 
-
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
@@ -422,7 +421,9 @@ class SmartNotificationService {
 
   private async trackNotificationVariant(type: string, variantIndex: number) {
     // Track in analytics service
-    logger.debug(`Notification variant used: ${type} - Variant ${variantIndex}`);
+    logger.debug(
+      `Notification variant used: ${type} - Variant ${variantIndex}`,
+    );
   }
 }
 

@@ -14,7 +14,6 @@ import { RootStackParamList } from "../App";
 import { Apple, Mail } from "lucide-react-native";
 import logger from "../utils/logger";
 
-
 interface AccountGateScreenProps {
   navigation: NativeStackNavigationProp<RootStackParamList>;
   route: RouteProp<RootStackParamList, "AccountGate">;
@@ -37,16 +36,18 @@ const AccountGateScreen: React.FC<AccountGateScreenProps> = ({
 
       // TODO: Implement Apple Sign-In
       logger.debug("🍎 Apple Sign-In initiated");
-      
+
       // Simulate successful auth
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
       // Navigate to plan selection after successful auth
       navigation.navigate("PlanSelection");
-      
     } catch (error) {
       logger.error("Apple Sign-In error:", error);
-      Alert.alert("Sign-In Failed", "There was a problem with Apple Sign-In. Please try again.");
+      Alert.alert(
+        "Sign-In Failed",
+        "There was a problem with Apple Sign-In. Please try again.",
+      );
     } finally {
       setIsLoading(false);
       setLoadingType(null);
@@ -60,16 +61,18 @@ const AccountGateScreen: React.FC<AccountGateScreenProps> = ({
 
       // TODO: Implement Google Sign-In
       logger.debug("🔍 Google Sign-In initiated");
-      
+
       // Simulate successful auth
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
       // Navigate to plan selection after successful auth
       navigation.navigate("PlanSelection");
-      
     } catch (error) {
       logger.error("Google Sign-In error:", error);
-      Alert.alert("Sign-In Failed", "There was a problem with Google Sign-In. Please try again.");
+      Alert.alert(
+        "Sign-In Failed",
+        "There was a problem with Google Sign-In. Please try again.",
+      );
     } finally {
       setIsLoading(false);
       setLoadingType(null);

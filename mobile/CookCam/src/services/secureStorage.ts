@@ -2,7 +2,6 @@ import * as SecureStore from "expo-secure-store";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import logger from "../utils/logger";
 
-
 /**
  * Secure Storage Service
  * Uses React Native Keychain for sensitive data (tokens, passwords)
@@ -171,10 +170,7 @@ class SecureStorage {
     try {
       await AsyncStorage.setItem(key, value);
     } catch (error) {
-      logger.error(
-        `Error setting item in AsyncStorage for key: ${key}`,
-        error,
-      );
+      logger.error(`Error setting item in AsyncStorage for key: ${key}`, error);
     }
   }
 

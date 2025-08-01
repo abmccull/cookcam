@@ -4,7 +4,6 @@
 import Constants from "expo-constants";
 import logger from "../utils/logger";
 
-
 interface EnvConfig {
   SUPABASE_URL: string;
   SUPABASE_ANON_KEY: string;

@@ -1,6 +1,6 @@
-import React from 'react';
-import { View, StyleSheet, ViewStyle } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import React from "react";
+import { View, StyleSheet, ViewStyle } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 interface SafeScreenProps {
   children: React.ReactNode;
@@ -15,7 +15,7 @@ const SafeScreen: React.FC<SafeScreenProps> = ({
   style,
   includeTop = true,
   includeBottom = true,
-  backgroundColor = '#F8F8FF',
+  backgroundColor = "#F8F8FF",
 }) => {
   const insets = useSafeAreaInsets();
 
@@ -39,4 +39,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default SafeScreen; 
+export default SafeScreen;

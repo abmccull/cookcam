@@ -2,7 +2,6 @@ import { Linking, Platform } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import logger from "../utils/logger";
 
-
 interface DeepLinkData {
   type: "referral" | "creator" | "recipe" | "signup";
   code?: string;

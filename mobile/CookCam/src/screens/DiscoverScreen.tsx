@@ -26,7 +26,6 @@ import { recipeService, ingredientService } from "../services/api";
 import * as Haptics from "expo-haptics";
 import logger from "../utils/logger";
 
-
 interface TrendingRecipe {
   id: string;
   title: string;

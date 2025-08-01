@@ -86,4 +86,4 @@ export interface ContinueButtonProps {
 export interface SmartIncrement {
   increment: number;
   minValue: number;
-} 
+}

@@ -3,7 +3,14 @@
  * Handles feature gates, usage limits, and access control
  */
 
-import React, { createContext, useContext, useReducer, useCallback, useEffect, ReactNode } from "react";
+import React, {
+  createContext,
+  useContext,
+  useReducer,
+  useCallback,
+  useEffect,
+  ReactNode,
+} from "react";
 import { cookCamApi } from "../services/cookCamApi";
 import { useSubscriptionState } from "./SubscriptionState";
 import logger from "../utils/logger";
@@ -29,13 +36,13 @@ export type FeatureAccessAction =
 
 export interface FeatureAccessContextType {
   state: FeatureAccessState;
-  
+
   // Feature access methods
   checkFeatureAccess: (feature: string) => Promise<boolean>;
   canUseFeature: (feature: string) => boolean;
   getRemainingUsage: (feature: string) => number | null;
   showUpgradePrompt: (feature: string) => void;
-  
+
   // Bulk operations
   refreshAllFeatures: () => Promise<void>;
 }
@@ -96,7 +103,9 @@ function featureAccessReducer(
 }
 
 // Context
-const FeatureAccessContext = createContext<FeatureAccessContextType | null>(null);
+const FeatureAccessContext = createContext<FeatureAccessContextType | null>(
+  null,
+);
 
 // Provider component
 export function FeatureAccessProvider({ children }: { children: ReactNode }) {
@@ -104,41 +113,50 @@ export function FeatureAccessProvider({ children }: { children: ReactNode }) {
   const { state: subscriptionState } = useSubscriptionState();
 
   // Check if user can access a specific feature
-  const checkFeatureAccess = useCallback(async (feature: string): Promise<boolean> => {
-    try {
-      dispatch({ type: "SET_FEATURE_LOADING", feature, loading: true });
-      
-      const response = await cookCamApi.checkFeatureAccess(feature);
-      if (response.success && response.data) {
-        dispatch({
-          type: "SET_FEATURE_ACCESS",
-          feature,
-          hasAccess: response.data.hasAccess,
-          usage: response.data.usage,
-        });
-        return response.data.hasAccess;
+  const checkFeatureAccess = useCallback(
+    async (feature: string): Promise<boolean> => {
+      try {
+        dispatch({ type: "SET_FEATURE_LOADING", feature, loading: true });
+
+        const response = await cookCamApi.checkFeatureAccess(feature);
+        if (response.success && response.data) {
+          dispatch({
+            type: "SET_FEATURE_ACCESS",
+            feature,
+            hasAccess: response.data.hasAccess,
+            usage: response.data.usage,
+          });
+          return response.data.hasAccess;
+        }
+        return false;
+      } catch (error) {
+        logger.error(`Failed to check feature access for ${feature}:`, error);
+        dispatch({ type: "SET_FEATURE_LOADING", feature, loading: false });
+        return false;
       }
-      return false;
-    } catch (error) {
-      logger.error(`Failed to check feature access for ${feature}:`, error);
-      dispatch({ type: "SET_FEATURE_LOADING", feature, loading: false });
-      return false;
-    }
-  }, []);
+    },
+    [],
+  );
 
   // Check if feature can be used (cached)
-  const canUseFeature = useCallback((feature: string): boolean => {
-    return state.featureAccess[feature] ?? false;
-  }, [state.featureAccess]);
+  const canUseFeature = useCallback(
+    (feature: string): boolean => {
+      return state.featureAccess[feature] ?? false;
+    },
+    [state.featureAccess],
+  );
 
   // Get remaining usage for a feature
-  const getRemainingUsage = useCallback((feature: string): number | null => {
-    const usage = state.usageLimits[feature];
-    if (!usage) {
-      return null;
-    }
-    return Math.max(0, usage.limit - usage.used);
-  }, [state.usageLimits]);
+  const getRemainingUsage = useCallback(
+    (feature: string): number | null => {
+      const usage = state.usageLimits[feature];
+      if (!usage) {
+        return null;
+      }
+      return Math.max(0, usage.limit - usage.used);
+    },
+    [state.usageLimits],
+  );
 
   // Show upgrade prompt
   const showUpgradePrompt = useCallback((feature: string) => {
@@ -153,7 +171,7 @@ export function FeatureAccessProvider({ children }: { children: ReactNode }) {
   // Refresh all feature access data
   const refreshAllFeatures = useCallback(async () => {
     const features = Object.keys(state.featureAccess);
-    await Promise.all(features.map(feature => checkFeatureAccess(feature)));
+    await Promise.all(features.map((feature) => checkFeatureAccess(feature)));
   }, [state.featureAccess, checkFeatureAccess]);
 
   // Reset feature access when subscription changes
@@ -167,14 +185,24 @@ export function FeatureAccessProvider({ children }: { children: ReactNode }) {
     }
   }, [subscriptionState.currentSubscription, refreshAllFeatures]);
 
-  const contextValue = React.useMemo((): FeatureAccessContextType => ({
-    state,
-    checkFeatureAccess,
-    canUseFeature,
-    getRemainingUsage,
-    showUpgradePrompt,
-    refreshAllFeatures,
-  }), [state, checkFeatureAccess, canUseFeature, getRemainingUsage, showUpgradePrompt, refreshAllFeatures]);
+  const contextValue = React.useMemo(
+    (): FeatureAccessContextType => ({
+      state,
+      checkFeatureAccess,
+      canUseFeature,
+      getRemainingUsage,
+      showUpgradePrompt,
+      refreshAllFeatures,
+    }),
+    [
+      state,
+      checkFeatureAccess,
+      canUseFeature,
+      getRemainingUsage,
+      showUpgradePrompt,
+      refreshAllFeatures,
+    ],
+  );
 
   return (
     <FeatureAccessContext.Provider value={contextValue}>
@@ -217,11 +245,14 @@ export function useFeatureGate(feature: string) {
     return true;
   }, [hasAccess, showUpgradePrompt, feature]);
 
-  return React.useMemo(() => ({
-    hasAccess,
-    usage,
-    remaining: usage ? Math.max(0, usage.limit - usage.used) : null,
-    isLoading,
-    checkAndPrompt,
-  }), [hasAccess, usage, isLoading, checkAndPrompt]);
-} 
+  return React.useMemo(
+    () => ({
+      hasAccess,
+      usage,
+      remaining: usage ? Math.max(0, usage.limit - usage.used) : null,
+      isLoading,
+      checkAndPrompt,
+    }),
+    [hasAccess, usage, isLoading, checkAndPrompt],
+  );
+}

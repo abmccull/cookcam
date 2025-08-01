@@ -151,7 +151,7 @@ export default function ExampleFeatureGateScreen() {
         </TouchableOpacity>
 
         {/* Premium recipes (feature gated) */}
-        <PremiumRecipesGate userId={user?.id || ''}>
+        <PremiumRecipesGate userId={user?.id || ""}>
           <TouchableOpacity
             style={[styles.actionButton, styles.premiumButton]}
             onPress={handlePremiumRecipe}
@@ -167,7 +167,7 @@ export default function ExampleFeatureGateScreen() {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>💼 Creator Tools</Text>
 
-        <CreatorToolsGate userId={user?.id || ''}>
+        <CreatorToolsGate userId={user?.id || ""}>
           <View style={styles.creatorTools}>
             <TouchableOpacity style={styles.creatorButton}>
               <Text style={styles.creatorButtonText}>
@@ -225,7 +225,7 @@ export default function ExampleFeatureGateScreen() {
 
         <FeatureGate
           feature="analytics_dashboard"
-          userId={user?.id || ''}
+          userId={user?.id || ""}
           fallbackComponent={
             <View style={styles.analyticsPlaceholder}>
               <Text style={styles.placeholderText}>

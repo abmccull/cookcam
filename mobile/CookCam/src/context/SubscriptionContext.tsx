@@ -269,17 +269,20 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       // Load App Store/Google Play products (local IAP, no auth required)
       try {
         const subscriptionService = SubscriptionService.getInstance();
-        const productsResponse = await subscriptionService.getAvailableProducts();
-        const formattedProducts: SubscriptionProduct[] = productsResponse.map((product: any) => ({
-          productId: product.productId,
-          price: product.price,
-          localizedPrice: product.localizedPrice,
-          currency: product.currency,
-          title: product.title,
-          description: product.description,
-          tier: product.productId.includes('creator') ? 'creator' : 'regular',
-          freeTrialPeriod: '3 days'
-        }));
+        const productsResponse =
+          await subscriptionService.getAvailableProducts();
+        const formattedProducts: SubscriptionProduct[] = productsResponse.map(
+          (product: any) => ({
+            productId: product.productId,
+            price: product.price,
+            localizedPrice: product.localizedPrice,
+            currency: product.currency,
+            title: product.title,
+            description: product.description,
+            tier: product.productId.includes("creator") ? "creator" : "regular",
+            freeTrialPeriod: "3 days",
+          }),
+        );
         dispatch({ type: "SET_PRODUCTS", products: formattedProducts });
       } catch (error) {
         logger.warn("Could not load IAP products:", error);
@@ -288,16 +291,19 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
 
       // Only load user-specific subscription data if authenticated
       if (user) {
-        logger.debug("🔍 Loading subscription for user:", { userId: user.id, userEmail: user.email });
-        
+        logger.debug("🔍 Loading subscription for user:", {
+          userId: user.id,
+          userEmail: user.email,
+        });
+
         // Load current subscription (auth required)
         const subscriptionResponse = await cookCamApi.getSubscriptionStatus();
-        logger.debug("📊 Subscription response:", { 
-          success: subscriptionResponse.success, 
+        logger.debug("📊 Subscription response:", {
+          success: subscriptionResponse.success,
           data: subscriptionResponse.data,
-          error: subscriptionResponse.error 
+          error: subscriptionResponse.error,
         });
-        
+
         if (subscriptionResponse.success) {
           dispatch({
             type: "SET_SUBSCRIPTION",
@@ -412,17 +418,16 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       const subscriptionService = SubscriptionService.getInstance();
       await subscriptionService.purchaseProduct(productId);
 
-      // Note: The actual purchase completion will be handled by the 
+      // Note: The actual purchase completion will be handled by the
       // purchaseUpdatedListener in SubscriptionService, which should:
       // 1. Validate receipt with backend
       // 2. Update user subscription status
       // 3. Refresh subscription data here
-      
+
       logger.debug("✅ Purchase initiated successfully");
-      
+
       // Refresh subscription data to reflect the new subscription
       await loadSubscriptionData();
-      
     } catch (error) {
       logger.error("❌ Failed to purchase subscription:", error);
       dispatch({ type: "SET_ERROR", error: "Failed to purchase subscription" });
@@ -440,7 +445,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
 
       // Import restore function from react-native-iap
       const { getAvailablePurchases } = await import("react-native-iap");
-      
+
       // Get available purchases from the platform
       const availablePurchases = await getAvailablePurchases();
       logger.debug("📱 Found available purchases:", availablePurchases.length);
@@ -449,18 +454,17 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
         // Process each purchase (validate with backend)
         for (const purchase of availablePurchases) {
           logger.debug("🧾 Processing purchase:", purchase.productId);
-          
+
           // TODO: Validate receipt with backend and update subscription status
           // This should call your backend API to verify the receipt and update user subscription
         }
-        
+
         // Refresh subscription data
         await loadSubscriptionData();
         logger.debug("✅ Purchases restored successfully");
       } else {
         logger.debug("ℹ️ No previous purchases found to restore");
       }
-      
     } catch (error) {
       logger.error("❌ Failed to restore purchases:", error);
       dispatch({ type: "SET_ERROR", error: "Failed to restore purchases" });
@@ -538,13 +542,13 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
   };
 
   const isSubscribed = (): boolean => {
-    logger.debug("🔍 Checking subscription status:", { 
+    logger.debug("🔍 Checking subscription status:", {
       currentSubscription: state.currentSubscription,
       status: state.currentSubscription?.status,
       isActive: state.currentSubscription?.status === "active",
-      isTrial: state.currentSubscription?.status === "trial"
+      isTrial: state.currentSubscription?.status === "trial",
     });
-    
+
     return (
       state.currentSubscription?.status === "active" ||
       state.currentSubscription?.status === "trial"
@@ -569,24 +573,27 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     }
 
     // Only load if we haven't checked recently (within 5 minutes)
-    const shouldLoad = !state.lastChecked || 
-      (Date.now() - state.lastChecked > 5 * 60 * 1000);
+    const shouldLoad =
+      !state.lastChecked || Date.now() - state.lastChecked > 5 * 60 * 1000;
 
     if (shouldLoad) {
       loadSubscriptionData();
     }
 
     // Refresh every 10 minutes, but only check every 5 minutes to avoid spam
-    const interval = setInterval(() => {
-      if (
-        user?.id &&
-        state.lastChecked &&
-        Date.now() - state.lastChecked > 10 * 60 * 1000
-      ) {
-        logger.debug("🔄 Refreshing subscription data (scheduled)");
-        refreshData();
-      }
-    }, 5 * 60 * 1000); // Check every 5 minutes instead of every minute
+    const interval = setInterval(
+      () => {
+        if (
+          user?.id &&
+          state.lastChecked &&
+          Date.now() - state.lastChecked > 10 * 60 * 1000
+        ) {
+          logger.debug("🔄 Refreshing subscription data (scheduled)");
+          refreshData();
+        }
+      },
+      5 * 60 * 1000,
+    ); // Check every 5 minutes instead of every minute
 
     return () => clearInterval(interval);
   }, [user?.id]); // Only depend on user ID, not the entire user object

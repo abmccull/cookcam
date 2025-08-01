@@ -29,7 +29,6 @@ import DeepLinkService from "../services/DeepLinkService";
 import { cookCamApi } from "../services/cookCamApi";
 import logger from "../utils/logger";
 
-
 interface SignupScreenProps {
   navigation: any;
 }
@@ -143,7 +142,8 @@ const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
       navigation.navigate("PlanSelection");
     } catch (error) {
       logger.error("Signup error:", error);
-      const errorMessage = error instanceof Error ? error.message : "Failed to create account";
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to create account";
       Alert.alert("Error", errorMessage);
     } finally {
       setLoading(false);

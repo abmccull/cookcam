@@ -12,7 +12,7 @@ import {
   StatusBar,
   Platform,
 } from "react-native";
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView } from "react-native-safe-area-context";
 import {
   Check,
   X,
@@ -37,7 +37,6 @@ import MysteryBox from "../components/MysteryBox";
 import AIChefIcon from "../components/AIChefIcon";
 import LoadingAnimation from "../components/LoadingAnimation";
 import logger from "../utils/logger";
-
 
 interface Ingredient {
   id: string;
@@ -201,8 +200,8 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
           );
 
           // Convert backend response to our local ingredient format
-          const foundIngredients: Ingredient[] =
-            scanResult.ingredients.map((detectedIng, i) => ({
+          const foundIngredients: Ingredient[] = scanResult.ingredients.map(
+            (detectedIng, i) => ({
               id: `detected-${i}`, // Or use an ID from backend if available
               name: detectedIng.name,
               confidence: detectedIng.confidence || 0.8,
@@ -211,7 +210,8 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
               unit: detectedIng.unit || "",
               variety: detectedIng.variety || "",
               category: detectedIng.category || "",
-            }));
+            }),
+          );
 
           if (foundIngredients.length > 0) {
             setIngredients(foundIngredients);
@@ -236,7 +236,13 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
 
       // Fallback to common ingredients if image analysis fails
       logger.debug("🔄 Falling back to common ingredients...");
-      const simulatedDetectedNames = ["cheddar cheese", "butter", "cheez-it crackers", "salt", "pepper"];
+      const simulatedDetectedNames = [
+        "cheddar cheese",
+        "butter",
+        "cheez-it crackers",
+        "salt",
+        "pepper",
+      ];
       const foundIngredients: Ingredient[] = [];
 
       for (let i = 0; i < simulatedDetectedNames.length; i++) {
@@ -700,10 +706,10 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-      <StatusBar 
-        barStyle="dark-content" 
-        backgroundColor="#F8F8FF" 
+    <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor="#F8F8FF"
         translucent={false}
       />
       <View style={styles.mainContainer}>

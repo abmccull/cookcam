@@ -215,21 +215,29 @@ const CreatorScreen = ({ navigation }: CreatorScreenProps) => {
   // Calculate current tier based on real subscriber count
   const getCurrentTier = () => {
     const subscriberCount = analytics?.referrals.active || 0;
-    return tiers.find(tier => 
-      subscriberCount >= tier.minSubscribers && 
-      (tier.maxSubscribers === null || subscriberCount < tier.maxSubscribers)
-    ) || tiers[0];
+    return (
+      tiers.find(
+        (tier) =>
+          subscriberCount >= tier.minSubscribers &&
+          (tier.maxSubscribers === null ||
+            subscriberCount < tier.maxSubscribers),
+      ) || tiers[0]
+    );
   };
 
   const currentTierData = getCurrentTier();
   const nextTier = tiers.find((t) => t.id === currentTierData.id + 1);
 
   // Calculate progress to next tier
-  const progressToNext = nextTier && analytics
-    ? Math.min(((analytics.referrals.active - currentTierData.minSubscribers) /
-        (nextTier.minSubscribers - currentTierData.minSubscribers)) *
-      100, 100)
-    : 100;
+  const progressToNext =
+    nextTier && analytics
+      ? Math.min(
+          ((analytics.referrals.active - currentTierData.minSubscribers) /
+            (nextTier.minSubscribers - currentTierData.minSubscribers)) *
+            100,
+          100,
+        )
+      : 100;
 
   // Generate proper shareable creator link
   const getCreatorShareableLink = () => {
@@ -258,19 +266,25 @@ const CreatorScreen = ({ navigation }: CreatorScreenProps) => {
 
       // Handle earnings separately to avoid failing if Stripe is not available
       try {
-        const earningsResponse = await StripeConnectService.getInstance().getCreatorEarnings();
+        const earningsResponse =
+          await StripeConnectService.getInstance().getCreatorEarnings();
         if (earningsResponse) {
           setEarnings({
             total_earnings: earningsResponse.totalEarnings,
             available_balance: earningsResponse.currentBalance,
             pending_balance: earningsResponse.pendingBalance,
-            last_payout_date: earningsResponse.lastPayoutDate?.toISOString() || null,
-            next_payout_date: earningsResponse.nextPayoutDate?.toISOString() || null,
+            last_payout_date:
+              earningsResponse.lastPayoutDate?.toISOString() || null,
+            next_payout_date:
+              earningsResponse.nextPayoutDate?.toISOString() || null,
           });
           logger.debug("✅ Creator earnings loaded", earningsResponse);
         }
       } catch (earningsError) {
-        logger.error("❌ Earnings error (Stripe may not be configured):", earningsError);
+        logger.error(
+          "❌ Earnings error (Stripe may not be configured):",
+          earningsError,
+        );
         // Set default earnings state instead of failing completely
         setEarnings({
           total_earnings: 0,
@@ -280,7 +294,6 @@ const CreatorScreen = ({ navigation }: CreatorScreenProps) => {
           next_payout_date: null,
         });
       }
-
     } catch (error) {
       logger.error("❌ Failed to load creator data:", error);
       setError("Failed to load creator data. Please try again.");
@@ -356,11 +369,11 @@ const CreatorScreen = ({ navigation }: CreatorScreenProps) => {
     try {
       const shareableLink = getCreatorShareableLink();
       const creatorCode = `CHEF_${user?.id?.slice(-8)?.toUpperCase()}`;
-      
+
       await Share.share({
         message: `Join me on CookCam AI! 🍳✨ Get AI-powered recipes from your ingredients and discover amazing dishes. Use my creator link to get started: ${shareableLink}`,
         url: shareableLink,
-        title: `Join ${user?.name || 'me'} on CookCam AI!`,
+        title: `Join ${user?.name || "me"} on CookCam AI!`,
       });
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     } catch (error) {
@@ -376,13 +389,17 @@ const CreatorScreen = ({ navigation }: CreatorScreenProps) => {
   const handleOpenStripeConnect = async () => {
     try {
       logger.debug("📊 Getting Stripe dashboard URL");
-      const dashboardResponse = await StripeConnectService.getInstance().getDashboardUrl();
-      
+      const dashboardResponse =
+        await StripeConnectService.getInstance().getDashboardUrl();
+
       if (dashboardResponse.success && dashboardResponse.dashboardUrl) {
         await Linking.openURL(dashboardResponse.dashboardUrl);
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       } else {
-        Alert.alert("Setup Required", "Please complete your Stripe Connect setup first.");
+        Alert.alert(
+          "Setup Required",
+          "Please complete your Stripe Connect setup first.",
+        );
         navigation.navigate("CreatorOnboarding");
       }
     } catch (error) {
@@ -395,18 +412,26 @@ const CreatorScreen = ({ navigation }: CreatorScreenProps) => {
     if (!analytics?.referrals.total || analytics.referrals.total === 0) {
       return "0";
     }
-    return ((analytics.referrals.active / analytics.referrals.total) * 100).toFixed(1);
+    return (
+      (analytics.referrals.active / analytics.referrals.total) *
+      100
+    ).toFixed(1);
   };
 
   const calculateActiveRate = () => {
     if (!analytics?.referrals.total || analytics.referrals.total === 0) {
       return "0";
     }
-    return ((analytics.referrals.active / analytics.referrals.total) * 100).toFixed(1);
+    return (
+      (analytics.referrals.active / analytics.referrals.total) *
+      100
+    ).toFixed(1);
   };
 
   // Check subscription access first
-  const hasCreatorSubscription = isCreator() || subscriptionState.currentSubscription?.tier_slug === "creator";
+  const hasCreatorSubscription =
+    isCreator() ||
+    subscriptionState.currentSubscription?.tier_slug === "creator";
 
   // If no creator subscription, show upgrade prompt
   if (!hasCreatorSubscription) {
@@ -422,7 +447,9 @@ const CreatorScreen = ({ navigation }: CreatorScreenProps) => {
             {/* Header */}
             <View style={styles.header}>
               <Crown size={moderateScale(48)} color="#FFB800" />
-              <Text style={styles.headerTitle}>Creator Subscription Required</Text>
+              <Text style={styles.headerTitle}>
+                Creator Subscription Required
+              </Text>
               <Text style={styles.headerSubtitle}>
                 Unlock creator features and start earning
               </Text>
@@ -432,38 +459,51 @@ const CreatorScreen = ({ navigation }: CreatorScreenProps) => {
             <View style={styles.subscriptionCard}>
               <View style={styles.subscriptionHeader}>
                 <Sparkles size={moderateScale(32)} color="#FF6B35" />
-                <Text style={styles.subscriptionTitle}>Upgrade to Creator Plan</Text>
+                <Text style={styles.subscriptionTitle}>
+                  Upgrade to Creator Plan
+                </Text>
                 <Text style={styles.subscriptionDescription}>
-                  Access all creator features and start earning revenue from your recipes
+                  Access all creator features and start earning revenue from
+                  your recipes
                 </Text>
               </View>
 
               <View style={styles.subscriptionBenefits}>
-                <Text style={styles.benefitsTitle}>What you get with Creator:</Text>
-                
+                <Text style={styles.benefitsTitle}>
+                  What you get with Creator:
+                </Text>
+
                 <View style={styles.benefitItem}>
                   <CheckCircle size={moderateScale(20)} color="#4CAF50" />
-                  <Text style={styles.benefitText}>Publish premium recipes</Text>
+                  <Text style={styles.benefitText}>
+                    Publish premium recipes
+                  </Text>
                 </View>
-                
+
                 <View style={styles.benefitItem}>
                   <CheckCircle size={moderateScale(20)} color="#4CAF50" />
                   <Text style={styles.benefitText}>Earn 30% revenue share</Text>
                 </View>
-                
+
                 <View style={styles.benefitItem}>
                   <CheckCircle size={moderateScale(20)} color="#4CAF50" />
-                  <Text style={styles.benefitText}>Creator analytics dashboard</Text>
+                  <Text style={styles.benefitText}>
+                    Creator analytics dashboard
+                  </Text>
                 </View>
-                
+
                 <View style={styles.benefitItem}>
                   <CheckCircle size={moderateScale(20)} color="#4CAF50" />
-                  <Text style={styles.benefitText}>Build your follower base</Text>
+                  <Text style={styles.benefitText}>
+                    Build your follower base
+                  </Text>
                 </View>
-                
+
                 <View style={styles.benefitItem}>
                   <CheckCircle size={moderateScale(20)} color="#4CAF50" />
-                  <Text style={styles.benefitText}>Professional creator tools</Text>
+                  <Text style={styles.benefitText}>
+                    Professional creator tools
+                  </Text>
                 </View>
               </View>
 
@@ -479,13 +519,17 @@ const CreatorScreen = ({ navigation }: CreatorScreenProps) => {
                 style={styles.learnMoreButton}
                 onPress={() => navigation.navigate("CreatorOnboarding")}
               >
-                <Text style={styles.learnMoreText}>Learn More About Creating</Text>
+                <Text style={styles.learnMoreText}>
+                  Learn More About Creating
+                </Text>
               </TouchableOpacity>
             </View>
 
             {/* Success Stories */}
             <View style={styles.successSection}>
-              <Text style={styles.sectionTitle}>Creator Success Stories 🌟</Text>
+              <Text style={styles.sectionTitle}>
+                Creator Success Stories 🌟
+              </Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                 <View style={styles.successCard}>
                   <TrendingUp size={moderateScale(24)} color="#4CAF50" />
@@ -625,7 +669,7 @@ const CreatorScreen = ({ navigation }: CreatorScreenProps) => {
   // Creator dashboard for existing creators
   return (
     <View style={styles.container}>
-      <ScrollView 
+      <ScrollView
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
@@ -652,7 +696,10 @@ const CreatorScreen = ({ navigation }: CreatorScreenProps) => {
         {error && !loading && (
           <View style={styles.errorContainer}>
             <Text style={styles.errorText}>{error}</Text>
-            <TouchableOpacity style={styles.retryButton} onPress={handleRefresh}>
+            <TouchableOpacity
+              style={styles.retryButton}
+              onPress={handleRefresh}
+            >
               <RefreshCw size={moderateScale(16)} color="#4CAF50" />
               <Text style={styles.retryText}>Try Again</Text>
             </TouchableOpacity>
@@ -697,7 +744,8 @@ const CreatorScreen = ({ navigation }: CreatorScreenProps) => {
                   Progress to {nextTier.title}
                 </Text>
                 <Text style={styles.progressText}>
-                  {analytics?.referrals.active?.toLocaleString() || "0"} / {nextTier.minSubscribers}
+                  {analytics?.referrals.active?.toLocaleString() || "0"} /{" "}
+                  {nextTier.minSubscribers}
                 </Text>
               </View>
               <View style={styles.progressBar}>
@@ -715,8 +763,9 @@ const CreatorScreen = ({ navigation }: CreatorScreenProps) => {
                 />
               </View>
               <Text style={styles.progressHint}>
-                {nextTier.minSubscribers - (analytics?.referrals.active || 0)} more
-                subscribers to unlock {nextTier.title} tier and exclusive benefits!
+                {nextTier.minSubscribers - (analytics?.referrals.active || 0)}{" "}
+                more subscribers to unlock {nextTier.title} tier and exclusive
+                benefits!
               </Text>
             </View>
           )}
@@ -755,22 +804,24 @@ const CreatorScreen = ({ navigation }: CreatorScreenProps) => {
               </View>
               <View style={styles.payoutStatusText}>
                 <Text style={styles.payoutStatusTitle}>
-                  {analytics?.stripeAccount?.isConnected ? "Bank Account Connected" : "Setup Required"}
+                  {analytics?.stripeAccount?.isConnected
+                    ? "Bank Account Connected"
+                    : "Setup Required"}
                 </Text>
                 <Text style={styles.payoutStatusSubtitle}>
-                  {earnings?.next_payout_date 
+                  {earnings?.next_payout_date
                     ? `Next payout: ${new Date(earnings.next_payout_date).toLocaleDateString()}`
-                    : "Complete Stripe setup to enable payouts"
-                  }
+                    : "Complete Stripe setup to enable payouts"}
                 </Text>
-                {earnings?.available_balance && earnings.available_balance > 0 && (
-                  <Text style={styles.availableBalance}>
-                    Available: ${earnings.available_balance.toFixed(2)}
-                  </Text>
-                )}
+                {earnings?.available_balance &&
+                  earnings.available_balance > 0 && (
+                    <Text style={styles.availableBalance}>
+                      Available: ${earnings.available_balance.toFixed(2)}
+                    </Text>
+                  )}
               </View>
             </View>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.manageBankButton}
               onPress={handleOpenStripeConnect}
             >
@@ -876,7 +927,9 @@ const CreatorScreen = ({ navigation }: CreatorScreenProps) => {
                 ) : !tier.unlocked ? (
                   <Lock size={moderateScale(20)} color="#C7C7CC" />
                 ) : (
-                  <Text style={[styles.tierUnlockedText, { color: tier.color }]}>
+                  <Text
+                    style={[styles.tierUnlockedText, { color: tier.color }]}
+                  >
                     Unlocked
                   </Text>
                 )}

@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback } from "react";
 import { Ingredient } from "../types/ingredientReview";
-import { 
-  getEmojiForIngredient, 
-  getMockIngredients, 
-  getFallbackIngredients, 
-  getSimulatedIngredients 
+import {
+  getEmojiForIngredient,
+  getMockIngredients,
+  getFallbackIngredients,
+  getSimulatedIngredients,
 } from "../data/ingredientReviewData";
 import { cookCamApi } from "../services/cookCamApi";
 import { useGamification, XP_VALUES } from "../context/GamificationContext";
@@ -21,12 +21,14 @@ export interface UseIngredientAnalysisReturn {
 export const useIngredientAnalysis = (
   imageUri: string,
   isSimulator: boolean,
-  user: any
+  user: any,
 ): UseIngredientAnalysisReturn => {
   const { addXP } = useGamification();
   const [loading, setLoading] = useState(false);
   const [hasAnalyzedImage, setHasAnalyzedImage] = useState(false);
-  const [lastAnalyzedImageUri, setLastAnalyzedImageUri] = useState<string | null>(null);
+  const [lastAnalyzedImageUri, setLastAnalyzedImageUri] = useState<
+    string | null
+  >(null);
 
   // Enhanced ingredients with real data potential
   const [ingredients, setIngredients] = useState<Ingredient[]>(() => {
@@ -116,7 +118,10 @@ export const useIngredientAnalysis = (
         if (apiResponse.success && apiResponse.data) {
           // The backend now returns a ScanResult object
           const scanResult = apiResponse.data;
-          logger.debug("🎯 Backend analysis successful:", scanResult.ingredients);
+          logger.debug(
+            "🎯 Backend analysis successful:",
+            scanResult.ingredients,
+          );
 
           // Convert backend response to our local ingredient format
           const foundIngredients: Ingredient[] = scanResult.ingredients.map(
@@ -129,13 +134,13 @@ export const useIngredientAnalysis = (
               unit: detectedIng.unit || "",
               variety: detectedIng.variety || "",
               category: detectedIng.category || "",
-            })
+            }),
           );
 
           if (foundIngredients.length > 0) {
             setIngredients(foundIngredients);
             logger.debug(
-              `✅ Successfully analyzed image: ${foundIngredients.length} ingredients found`
+              `✅ Successfully analyzed image: ${foundIngredients.length} ingredients found`,
             );
 
             // Award bonus XP for successful real analysis
@@ -180,7 +185,7 @@ export const useIngredientAnalysis = (
       if (foundIngredients.length > 0) {
         setIngredients(foundIngredients);
         logger.debug(
-          `✅ Fallback successful: ${foundIngredients.length} ingredients found`
+          `✅ Fallback successful: ${foundIngredients.length} ingredients found`,
         );
       } else {
         // Ultimate fallback
@@ -211,4 +216,4 @@ export const useIngredientAnalysis = (
     setIngredients,
     analyzeImageIngredients,
   };
-}; 
+};

@@ -27,7 +27,6 @@ import { useGamification, XP_VALUES } from "../context/GamificationContext";
 import * as Haptics from "expo-haptics";
 import logger from "../utils/logger";
 
-
 interface RecipeCompletionPhotoProps {
   recipeId: string;
   recipeName: string;
@@ -180,7 +179,7 @@ const RecipeCompletionPhoto: React.FC<RecipeCompletionPhotoProps> = ({
       setShowCamera(false);
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      
+
       // If this is from RecipeRatingModal, automatically return the photo
       if (onPhotoUploaded) {
         // Return photo immediately without showing upload UI
@@ -210,7 +209,7 @@ const RecipeCompletionPhoto: React.FC<RecipeCompletionPhotoProps> = ({
       // TODO: Implement photo upload in cookCamApi
       const response = {
         success: true,
-        data: { photoUrl: photoUri }
+        data: { photoUrl: photoUri },
       };
 
       if (response.success) {
@@ -220,14 +219,14 @@ const RecipeCompletionPhoto: React.FC<RecipeCompletionPhotoProps> = ({
         await addXP(config.xp, `${photoType.toUpperCase()}_PHOTO`);
 
         setUploadedPhotoUrl(response.data?.photoUrl || photoUri);
-        
+
         if (onPhotoUploaded) {
           // For RecipeRatingModal, return photo immediately without alert
           onPhotoUploaded(response.data?.photoUrl || photoUri);
           handleClose();
         } else {
           setShowSocialShare(true); // Show social sharing options
-          
+
           Alert.alert(
             `${config.emoji} Photo Uploaded!`,
             `🎉 Your ${photoType} photo has been shared! +${config.xp} XP`,
@@ -356,7 +355,7 @@ const RecipeCompletionPhoto: React.FC<RecipeCompletionPhotoProps> = ({
     setUploadedPhotoUrl(null);
     onClose?.();
   };
-  
+
   const handleCancelCamera = () => {
     setShowCamera(false);
     if (!photoUri) {

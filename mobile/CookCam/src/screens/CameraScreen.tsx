@@ -24,11 +24,10 @@ import {
 import { CameraView, CameraType, useCameraPermissions } from "expo-camera";
 import { useGamification, XP_VALUES } from "../context/GamificationContext";
 import { useAuth } from "../context/AuthContext";
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect } from "@react-navigation/native";
 import * as Haptics from "expo-haptics";
 import DailyCheckIn from "../components/DailyCheckIn";
 import logger from "../utils/logger";
-
 
 interface CameraScreenProps {
   navigation: any;
@@ -155,7 +154,7 @@ const CameraScreen: React.FC<CameraScreenProps> = ({ navigation }) => {
     React.useCallback(() => {
       logger.debug("📹 Camera screen focused - reinitializing camera");
       setIsCameraReady(false);
-      
+
       // Small delay to ensure camera reinitializes properly
       const timer = setTimeout(() => {
         setIsCameraReady(true);
@@ -166,7 +165,7 @@ const CameraScreen: React.FC<CameraScreenProps> = ({ navigation }) => {
         clearTimeout(timer);
         logger.debug("📹 Camera screen unfocused - cleaning up");
       };
-    }, [])
+    }, []),
   );
 
   // Take actual photo for testing
@@ -191,7 +190,9 @@ const CameraScreen: React.FC<CameraScreenProps> = ({ navigation }) => {
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
-      logger.debug("🎯 About to add XP for ingredient scan (simulator mode)...");
+      logger.debug(
+        "🎯 About to add XP for ingredient scan (simulator mode)...",
+      );
       await addXP(XP_VALUES.SCAN_INGREDIENTS, "SCAN_INGREDIENTS");
       logger.debug(
         "✅ XP addition completed for ingredient scan (simulator mode)",
@@ -261,7 +262,7 @@ const CameraScreen: React.FC<CameraScreenProps> = ({ navigation }) => {
 
   const handleManualInput = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    
+
     // Navigate directly to ingredient review with empty ingredients
     navigation.navigate("IngredientReview", {
       imageUri: null,
@@ -405,7 +406,9 @@ const CameraScreen: React.FC<CameraScreenProps> = ({ navigation }) => {
                         strokeWidth={1.5}
                       />
                       <Text style={styles.cameraText}>
-                        {!isCameraReady ? "Initializing camera..." : "Tap to detect your ingredients"}
+                        {!isCameraReady
+                          ? "Initializing camera..."
+                          : "Tap to detect your ingredients"}
                       </Text>
                     </>
                   )}
@@ -448,7 +451,9 @@ const CameraScreen: React.FC<CameraScreenProps> = ({ navigation }) => {
             </Animated.View>
 
             {/* Capture buttons */}
-            <Animated.View style={[styles.captureSection, { opacity: fadeAnim }]}>
+            <Animated.View
+              style={[styles.captureSection, { opacity: fadeAnim }]}
+            >
               <View style={styles.captureRow}>
                 <TouchableOpacity
                   style={[
@@ -472,7 +477,7 @@ const CameraScreen: React.FC<CameraScreenProps> = ({ navigation }) => {
                   )}
                 </TouchableOpacity>
               </View>
-              
+
               {/* Manual Input Button */}
               <View style={styles.manualInputContainer}>
                 <TouchableOpacity
@@ -481,7 +486,9 @@ const CameraScreen: React.FC<CameraScreenProps> = ({ navigation }) => {
                   disabled={isProcessing}
                 >
                   <PenTool size={moderateScale(20)} color="#FF6B35" />
-                  <Text style={styles.manualInputText}>Enter Ingredients Manually</Text>
+                  <Text style={styles.manualInputText}>
+                    Enter Ingredients Manually
+                  </Text>
                 </TouchableOpacity>
               </View>
             </Animated.View>
@@ -524,7 +531,8 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: scale(20),
     zIndex: 1,
-    paddingTop: Platform.OS === 'android' ? verticalScale(50) : verticalScale(20), // Add safe area for Android status bar
+    paddingTop:
+      Platform.OS === "android" ? verticalScale(50) : verticalScale(20), // Add safe area for Android status bar
   },
   header: {
     alignItems: "center",
@@ -874,7 +882,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: scale(20),
     paddingTop: verticalScale(10),
-    paddingBottom: Platform.OS === 'android' ? verticalScale(80) : verticalScale(60),
+    paddingBottom:
+      Platform.OS === "android" ? verticalScale(80) : verticalScale(60),
   },
   safeArea: {
     flex: 1,

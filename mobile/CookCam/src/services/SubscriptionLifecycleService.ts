@@ -2,7 +2,6 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Alert } from "react-native";
 import logger from "../utils/logger";
 
-
 export type SubscriptionStatus =
   | "active"
   | "trialing"
@@ -63,7 +62,9 @@ class SubscriptionLifecycleService {
     try {
       // For now, return free tier state until user is authenticated
       // The actual subscription check will happen after login
-      logger.debug('Subscription state check - returning free tier for unauthenticated user');
+      logger.debug(
+        "Subscription state check - returning free tier for unauthenticated user",
+      );
       return this.getFreeTierState();
     } catch (error) {
       logger.error("Error getting subscription state:", error);
@@ -119,18 +120,21 @@ class SubscriptionLifecycleService {
       await AsyncStorage.setItem("cancel_reason", cancelReason || "");
 
       // Update user state in backend
-      await fetch(`${process.env.REACT_NATIVE_API_URL}/api/v1/subscription/cancel`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          // TODO: Add proper authentication header
-          // 'Authorization': `Bearer ${userToken}`,
+      await fetch(
+        `${process.env.REACT_NATIVE_API_URL}/api/v1/subscription/cancel`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            // TODO: Add proper authentication header
+            // 'Authorization': `Bearer ${userToken}`,
+          },
+          body: JSON.stringify({
+            userId,
+            cancelReason,
+          }),
         },
-        body: JSON.stringify({
-          userId,
-          cancelReason
-        })
-      });
+      );
 
       // Schedule grace period reminder
       await this.scheduleGracePeriodReminder(userId);
@@ -337,21 +341,26 @@ class SubscriptionLifecycleService {
       );
 
       // Call backend API to reactivate subscription
-      const response = await fetch(`${process.env.REACT_NATIVE_API_URL}/api/v1/subscription/reactivate`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          // TODO: Add proper authentication header
-          // 'Authorization': `Bearer ${userToken}`,
+      const response = await fetch(
+        `${process.env.REACT_NATIVE_API_URL}/api/v1/subscription/reactivate`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            // TODO: Add proper authentication header
+            // 'Authorization': `Bearer ${userToken}`,
+          },
+          body: JSON.stringify({
+            userId,
+            offerCode,
+          }),
         },
-        body: JSON.stringify({
-          userId,
-          offerCode
-        })
-      });
+      );
 
       if (!response.ok) {
-        throw new Error(`Failed to reactivate subscription: ${response.status}`);
+        throw new Error(
+          `Failed to reactivate subscription: ${response.status}`,
+        );
       }
 
       // Clear cancellation flags
@@ -515,7 +524,6 @@ class SubscriptionLifecycleService {
       `📊 Tracked reactivation for user ${userId} with offer: ${offerCode}`,
     );
   }
-
 
   private async processUserDowngrade(
     _userId: string,

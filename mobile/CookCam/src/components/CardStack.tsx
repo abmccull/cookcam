@@ -27,7 +27,16 @@ interface CardStackProps {
   onSwipeLeft?: (recipe: Recipe) => void;
 }
 
-const CardStack: React.FC<CardStackProps> = ({ recipes, onCookRecipe, onRefreshRecipes, onFavoriteRecipe, onViewRecipeDetails, isLoading, onAllCardsComplete, onSwipeLeft }) => {
+const CardStack: React.FC<CardStackProps> = ({
+  recipes,
+  onCookRecipe,
+  onRefreshRecipes,
+  onFavoriteRecipe,
+  onViewRecipeDetails,
+  isLoading,
+  onAllCardsComplete,
+  onSwipeLeft,
+}) => {
   const [cardStack, setCardStack] = useState(recipes);
 
   useEffect(() => {
@@ -40,17 +49,17 @@ const CardStack: React.FC<CardStackProps> = ({ recipes, onCookRecipe, onRefreshR
       // Swipe removes the first element from the array
       setCardStack((prev) => {
         const newStack = prev.slice(1);
-        
+
         // If all cards have been swiped, trigger callback
         if (newStack.length === 0 && onAllCardsComplete) {
           setTimeout(() => {
             onAllCardsComplete();
           }, 500);
         }
-        
+
         return newStack;
       });
-      
+
       if (direction === "right") {
         onCookRecipe(recipe);
       } else if (direction === "left" && onSwipeLeft) {
@@ -58,7 +67,7 @@ const CardStack: React.FC<CardStackProps> = ({ recipes, onCookRecipe, onRefreshR
       }
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     },
-    [onCookRecipe, onAllCardsComplete, onSwipeLeft]
+    [onCookRecipe, onAllCardsComplete, onSwipeLeft],
   );
 
   const handleSelect = useCallback((recipe: Recipe) => {
@@ -67,34 +76,37 @@ const CardStack: React.FC<CardStackProps> = ({ recipes, onCookRecipe, onRefreshR
   }, []);
 
   if (isLoading) {
-      return (
-          <View style={styles.emptyContainer}>
-              <ActivityIndicator size="large" color="#FF6B35" />
-          </View>
-      )
+    return (
+      <View style={styles.emptyContainer}>
+        <ActivityIndicator size="large" color="#FF6B35" />
+      </View>
+    );
   }
 
   return (
     <Animated.View style={styles.container} layout={Layout.springify()}>
       {cardStack.length > 0 ? (
         // Render the top 3 cards, but in reverse order for correct z-index stacking
-        cardStack.slice(0, 3).reverse().map((recipe: Recipe, index: number) => {
-          // The actual index in the full stack determines its position
-          const stackIndex = cardStack.findIndex(r => r.id === recipe.id);
-          return (
-            <SwipeableCard
-              key={recipe.id}
-              recipe={recipe}
-              index={stackIndex}
-              onSwipeLeft={(r) => handleSwipe(r, "left")}
-              onSwipeRight={(r) => handleSwipe(r, "right")}
-              onFavorite={onFavoriteRecipe}
-              onCardTap={onViewRecipeDetails}
-              onCardSelect={handleSelect}
-              isTop={stackIndex === 0}
-            />
-          );
-        })
+        cardStack
+          .slice(0, 3)
+          .reverse()
+          .map((recipe: Recipe, index: number) => {
+            // The actual index in the full stack determines its position
+            const stackIndex = cardStack.findIndex((r) => r.id === recipe.id);
+            return (
+              <SwipeableCard
+                key={recipe.id}
+                recipe={recipe}
+                index={stackIndex}
+                onSwipeLeft={(r) => handleSwipe(r, "left")}
+                onSwipeRight={(r) => handleSwipe(r, "right")}
+                onFavorite={onFavoriteRecipe}
+                onCardTap={onViewRecipeDetails}
+                onCardSelect={handleSelect}
+                isTop={stackIndex === 0}
+              />
+            );
+          })
       ) : (
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyTitle}>All Done!</Text>
@@ -110,9 +122,9 @@ const CardStack: React.FC<CardStackProps> = ({ recipes, onCookRecipe, onRefreshR
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'flex-start',
-    alignItems: 'center',
-    width: '100%',
+    justifyContent: "flex-start",
+    alignItems: "center",
+    width: "100%",
     paddingTop: 20,
   },
   cardContainer: {

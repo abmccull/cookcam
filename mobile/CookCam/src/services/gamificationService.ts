@@ -2,7 +2,6 @@ import { supabase } from "./supabaseClient";
 import logger from "../utils/logger";
 import { gamificationService } from "./api";
 
-
 interface User {
   id: string;
   name?: string;
@@ -81,10 +80,17 @@ class GamificationService {
 
       // Call the backend API endpoint instead of direct Supabase update
       try {
-        const response = await gamificationService.addXP(amount, reason, _metadata || {});
-        
+        const response = await gamificationService.addXP(
+          amount,
+          reason,
+          _metadata || {},
+        );
+
         if (response.success) {
-          logger.debug(`✅ Added ${amount} XP via API. Response:`, response.data);
+          logger.debug(
+            `✅ Added ${amount} XP via API. Response:`,
+            response.data,
+          );
           return {
             success: true,
             data: {

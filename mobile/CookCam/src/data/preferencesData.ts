@@ -3,7 +3,7 @@
  * All quiz steps, options, and default configurations
  */
 
-import { QuizStep, ServingOption, Appliance } from '../types/preferences';
+import { QuizStep, ServingOption, Appliance } from "../types/preferences";
 
 export const SERVING_OPTIONS: ServingOption[] = [
   { id: "myself", label: "Just me", value: 1, icon: "👤" },
@@ -136,13 +136,13 @@ export const QUIZ_STEPS: QuizStep[] = [
         value: "breakfast",
       },
       {
-        label: "🥙 Lunch", 
+        label: "🥙 Lunch",
         subtitle: "Midday fuel",
         value: "lunch",
       },
       {
         label: "🍽️ Dinner",
-        subtitle: "Main evening meal", 
+        subtitle: "Main evening meal",
         value: "dinner",
       },
       {
@@ -275,4 +275,4 @@ export const DEFAULT_PREFERENCES = {
   cuisine: [] as string[],
   mealPrepEnabled: false,
   mealPrepPortions: 4,
-}; 
+};

@@ -231,7 +231,7 @@ export interface ReferralLinkResponse {
 export interface PayoutResponse {
   id: string;
   amount: number;
-  status: 'pending' | 'processing' | 'completed' | 'failed';
+  status: "pending" | "processing" | "completed" | "failed";
   method: string;
   createdAt: string;
 }
@@ -308,14 +308,16 @@ class CookCamApi {
     return apiService.put<User>(API_ENDPOINTS.auth.profile, updates);
   }
 
-  async uploadProfilePhoto(formData: FormData): Promise<ApiResponse<{ avatarUrl: string }>> {
+  async uploadProfilePhoto(
+    formData: FormData,
+  ): Promise<ApiResponse<{ avatarUrl: string }>> {
     // Call the backend endpoint (which currently returns not implemented)
     return apiService.post<{ avatarUrl: string }>(
       `${API_ENDPOINTS.auth.profile}/photo`,
       formData,
       {
-        'Content-Type': 'multipart/form-data',
-      }
+        "Content-Type": "multipart/form-data",
+      },
     );
   }
 
@@ -415,8 +417,12 @@ class CookCamApi {
     return apiService.delete(API_ENDPOINTS.recipes.delete(recipeId));
   }
 
-  async toggleFavoriteRecipe(recipeId: string): Promise<ApiResponse<FavoriteResponse>> {
-    return apiService.post<FavoriteResponse>(API_ENDPOINTS.recipes.favorite(recipeId));
+  async toggleFavoriteRecipe(
+    recipeId: string,
+  ): Promise<ApiResponse<FavoriteResponse>> {
+    return apiService.post<FavoriteResponse>(
+      API_ENDPOINTS.recipes.favorite(recipeId),
+    );
   }
 
   async getRecipeNutrition(
@@ -443,8 +449,12 @@ class CookCamApi {
     return apiService.get<string[]>(API_ENDPOINTS.ingredients.categories);
   }
 
-  async getIngredientDetails(ingredientId: string): Promise<ApiResponse<IngredientDetail>> {
-    return apiService.get<IngredientDetail>(API_ENDPOINTS.ingredients.details(ingredientId));
+  async getIngredientDetails(
+    ingredientId: string,
+  ): Promise<ApiResponse<IngredientDetail>> {
+    return apiService.get<IngredientDetail>(
+      API_ENDPOINTS.ingredients.details(ingredientId),
+    );
   }
 
   // Gamification Methods

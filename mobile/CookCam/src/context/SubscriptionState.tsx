@@ -26,11 +26,11 @@ export interface SubscriptionState {
   tiers: SubscriptionTier[];
   products: SubscriptionProduct[];
   currentSubscription: UserSubscription | null;
-  
+
   // Loading states
   subscriptionLoading: boolean;
   subscriptionError: string | null;
-  
+
   // Cache timestamp
   lastChecked: number | null;
 }
@@ -47,7 +47,7 @@ export type SubscriptionAction =
 export interface SubscriptionStateContextType {
   state: SubscriptionState;
   dispatch: React.Dispatch<SubscriptionAction>;
-  
+
   // State utilities
   isSubscribed: () => boolean;
   hasActiveTrial: () => boolean;
@@ -111,10 +111,15 @@ export function subscriptionReducer(
 }
 
 // Context
-const SubscriptionStateContext = createContext<SubscriptionStateContextType | null>(null);
+const SubscriptionStateContext =
+  createContext<SubscriptionStateContextType | null>(null);
 
 // Provider component (lightweight, focused on state only)
-export function SubscriptionStateProvider({ children }: { children: ReactNode }) {
+export function SubscriptionStateProvider({
+  children,
+}: {
+  children: ReactNode;
+}) {
   const [state, dispatch] = useReducer(subscriptionReducer, initialState);
 
   // Memoized utility functions
@@ -132,7 +137,10 @@ export function SubscriptionStateProvider({ children }: { children: ReactNode })
         new Date(state.currentSubscription.trial_ends_at) > new Date()) ||
       false
     );
-  }, [state.currentSubscription?.status, state.currentSubscription?.trial_ends_at]);
+  }, [
+    state.currentSubscription?.status,
+    state.currentSubscription?.trial_ends_at,
+  ]);
 
   const isCreator = React.useCallback((): boolean => {
     return state.currentSubscription?.tier_slug === "creator";
@@ -140,17 +148,24 @@ export function SubscriptionStateProvider({ children }: { children: ReactNode })
 
   const getCurrentTier = React.useCallback((): SubscriptionTier | null => {
     if (!state.currentSubscription) return null;
-    return state.tiers.find(tier => tier.slug === state.currentSubscription?.tier_slug) || null;
+    return (
+      state.tiers.find(
+        (tier) => tier.slug === state.currentSubscription?.tier_slug,
+      ) || null
+    );
   }, [state.tiers, state.currentSubscription?.tier_slug]);
 
-  const contextValue = React.useMemo((): SubscriptionStateContextType => ({
-    state,
-    dispatch,
-    isSubscribed,
-    hasActiveTrial,
-    isCreator,
-    getCurrentTier,
-  }), [state, dispatch, isSubscribed, hasActiveTrial, isCreator, getCurrentTier]);
+  const contextValue = React.useMemo(
+    (): SubscriptionStateContextType => ({
+      state,
+      dispatch,
+      isSubscribed,
+      hasActiveTrial,
+      isCreator,
+      getCurrentTier,
+    }),
+    [state, dispatch, isSubscribed, hasActiveTrial, isCreator, getCurrentTier],
+  );
 
   return (
     <SubscriptionStateContext.Provider value={contextValue}>
@@ -168,4 +183,4 @@ export function useSubscriptionState() {
     );
   }
   return context;
-} 
+}

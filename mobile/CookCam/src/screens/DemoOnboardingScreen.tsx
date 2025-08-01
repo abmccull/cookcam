@@ -14,7 +14,6 @@ import { Scan, X } from "lucide-react-native";
 import { useTempData } from "../context/TempDataContext";
 import logger from "../utils/logger";
 
-
 interface DemoOnboardingScreenProps {
   navigation: NativeStackNavigationProp<any>;
 }

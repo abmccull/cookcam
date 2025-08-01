@@ -12,7 +12,6 @@ import {
 import { secureStorage, SECURE_KEYS, STORAGE_KEYS } from "./secureStorage";
 import logger from "../utils/logger";
 
-
 // Types
 export interface ApiResponse<T = unknown> {
   success: boolean;

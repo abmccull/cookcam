@@ -2,7 +2,6 @@ import { Platform } from "react-native";
 import logger from "../utils/logger";
 import { secureStorage } from "./secureStorage";
 
-
 // Declare __DEV__ global
 declare const __DEV__: boolean;
 
@@ -53,10 +52,10 @@ class StripeConnectService {
    * Get authorization headers with JWT token
    */
   private async getAuthHeaders(): Promise<Record<string, string>> {
-    const token = await secureStorage.getSecureItem('auth_token');
+    const token = await secureStorage.getSecureItem("auth_token");
     return {
       "Content-Type": "application/json",
-      ...(token && { "Authorization": `Bearer ${token}` }),
+      ...(token && { Authorization: `Bearer ${token}` }),
     };
   }
 
@@ -187,11 +186,12 @@ class StripeConnectService {
       }
 
       return {
-        isConnected: result.account.chargesEnabled && result.account.payoutsEnabled,
+        isConnected:
+          result.account.chargesEnabled && result.account.payoutsEnabled,
         accountId: result.account.stripe_account_id,
         hasCompletedKYC: result.account.detailsSubmitted,
         canReceivePayouts: result.account.payoutsEnabled,
-        requiresVerification: result.account.status === 'pending',
+        requiresVerification: result.account.status === "pending",
         verificationFields: [],
         currentlyDue: [],
         pendingVerification: [],
@@ -252,14 +252,17 @@ class StripeConnectService {
       logger.debug("⚡ Creating instant payout. Amount:", amount);
 
       const headers = await this.getAuthHeaders();
-      const response = await fetch(`${this.baseURL}/subscription/creator/payout`, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({
-          amount: amount,
-          method: "stripe",
-        }),
-      });
+      const response = await fetch(
+        `${this.baseURL}/subscription/creator/payout`,
+        {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            amount: amount,
+            method: "stripe",
+          }),
+        },
+      );
 
       const result = await response.json();
 
@@ -280,7 +283,10 @@ class StripeConnectService {
   /**
    * Get Stripe dashboard URL for creators
    */
-  async getDashboardUrl(): Promise<{ success: boolean; dashboardUrl?: string }> {
+  async getDashboardUrl(): Promise<{
+    success: boolean;
+    dashboardUrl?: string;
+  }> {
     try {
       logger.debug("📊 Getting Stripe dashboard URL");
 
@@ -315,7 +321,7 @@ class StripeConnectService {
   async refreshAccountStatus(accountId: string): Promise<void> {
     try {
       logger.debug("🔄 Refreshing account status:", accountId);
-      
+
       const headers = await this.getAuthHeaders();
       await fetch(
         `${this.baseURL}/subscription/creator/stripe/refresh-status`,
@@ -325,7 +331,7 @@ class StripeConnectService {
           body: JSON.stringify({ account_id: accountId }),
         },
       );
-      
+
       // Just trigger the refresh, don't wait for response
     } catch (error) {
       logger.error("❌ Failed to refresh status:", error);
@@ -336,11 +342,15 @@ class StripeConnectService {
   /**
    * Check if creator has minimum balance for payout
    */
-  async canRequestPayout(): Promise<{ canPayout: boolean; balance: number; minimum: number }> {
+  async canRequestPayout(): Promise<{
+    canPayout: boolean;
+    balance: number;
+    minimum: number;
+  }> {
     try {
       const earnings = await this.getCreatorEarnings();
-      const minimumPayout = 10.00; // $10 minimum
-      
+      const minimumPayout = 10.0; // $10 minimum
+
       return {
         canPayout: earnings.currentBalance >= minimumPayout,
         balance: earnings.currentBalance,
@@ -351,7 +361,7 @@ class StripeConnectService {
       return {
         canPayout: false,
         balance: 0,
-        minimum: 10.00,
+        minimum: 10.0,
       };
     }
   }
@@ -362,9 +372,9 @@ class StripeConnectService {
   async clearStoredCredentials(): Promise<void> {
     try {
       // Clear any cached Stripe account data if stored locally
-      await secureStorage.removeItem('stripe_account_id');
-      await secureStorage.removeItem('stripe_onboarding_complete');
-      
+      await secureStorage.removeItem("stripe_account_id");
+      await secureStorage.removeItem("stripe_onboarding_complete");
+
       logger.debug("🧹 Stripe Connect credentials cleared");
     } catch (error) {
       logger.error("❌ Failed to clear Stripe credentials:", error);

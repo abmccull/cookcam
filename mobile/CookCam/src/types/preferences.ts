@@ -24,7 +24,7 @@ export interface QuizStep {
   id: string;
   title: string;
   subtitle: string;
-  type: 'single' | 'multi' | 'serving' | 'appliances';
+  type: "single" | "multi" | "serving" | "appliances";
   options?: QuizOption[];
 }
 
@@ -109,4 +109,4 @@ export interface CustomServingModalProps {
   onAmountChange: (amount: string) => void;
   onSubmit: () => void;
   onClose: () => void;
-} 
+}

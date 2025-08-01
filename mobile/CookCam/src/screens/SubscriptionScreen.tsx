@@ -26,7 +26,6 @@ import {
 import SubscriptionService from "../services/subscriptionService";
 import logger from "../utils/logger";
 
-
 interface SubscriptionScreenProps {
   navigation: any;
 }

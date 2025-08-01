@@ -1,7 +1,7 @@
-import * as LocalAuthentication from 'expo-local-authentication';
-import * as SecureStore from 'expo-secure-store';
-import { Platform } from 'react-native';
-import logger from '../utils/logger';
+import * as LocalAuthentication from "expo-local-authentication";
+import * as SecureStore from "expo-secure-store";
+import { Platform } from "react-native";
+import logger from "../utils/logger";
 
 export interface BiometricCapabilities {
   isAvailable: boolean;
@@ -37,32 +37,41 @@ class BiometricAuthService {
     try {
       const hasHardware = await LocalAuthentication.hasHardwareAsync();
       const isEnrolled = await LocalAuthentication.isEnrolledAsync();
-      const supportedTypes = await LocalAuthentication.supportedAuthenticationTypesAsync();
+      const supportedTypes =
+        await LocalAuthentication.supportedAuthenticationTypesAsync();
 
       const capabilities: BiometricCapabilities = {
         isAvailable: hasHardware && isEnrolled,
         hasHardware,
         isEnrolled,
         supportedTypes,
-        fingerprintAvailable: supportedTypes.includes(LocalAuthentication.AuthenticationType.FINGERPRINT),
-        faceIdAvailable: supportedTypes.includes(LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION),
-        irisAvailable: supportedTypes.includes(LocalAuthentication.AuthenticationType.IRIS),
+        fingerprintAvailable: supportedTypes.includes(
+          LocalAuthentication.AuthenticationType.FINGERPRINT,
+        ),
+        faceIdAvailable: supportedTypes.includes(
+          LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION,
+        ),
+        irisAvailable: supportedTypes.includes(
+          LocalAuthentication.AuthenticationType.IRIS,
+        ),
       };
 
       this.capabilities = capabilities;
-      
-      logger.debug('🔐 Biometric capabilities:', {
+
+      logger.debug("🔐 Biometric capabilities:", {
         platform: Platform.OS,
         hasHardware,
         isEnrolled,
-        supportedTypes: supportedTypes.map(type => this.getAuthTypeString(type)),
+        supportedTypes: supportedTypes.map((type) =>
+          this.getAuthTypeString(type),
+        ),
         fingerprintAvailable: capabilities.fingerprintAvailable,
         faceIdAvailable: capabilities.faceIdAvailable,
       });
 
       return capabilities;
     } catch (error) {
-      logger.error('❌ Error checking biometric capabilities:', error);
+      logger.error("❌ Error checking biometric capabilities:", error);
       const fallbackCapabilities: BiometricCapabilities = {
         isAvailable: false,
         hasHardware: false,
@@ -80,16 +89,18 @@ class BiometricAuthService {
   /**
    * Get user-friendly authentication type string
    */
-  private getAuthTypeString(type: LocalAuthentication.AuthenticationType): string {
+  private getAuthTypeString(
+    type: LocalAuthentication.AuthenticationType,
+  ): string {
     switch (type) {
       case LocalAuthentication.AuthenticationType.FINGERPRINT:
-        return 'Fingerprint';
+        return "Fingerprint";
       case LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION:
-        return Platform.OS === 'ios' ? 'Face ID' : 'Face Recognition';
+        return Platform.OS === "ios" ? "Face ID" : "Face Recognition";
       case LocalAuthentication.AuthenticationType.IRIS:
-        return 'Iris';
+        return "Iris";
       default:
-        return 'Unknown';
+        return "Unknown";
     }
   }
 
@@ -102,21 +113,21 @@ class BiometricAuthService {
     }
 
     if (!this.capabilities?.isAvailable) {
-      return 'Biometric Authentication';
+      return "Biometric Authentication";
     }
 
     // Prioritize Face ID on iOS, then fingerprint
-    if (this.capabilities.faceIdAvailable && Platform.OS === 'ios') {
-      return 'Face ID';
+    if (this.capabilities.faceIdAvailable && Platform.OS === "ios") {
+      return "Face ID";
     } else if (this.capabilities.fingerprintAvailable) {
-      return Platform.OS === 'ios' ? 'Touch ID' : 'Fingerprint';
+      return Platform.OS === "ios" ? "Touch ID" : "Fingerprint";
     } else if (this.capabilities.faceIdAvailable) {
-      return 'Face Recognition';
+      return "Face Recognition";
     } else if (this.capabilities.irisAvailable) {
-      return 'Iris';
+      return "Iris";
     }
 
-    return 'Biometric Authentication';
+    return "Biometric Authentication";
   }
 
   /**
@@ -128,20 +139,20 @@ class BiometricAuthService {
     }
 
     if (!this.capabilities?.isAvailable) {
-      return '🔐';
+      return "🔐";
     }
 
-    if (this.capabilities.faceIdAvailable && Platform.OS === 'ios') {
-      return '👤'; // Face ID
+    if (this.capabilities.faceIdAvailable && Platform.OS === "ios") {
+      return "👤"; // Face ID
     } else if (this.capabilities.fingerprintAvailable) {
-      return '👆'; // Fingerprint
+      return "👆"; // Fingerprint
     } else if (this.capabilities.faceIdAvailable) {
-      return '👤'; // Face Recognition
+      return "👤"; // Face Recognition
     } else if (this.capabilities.irisAvailable) {
-      return '👁️'; // Iris
+      return "👁️"; // Iris
     }
 
-    return '🔐';
+    return "🔐";
   }
 
   /**
@@ -161,40 +172,44 @@ class BiometricAuthService {
       if (!this.capabilities?.isAvailable) {
         return {
           success: false,
-          error: !this.capabilities?.hasHardware 
-            ? 'Biometric hardware not available on this device'
-            : 'No biometric authentication enrolled. Please set up fingerprint or face authentication in your device settings.',
+          error: !this.capabilities?.hasHardware
+            ? "Biometric hardware not available on this device"
+            : "No biometric authentication enrolled. Please set up fingerprint or face authentication in your device settings.",
         };
       }
 
       const primaryMethod = await this.getPrimaryBiometricMethod();
-      
+
       const result = await LocalAuthentication.authenticateAsync({
-        promptMessage: options?.promptMessage || `Authenticate with ${primaryMethod}`,
-        cancelLabel: options?.cancelLabel || 'Cancel',
-        fallbackLabel: options?.fallbackLabel || 'Use Password',
+        promptMessage:
+          options?.promptMessage || `Authenticate with ${primaryMethod}`,
+        cancelLabel: options?.cancelLabel || "Cancel",
+        fallbackLabel: options?.fallbackLabel || "Use Password",
         requireConfirmation: false,
         disableDeviceFallback: false,
       });
 
       if (result.success) {
-        logger.debug('✅ Biometric authentication successful');
+        logger.debug("✅ Biometric authentication successful");
         return { success: true };
       } else {
         const errorMessage = this.getErrorMessage(result.error);
-        logger.debug('❌ Biometric authentication failed:', errorMessage);
-        
+        logger.debug("❌ Biometric authentication failed:", errorMessage);
+
         return {
           success: false,
           error: errorMessage,
-          warning: result.error === 'user_cancel' ? 'Authentication was cancelled' : undefined,
+          warning:
+            result.error === "user_cancel"
+              ? "Authentication was cancelled"
+              : undefined,
         };
       }
     } catch (error) {
-      logger.error('❌ Biometric authentication error:', error);
+      logger.error("❌ Biometric authentication error:", error);
       return {
         success: false,
-        error: 'An unexpected error occurred during biometric authentication',
+        error: "An unexpected error occurred during biometric authentication",
       };
     }
   }
@@ -204,36 +219,36 @@ class BiometricAuthService {
    */
   private getErrorMessage(error?: string): string {
     switch (error) {
-      case 'unknown':
-        return 'An unknown error occurred';
-      case 'authentication_canceled':
-        return 'Authentication was cancelled';
-      case 'user_cancel':
-        return 'You cancelled the authentication';
-      case 'user_fallback':
-        return 'Fallback authentication method selected';
-      case 'system_cancel':
-        return 'Authentication was cancelled by the system';
-      case 'passcode_not_set':
-        return 'Device passcode is not set';
-      case 'biometry_not_available':
-        return 'Biometric authentication is not available';
-      case 'biometry_not_enrolled':
-        return 'No biometric authentication enrolled';
-      case 'biometry_lockout':
-        return 'Biometric authentication is locked. Please try again later.';
-      case 'biometry_lockout_permanent':
-        return 'Biometric authentication is permanently locked. Please use your passcode.';
-      case 'too_many_attempts':
-        return 'Too many failed attempts. Please try again later.';
-      case 'invalid_context':
-        return 'Invalid authentication context';
-      case 'not_interactive':
-        return 'Authentication requires user interaction';
-      case 'reused_context':
-        return 'Authentication context was reused';
+      case "unknown":
+        return "An unknown error occurred";
+      case "authentication_canceled":
+        return "Authentication was cancelled";
+      case "user_cancel":
+        return "You cancelled the authentication";
+      case "user_fallback":
+        return "Fallback authentication method selected";
+      case "system_cancel":
+        return "Authentication was cancelled by the system";
+      case "passcode_not_set":
+        return "Device passcode is not set";
+      case "biometry_not_available":
+        return "Biometric authentication is not available";
+      case "biometry_not_enrolled":
+        return "No biometric authentication enrolled";
+      case "biometry_lockout":
+        return "Biometric authentication is locked. Please try again later.";
+      case "biometry_lockout_permanent":
+        return "Biometric authentication is permanently locked. Please use your passcode.";
+      case "too_many_attempts":
+        return "Too many failed attempts. Please try again later.";
+      case "invalid_context":
+        return "Invalid authentication context";
+      case "not_interactive":
+        return "Authentication requires user interaction";
+      case "reused_context":
+        return "Authentication context was reused";
       default:
-        return error || 'Biometric authentication failed';
+        return error || "Biometric authentication failed";
     }
   }
 
@@ -242,10 +257,12 @@ class BiometricAuthService {
    */
   async setBiometricEnabled(enabled: boolean): Promise<void> {
     try {
-      await SecureStore.setItemAsync('biometric_enabled', enabled.toString());
-      logger.debug(`🔐 Biometric authentication ${enabled ? 'enabled' : 'disabled'}`);
+      await SecureStore.setItemAsync("biometric_enabled", enabled.toString());
+      logger.debug(
+        `🔐 Biometric authentication ${enabled ? "enabled" : "disabled"}`,
+      );
     } catch (error) {
-      logger.error('❌ Error storing biometric preference:', error);
+      logger.error("❌ Error storing biometric preference:", error);
     }
   }
 
@@ -254,10 +271,10 @@ class BiometricAuthService {
    */
   async isBiometricEnabled(): Promise<boolean> {
     try {
-      const enabled = await SecureStore.getItemAsync('biometric_enabled');
-      return enabled === 'true';
+      const enabled = await SecureStore.getItemAsync("biometric_enabled");
+      return enabled === "true";
     } catch (error) {
-      logger.error('❌ Error retrieving biometric preference:', error);
+      logger.error("❌ Error retrieving biometric preference:", error);
       return false;
     }
   }
@@ -265,18 +282,22 @@ class BiometricAuthService {
   /**
    * Store user credentials securely for biometric login
    */
-  async storeCredentialsForBiometric(email: string, accessToken: string, refreshToken?: string): Promise<void> {
+  async storeCredentialsForBiometric(
+    email: string,
+    accessToken: string,
+    refreshToken?: string,
+  ): Promise<void> {
     try {
-      await SecureStore.setItemAsync('biometric_email', email);
-      await SecureStore.setItemAsync('biometric_access_token', accessToken);
+      await SecureStore.setItemAsync("biometric_email", email);
+      await SecureStore.setItemAsync("biometric_access_token", accessToken);
       if (refreshToken) {
-        await SecureStore.setItemAsync('biometric_refresh_token', refreshToken);
+        await SecureStore.setItemAsync("biometric_refresh_token", refreshToken);
       }
-      logger.debug('🔐 Credentials stored securely for biometric login', {
-        hasRefreshToken: !!refreshToken
+      logger.debug("🔐 Credentials stored securely for biometric login", {
+        hasRefreshToken: !!refreshToken,
       });
     } catch (error) {
-      logger.error('❌ Error storing biometric credentials:', error);
+      logger.error("❌ Error storing biometric credentials:", error);
       throw error;
     }
   }
@@ -284,27 +305,35 @@ class BiometricAuthService {
   /**
    * Retrieve stored credentials for biometric login
    */
-  async getStoredCredentials(): Promise<{ email: string; token: string; refreshToken?: string | undefined } | null> {
+  async getStoredCredentials(): Promise<{
+    email: string;
+    token: string;
+    refreshToken?: string | undefined;
+  } | null> {
     try {
-      const email = await SecureStore.getItemAsync('biometric_email');
-      const accessToken = await SecureStore.getItemAsync('biometric_access_token');
-      const refreshToken = await SecureStore.getItemAsync('biometric_refresh_token');
-      
+      const email = await SecureStore.getItemAsync("biometric_email");
+      const accessToken = await SecureStore.getItemAsync(
+        "biometric_access_token",
+      );
+      const refreshToken = await SecureStore.getItemAsync(
+        "biometric_refresh_token",
+      );
+
       // Try legacy storage first for backward compatibility
-      const legacyToken = await SecureStore.getItemAsync('biometric_token');
-      
+      const legacyToken = await SecureStore.getItemAsync("biometric_token");
+
       const finalToken = accessToken || legacyToken;
-      
+
       if (email && finalToken) {
-        return { 
-          email, 
-          token: finalToken, 
-          refreshToken: refreshToken || undefined 
+        return {
+          email,
+          token: finalToken,
+          refreshToken: refreshToken || undefined,
         };
       }
       return null;
     } catch (error) {
-      logger.error('❌ Error retrieving stored credentials:', error);
+      logger.error("❌ Error retrieving stored credentials:", error);
       return null;
     }
   }
@@ -314,14 +343,14 @@ class BiometricAuthService {
    */
   async clearStoredCredentials(): Promise<void> {
     try {
-      await SecureStore.deleteItemAsync('biometric_email');
-      await SecureStore.deleteItemAsync('biometric_token'); // Legacy
-      await SecureStore.deleteItemAsync('biometric_access_token');
-      await SecureStore.deleteItemAsync('biometric_refresh_token');
-      await SecureStore.deleteItemAsync('biometric_enabled');
-      logger.debug('🔐 Biometric credentials cleared');
+      await SecureStore.deleteItemAsync("biometric_email");
+      await SecureStore.deleteItemAsync("biometric_token"); // Legacy
+      await SecureStore.deleteItemAsync("biometric_access_token");
+      await SecureStore.deleteItemAsync("biometric_refresh_token");
+      await SecureStore.deleteItemAsync("biometric_enabled");
+      logger.debug("🔐 Biometric credentials cleared");
     } catch (error) {
-      logger.error('❌ Error clearing biometric credentials:', error);
+      logger.error("❌ Error clearing biometric credentials:", error);
     }
   }
 
@@ -332,9 +361,9 @@ class BiometricAuthService {
     const capabilities = await this.checkBiometricCapabilities();
     const isEnabled = await this.isBiometricEnabled();
     const hasCredentials = (await this.getStoredCredentials()) !== null;
-    
+
     return capabilities.isAvailable && isEnabled && hasCredentials;
   }
 }
 
-export default BiometricAuthService; 
+export default BiometricAuthService;

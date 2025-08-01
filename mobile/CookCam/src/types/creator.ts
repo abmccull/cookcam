@@ -106,4 +106,4 @@ export interface CreatorSuccessStory {
   author: string;
   stats: string;
   icon?: any;
-} 
+}

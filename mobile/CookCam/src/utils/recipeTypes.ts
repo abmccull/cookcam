@@ -2,7 +2,7 @@ export interface RecipeIngredient {
   name: string;
   amount: string;
   unit: string;
-  source?: 'detected' | 'pantry' | 'store';
+  source?: "detected" | "pantry" | "store";
 }
 
 export interface RecipeRating {
@@ -12,13 +12,15 @@ export interface RecipeRating {
   userName: string;
   userAvatar?: string | undefined;
   overallRating: number; // 1-5
-  subRatings?: {
-    taste?: number | undefined;
-    ease?: number | undefined;
-    presentation?: number | undefined;
-    accuracy?: number | undefined;
-    value?: number | undefined;
-  } | undefined;
+  subRatings?:
+    | {
+        taste?: number | undefined;
+        ease?: number | undefined;
+        presentation?: number | undefined;
+        accuracy?: number | undefined;
+        value?: number | undefined;
+      }
+    | undefined;
   review?: string | undefined;
   images?: string[] | undefined;
   helpfulCount: number;
@@ -42,10 +44,12 @@ export interface ClaimedRecipe {
   creatorId: string;
   creatorName: string;
   creatorAvatar?: string | undefined;
-  creatorBadge?: {
-    tier: number;
-    name: string;
-  } | undefined;
+  creatorBadge?:
+    | {
+        tier: number;
+        name: string;
+      }
+    | undefined;
   creatorTier?: number | undefined;
   claimedAt: string;
   viewCount: number;

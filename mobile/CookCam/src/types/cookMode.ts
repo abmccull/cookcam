@@ -84,4 +84,4 @@ export interface AllStepsModalProps {
   currentStep: number;
   onClose: () => void;
   onStepSelect: (stepIndex: number) => void;
-} 
+}

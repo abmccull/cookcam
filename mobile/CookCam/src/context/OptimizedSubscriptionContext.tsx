@@ -4,18 +4,34 @@
  */
 
 import React, { ReactNode } from "react";
-import { SubscriptionStateProvider, useSubscriptionState } from "./SubscriptionState";
-import { FeatureAccessProvider, useFeatureAccess, useFeatureGate } from "./FeatureAccessContext";
-import { SubscriptionActionsProvider, useSubscriptionActions } from "./SubscriptionActions";
+import {
+  SubscriptionStateProvider,
+  useSubscriptionState,
+} from "./SubscriptionState";
+import {
+  FeatureAccessProvider,
+  useFeatureAccess,
+  useFeatureGate,
+} from "./FeatureAccessContext";
+import {
+  SubscriptionActionsProvider,
+  useSubscriptionActions,
+} from "./SubscriptionActions";
 
 // Combined provider that wraps all subscription-related contexts
-export function OptimizedSubscriptionProvider({ children }: { children: ReactNode }) {
+export function OptimizedSubscriptionProvider({
+  children,
+}: {
+  children: ReactNode;
+}) {
   return (
-    <SubscriptionStateProvider children={
-      <FeatureAccessProvider children={
-        <SubscriptionActionsProvider children={children} />
-      } />
-    } />
+    <SubscriptionStateProvider
+      children={
+        <FeatureAccessProvider
+          children={<SubscriptionActionsProvider children={children} />}
+        />
+      }
+    />
   );
 }
 
@@ -32,7 +48,7 @@ export function useSubscription() {
     hasActiveTrial: subscriptionState.hasActiveTrial,
     isCreator: subscriptionState.isCreator,
     getCurrentTier: subscriptionState.getCurrentTier,
-    
+
     // Feature Access
     featureState: featureAccess.state,
     checkFeatureAccess: featureAccess.checkFeatureAccess,
@@ -40,7 +56,7 @@ export function useSubscription() {
     getRemainingUsage: featureAccess.getRemainingUsage,
     showUpgradePrompt: featureAccess.showUpgradePrompt,
     refreshAllFeatures: featureAccess.refreshAllFeatures,
-    
+
     // Actions
     creatorState: subscriptionActions.creatorState,
     loadSubscriptionData: subscriptionActions.loadSubscriptionData,
@@ -59,6 +75,10 @@ export function useSubscription() {
 export { useFeatureGate };
 
 // Re-export types for convenience
-export type { SubscriptionState, SubscriptionProduct, SubscriptionStatus } from "./SubscriptionState";
+export type {
+  SubscriptionState,
+  SubscriptionProduct,
+  SubscriptionStatus,
+} from "./SubscriptionState";
 export type { FeatureAccessState } from "./FeatureAccessContext";
-export type { CreatorState } from "./SubscriptionActions"; 
+export type { CreatorState } from "./SubscriptionActions";

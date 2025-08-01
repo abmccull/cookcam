@@ -3,7 +3,7 @@
  * Comprehensive collection of cooking tips for cook mode
  */
 
-import { CookingTip } from '../types/cookMode';
+import { CookingTip } from "../types/cookMode";
 
 export const COOKING_TIPS: CookingTip[] = [
   {
@@ -321,4 +321,4 @@ export const COOKING_TIPS: CookingTip[] = [
 export const getCookingTipsForRecipe = (numSteps: number): CookingTip[] => {
   const shuffled = [...COOKING_TIPS].sort(() => 0.5 - Math.random());
   return shuffled.slice(0, Math.min(numSteps, COOKING_TIPS.length));
-}; 
+};

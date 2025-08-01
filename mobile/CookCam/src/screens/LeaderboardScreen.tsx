@@ -29,7 +29,6 @@ import { cookCamApi } from "../services/cookCamApi";
 import * as Haptics from "expo-haptics";
 import logger from "../utils/logger";
 
-
 interface LeaderboardUser {
   id: string;
   name: string;
@@ -125,7 +124,11 @@ const LeaderboardScreen: React.FC = () => {
       await refreshUserStats();
 
       // Call actual API endpoint with current filters
-      const response = await cookCamApi.getLeaderboard(50, selectedPeriod, leaderboardType);
+      const response = await cookCamApi.getLeaderboard(
+        50,
+        selectedPeriod,
+        leaderboardType,
+      );
 
       if (response.success && response.data) {
         try {
@@ -138,9 +141,9 @@ const LeaderboardScreen: React.FC = () => {
         }
 
         // Transform API response to our format
-        const leaderboardData = Array.isArray(response.data) 
-          ? response.data 
-          : ((response.data as any)?.leaderboard || []);
+        const leaderboardData = Array.isArray(response.data)
+          ? response.data
+          : (response.data as any)?.leaderboard || [];
 
         if (leaderboardData.length === 0) {
           setError("No leaderboard data found. Be the first to start cooking!");
@@ -170,8 +173,8 @@ const LeaderboardScreen: React.FC = () => {
             setUserRank(userEntry.rank);
           } else {
             // User not in top results - get actual rank from API response
-            const userRank = !Array.isArray(response.data) 
-              ? (response.data as any)?.userRank 
+            const userRank = !Array.isArray(response.data)
+              ? (response.data as any)?.userRank
               : null;
             setUserRank(userRank || null);
           }
@@ -297,7 +300,9 @@ const LeaderboardScreen: React.FC = () => {
 
         <View style={styles.xpContainer}>
           {/* For daily/weekly periods, emphasize period XP */}
-          {selectedPeriod !== "allTime" && safeUser.xpGained != null && safeUser.xpGained > 0 ? (
+          {selectedPeriod !== "allTime" &&
+          safeUser.xpGained != null &&
+          safeUser.xpGained > 0 ? (
             <>
               <Text
                 style={[
@@ -353,11 +358,13 @@ const LeaderboardScreen: React.FC = () => {
               <View style={styles.compactRankBadge}>
                 <TrendingUp size={14} color="#66BB6A" />
                 <Text style={styles.compactRankText}>
-                  #{String(Number(userRank) || 0)} {" "}
+                  #{String(Number(userRank) || 0)}{" "}
                   {String(
-                    selectedPeriod === "allTime" ? "all time" : 
-                    selectedPeriod === "daily" ? "today" :
-                    "this week",
+                    selectedPeriod === "allTime"
+                      ? "all time"
+                      : selectedPeriod === "daily"
+                        ? "today"
+                        : "this week",
                   )}
                 </Text>
               </View>

@@ -3,9 +3,19 @@
  * Handles subscription API calls and business logic
  */
 
-import React, { createContext, useContext, useCallback, useEffect, ReactNode } from "react";
+import React, {
+  createContext,
+  useContext,
+  useCallback,
+  useEffect,
+  ReactNode,
+} from "react";
 import * as SecureStore from "expo-secure-store";
-import { cookCamApi, SubscriptionTier, CreatorRevenue } from "../services/cookCamApi";
+import {
+  cookCamApi,
+  SubscriptionTier,
+  CreatorRevenue,
+} from "../services/cookCamApi";
 import SubscriptionService from "../services/subscriptionService";
 import { useAuth } from "./AuthContext";
 import { useSubscriptionState, SubscriptionProduct } from "./SubscriptionState";
@@ -20,17 +30,17 @@ export interface CreatorState {
 
 export interface SubscriptionActionsContextType {
   creatorState: CreatorState;
-  
+
   // Data loading
   loadSubscriptionData: () => Promise<void>;
   loadCreatorData: () => Promise<void>;
   refreshData: () => Promise<void>;
-  
+
   // Subscription management (App Store/Google Play)
   purchaseSubscription: (productId: string) => Promise<void>;
   restorePurchases: () => Promise<void>;
   openSubscriptionManagement: () => Promise<void>;
-  
+
   // Creator functions
   autoSubscribeCreator: (userId: string) => Promise<boolean>;
   generateAffiliateLink: (campaignName?: string) => Promise<string>;
@@ -38,13 +48,18 @@ export interface SubscriptionActionsContextType {
 }
 
 // Context
-const SubscriptionActionsContext = createContext<SubscriptionActionsContextType | null>(null);
+const SubscriptionActionsContext =
+  createContext<SubscriptionActionsContextType | null>(null);
 
 // Provider component
-export function SubscriptionActionsProvider({ children }: { children: ReactNode }) {
+export function SubscriptionActionsProvider({
+  children,
+}: {
+  children: ReactNode;
+}) {
   const { user } = useAuth();
   const { state, dispatch, isCreator } = useSubscriptionState();
-  
+
   // Creator state (local to this context)
   const [creatorState, setCreatorState] = React.useState<CreatorState>({
     isCreator: false,
@@ -65,7 +80,10 @@ export function SubscriptionActionsProvider({ children }: { children: ReactNode 
           dispatch({ type: "SET_TIERS", tiers: tiersResponse.data });
         }
       } catch (tiersError) {
-        logger.warn("Could not load subscription tiers from API, using fallback data:", tiersError);
+        logger.warn(
+          "Could not load subscription tiers from API, using fallback data:",
+          tiersError,
+        );
 
         // Fallback tiers for development/offline mode
         const fallbackTiers: SubscriptionTier[] = [
@@ -131,17 +149,20 @@ export function SubscriptionActionsProvider({ children }: { children: ReactNode 
       // Load App Store/Google Play products
       try {
         const subscriptionService = SubscriptionService.getInstance();
-        const productsResponse = await subscriptionService.getAvailableProducts();
-        const formattedProducts: SubscriptionProduct[] = productsResponse.map((product: any) => ({
-          productId: product.productId,
-          price: product.price,
-          localizedPrice: product.localizedPrice,
-          currency: product.currency,
-          title: product.title,
-          description: product.description,
-          tier: product.productId.includes('creator') ? 'creator' : 'regular',
-          freeTrialPeriod: '3 days'
-        }));
+        const productsResponse =
+          await subscriptionService.getAvailableProducts();
+        const formattedProducts: SubscriptionProduct[] = productsResponse.map(
+          (product: any) => ({
+            productId: product.productId,
+            price: product.price,
+            localizedPrice: product.localizedPrice,
+            currency: product.currency,
+            title: product.title,
+            description: product.description,
+            tier: product.productId.includes("creator") ? "creator" : "regular",
+            freeTrialPeriod: "3 days",
+          }),
+        );
         dispatch({ type: "SET_PRODUCTS", products: formattedProducts });
       } catch (error) {
         logger.warn("Could not load IAP products:", error);
@@ -150,15 +171,18 @@ export function SubscriptionActionsProvider({ children }: { children: ReactNode 
 
       // Only load user-specific subscription data if authenticated
       if (user) {
-        logger.debug("Loading subscription for user:", { userId: user.id, userEmail: user.email });
-        
-        const subscriptionResponse = await cookCamApi.getSubscriptionStatus();
-        logger.debug("Subscription response:", { 
-          success: subscriptionResponse.success, 
-          data: subscriptionResponse.data,
-          error: subscriptionResponse.error 
+        logger.debug("Loading subscription for user:", {
+          userId: user.id,
+          userEmail: user.email,
         });
-        
+
+        const subscriptionResponse = await cookCamApi.getSubscriptionStatus();
+        logger.debug("Subscription response:", {
+          success: subscriptionResponse.success,
+          data: subscriptionResponse.data,
+          error: subscriptionResponse.error,
+        });
+
         if (subscriptionResponse.success) {
           dispatch({
             type: "SET_SUBSCRIPTION",
@@ -174,10 +198,13 @@ export function SubscriptionActionsProvider({ children }: { children: ReactNode 
           }
         }
       } else {
-        logger.debug("User not authenticated, skipping subscription status check");
+        logger.debug(
+          "User not authenticated, skipping subscription status check",
+        );
         // Try to load from cache if available
         try {
-          const cachedData = await SecureStore.getItemAsync("subscription_data");
+          const cachedData =
+            await SecureStore.getItemAsync("subscription_data");
           if (cachedData) {
             const subscription = JSON.parse(cachedData);
             dispatch({ type: "SET_SUBSCRIPTION", subscription });
@@ -205,58 +232,66 @@ export function SubscriptionActionsProvider({ children }: { children: ReactNode 
         return;
       }
 
-      setCreatorState(prev => ({ ...prev, creatorLoading: true }));
+      setCreatorState((prev) => ({ ...prev, creatorLoading: true }));
 
       const revenueResponse = await cookCamApi.getCreatorRevenue();
       if (revenueResponse.success && revenueResponse.data) {
-        setCreatorState(prev => ({
+        setCreatorState((prev) => ({
           ...prev,
           creatorRevenue: revenueResponse.data || null,
           isCreator: true,
           creatorLoading: false,
         }));
       } else {
-        setCreatorState(prev => ({ ...prev, creatorLoading: false }));
+        setCreatorState((prev) => ({ ...prev, creatorLoading: false }));
       }
     } catch (error) {
       logger.error("Failed to load creator data:", error);
-      setCreatorState(prev => ({ ...prev, creatorLoading: false }));
+      setCreatorState((prev) => ({ ...prev, creatorLoading: false }));
     }
   }, [isCreator]);
 
   // Auto-subscribe creator to their tier
-  const autoSubscribeCreator = useCallback(async (userId: string): Promise<boolean> => {
-    try {
-      logger.debug("Auto-subscribing creator to Creator tier...");
-      // TODO: Implement actual auto-subscribe logic via API
-      logger.warn("Auto-subscribe not yet implemented");
-      return false;
-    } catch (error) {
-      logger.error("Failed to auto-subscribe creator:", error);
-      return false;
-    }
-  }, []);
+  const autoSubscribeCreator = useCallback(
+    async (userId: string): Promise<boolean> => {
+      try {
+        logger.debug("Auto-subscribing creator to Creator tier...");
+        // TODO: Implement actual auto-subscribe logic via API
+        logger.warn("Auto-subscribe not yet implemented");
+        return false;
+      } catch (error) {
+        logger.error("Failed to auto-subscribe creator:", error);
+        return false;
+      }
+    },
+    [],
+  );
 
   // Purchase subscription
-  const purchaseSubscription = useCallback(async (productId: string) => {
-    try {
-      dispatch({ type: "SET_LOADING", loading: true });
-      logger.debug("Starting subscription purchase for:", productId);
+  const purchaseSubscription = useCallback(
+    async (productId: string) => {
+      try {
+        dispatch({ type: "SET_LOADING", loading: true });
+        logger.debug("Starting subscription purchase for:", productId);
 
-      const subscriptionService = SubscriptionService.getInstance();
-      await subscriptionService.purchaseProduct(productId);
-      
-      logger.debug("Purchase initiated successfully");
-      await loadSubscriptionData();
-      
-    } catch (error) {
-      logger.error("Failed to purchase subscription:", error);
-      dispatch({ type: "SET_ERROR", error: "Failed to purchase subscription" });
-      throw error;
-    } finally {
-      dispatch({ type: "SET_LOADING", loading: false });
-    }
-  }, [dispatch, loadSubscriptionData]);
+        const subscriptionService = SubscriptionService.getInstance();
+        await subscriptionService.purchaseProduct(productId);
+
+        logger.debug("Purchase initiated successfully");
+        await loadSubscriptionData();
+      } catch (error) {
+        logger.error("Failed to purchase subscription:", error);
+        dispatch({
+          type: "SET_ERROR",
+          error: "Failed to purchase subscription",
+        });
+        throw error;
+      } finally {
+        dispatch({ type: "SET_LOADING", loading: false });
+      }
+    },
+    [dispatch, loadSubscriptionData],
+  );
 
   // Restore purchases
   const restorePurchases = useCallback(async () => {
@@ -273,13 +308,12 @@ export function SubscriptionActionsProvider({ children }: { children: ReactNode 
           logger.debug("Processing purchase:", purchase.productId);
           // TODO: Validate receipt with backend and update subscription status
         }
-        
+
         await loadSubscriptionData();
         logger.debug("Purchases restored successfully");
       } else {
         logger.debug("No previous purchases found to restore");
       }
-      
     } catch (error) {
       logger.error("Failed to restore purchases:", error);
       dispatch({ type: "SET_ERROR", error: "Failed to restore purchases" });
@@ -302,31 +336,37 @@ export function SubscriptionActionsProvider({ children }: { children: ReactNode 
   }, []);
 
   // Generate affiliate link
-  const generateAffiliateLink = useCallback(async (campaignName?: string): Promise<string> => {
-    try {
-      const response = await cookCamApi.generateAffiliateLink(campaignName);
-      if (response.success && response.data) {
-        return response.data.full_url;
+  const generateAffiliateLink = useCallback(
+    async (campaignName?: string): Promise<string> => {
+      try {
+        const response = await cookCamApi.generateAffiliateLink(campaignName);
+        if (response.success && response.data) {
+          return response.data.full_url;
+        }
+        throw new Error("Failed to generate affiliate link");
+      } catch (error) {
+        logger.error("Failed to generate affiliate link:", error);
+        throw error;
       }
-      throw new Error("Failed to generate affiliate link");
-    } catch (error) {
-      logger.error("Failed to generate affiliate link:", error);
-      throw error;
-    }
-  }, []);
+    },
+    [],
+  );
 
   // Request payout
-  const requestPayout = useCallback(async (amount: number) => {
-    try {
-      const response = await cookCamApi.requestPayout(amount);
-      if (response.success) {
-        await loadCreatorData(); // Refresh creator data
+  const requestPayout = useCallback(
+    async (amount: number) => {
+      try {
+        const response = await cookCamApi.requestPayout(amount);
+        if (response.success) {
+          await loadCreatorData(); // Refresh creator data
+        }
+      } catch (error) {
+        logger.error("Failed to request payout:", error);
+        throw error;
       }
-    } catch (error) {
-      logger.error("Failed to request payout:", error);
-      throw error;
-    }
-  }, [loadCreatorData]);
+    },
+    [loadCreatorData],
+  );
 
   // Refresh all data
   const refreshData = useCallback(async () => {
@@ -346,27 +386,36 @@ export function SubscriptionActionsProvider({ children }: { children: ReactNode 
     }
 
     // Only load if we haven't checked recently (within 5 minutes)
-    const shouldLoad = !state.lastChecked || 
-      (Date.now() - state.lastChecked > 5 * 60 * 1000);
+    const shouldLoad =
+      !state.lastChecked || Date.now() - state.lastChecked > 5 * 60 * 1000;
 
     if (shouldLoad) {
       loadSubscriptionData();
     }
 
     // Refresh every 10 minutes
-    const interval = setInterval(() => {
-      if (
-        user?.id &&
-        state.lastChecked &&
-        Date.now() - state.lastChecked > 10 * 60 * 1000
-      ) {
-        logger.debug("Refreshing subscription data (scheduled)");
-        refreshData();
-      }
-    }, 5 * 60 * 1000);
+    const interval = setInterval(
+      () => {
+        if (
+          user?.id &&
+          state.lastChecked &&
+          Date.now() - state.lastChecked > 10 * 60 * 1000
+        ) {
+          logger.debug("Refreshing subscription data (scheduled)");
+          refreshData();
+        }
+      },
+      5 * 60 * 1000,
+    );
 
     return () => clearInterval(interval);
-  }, [user?.id, state.lastChecked, loadSubscriptionData, refreshData, dispatch]);
+  }, [
+    user?.id,
+    state.lastChecked,
+    loadSubscriptionData,
+    refreshData,
+    dispatch,
+  ]);
 
   // Load creator data when subscription changes
   useEffect(() => {
@@ -375,29 +424,32 @@ export function SubscriptionActionsProvider({ children }: { children: ReactNode 
     }
   }, [state.currentSubscription, loadCreatorData]);
 
-  const contextValue = React.useMemo((): SubscriptionActionsContextType => ({
-    creatorState,
-    loadSubscriptionData,
-    loadCreatorData,
-    refreshData,
-    purchaseSubscription,
-    restorePurchases,
-    openSubscriptionManagement,
-    autoSubscribeCreator,
-    generateAffiliateLink,
-    requestPayout,
-  }), [
-    creatorState,
-    loadSubscriptionData,
-    loadCreatorData,
-    refreshData,
-    purchaseSubscription,
-    restorePurchases,
-    openSubscriptionManagement,
-    autoSubscribeCreator,
-    generateAffiliateLink,
-    requestPayout,
-  ]);
+  const contextValue = React.useMemo(
+    (): SubscriptionActionsContextType => ({
+      creatorState,
+      loadSubscriptionData,
+      loadCreatorData,
+      refreshData,
+      purchaseSubscription,
+      restorePurchases,
+      openSubscriptionManagement,
+      autoSubscribeCreator,
+      generateAffiliateLink,
+      requestPayout,
+    }),
+    [
+      creatorState,
+      loadSubscriptionData,
+      loadCreatorData,
+      refreshData,
+      purchaseSubscription,
+      restorePurchases,
+      openSubscriptionManagement,
+      autoSubscribeCreator,
+      generateAffiliateLink,
+      requestPayout,
+    ],
+  );
 
   return (
     <SubscriptionActionsContext.Provider value={contextValue}>
@@ -415,4 +467,4 @@ export function useSubscriptionActions() {
     );
   }
   return context;
-} 
+}

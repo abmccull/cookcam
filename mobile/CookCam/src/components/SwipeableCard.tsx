@@ -25,7 +25,6 @@ import * as Haptics from "expo-haptics";
 import { Recipe } from "../utils/recipeTypes";
 import logger from "../utils/logger";
 
-
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 const SWIPE_THRESHOLD = screenWidth * 0.3;
 const CARD_WIDTH = screenWidth - 60;
@@ -91,7 +90,10 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
     return "No time data";
   };
 
-  const gestureHandler = useAnimatedGestureHandler<PanGestureHandlerGestureEvent, { startX: number; startY: number; }>({
+  const gestureHandler = useAnimatedGestureHandler<
+    PanGestureHandlerGestureEvent,
+    { startX: number; startY: number }
+  >({
     onStart: (_, ctx) => {
       if (isTop) {
         ctx.startX = translateX.value;
@@ -107,7 +109,7 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
         event.translationX,
         [-screenWidth / 2, screenWidth / 2],
         [-10, 10],
-        Extrapolate.CLAMP
+        Extrapolate.CLAMP,
       );
     },
     onEnd: (event) => {
@@ -116,13 +118,21 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
       const shouldSwipeRight = event.translationX > SWIPE_THRESHOLD;
 
       if (shouldSwipeLeft) {
-        translateX.value = withSpring(-screenWidth * 1.5, { damping: 50 }, () => {
-          runOnJS(onSwipeLeft)(recipe);
-        });
+        translateX.value = withSpring(
+          -screenWidth * 1.5,
+          { damping: 50 },
+          () => {
+            runOnJS(onSwipeLeft)(recipe);
+          },
+        );
       } else if (shouldSwipeRight) {
-        translateX.value = withSpring(screenWidth * 1.5, { damping: 50 }, () => {
-          runOnJS(onSwipeRight)(recipe);
-        });
+        translateX.value = withSpring(
+          screenWidth * 1.5,
+          { damping: 50 },
+          () => {
+            runOnJS(onSwipeRight)(recipe);
+          },
+        );
       } else {
         translateX.value = withSpring(0);
         translateY.value = withSpring(0);
@@ -133,12 +143,17 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
 
   const cardStyle = useAnimatedStyle(() => {
     // This logic creates the fanned, bottom-left aligned stack.
-    const scale = interpolate(index, [0, 1, 2], [0.8, 0.9, 1], Extrapolate.CLAMP);
-    
+    const scale = interpolate(
+      index,
+      [0, 1, 2],
+      [0.8, 0.9, 1],
+      Extrapolate.CLAMP,
+    );
+
     // As cards get smaller, they must be shifted down and right to keep their
     // bottom and left edges aligned with the largest (100% scale) card.
-    const correctiveTranslateY = (CARD_HEIGHT - (CARD_HEIGHT * scale)) / 2;
-    const correctiveTranslateX = (CARD_WIDTH - (CARD_WIDTH * scale)) / 2;
+    const correctiveTranslateY = (CARD_HEIGHT - CARD_HEIGHT * scale) / 2;
+    const correctiveTranslateX = (CARD_WIDTH - CARD_WIDTH * scale) / 2;
 
     // The top card also gets interactive translation from the gesture.
     const interactiveTranslateX = isTop ? translateX.value : 0;
@@ -146,7 +161,7 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
     const interactiveRotate = isTop ? rotate.value : 0;
 
     return {
-      position: 'absolute',
+      position: "absolute",
       zIndex: 100 - index,
       transform: [
         { translateX: interactiveTranslateX + correctiveTranslateX },
@@ -203,18 +218,23 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
     const newFavoriteState = !isCardFavorited;
     setIsCardFavorited(newFavoriteState);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    
+
     logger.debug("🔥 Heart button tapped:", {
       recipeTitle: recipe.title,
       recipeId: recipe.id,
       newFavoriteState,
       isPreview: (recipe as any).isPreview,
     });
-    
+
     try {
       // Call the parent's onFavorite callback (this will handle the API call)
       await onFavorite(recipe);
-      logger.debug(newFavoriteState ? "❤️ Added to favorites:" : "💔 Removed from favorites:", recipe.title);
+      logger.debug(
+        newFavoriteState
+          ? "❤️ Added to favorites:"
+          : "💔 Removed from favorites:",
+        recipe.title,
+      );
     } catch (error) {
       // If the API call fails, revert the visual state
       setIsCardFavorited(!newFavoriteState);
@@ -243,7 +263,7 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
       <Animated.View style={[styles.card, cardStyle]}>
         <TouchableOpacity
           style={styles.cardContent}
-          onPress={() => isTop ? onCardTap(recipe) : onCardSelect(recipe)}
+          onPress={() => (isTop ? onCardTap(recipe) : onCardSelect(recipe))}
           activeOpacity={1}
         >
           <View style={styles.recipeInfo}>
@@ -367,13 +387,13 @@ const styles = StyleSheet.create({
   recipeInfo: {
     flex: 1,
     padding: 20,
-    justifyContent: 'flex-start',
+    justifyContent: "flex-start",
   },
   recipeTitle: {
     fontSize: 24,
     fontWeight: "bold",
     color: "#2D1B69",
-    textAlign: 'center',
+    textAlign: "center",
     marginBottom: 10,
   },
   recipeDescription: {
@@ -499,7 +519,7 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
   },
   favoriteButton: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 20,
     right: 20,
     width: 44,

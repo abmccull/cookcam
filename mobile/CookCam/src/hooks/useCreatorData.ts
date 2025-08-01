@@ -50,12 +50,13 @@ export const useCreatorData = (isCreator: boolean): UseCreatorDataReturn => {
           total_earnings: earningsResponse.totalEarnings,
           available_balance: earningsResponse.currentBalance,
           pending_balance: earningsResponse.pendingBalance,
-          last_payout_date: earningsResponse.lastPayoutDate?.toISOString() || null,
-          next_payout_date: earningsResponse.nextPayoutDate?.toISOString() || null,
+          last_payout_date:
+            earningsResponse.lastPayoutDate?.toISOString() || null,
+          next_payout_date:
+            earningsResponse.nextPayoutDate?.toISOString() || null,
         });
         logger.debug("✅ Creator earnings loaded", earningsResponse);
       }
-
     } catch (error) {
       logger.error("❌ Failed to load creator data:", error);
       setError("Failed to load creator data. Please try again.");
@@ -83,4 +84,4 @@ export const useCreatorData = (isCreator: boolean): UseCreatorDataReturn => {
     loadCreatorData,
     handleRefresh,
   };
-}; 
+};

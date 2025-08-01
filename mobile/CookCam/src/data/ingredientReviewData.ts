@@ -1,4 +1,8 @@
-import { Ingredient, MysteryReward, SmartIncrement } from "../types/ingredientReview";
+import {
+  Ingredient,
+  MysteryReward,
+  SmartIncrement,
+} from "../types/ingredientReview";
 
 export const getEmojiForIngredient = (name: string): string => {
   const emojiMap: { [key: string]: string } = {
@@ -253,16 +257,16 @@ export const getMockIngredients = (): Ingredient[] => [
 ];
 
 export const getFallbackIngredients = (): string[] => [
-  "cheddar cheese", 
-  "butter", 
-  "cheez-it crackers", 
-  "salt", 
-  "pepper"
+  "cheddar cheese",
+  "butter",
+  "cheez-it crackers",
+  "salt",
+  "pepper",
 ];
 
 export const getSimulatedIngredients = (): string[] => [
-  "tomato", 
-  "onion", 
-  "garlic", 
-  "cheese"
-]; 
+  "tomato",
+  "onion",
+  "garlic",
+  "cheese",
+];

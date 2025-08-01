@@ -28,7 +28,6 @@ import * as SecureStore from "expo-secure-store";
 import { useAuth } from "../context/AuthContext";
 import logger from "../utils/logger";
 
-
 interface CreatorKYCScreenProps {
   navigation: NativeStackNavigationProp<RootStackParamList>;
   route: RouteProp<RootStackParamList, "CreatorKYC">;
@@ -95,10 +94,10 @@ const CreatorKYCScreen: React.FC<CreatorKYCScreenProps> = ({
 
       // Create Stripe Connect account using real API
       const result = await stripeConnectService.createConnectAccount({
-        userId: user?.id || '',
-        email: user?.email || '',
-        firstName: user?.name?.split(' ')[0] || 'Creator',
-        lastName: user?.name?.split(' ')[1] || 'User',
+        userId: user?.id || "",
+        email: user?.email || "",
+        firstName: user?.name?.split(" ")[0] || "Creator",
+        lastName: user?.name?.split(" ")[1] || "User",
         businessType: "individual",
         country: "US",
       });
@@ -118,10 +117,10 @@ const CreatorKYCScreen: React.FC<CreatorKYCScreenProps> = ({
           // Create account link manually
           const accountLink = await stripeConnectService.createAccountLink(
             result.accountId,
-            'cookcam://creator-kyc-complete',
-            'cookcam://creator-kyc-refresh'
+            "cookcam://creator-kyc-complete",
+            "cookcam://creator-kyc-refresh",
           );
-          
+
           setKycStep("onboarding");
           await openStripeOnboarding(accountLink.url);
         }

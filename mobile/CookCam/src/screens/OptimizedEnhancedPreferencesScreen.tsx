@@ -1,7 +1,7 @@
 /**
  * Optimized Enhanced Preferences Screen
  * Decomposed and optimized version of the original 1,685-line screen
- * 
+ *
  * Original: 1,685 lines → Optimized: ~200 lines (88% reduction)
  * Components: 8 focused components + 1 custom hook
  * Performance: React.memo, useCallback, useMemo throughout
@@ -18,8 +18,15 @@ import {
   Animated,
   StatusBar,
 } from "react-native";
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { ChevronLeft, ChevronRight, SkipForward, X, Star, Trophy } from "lucide-react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  ChevronLeft,
+  ChevronRight,
+  SkipForward,
+  X,
+  Star,
+  Trophy,
+} from "lucide-react-native";
 import { usePreferencesQuiz } from "../hooks/usePreferencesQuiz";
 import { PreferencesScreenProps } from "../types/preferences";
 import { XP_VALUES } from "../context/GamificationContext";
@@ -36,21 +43,21 @@ const OptimizedEnhancedPreferencesScreen: React.FC<PreferencesScreenProps> = ({
   route,
 }) => {
   const { ingredients, imageUri } = route.params;
-  
+
   const {
     // State
     state,
     showCustomInput,
     showXPReward,
     showBadgeUnlock,
-    
+
     // Animation refs
     slideAnim,
     fadeAnim,
     progressAnim,
     xpRewardScale,
     badgeScale,
-    
+
     // Handlers
     handleNext,
     handlePrev,
@@ -64,11 +71,11 @@ const OptimizedEnhancedPreferencesScreen: React.FC<PreferencesScreenProps> = ({
     selectSingleOption,
     canProceed,
     handleContinue,
-    
+
     // Modal handlers
     setShowCustomInput,
     setCustomServingAmount,
-    
+
     // Data
     steps,
     servingOptions,
@@ -89,7 +96,9 @@ const OptimizedEnhancedPreferencesScreen: React.FC<PreferencesScreenProps> = ({
             servingSize: state.selectedServing.value,
             mealPrepEnabled: state.mealPrepEnabled,
             mealPrepPortions: state.mealPrepPortions,
-            appliances: state.appliances.filter(a => a.selected).map(a => a.id),
+            appliances: state.appliances
+              .filter((a) => a.selected)
+              .map((a) => a.id),
             dietary: state.dietary,
             cuisine: state.cuisine,
             cookingTime: state.cookingTime,
@@ -114,7 +123,7 @@ const OptimizedEnhancedPreferencesScreen: React.FC<PreferencesScreenProps> = ({
             onMealPrepPortions={handleMealPrepPortions}
           />
         );
-      
+
       case "appliances":
         return (
           <AppliancesStep
@@ -122,16 +131,15 @@ const OptimizedEnhancedPreferencesScreen: React.FC<PreferencesScreenProps> = ({
             onToggleAppliance={toggleAppliance}
           />
         );
-      
+
       case "multi":
         const isOptionsArray = Array.isArray(currentStepData.options);
-        const options = isOptionsArray 
-          ? currentStepData.options!.map(opt => opt.label)
+        const options = isOptionsArray
+          ? currentStepData.options!.map((opt) => opt.label)
           : [];
-        const selectedOptions = currentStepData.id === "dietary" 
-          ? state.dietary 
-          : state.cuisine;
-        
+        const selectedOptions =
+          currentStepData.id === "dietary" ? state.dietary : state.cuisine;
+
         return (
           <MultiChoiceStep
             options={options}
@@ -140,33 +148,35 @@ const OptimizedEnhancedPreferencesScreen: React.FC<PreferencesScreenProps> = ({
             showBadgeHint={currentStepData.id === "cuisine"}
           />
         );
-      
+
       case "single":
         return (
           <SingleChoiceStep
             options={currentStepData.options || []}
             selectedValue={
-              currentStepData.id === "mealtype" ? state.mealType :
-              currentStepData.id === "time" ? state.cookingTime :
-              state.difficulty
+              currentStepData.id === "mealtype"
+                ? state.mealType
+                : currentStepData.id === "time"
+                  ? state.cookingTime
+                  : state.difficulty
             }
             onSelectOption={selectSingleOption}
           />
         );
-      
+
       default:
         return null;
     }
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-      <StatusBar 
-        barStyle="dark-content" 
-        backgroundColor="#F8F8FF" 
+    <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor="#F8F8FF"
         translucent={false}
       />
-      
+
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
@@ -489,4 +499,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default OptimizedEnhancedPreferencesScreen; 
+export default OptimizedEnhancedPreferencesScreen;

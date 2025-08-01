@@ -3,7 +3,6 @@ import { secureStorage, SECURE_KEYS } from "./secureStorage";
 import config from "../config/env";
 import logger from "../utils/logger";
 
-
 // Type alias for fetch options
 type FetchOptions = {
   method?: string;
@@ -596,7 +595,10 @@ class ApiClient {
   }
 
   // Referral system endpoint
-  async linkUserToReferral(userId: string, referralCode: string): Promise<ApiResponse<any>> {
+  async linkUserToReferral(
+    userId: string,
+    referralCode: string,
+  ): Promise<ApiResponse<any>> {
     return this.makeRequest("/users/link-referral", {
       method: "POST",
       body: JSON.stringify({ user_id: userId, referral_code: referralCode }),

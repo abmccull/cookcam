@@ -46,7 +46,7 @@ import {
   ImageIcon,
   DollarSign,
 } from "lucide-react-native";
-import * as ImagePicker from 'expo-image-picker';
+import * as ImagePicker from "expo-image-picker";
 import { useAuth } from "../context/AuthContext";
 import { useGamification } from "../context/GamificationContext";
 import {
@@ -117,16 +117,20 @@ const ProfileScreen = ({ navigation }: ProfileScreenProps) => {
           text: "Cancel",
           style: "cancel",
         },
-      ]
+      ],
     );
   };
 
   const takePhoto = async () => {
     try {
-      const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
-      
+      const permissionResult =
+        await ImagePicker.requestCameraPermissionsAsync();
+
       if (permissionResult.granted === false) {
-        Alert.alert("Permission Required", "Camera permission is required to take photos.");
+        Alert.alert(
+          "Permission Required",
+          "Camera permission is required to take photos.",
+        );
         return;
       }
 
@@ -148,10 +152,14 @@ const ProfileScreen = ({ navigation }: ProfileScreenProps) => {
 
   const pickImage = async () => {
     try {
-      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      
+      const permissionResult =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
+
       if (permissionResult.granted === false) {
-        Alert.alert("Permission Required", "Photo library permission is required to select images.");
+        Alert.alert(
+          "Permission Required",
+          "Photo library permission is required to select images.",
+        );
         return;
       }
 
@@ -174,22 +182,22 @@ const ProfileScreen = ({ navigation }: ProfileScreenProps) => {
   const uploadProfilePhoto = async (imageUri: string) => {
     try {
       setIsUploadingPhoto(true);
-      
+
       // Create form data
       const formData = new FormData();
-      formData.append('photo', {
+      formData.append("photo", {
         uri: imageUri,
-        type: 'image/jpeg',
-        name: 'profile-photo.jpg',
+        type: "image/jpeg",
+        name: "profile-photo.jpg",
       } as any);
 
       // Upload to backend
       const response = await cookCamApi.uploadProfilePhoto(formData);
-      
+
       if (response.success && response.data?.avatarUrl) {
         // Update user context with new avatar URL
         updateUser({ avatarUrl: response.data.avatarUrl });
-        
+
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         Alert.alert("Success", "Profile photo updated successfully!");
       } else {
@@ -197,7 +205,10 @@ const ProfileScreen = ({ navigation }: ProfileScreenProps) => {
       }
     } catch (error) {
       logger.error("Error uploading profile photo:", error);
-      const errorMessage = error instanceof Error ? error.message : "Failed to upload profile photo. Please try again.";
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Failed to upload profile photo. Please try again.";
       Alert.alert("Error", errorMessage);
     } finally {
       setIsUploadingPhoto(false);
@@ -348,15 +359,15 @@ const ProfileScreen = ({ navigation }: ProfileScreenProps) => {
             { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
           ]}
         >
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.avatarContainer}
             onPress={handleProfilePhotoPress}
             disabled={isUploadingPhoto}
           >
             <View style={styles.avatar}>
               {user?.avatarUrl ? (
-                <Image 
-                  source={{ uri: user.avatarUrl }} 
+                <Image
+                  source={{ uri: user.avatarUrl }}
                   style={styles.avatarImage}
                   resizeMode="cover"
                 />
@@ -407,7 +418,9 @@ const ProfileScreen = ({ navigation }: ProfileScreenProps) => {
                   <View style={styles.becomeCreatorHeader}>
                     <DollarSign size={24} color="#FF6B35" />
                     <View style={styles.becomeCreatorText}>
-                      <Text style={styles.becomeCreatorTitle}>Become a Creator</Text>
+                      <Text style={styles.becomeCreatorTitle}>
+                        Become a Creator
+                      </Text>
                       <Text style={styles.becomeCreatorSubtitle}>
                         Share recipes and earn up to 30% commission
                       </Text>
@@ -541,7 +554,10 @@ const ProfileScreen = ({ navigation }: ProfileScreenProps) => {
             style={styles.settingItem}
             onPress={() => {
               // TODO: Add Privacy screen to navigation
-              Alert.alert("Coming Soon", "Privacy settings will be available soon.");
+              Alert.alert(
+                "Coming Soon",
+                "Privacy settings will be available soon.",
+              );
             }}
           >
             <View style={styles.settingLeft}>
@@ -557,7 +573,10 @@ const ProfileScreen = ({ navigation }: ProfileScreenProps) => {
             style={styles.settingItem}
             onPress={() => {
               // TODO: Add Support screen to navigation
-              Alert.alert("Coming Soon", "Support page will be available soon.");
+              Alert.alert(
+                "Coming Soon",
+                "Support page will be available soon.",
+              );
             }}
           >
             <View style={styles.settingLeft}>

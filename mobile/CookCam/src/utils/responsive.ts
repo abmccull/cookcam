@@ -144,10 +144,10 @@ export const getResponsiveWidth = scale;
 export const getResponsiveHeight = verticalScale;
 export const getResponsiveFontSize = (size: number) => moderateScale(size);
 export const getDeviceType = () => {
-  if (isTablet()) return 'tablet';
-  if (isSmallScreen()) return 'small';
-  if (isLargeScreen()) return 'large';
-  return 'medium';
+  if (isTablet()) return "tablet";
+  if (isSmallScreen()) return "small";
+  if (isLargeScreen()) return "large";
+  return "medium";
 };
 
 export default responsive;

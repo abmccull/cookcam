@@ -1,10 +1,4 @@
-import {
-  Clock,
-  Star,
-  Users,
-  BookOpen,
-  TrendingUp,
-} from "lucide-react-native";
+import { Clock, Star, Users, BookOpen, TrendingUp } from "lucide-react-native";
 import { CreatorTip, CreatorTier, CreatorSuccessStory } from "../types/creator";
 
 export const creatorTips: CreatorTip[] = [
@@ -56,7 +50,9 @@ export const successStories: CreatorSuccessStory[] = [
   },
 ];
 
-export const getCreatorTiers = (activeSubscribers: number = 0): CreatorTier[] => [
+export const getCreatorTiers = (
+  activeSubscribers: number = 0,
+): CreatorTier[] => [
   {
     id: 1,
     title: "Sous Chef",
@@ -111,37 +107,48 @@ export const getCreatorTiers = (activeSubscribers: number = 0): CreatorTier[] =>
 
 export const getCurrentTier = (activeSubscribers: number = 0): CreatorTier => {
   const tiers = getCreatorTiers(activeSubscribers);
-  return tiers.find(tier => 
-    activeSubscribers >= tier.minSubscribers && 
-    (tier.maxSubscribers === null || activeSubscribers < tier.maxSubscribers)
-  ) || tiers[0];
+  return (
+    tiers.find(
+      (tier) =>
+        activeSubscribers >= tier.minSubscribers &&
+        (tier.maxSubscribers === null ||
+          activeSubscribers < tier.maxSubscribers),
+    ) || tiers[0]
+  );
 };
 
-export const getNextTier = (currentTierId: number, activeSubscribers: number = 0): CreatorTier | undefined => {
+export const getNextTier = (
+  currentTierId: number,
+  activeSubscribers: number = 0,
+): CreatorTier | undefined => {
   const tiers = getCreatorTiers(activeSubscribers);
-  return tiers.find(tier => tier.id === currentTierId + 1);
+  return tiers.find((tier) => tier.id === currentTierId + 1);
 };
 
 export const calculateProgressToNext = (
-  currentTier: CreatorTier, 
-  nextTier: CreatorTier | undefined, 
-  activeSubscribers: number = 0
+  currentTier: CreatorTier,
+  nextTier: CreatorTier | undefined,
+  activeSubscribers: number = 0,
 ): number => {
   if (!nextTier) return 100;
-  
+
   return Math.min(
     ((activeSubscribers - currentTier.minSubscribers) /
-      (nextTier.minSubscribers - currentTier.minSubscribers)) * 100,
-    100
+      (nextTier.minSubscribers - currentTier.minSubscribers)) *
+      100,
+    100,
   );
 };
 
 export const getCreatorShareableLink = (userId?: string): string => {
-  const creatorCode = `CHEF_${userId?.slice(-8)?.toUpperCase() || 'UNKNOWN'}`;
+  const creatorCode = `CHEF_${userId?.slice(-8)?.toUpperCase() || "UNKNOWN"}`;
   return `https://cookcam.ai/ref/${creatorCode}`;
 };
 
-export const calculateConversionRate = (total: number, active: number): string => {
+export const calculateConversionRate = (
+  total: number,
+  active: number,
+): string => {
   if (!total || total === 0) return "0";
   return ((active / total) * 100).toFixed(1);
 };
@@ -149,4 +156,4 @@ export const calculateConversionRate = (total: number, active: number): string =
 export const calculateActiveRate = (total: number, active: number): string => {
   if (!total || total === 0) return "0";
   return ((active / total) * 100).toFixed(1);
-}; 
+};
