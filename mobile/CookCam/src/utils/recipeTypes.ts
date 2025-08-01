@@ -1,3 +1,10 @@
+export interface RecipeIngredient {
+  name: string;
+  amount: string;
+  unit: string;
+  source?: 'detected' | 'pantry' | 'store';
+}
+
 export interface RecipeRating {
   id: string;
   recipeId: string;
@@ -116,7 +123,7 @@ export interface Recipe {
   };
 
   // Recipe content
-  ingredients: any[];
+  ingredients: (RecipeIngredient | string)[];
   instructions?: Array<{
     step: number;
     instruction: string;

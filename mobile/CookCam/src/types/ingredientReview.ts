@@ -15,6 +15,7 @@ export interface IngredientReviewScreenProps {
     params: {
       imageUri: string;
       isSimulator: boolean;
+      isManualInput?: boolean;
     };
   };
 }
@@ -32,6 +33,7 @@ export interface MysteryReward {
 export interface ReviewHeaderProps {
   loading: boolean;
   ingredientCount: number;
+  isManualInput?: boolean;
 }
 
 export interface StatsRowProps {

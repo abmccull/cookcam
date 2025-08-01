@@ -19,6 +19,7 @@ import {
   Zap,
   Flame,
   Camera as CameraIcon,
+  PenTool,
 } from "lucide-react-native";
 import { CameraView, CameraType, useCameraPermissions } from "expo-camera";
 import { useGamification, XP_VALUES } from "../context/GamificationContext";
@@ -258,6 +259,17 @@ const CameraScreen: React.FC<CameraScreenProps> = ({ navigation }) => {
     }
   };
 
+  const handleManualInput = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    
+    // Navigate directly to ingredient review with empty ingredients
+    navigation.navigate("IngredientReview", {
+      imageUri: null,
+      isSimulator: false,
+      isManualInput: true,
+    });
+  };
+
   const spin = rotateAnim.interpolate({
     inputRange: [0, 1],
     outputRange: ["0deg", "360deg"],
@@ -435,7 +447,7 @@ const CameraScreen: React.FC<CameraScreenProps> = ({ navigation }) => {
               </View>
             </Animated.View>
 
-            {/* Capture button */}
+            {/* Capture buttons */}
             <Animated.View style={[styles.captureSection, { opacity: fadeAnim }]}>
               <View style={styles.captureRow}>
                 <TouchableOpacity
@@ -458,6 +470,18 @@ const CameraScreen: React.FC<CameraScreenProps> = ({ navigation }) => {
                       </View>
                     </>
                   )}
+                </TouchableOpacity>
+              </View>
+              
+              {/* Manual Input Button */}
+              <View style={styles.manualInputContainer}>
+                <TouchableOpacity
+                  style={styles.manualInputButton}
+                  onPress={handleManualInput}
+                  disabled={isProcessing}
+                >
+                  <PenTool size={moderateScale(20)} color="#FF6B35" />
+                  <Text style={styles.manualInputText}>Enter Ingredients Manually</Text>
                 </TouchableOpacity>
               </View>
             </Animated.View>
@@ -860,6 +884,27 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
+  },
+  manualInputContainer: {
+    marginTop: verticalScale(20),
+    alignItems: "center",
+  },
+  manualInputButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(248, 248, 255, 0.1)",
+    borderWidth: 2,
+    borderColor: "#FF6B35",
+    borderRadius: moderateScale(25),
+    paddingHorizontal: scale(24),
+    paddingVertical: verticalScale(12),
+    gap: scale(8),
+  },
+  manualInputText: {
+    fontSize: moderateScale(14),
+    fontWeight: "600",
+    color: "#FF6B35",
   },
 });
 

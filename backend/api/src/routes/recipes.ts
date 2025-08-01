@@ -602,6 +602,17 @@ router.post('/generate-previews', authenticateUser, async (req: Request, res: Re
 
 // Generate detailed recipe (Step 2 of two-step process)
 router.post('/generate-detailed', authenticateUser, async (req: Request, res: Response) => {
+  // Set a timeout for the entire request to prevent client timeouts
+  const requestTimeout = setTimeout(() => {
+    if (!res.headersSent) {
+      logger.error('❌ Request timeout for detailed recipe generation');
+      res.status(504).json({
+        success: false,
+        error: 'Request timeout - recipe generation taking too long',
+      });
+    }
+  }, 50000); // 50 seconds server timeout (less than client's 60s)
+
   try {
     const userId = (req as any).user.id;
     const token = req.headers.authorization?.replace('Bearer ', '') || '';
@@ -748,6 +759,9 @@ router.post('/generate-detailed', authenticateUser, async (req: Request, res: Re
       recipeTitle: detailedResult.recipe.title,
     });
 
+    // Clear the timeout since we're sending response
+    clearTimeout(requestTimeout);
+
     res.status(201).json({
       success: true,
       message: 'Detailed recipe generated successfully',
@@ -759,16 +773,21 @@ router.post('/generate-detailed', authenticateUser, async (req: Request, res: Re
       xp_awarded: 50,
     });
   } catch (error: unknown) {
+    // Clear the timeout on error as well
+    clearTimeout(requestTimeout);
+    
     logger.error('❌ Detailed recipe generation failed', {
       error: error instanceof Error ? error.message : error,
       userId: (req as any).user?.id,
     });
 
-    res.status(500).json({
-      success: false,
-      error: 'Failed to generate detailed recipe',
-      details: error instanceof Error ? error.message : 'Unknown error',
-    });
+    if (!res.headersSent) {
+      res.status(500).json({
+        success: false,
+        error: 'Failed to generate detailed recipe',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
   }
 });
 

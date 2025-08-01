@@ -48,6 +48,8 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
   const [isGeneratingDetailed, setIsGeneratingDetailed] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [previousRecipeTitles, setPreviousRecipeTitles] = useState<string[]>([]);
+  const [allDismissedTitles, setAllDismissedTitles] = useState<string[]>([]);
 
   const generateRecipes = useCallback(async () => {
     setIsLoading(true);
@@ -77,16 +79,20 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
         mealPrepEnabled: preferences.mealPrepEnabled || false,
         mealPrepPortions: preferences.mealPrepPortions || null,
         mealType: preferences.mealType || "dinner",
+        // Add all previously dismissed recipe titles to avoid duplicates
+        excludeRecipes: allDismissedTitles,
       };
 
       logger.debug("🚀 Sending to backend API:", {
         detectedIngredients,
         userPreferences: apiPreferences,
+        excludingRecipes: previousRecipeTitles,
       });
 
       const response = await cookCamApi.generatePreviews({
         detectedIngredients,
         userPreferences: apiPreferences,
+        sessionId: sessionId || undefined, // Include existing session ID if we have one
       });
 
       if (response.success && response.data?.data?.previews?.length) {
@@ -111,6 +117,10 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
         
         setRecipes(formattedRecipes);
         logger.info(`✅ Found ${formattedRecipes.length} recipes.`);
+        
+        // Add new recipe titles to dismissed list for future exclusions
+        const newTitles = formattedRecipes.map(r => r.title);
+        setAllDismissedTitles(prev => [...prev, ...newTitles]);
       } else {
         throw new Error("No recipe previews were generated.");
       }
@@ -120,14 +130,21 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
     } finally {
       setIsLoading(false);
     }
-  }, [ingredients, preferences]);
+  }, [ingredients, preferences, allDismissedTitles]);
 
   useEffect(() => {
     generateRecipes();
   }, [generateRecipes]);
 
+  // Track when a recipe is swiped
+  const handleRecipeSwipe = (recipe: Recipe) => {
+    setPreviousRecipeTitles(prev => [...prev, recipe.title]);
+  };
+
   // Handle cooking a recipe
   const handleCookRecipe = async (recipe: Recipe) => {
+    // Track this recipe as swiped
+    handleRecipeSwipe(recipe);
     logger.debug("🍳 Starting cook recipe process for:", recipe.title);
     
     // Find the original preview data using the recipe's ID
@@ -326,11 +343,20 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
           <View style={styles.cardStackContainer}>
             <CardStack
               recipes={recipes}
-              onCookRecipe={handleCookRecipe}
+              onCookRecipe={(recipe) => {
+                handleRecipeSwipe(recipe);
+                handleCookRecipe(recipe);
+              }}
               onFavoriteRecipe={handleFavoriteRecipe}
               onViewRecipeDetails={handleViewRecipeDetails}
+              onSwipeLeft={handleRecipeSwipe}
               onRefreshRecipes={generateRecipes}
               isLoading={false}
+              onAllCardsComplete={() => {
+                logger.info("🔄 All recipes dismissed, auto-refreshing with exclusions");
+                logger.debug("Previous recipe titles:", previousRecipeTitles);
+                generateRecipes();
+              }}
             />
           </View>
         )}

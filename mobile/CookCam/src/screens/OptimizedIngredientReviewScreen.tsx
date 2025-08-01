@@ -25,6 +25,7 @@ import {
   StatsRow,
   IngredientCard,
   AddIngredientButton,
+  AddIngredientModal,
   MysteryBoxModal,
   ContinueButton,
 } from "../components/ingredientReview";
@@ -39,7 +40,7 @@ const OptimizedIngredientReviewScreen: React.FC<IngredientReviewScreenProps> = R
   navigation,
   route,
 }) => {
-  const { imageUri, isSimulator } = route.params;
+  const { imageUri, isSimulator, isManualInput } = route.params;
   const { addXP, unlockBadge } = useGamification();
   const { user } = useAuth();
   
@@ -51,6 +52,9 @@ const OptimizedIngredientReviewScreen: React.FC<IngredientReviewScreenProps> = R
   const [mysteryReward, setMysteryReward] = useState<MysteryReward | null>(null);
   const [showRewardModal, setShowRewardModal] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
+  
+  // Add ingredient modal state
+  const [showAddIngredientModal, setShowAddIngredientModal] = useState(false);
 
   // Animation values
   const addAnimScale = useRef(new Animated.Value(1)).current;
@@ -66,7 +70,12 @@ const OptimizedIngredientReviewScreen: React.FC<IngredientReviewScreenProps> = R
 
   // Load real ingredients from image analysis
   useEffect(() => {
-    if (imageUri && !hasAnalyzedImage) {
+    if (isManualInput) {
+      // For manual input, show the add ingredient modal immediately
+      setTimeout(() => {
+        setShowAddIngredientModal(true);
+      }, 500); // Small delay for smooth transition
+    } else if (imageUri && !hasAnalyzedImage) {
       // Ensure authentication before analysis
       if (!user) {
         logger.debug("🔐 Not authenticated, redirecting to login...");
@@ -76,7 +85,7 @@ const OptimizedIngredientReviewScreen: React.FC<IngredientReviewScreenProps> = R
         analyzeImageIngredients();
       }
     }
-  }, [imageUri, user, hasAnalyzedImage, analyzeImageIngredients, navigation]);
+  }, [imageUri, user, hasAnalyzedImage, analyzeImageIngredients, navigation, isManualInput]);
 
   const handleQuantityChange = useCallback((
     ingredientId: string,
@@ -118,82 +127,80 @@ const OptimizedIngredientReviewScreen: React.FC<IngredientReviewScreenProps> = R
   }, [setIngredients]);
 
   const handleAddIngredient = useCallback(() => {
-    Alert.prompt(
-      "Add Ingredient",
-      "What ingredient would you like to add?",
-      async (text) => {
-        if (text) {
-          try {
-            // Animate add button
-            Animated.sequence([
-              Animated.timing(addAnimScale, {
-                toValue: 1.2,
-                duration: 150,
-                useNativeDriver: true,
-              }),
-              Animated.timing(addAnimScale, {
-                toValue: 1,
-                duration: 150,
-                useNativeDriver: true,
-              }),
-            ]).start();
+    setShowAddIngredientModal(true);
+    // Haptic feedback
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  }, []);
 
-            // Haptic feedback
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  const handleAddIngredientSubmit = useCallback(async (text: string) => {
+    try {
+      // Animate add button
+      Animated.sequence([
+        Animated.timing(addAnimScale, {
+          toValue: 1.2,
+          duration: 150,
+          useNativeDriver: true,
+        }),
+        Animated.timing(addAnimScale, {
+          toValue: 1,
+          duration: 150,
+          useNativeDriver: true,
+        }),
+      ]).start();
 
-            logger.debug(`🔍 Searching for ingredient: ${text}`);
+      // Haptic feedback
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
-            // Search for the ingredient in USDA database
-            const response = await cookCamApi.searchIngredients(text, 1);
+      logger.debug(`🔍 Searching for ingredient: ${text}`);
 
-            let newIngredient: Ingredient;
+      // Search for the ingredient in USDA database
+      const response = await cookCamApi.searchIngredients(text, 1);
 
-            if (response.success && response.data && response.data.length > 0) {
-              const foundIngredient = response.data[0];
-              logger.debug("✅ Found ingredient in database:", foundIngredient);
+      let newIngredient: Ingredient;
 
-              newIngredient = {
-                id: foundIngredient.id || Date.now().toString(),
-                name: foundIngredient.name || text,
-                confidence: 1.0, // User-added = 100% confidence
-                emoji: getEmojiForIngredient(foundIngredient.name || text),
-              };
+      if (response.success && response.data && response.data.length > 0) {
+        const foundIngredient = response.data[0];
+        logger.debug("✅ Found ingredient in database:", foundIngredient);
 
-              // Award XP for finding real ingredient
-              await addXP(5, "ADD_REAL_INGREDIENT");
-            } else {
-              logger.debug("⚠️ Ingredient not found in database, adding as custom");
+        newIngredient = {
+          id: foundIngredient.id || Date.now().toString(),
+          name: foundIngredient.name || text,
+          confidence: 1.0, // User-added = 100% confidence
+          emoji: getEmojiForIngredient(foundIngredient.name || text),
+        };
 
-              newIngredient = {
-                id: Date.now().toString(),
-                name: text,
-                confidence: 1.0,
-                emoji: getEmojiForIngredient(text),
-              };
-            }
+        // Award XP for finding real ingredient
+        await addXP(5, "ADD_REAL_INGREDIENT");
+      } else {
+        logger.debug("⚠️ Ingredient not found in database, adding as custom");
 
-            setIngredients(prevIngredients => [...prevIngredients, newIngredient]);
+        newIngredient = {
+          id: Date.now().toString(),
+          name: text,
+          confidence: 1.0,
+          emoji: getEmojiForIngredient(text),
+        };
+      }
 
-            // Show confetti for 5+ ingredients
-            if (ingredients.length >= 4) {
-              setShowConfetti(true);
-              setTimeout(() => setShowConfetti(false), 2000);
-            }
-          } catch (error) {
-            logger.error("❌ Error adding ingredient:", error);
+      setIngredients(prevIngredients => [...prevIngredients, newIngredient]);
 
-            // Fallback to basic add
-            const newIngredient: Ingredient = {
-              id: Date.now().toString(),
-              name: text,
-              confidence: 1.0,
-              emoji: getEmojiForIngredient(text),
-            };
-            setIngredients(prevIngredients => [...prevIngredients, newIngredient]);
-          }
-        }
-      },
-    );
+      // Show confetti for 5+ ingredients
+      if (ingredients.length >= 4) {
+        setShowConfetti(true);
+        setTimeout(() => setShowConfetti(false), 2000);
+      }
+    } catch (error) {
+      logger.error("❌ Error adding ingredient:", error);
+
+      // Fallback to basic add
+      const newIngredient: Ingredient = {
+        id: Date.now().toString(),
+        name: text,
+        confidence: 1.0,
+        emoji: getEmojiForIngredient(text),
+      };
+      setIngredients(prevIngredients => [...prevIngredients, newIngredient]);
+    }
   }, [addAnimScale, addXP, ingredients.length, setIngredients]);
 
   const handleContinue = useCallback(() => {
@@ -251,7 +258,7 @@ const OptimizedIngredientReviewScreen: React.FC<IngredientReviewScreenProps> = R
       />
       <View style={{ flex: 1 }}>
         {/* Header with AI detection info */}
-        <ReviewHeader loading={loading} ingredientCount={ingredients.length} />
+        <ReviewHeader loading={loading} ingredientCount={ingredients.length} isManualInput={isManualInput} />
 
         {/* Stats row */}
         <StatsRow
@@ -286,8 +293,46 @@ const OptimizedIngredientReviewScreen: React.FC<IngredientReviewScreenProps> = R
             onAddIngredient={handleAddIngredient}
           />
 
+          {/* Empty state for manual input */}
+          {isManualInput && ingredients.length === 0 && (
+            <View
+              style={{
+                marginHorizontal: tokens.spacing.md,
+                marginBottom: 20,
+                backgroundColor: "rgba(255, 107, 53, 0.1)",
+                padding: tokens.spacing.lg,
+                borderRadius: tokens.borderRadius.medium,
+                alignItems: "center",
+              }}
+            >
+              <Text
+                style={[
+                  mixins.text.h4,
+                  {
+                    color: tokens.colors.brand.primary,
+                    marginBottom: tokens.spacing.xs,
+                    textAlign: "center",
+                  },
+                ]}
+              >
+                Start Adding Ingredients! 🥗
+              </Text>
+              <Text
+                style={[
+                  mixins.text.body,
+                  {
+                    color: tokens.colors.text.secondary,
+                    textAlign: "center",
+                  },
+                ]}
+              >
+                Tap the button below to add your ingredients manually
+              </Text>
+            </View>
+          )}
+
           {/* Fun tip */}
-          {ingredients.length < 3 && (
+          {ingredients.length < 3 && !isManualInput && (
             <View
               style={{
                 marginHorizontal: tokens.spacing.md,
@@ -359,6 +404,13 @@ const OptimizedIngredientReviewScreen: React.FC<IngredientReviewScreenProps> = R
         visible={showRewardModal}
         reward={mysteryReward}
         onClose={handleCloseRewardModal}
+      />
+
+      {/* Add Ingredient Modal */}
+      <AddIngredientModal
+        visible={showAddIngredientModal}
+        onClose={() => setShowAddIngredientModal(false)}
+        onAdd={handleAddIngredientSubmit}
       />
     </SafeAreaView>
   );

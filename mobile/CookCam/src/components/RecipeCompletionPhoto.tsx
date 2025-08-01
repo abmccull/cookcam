@@ -130,6 +130,10 @@ const RecipeCompletionPhoto: React.FC<RecipeCompletionPhotoProps> = ({
 
   useEffect(() => {
     checkCameraPermissions();
+    // If this component is opened from RecipeRatingModal, automatically open camera
+    if (onPhotoUploaded) {
+      handleOpenCamera();
+    }
   }, []);
 
   const checkCameraPermissions = async () => {
@@ -171,10 +175,20 @@ const RecipeCompletionPhoto: React.FC<RecipeCompletionPhotoProps> = ({
         quality: 0.7,
       });
 
-      setPhotoUri(photo.uri);
+      const tempPhotoUri = photo.uri;
+      setPhotoUri(tempPhotoUri);
       setShowCamera(false);
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      
+      // If this is from RecipeRatingModal, automatically return the photo
+      if (onPhotoUploaded) {
+        // Return photo immediately without showing upload UI
+        setTimeout(() => {
+          onPhotoUploaded(tempPhotoUri);
+          handleClose();
+        }, 100);
+      }
     } catch (error) {
       logger.error("Failed to take photo:", error);
       Alert.alert("Error", "Failed to take photo. Please try again.");
@@ -206,27 +220,33 @@ const RecipeCompletionPhoto: React.FC<RecipeCompletionPhotoProps> = ({
         await addXP(config.xp, `${photoType.toUpperCase()}_PHOTO`);
 
         setUploadedPhotoUrl(response.data?.photoUrl || photoUri);
-        setShowSocialShare(true); // Show social sharing options
-
-        Alert.alert(
-          `${config.emoji} Photo Uploaded!`,
-          `🎉 Your ${photoType} photo has been shared! +${config.xp} XP`,
-          [
-            {
-              text: "Share More!",
-              onPress: () => setShowSocialShare(true),
-            },
-            {
-              text: "Done",
-              onPress: () => {
-                onPhotoUploaded?.(response.data?.photoUrl || photoUri);
-                if (!showSocialShare) {
-                  handleClose();
-                }
+        
+        if (onPhotoUploaded) {
+          // For RecipeRatingModal, return photo immediately without alert
+          onPhotoUploaded(response.data?.photoUrl || photoUri);
+          handleClose();
+        } else {
+          setShowSocialShare(true); // Show social sharing options
+          
+          Alert.alert(
+            `${config.emoji} Photo Uploaded!`,
+            `🎉 Your ${photoType} photo has been shared! +${config.xp} XP`,
+            [
+              {
+                text: "Share More!",
+                onPress: () => setShowSocialShare(true),
               },
-            },
-          ],
-        );
+              {
+                text: "Done",
+                onPress: () => {
+                  if (!showSocialShare) {
+                    handleClose();
+                  }
+                },
+              },
+            ],
+          );
+        }
       } else {
         throw new Error("Upload failed");
       }
@@ -336,9 +356,19 @@ const RecipeCompletionPhoto: React.FC<RecipeCompletionPhotoProps> = ({
     setUploadedPhotoUrl(null);
     onClose?.();
   };
+  
+  const handleCancelCamera = () => {
+    setShowCamera(false);
+    if (!photoUri) {
+      // If no photo was taken, close the entire modal
+      handleClose();
+    }
+  };
 
   const openModal = () => {
     setIsVisible(true);
+    // Automatically open camera when modal opens
+    handleOpenCamera();
   };
 
   if (!isVisible && !showCamera && !showSocialShare) {
@@ -427,7 +457,7 @@ const RecipeCompletionPhoto: React.FC<RecipeCompletionPhotoProps> = ({
             <View style={styles.cameraControls}>
               <TouchableOpacity
                 style={styles.closeButton}
-                onPress={handleClose}
+                onPress={handleCancelCamera}
               >
                 <X size={24} color="#FFFFFF" />
               </TouchableOpacity>

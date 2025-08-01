@@ -224,7 +224,7 @@ function MainTabs() {
         component={WrappedHomeStack}
         options={{ title: 'Home' }}
       />
-      <Tab.Screen name="Camera" component={CameraScreen} />
+      <Tab.Screen name="Camera" component={CameraScreen} options={{ title: 'Scan' }} />
       <Tab.Screen name="Favorites" component={WrappedFavorites} />
       <Tab.Screen name="Leaderboard" component={WrappedLeaderboard} />
       {showCreatorTab && (

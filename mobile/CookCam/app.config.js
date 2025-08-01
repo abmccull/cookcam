@@ -68,8 +68,9 @@ export default {
         }
       ]
     ],
-    web: {
-      favicon: './assets/favicon.png'
-    }
+    platforms: [
+      'ios',
+      'android'
+    ]
   }
 }; 

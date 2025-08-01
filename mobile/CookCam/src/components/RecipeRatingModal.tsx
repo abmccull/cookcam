@@ -10,9 +10,12 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  Image,
 } from "react-native";
 import { Star, X, Camera } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
+import * as ImagePicker from "expo-image-picker";
+import RecipeCompletionPhoto from "./RecipeCompletionPhoto";
 
 interface RecipeRatingModalProps {
   visible: boolean;
@@ -53,6 +56,8 @@ const RecipeRatingModal: React.FC<RecipeRatingModalProps> = ({
   });
   const [review, setReview] = useState("");
   const [showSubRatings, setShowSubRatings] = useState(false);
+  const [showPhotoModal, setShowPhotoModal] = useState(false);
+  const [uploadedPhotos, setUploadedPhotos] = useState<string[]>([]);
 
   const triggerHaptic = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -95,6 +100,7 @@ const RecipeRatingModal: React.FC<RecipeRatingModalProps> = ({
       overallRating,
       subRatings: showSubRatings ? subRatings : {},
       review: review.trim() || undefined,
+      images: uploadedPhotos.length > 0 ? uploadedPhotos : undefined,
     };
 
     onSubmit(ratingData);
@@ -112,6 +118,7 @@ const RecipeRatingModal: React.FC<RecipeRatingModalProps> = ({
     });
     setReview("");
     setShowSubRatings(false);
+    setUploadedPhotos([]);
   };
 
   const subRatingCategories = [
@@ -208,10 +215,31 @@ const RecipeRatingModal: React.FC<RecipeRatingModalProps> = ({
             </View>
 
             {/* Add Photos Button */}
-            <TouchableOpacity style={styles.addPhotoButton}>
+            <TouchableOpacity 
+              style={styles.addPhotoButton}
+              onPress={() => setShowPhotoModal(true)}
+            >
               <Camera size={20} color="#FF6B35" />
               <Text style={styles.addPhotoText}>Add Photos</Text>
+              {uploadedPhotos.length > 0 && (
+                <Text style={styles.photoCount}>({uploadedPhotos.length})</Text>
+              )}
             </TouchableOpacity>
+
+            {/* Display uploaded photos */}
+            {uploadedPhotos.length > 0 && (
+              <View style={styles.photosContainer}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                  {uploadedPhotos.map((photo, index) => (
+                    <Image
+                      key={index}
+                      source={{ uri: photo }}
+                      style={styles.uploadedPhoto}
+                    />
+                  ))}
+                </ScrollView>
+              </View>
+            )}
           </ScrollView>
 
           {/* Submit Button */}
@@ -227,6 +255,20 @@ const RecipeRatingModal: React.FC<RecipeRatingModalProps> = ({
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
+      
+      {/* Recipe Completion Photo Modal */}
+      {showPhotoModal && (
+        <RecipeCompletionPhoto
+          recipeId={recipeId}
+          recipeName={recipeName}
+          photoType="completion"
+          onPhotoUploaded={(photoUrl) => {
+            setUploadedPhotos([...uploadedPhotos, photoUrl]);
+            setShowPhotoModal(false);
+          }}
+          onClose={() => setShowPhotoModal(false)}
+        />
+      )}
     </Modal>
   );
 };
@@ -377,6 +419,22 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     color: "#FFFFFF",
+  },
+  photoCount: {
+    fontSize: 14,
+    color: "#FF6B35",
+    fontWeight: "500",
+    marginLeft: 4,
+  },
+  photosContainer: {
+    marginHorizontal: 20,
+    marginBottom: 20,
+  },
+  uploadedPhoto: {
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+    marginRight: 8,
   },
 });
 

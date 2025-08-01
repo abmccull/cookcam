@@ -75,7 +75,7 @@ export class DetailedRecipeService {
   constructor() {
     this.openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
-      timeout: 120000, // 2 minutes timeout
+      timeout: 45000, // 45 seconds timeout
     });
   }
 
@@ -189,6 +189,14 @@ USER PREFERENCES:
 - Skill level: ${request.userPreferences.skillLevel}
 - Time available: ${request.userPreferences.timeAvailable}
 
+CRITICAL REQUIREMENTS FOR INGREDIENTS:
+- You MUST provide EXACT measurements for ALL ingredients
+- Use standard cooking measurements (cups, tablespoons, teaspoons, ounces, pounds, etc.)
+- Be specific with quantities based on the serving size (${request.userPreferences.servingSize} servings)
+- Examples of GOOD quantities: "1/2 cup", "2 tablespoons", "1 pound", "3 cloves", "1/4 teaspoon"
+- Examples of BAD quantities: "some", "a bit", "to taste" (except for salt/pepper at the end)
+- For items like garlic, onions, etc., specify the number (e.g., "2 cloves garlic", "1 medium onion")
+
 Return JSON with this EXACT structure:
 {
   "id": "detailed-recipe-1",
@@ -203,16 +211,28 @@ Return JSON with this EXACT structure:
   "dietaryTags": ["vegetarian"],
   "ingredients": [
     {
-      "name": "ingredient name",
-      "amount": "1",
+      "name": "rice",
+      "amount": "1/2",
       "unit": "cup",
       "source": "detected"
+    },
+    {
+      "name": "garlic",
+      "amount": "3",
+      "unit": "cloves",
+      "source": "detected"
+    },
+    {
+      "name": "olive oil",
+      "amount": "2",
+      "unit": "tablespoons",
+      "source": "pantry"
     }
   ],
   "instructions": [
     {
       "step": 1,
-      "instruction": "Detailed step instruction",
+      "instruction": "Heat 2 tablespoons of olive oil in a large skillet over medium heat. Add the 3 cloves of minced garlic and sauté for 30 seconds until fragrant.",
       "time": 5,
       "temperature": "medium heat",
       "tips": "Pro tip for this step",
@@ -233,12 +253,15 @@ Return JSON with this EXACT structure:
 Requirements:
 - Create detailed step-by-step instructions (6-12 steps)
 - Include timing, temperature, and technique for each step
+- In the instructions, ALWAYS reference ingredients with their EXACT quantities (e.g., "Add the 1/2 cup of rice" not just "Add rice")
+- Be specific about cooking techniques and visual cues (e.g., "cook until rice is tender and has absorbed the liquid, about 18 minutes")
 - Add helpful tips and safety notes
 - Use primarily the available ingredients, suggest pantry staples as needed
 - Mark ingredient sources: "detected", "pantry", or "store"
 - Include prep and cook times separately
 - Provide nutrition estimates
-- Match the preview recipe concept but expand with full details`;
+- Match the preview recipe concept but expand with full details
+- Ensure the recipe will produce a delicious, well-balanced dish with proper seasoning`;
   }
 
   private validateAndFormatDetailedRecipe(result: any, request: DetailedRequest): DetailedRecipe {

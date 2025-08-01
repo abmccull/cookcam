@@ -27,6 +27,7 @@ import * as Haptics from "expo-haptics";
 import logger from "../utils/logger";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../App";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 interface SavedRecipe {
   created_at: string;
@@ -68,9 +69,10 @@ interface FavoritesScreenProps {
 
 const FavoritesScreen = ({ navigation }: FavoritesScreenProps) => {
   const [selectedFilter, setSelectedFilter] = useState<
-    "all" | "recent" | "top-rated" | "collections"
+    "all" | "recent" | "top-rated" | "collections" | "completed"
   >("all");
   const [savedRecipes, setSavedRecipes] = useState<SavedRecipe[]>([]);
+  const [completedRecipes, setCompletedRecipes] = useState<SavedRecipe[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const { addXP } = useGamification();
@@ -128,9 +130,32 @@ const FavoritesScreen = ({ navigation }: FavoritesScreenProps) => {
     }
   };
 
+  // Fetch completed recipes from local storage (temporary solution)
+  const fetchCompletedRecipes = async () => {
+    if (!user) {
+      return;
+    }
+
+    try {
+      const completedRecipeIds = await AsyncStorage.getItem(`completed_recipes_${user.id}`);
+      if (completedRecipeIds) {
+        const ids = JSON.parse(completedRecipeIds);
+        // Filter saved recipes to only show completed ones
+        const completed = savedRecipes.filter(recipe => 
+          ids.includes(recipe.recipe.id)
+        );
+        setCompletedRecipes(completed);
+      }
+    } catch (error) {
+      logger.error("Error fetching completed recipes:", error);
+      setCompletedRecipes([]);
+    }
+  };
+
   const handleRefresh = async () => {
     setIsRefreshing(true);
     await fetchSavedRecipes();
+    await fetchCompletedRecipes();
     await fetchRecommendations();
     setIsRefreshing(false);
   };
@@ -233,6 +258,7 @@ const FavoritesScreen = ({ navigation }: FavoritesScreenProps) => {
   const filters = [
     { key: "all", label: "All" },
     { key: "recent", label: "Recent" },
+    { key: "completed", label: "Cooked" },
     { key: "top-rated", label: "Top Rated" },
     { key: "collections", label: "Collections" },
   ];
@@ -246,14 +272,23 @@ const FavoritesScreen = ({ navigation }: FavoritesScreenProps) => {
       
       if (currentUserId) {
         fetchSavedRecipes();
+        fetchCompletedRecipes();
         fetchRecommendations();
       } else {
         // Clear recipes when user logs out
         setSavedRecipes([]);
+        setCompletedRecipes([]);
         setIsLoading(false);
       }
     }
   }, [user?.id]); // Only depend on user ID, not the entire user object
+
+  // Update completed recipes when saved recipes change
+  useEffect(() => {
+    if (savedRecipes.length > 0) {
+      fetchCompletedRecipes();
+    }
+  }, [savedRecipes]);
 
   useEffect(() => {
     // Animate milestone progress
@@ -513,17 +548,24 @@ const FavoritesScreen = ({ navigation }: FavoritesScreenProps) => {
               />
             }
           >
-            {(savedRecipes?.length || 0) === 0 ? (
-              <View style={styles.emptyState}>
-                <Heart size={48} color="#E5E5E7" />
-                <Text style={styles.emptyStateTitle}>No saved recipes yet</Text>
-                <Text style={styles.emptyStateText}>
-                  Start saving recipes by tapping the heart icon when browsing
-                  recipes!
-                </Text>
-              </View>
-                          ) : (
-              (savedRecipes || []).map((savedRecipe, index) => (
+            {(() => {
+              const recipesToShow = selectedFilter === "completed" ? completedRecipes : savedRecipes;
+              const emptyTitle = selectedFilter === "completed" ? "No completed recipes yet" : "No saved recipes yet";
+              const emptyText = selectedFilter === "completed" 
+                ? "Complete recipes to see them here!" 
+                : "Start saving recipes by tapping the heart icon when browsing recipes!";
+              
+              if ((recipesToShow?.length || 0) === 0) {
+                return (
+                  <View style={styles.emptyState}>
+                    <Heart size={48} color="#E5E5E7" />
+                    <Text style={styles.emptyStateTitle}>{emptyTitle}</Text>
+                    <Text style={styles.emptyStateText}>{emptyText}</Text>
+                  </View>
+                );
+              }
+              
+              return (recipesToShow || []).map((savedRecipe, index) => (
                 <TouchableOpacity
                   key={savedRecipe.recipe.id}
                   style={styles.recipeCard}
@@ -606,8 +648,8 @@ const FavoritesScreen = ({ navigation }: FavoritesScreenProps) => {
                     </View>
                   </View>
                 </TouchableOpacity>
-              ))
-            )}
+              ));
+            })()}
 
             {/* Milestone Progress - moved to bottom */}
             <Animated.View

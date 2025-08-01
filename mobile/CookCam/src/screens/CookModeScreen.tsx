@@ -31,6 +31,8 @@ import * as Haptics from "expo-haptics";
 import { useGamification, XP_VALUES } from "../context/GamificationContext";
 import RecipeRatingModal from "../components/RecipeRatingModal";
 import logger from "../utils/logger";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useAuth } from "../context/AuthContext";
 
 
 interface CookingStep {
@@ -377,6 +379,7 @@ const CookModeScreen: React.FC<CookModeScreenProps> = ({
 }) => {
   const { recipe } = route.params || {};
   const { addXP, checkStreak } = useGamification();
+  const { user } = useAuth();
 
   const [completedSteps, setCompletedSteps] = useState(0);
   const [stepXPAnimations, setStepXPAnimations] = useState<number[]>([]);
@@ -544,6 +547,23 @@ const CookModeScreen: React.FC<CookModeScreenProps> = ({
     // Check and update streak
     await checkStreak();
 
+    // Save completed recipe to local storage
+    if (user && recipe?.id) {
+      try {
+        const storageKey = `completed_recipes_${user.id}`;
+        const existingCompleted = await AsyncStorage.getItem(storageKey);
+        let completedIds = existingCompleted ? JSON.parse(existingCompleted) : [];
+        
+        if (!completedIds.includes(recipe.id)) {
+          completedIds.push(recipe.id);
+          await AsyncStorage.setItem(storageKey, JSON.stringify(completedIds));
+          logger.debug("✅ Recipe marked as completed:", recipe.id);
+        }
+      } catch (error) {
+        logger.error("Error saving completed recipe:", error);
+      }
+    }
+
     // Show rating modal first
     setShowRatingModal(true);
   };
@@ -610,7 +630,10 @@ const CookModeScreen: React.FC<CookModeScreenProps> = ({
         },
         {
           text: "Finish",
-          onPress: () => navigation.navigate("Camera"),
+          onPress: () => {
+            // Navigate to home screen (Camera tab)
+            navigation.navigate('Main', { screen: 'Camera' });
+          },
           style: "cancel",
         },
       ],

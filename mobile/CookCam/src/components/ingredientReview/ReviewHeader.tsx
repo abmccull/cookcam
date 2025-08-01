@@ -4,7 +4,7 @@ import { ReviewHeaderProps } from "../../types/ingredientReview";
 import AIChefIcon from "../AIChefIcon";
 import { tokens, mixins } from "../../styles";
 
-const ReviewHeader: React.FC<ReviewHeaderProps> = React.memo(({ loading, ingredientCount }) => {
+const ReviewHeader: React.FC<ReviewHeaderProps> = React.memo(({ loading, ingredientCount, isManualInput }) => {
   return (
     <View
       style={[
@@ -30,10 +30,10 @@ const ReviewHeader: React.FC<ReviewHeaderProps> = React.memo(({ loading, ingredi
           },
         ]}
       >
-        {loading ? "Analyzing Ingredients..." : "AI Detected Ingredients"}
+        {loading ? "Analyzing Ingredients..." : isManualInput ? "Your Ingredients" : "AI Detected Ingredients"}
       </Text>
       <Text style={mixins.text.caption}>
-        {loading ? "Please wait" : `${ingredientCount} items found`}
+        {loading ? "Please wait" : isManualInput ? `${ingredientCount} ${ingredientCount === 1 ? 'item' : 'items'} added` : `${ingredientCount} items found`}
       </Text>
     </View>
   );

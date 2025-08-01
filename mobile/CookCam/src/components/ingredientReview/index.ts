@@ -4,5 +4,6 @@ export { default as ConfidenceBar } from './ConfidenceBar';
 export { default as QuantityControls } from './QuantityControls';
 export { default as IngredientCard } from './IngredientCard';
 export { default as AddIngredientButton } from './AddIngredientButton';
+export { default as AddIngredientModal } from './AddIngredientModal';
 export { default as MysteryBoxModal } from './MysteryBoxModal';
 export { default as ContinueButton } from './ContinueButton'; 

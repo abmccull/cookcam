@@ -23,9 +23,11 @@ interface CardStackProps {
   onViewRecipeDetails: (recipe: Recipe) => void;
   onRefreshRecipes: () => void;
   isLoading: boolean;
+  onAllCardsComplete?: () => void;
+  onSwipeLeft?: (recipe: Recipe) => void;
 }
 
-const CardStack: React.FC<CardStackProps> = ({ recipes, onCookRecipe, onRefreshRecipes, onFavoriteRecipe, onViewRecipeDetails, isLoading }) => {
+const CardStack: React.FC<CardStackProps> = ({ recipes, onCookRecipe, onRefreshRecipes, onFavoriteRecipe, onViewRecipeDetails, isLoading, onAllCardsComplete, onSwipeLeft }) => {
   const [cardStack, setCardStack] = useState(recipes);
 
   useEffect(() => {
@@ -36,13 +38,27 @@ const CardStack: React.FC<CardStackProps> = ({ recipes, onCookRecipe, onRefreshR
   const handleSwipe = useCallback(
     (recipe: Recipe, direction: "left" | "right") => {
       // Swipe removes the first element from the array
-      setCardStack((prev) => prev.slice(1));
+      setCardStack((prev) => {
+        const newStack = prev.slice(1);
+        
+        // If all cards have been swiped, trigger callback
+        if (newStack.length === 0 && onAllCardsComplete) {
+          setTimeout(() => {
+            onAllCardsComplete();
+          }, 500);
+        }
+        
+        return newStack;
+      });
+      
       if (direction === "right") {
         onCookRecipe(recipe);
+      } else if (direction === "left" && onSwipeLeft) {
+        onSwipeLeft(recipe);
       }
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     },
-    [onCookRecipe]
+    [onCookRecipe, onAllCardsComplete, onSwipeLeft]
   );
 
   const handleSelect = useCallback((recipe: Recipe) => {

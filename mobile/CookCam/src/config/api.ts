@@ -8,7 +8,7 @@ export const API_CONFIG = {
   baseURL: envVars.API_BASE_URL,
 
   // Timeout settings
-  timeout: 15000, // 15 seconds
+  timeout: 60000, // 60 seconds - increased for AI recipe generation
   retryAttempts: 3,
   retryDelay: 1000, // 1 second
 
