@@ -1,13 +1,19 @@
 import { generateRecipeSuggestions, generateFullRecipe, resetOpenAIClient } from '../openai';
-import OpenAI from 'openai';
 
-// Mock OpenAI
-jest.mock('openai');
-const MockedOpenAI = OpenAI as jest.MockedClass<typeof OpenAI>;
+// Mock OpenAI module completely
+const mockCreate = jest.fn();
+
+jest.mock('openai', () => {
+  return jest.fn().mockImplementation(() => ({
+    chat: {
+      completions: {
+        create: mockCreate,
+      },
+    },
+  }));
+});
 
 describe('OpenAI Service', () => {
-  let mockCreate: jest.Mock;
-
   beforeEach(() => {
     // Set up environment
     process.env.OPENAI_API_KEY = 'test-api-key';
@@ -16,20 +22,7 @@ describe('OpenAI Service', () => {
     resetOpenAIClient();
 
     // Clear all mocks
-    jest.resetAllMocks();
-
-    // Setup mock
-    mockCreate = jest.fn();
-    MockedOpenAI.mockImplementation(
-      () =>
-        ({
-          chat: {
-            completions: {
-              create: mockCreate,
-            },
-          },
-        }) as any
-    );
+    jest.clearAllMocks();
   });
 
   afterEach(() => {

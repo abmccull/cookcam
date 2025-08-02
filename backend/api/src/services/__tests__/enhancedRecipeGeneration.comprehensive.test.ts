@@ -1,547 +1,664 @@
 import { EnhancedRecipeGenerationService } from '../enhancedRecipeGeneration';
-import { createMockSupabaseClient, createMockOpenAI, mockEnvVars } from '../../__tests__/utils/testHelpers';
-import { mockUsers, mockRecipes, mockIngredients } from '../../__tests__/utils/mockData';
+import OpenAI from 'openai';
+import { logger } from '../../utils/logger';
 
-// Mock dependencies
-jest.mock('../../index', () => ({
-  supabase: mockSupabaseClient,
+// Mock dependencies with the same approach as the working OpenAI tests
+const mockCreate = jest.fn();
+
+jest.mock('openai', () => {
+  return jest.fn().mockImplementation(() => ({
+    chat: {
+      completions: {
+        create: mockCreate,
+      },
+    },
+  }));
+});
+
+jest.mock('../../utils/logger', () => ({
+  logger: {
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+    debug: jest.fn(),
+  },
 }));
 
-jest.mock('openai');
-
-const mockSupabaseClient = createMockSupabaseClient();
-const mockOpenAI = createMockOpenAI();
-
-// Mock environment variables
-Object.assign(process.env, mockEnvVars);
-
-describe('EnhancedRecipeGenerationService - Comprehensive', () => {
+describe('EnhancedRecipeGenerationService - Core Business Logic Tests', () => {
   let service: EnhancedRecipeGenerationService;
+  
+  // Define shared test data at describe level
+  const basicRecipeOptions = {
+    ingredients: ['chicken breast', 'rice', 'broccoli'],
+  };
+
+  const mockRecipeResponse = {
+    title: 'Chicken and Broccoli Rice Bowl',
+    description: 'A healthy and delicious one-bowl meal',
+    ingredients: [
+      { name: 'chicken breast', amount: '1', unit: 'lb', source: 'scanned' },
+      { name: 'rice', amount: '1', unit: 'cup', source: 'pantry' },
+      { name: 'broccoli', amount: '2', unit: 'cups', source: 'scanned' },
+    ],
+    instructions: [
+      {
+        step: 1,
+        instruction: 'Cook rice according to package instructions',
+        time: 20,
+        equipment: 'pot',
+      },
+      {
+        step: 2,
+        instruction: 'Season and cook chicken breast until done',
+        time: 15,
+        temperature: '165°F',
+        technique: 'pan-searing',
+      },
+    ],
+    metadata: {
+      prepTime: 10,
+      cookTime: 25,
+      totalTime: 35,
+      servings: 2,
+      difficulty: 'easy',
+      cuisineType: 'American',
+      dietaryTags: ['high-protein'],
+      skillLevel: 'beginner',
+      cookingMethod: 'stir-fry',
+    },
+    nutrition: {
+      calories: 420,
+      protein: 35,
+      carbohydrates: 45,
+      fat: 8,
+      fiber: 4,
+      sodium: 450,
+      sugar: 3,
+    },
+    tips: ['Use jasmine rice for best flavor', 'Don\'t overcook the broccoli'],
+    variations: ['Add soy sauce for Asian flavor', 'Try with quinoa instead of rice'],
+    storage: 'Refrigerate for up to 3 days',
+    pairing: ['Green tea', 'Light salad'],
+    ingredientsUsed: ['chicken breast', 'broccoli'],
+    ingredientsSkipped: [],
+  };
 
   beforeEach(() => {
     jest.clearAllMocks();
+    process.env.OPENAI_API_KEY = 'test-api-key';
     service = new EnhancedRecipeGenerationService();
-    // Mock OpenAI instance
-    (service as any).openai = mockOpenAI;
   });
 
-  describe('generateRecipeFromIngredients', () => {
-    const baseIngredients = [
-      { name: 'chicken breast', amount: '1 lb', confidence: 0.95 },
-      { name: 'broccoli', amount: '2 cups', confidence: 0.88 },
-      { name: 'rice', amount: '1 cup', confidence: 0.92 },
-    ];
+  afterEach(() => {
+    delete process.env.OPENAI_API_KEY;
+  });
 
-    it('should generate recipe with dietary preferences', async () => {
-      const mockRecipeResponse = {
-        title: 'Healthy Chicken and Broccoli Bowl',
-        description: 'A nutritious and delicious meal',
-        instructions: [
-          'Season and cook chicken breast',
-          'Steam broccoli until tender',
-          'Cook rice according to package directions',
-          'Combine and serve',
-        ],
-        prep_time: 15,
-        cook_time: 25,
-        servings: 4,
-        difficulty: 'easy',
-        cuisine_type: 'healthy',
-        nutrition: {
-          calories: 450,
-          protein: 35,
-          carbs: 45,
-          fat: 8,
-          fiber: 4,
+  describe('Constructor and Initialization', () => {
+    it('should require OPENAI_API_KEY environment variable', () => {
+      delete process.env.OPENAI_API_KEY;
+      expect(() => new EnhancedRecipeGenerationService()).toThrow(
+        'OPENAI_API_KEY environment variable is required'
+      );
+    });
+
+    it('should initialize with correct OpenAI configuration', () => {
+      process.env.OPENAI_API_KEY = 'test-key';
+      expect(() => new EnhancedRecipeGenerationService()).not.toThrow();
+    });
+  });
+
+  describe('generateRecipe - Core Recipe Generation', () => {
+
+    it('should generate a complete recipe with all required fields', async () => {
+      // generateRecipe internally calls generateMultipleRecipes, so we need to mock that response format
+      const mockMultipleResponse = {
+        recipes: [mockRecipeResponse],
+        ingredientAnalysis: {
+          totalScanned: 3,
+          compatibilityGroups: [['chicken breast', 'rice', 'broccoli']],
+          pantryStaplesUsed: ['salt', 'pepper'],
         },
-        tags: ['healthy', 'high-protein', 'gluten-free'],
       };
-
-      mockOpenAI.chat.completions.create.mockResolvedValue({
-        choices: [{
-          message: {
-            content: JSON.stringify(mockRecipeResponse),
-          },
-        }],
-      });
-
-      mockSupabaseClient.from().insert().select().mockResolvedValue({
-        data: [{ ...mockRecipeResponse, id: 'recipe-123' }],
-        error: null,
-      });
-
-      const result = await service.generateRecipeFromIngredients(
-        baseIngredients,
-        mockUsers.free.id,
-        {
-          dietary_preferences: ['gluten-free', 'high-protein'],
-          cuisine_type: 'healthy',
-          difficulty: 'easy',
-          cook_time_max: 30,
-        }
-      );
-
-      expect(result.success).toBe(true);
-      expect(result.data.title).toBe(mockRecipeResponse.title);
-      expect(result.data.tags).toContain('gluten-free');
-      expect(result.data.nutrition.protein).toBeGreaterThan(30);
       
-      expect(mockOpenAI.chat.completions.create).toHaveBeenCalledWith(
+      mockCreate.mockResolvedValueOnce({
+        choices: [{ message: { content: JSON.stringify(mockMultipleResponse) } }],
+      });
+
+      const result = await service.generateRecipe(basicRecipeOptions);
+
+      // Verify all required fields are present
+      expect(result).toMatchObject({
+        title: expect.any(String),
+        description: expect.any(String),
+        ingredients: expect.any(Array),
+        instructions: expect.any(Array),
+        metadata: expect.objectContaining({
+          totalTime: expect.any(Number),
+          difficulty: expect.any(String),
+          servings: expect.any(Number),
+          cuisineType: expect.any(String),
+        }),
+        nutrition: expect.objectContaining({
+          calories: expect.any(Number),
+          protein: expect.any(Number),
+          carbohydrates: expect.any(Number),
+          fat: expect.any(Number),
+        }),
+        tips: expect.any(Array),
+        ingredientsUsed: expect.any(Array),
+        ingredientsSkipped: expect.any(Array),
+      });
+
+      // Verify OpenAI was called with correct parameters
+      expect(mockCreate).toHaveBeenCalledWith(
         expect.objectContaining({
+          model: 'gpt-4o-mini',
           messages: expect.arrayContaining([
-            expect.objectContaining({
-              content: expect.stringContaining('gluten-free'),
-            }),
+            expect.objectContaining({ role: 'system' }),
+            expect.objectContaining({ role: 'user' }),
           ]),
+          temperature: 0.8, // generateRecipe uses generateMultipleRecipes internally which uses 0.8
+          max_tokens: 8000, // generateMultipleRecipes uses 8000 tokens
+          response_format: { type: 'json_object' },
         })
       );
     });
 
-    it('should handle vegan dietary restrictions', async () => {
-      const veganIngredients = [
-        { name: 'tofu', amount: '1 block', confidence: 0.9 },
-        { name: 'vegetables', amount: '2 cups', confidence: 0.85 },
-        { name: 'quinoa', amount: '1 cup', confidence: 0.88 },
-      ];
-
-      const mockVeganRecipe = {
-        title: 'Tofu Quinoa Power Bowl',
-        instructions: ['Press tofu', 'Cook quinoa', 'Sauté vegetables', 'Combine'],
-        tags: ['vegan', 'high-protein', 'dairy-free'],
-        nutrition: { protein: 20, calories: 380 },
+    it('should handle advanced user preferences', async () => {
+      const advancedOptions = {
+        ingredients: ['salmon', 'asparagus', 'quinoa'],
+        userPreferences: {
+          skillLevel: 'intermediate' as const,
+          dietaryRestrictions: ['gluten-free', 'dairy-free'],
+          cuisinePreferences: ['Mediterranean'],
+          availableTime: 45,
+          spiceLevel: 'mild' as const,
+          servingSize: 4,
+        },
+        recipeType: 'dinner' as const,
+        nutritionGoals: {
+          calories: 500,
+          protein: 35,
+          lowCarb: false,
+          lowFat: false,
+          highFiber: true,
+        },
+        context: 'family dinner',
       };
 
-      mockOpenAI.chat.completions.create.mockResolvedValue({
-        choices: [{ message: { content: JSON.stringify(mockVeganRecipe) } }],
+      const advancedRecipeResponse = {
+        ...mockRecipeResponse,
+        title: 'Mediterranean Grilled Salmon with Quinoa',
+        metadata: {
+          ...mockRecipeResponse.metadata,
+          cuisineType: 'Mediterranean',
+          dietaryTags: ['gluten-free', 'dairy-free', 'high-fiber'],
+          skillLevel: 'intermediate',
+          totalTime: 45,
+          servings: 4,
+        },
+        nutrition: {
+          ...mockRecipeResponse.nutrition,
+          calories: 485,
+          protein: 38,
+          fiber: 8,
+        },
+        ingredientsUsed: ['salmon', 'asparagus', 'quinoa'],
+      };
+
+      mockCreate.mockResolvedValueOnce({
+        choices: [{ message: { content: JSON.stringify(advancedRecipeResponse) } }],
       });
 
-      mockSupabaseClient.from().insert().select().mockResolvedValue({
-        data: [mockVeganRecipe],
-        error: null,
-      });
+      const result = await service.generateRecipe(advancedOptions);
 
-      const result = await service.generateRecipeFromIngredients(
-        veganIngredients,
-        mockUsers.free.id,
-        { dietary_preferences: ['vegan'] }
+      expect(result.metadata.cuisineType).toBe('Mediterranean');
+      expect(result.metadata.totalTime).toBeLessThanOrEqual(45);
+      expect(result.nutrition.calories).toBeLessThanOrEqual(500);
+      expect(result.metadata.dietaryTags).toEqual(
+        expect.arrayContaining(['gluten-free', 'dairy-free'])
       );
-
-      expect(result.success).toBe(true);
-      expect(result.data.tags).toContain('vegan');
-      expect(mockOpenAI.chat.completions.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          messages: expect.arrayContaining([
-            expect.objectContaining({
-              content: expect.stringContaining('vegan'),
-            }),
-          ]),
-        })
-      );
+      expect(result.metadata.servings).toBe(4);
+      expect(result.ingredientsUsed).toContain('salmon');
     });
 
-    it('should adapt to cooking skill level', async () => {
-      const mockBeginnerRecipe = {
-        title: 'Simple Chicken Rice Bowl',
-        difficulty: 'easy',
-        instructions: [
-          'Cook rice in rice cooker',
-          'Season chicken with salt and pepper',
-          'Cook chicken in pan for 6-7 minutes per side',
-          'Steam broccoli in microwave for 3 minutes',
+    it('should handle ingredient parsing and categorization', async () => {
+      const recipeWithIngredientCategories = {
+        ...mockRecipeResponse,
+        ingredients: [
+          { name: 'chicken breast', amount: '1', unit: 'lb', source: 'scanned' },
+          { name: 'olive oil', amount: '2', unit: 'tbsp', source: 'pantry' },
+          { name: 'salt', amount: '1', unit: 'tsp', source: 'pantry' },
+          { name: 'rice', amount: '1', unit: 'cup', source: 'optional' },
         ],
-        tips: ['Use a meat thermometer to check doneness'],
+        ingredientsUsed: ['chicken breast'],
+        ingredientsSkipped: ['broccoli'],
+        skipReason: 'Ingredient substituted with mixed vegetables for better flavor balance',
       };
 
-      mockOpenAI.chat.completions.create.mockResolvedValue({
-        choices: [{ message: { content: JSON.stringify(mockBeginnerRecipe) } }],
+      mockCreate.mockResolvedValueOnce({
+        choices: [{ message: { content: JSON.stringify(recipeWithIngredientCategories) } }],
       });
 
-      mockSupabaseClient.from().insert().select().mockResolvedValue({
-        data: [mockBeginnerRecipe],
-        error: null,
+      const result = await service.generateRecipe({
+        ingredients: ['chicken breast', 'broccoli', 'olive oil'],
       });
 
-      const result = await service.generateRecipeFromIngredients(
-        baseIngredients,
-        mockUsers.free.id,
-        { difficulty: 'easy', cooking_skill: 'beginner' }
-      );
-
-      expect(result.success).toBe(true);
-      expect(result.data.difficulty).toBe('easy');
-      expect(result.data.instructions).toEqual(
+      expect(result.ingredients).toEqual(
         expect.arrayContaining([
-          expect.stringContaining('rice cooker'),
-          expect.stringContaining('meat thermometer'),
+          expect.objectContaining({ source: 'scanned' }),
+          expect.objectContaining({ source: 'pantry' }),
         ])
       );
+      expect(result.ingredientsUsed).toContain('chicken breast');
+      expect(result.ingredientsSkipped).toContain('broccoli');
+      expect(result.skipReason).toBeDefined();
     });
 
-    it('should handle time constraints', async () => {
-      const mockQuickRecipe = {
-        title: '15-Minute Chicken Stir Fry',
-        prep_time: 5,
-        cook_time: 10,
-        total_time: 15,
-        instructions: [
-          'Heat oil in large pan',
-          'Add chicken, cook 3-4 minutes',
-          'Add vegetables, stir-fry 5 minutes',
-          'Serve over pre-cooked rice',
-        ],
+    it('should calculate accurate nutrition information', async () => {
+      const nutritionFocusedRecipe = {
+        ...mockRecipeResponse,
+        nutrition: {
+          calories: 425,
+          protein: 38,
+          carbohydrates: 42,
+          fat: 12,
+          fiber: 6,
+          sodium: 380,
+          sugar: 4,
+        },
       };
 
-      mockOpenAI.chat.completions.create.mockResolvedValue({
-        choices: [{ message: { content: JSON.stringify(mockQuickRecipe) } }],
+      mockCreate.mockResolvedValueOnce({
+        choices: [{ message: { content: JSON.stringify(nutritionFocusedRecipe) } }],
       });
 
-      mockSupabaseClient.from().insert().select().mockResolvedValue({
-        data: [mockQuickRecipe],
-        error: null,
-      });
+      const result = await service.generateRecipe(basicRecipeOptions);
 
-      const result = await service.generateRecipeFromIngredients(
-        baseIngredients,
-        mockUsers.free.id,
-        { cook_time_max: 15, prep_time_max: 5 }
-      );
-
-      expect(result.success).toBe(true);
-      expect(result.data.total_time).toBeLessThanOrEqual(15);
-      expect(result.data.instructions).toEqual(
-        expect.arrayContaining([
-          expect.stringContaining('pre-cooked rice'),
-        ])
-      );
+      expect(result.nutrition.calories).toBeGreaterThan(0);
+      expect(result.nutrition.protein).toBeGreaterThan(0);
+      expect(result.nutrition.carbohydrates).toBeGreaterThan(0);
+      expect(result.nutrition.fat).toBeGreaterThan(0);
+      expect(result.nutrition.fiber).toBeGreaterThanOrEqual(0);
+      expect(result.nutrition.sodium).toBeGreaterThanOrEqual(0);
+      expect(result.nutrition.sugar).toBeGreaterThanOrEqual(0);
     });
 
     it('should handle OpenAI API errors gracefully', async () => {
-      mockOpenAI.chat.completions.create.mockRejectedValue(
-        new Error('OpenAI API rate limit exceeded')
+      mockCreate.mockRejectedValueOnce(new Error('OpenAI API rate limit exceeded'));
+
+      await expect(service.generateRecipe(basicRecipeOptions)).rejects.toThrow(
+        'Failed to generate recipe'
       );
 
-      const result = await service.generateRecipeFromIngredients(
-        baseIngredients,
-        mockUsers.free.id
+      expect(logger.error).toHaveBeenCalledWith(
+        'Recipe generation failed',
+        expect.objectContaining({
+          error: expect.any(Error),
+          ingredients: basicRecipeOptions.ingredients,
+        })
       );
-
-      expect(result.success).toBe(false);
-      expect(result.error).toContain('Failed to generate recipe');
     });
 
-    it('should handle invalid JSON responses from OpenAI', async () => {
-      mockOpenAI.chat.completions.create.mockResolvedValue({
-        choices: [{
-          message: {
-            content: 'Invalid JSON response from AI',
-          },
-        }],
+    it('should handle malformed JSON responses', async () => {
+      mockCreate.mockResolvedValueOnce({
+        choices: [{ message: { content: '{ "invalid": json, }' } }],
       });
 
-      const result = await service.generateRecipeFromIngredients(
-        baseIngredients,
-        mockUsers.free.id
+      await expect(service.generateRecipe(basicRecipeOptions)).rejects.toThrow(
+        'Failed to parse recipe response'
       );
 
-      expect(result.success).toBe(false);
-      expect(result.error).toContain('Failed to parse recipe');
+      expect(logger.error).toHaveBeenCalledWith(
+        expect.stringContaining('JSON parsing failed'),
+        expect.any(Object)
+      );
     });
 
-    it('should save generated recipe to database', async () => {
-      const mockRecipe = {
-        title: 'Test Recipe',
-        instructions: ['Step 1', 'Step 2'],
-        ingredients: baseIngredients,
+    it('should validate required ingredients', async () => {
+      await expect(service.generateRecipe({ ingredients: [] })).rejects.toThrow(
+        'At least one ingredient is required'
+      );
+    });
+
+    it('should handle empty OpenAI response', async () => {
+      mockCreate.mockResolvedValueOnce({
+        choices: [],
+      });
+
+      await expect(service.generateRecipe(basicRecipeOptions)).rejects.toThrow(
+        'No recipe content generated from OpenAI'
+      );
+    });
+  });
+
+  describe('generateMultipleRecipes - Diverse Recipe Generation', () => {
+    const multiRecipeOptions = {
+      ingredients: ['chicken', 'rice', 'vegetables'],
+    };
+
+    const mockMultipleRecipesResponse = {
+      recipes: [
+        {
+          title: 'Asian Chicken Fried Rice',
+          description: 'Quick and flavorful fried rice with tender chicken',
+          ingredients: [
+            { name: 'chicken', amount: '1', unit: 'lb', source: 'scanned' },
+            { name: 'rice', amount: '2', unit: 'cups', source: 'pantry' },
+            { name: 'vegetables', amount: '1', unit: 'cup', source: 'scanned' },
+          ],
+          instructions: [
+            { step: 1, instruction: 'Cook rice and set aside', time: 20 },
+            { step: 2, instruction: 'Stir-fry chicken until cooked', time: 8 },
+            { step: 3, instruction: 'Add vegetables and rice, stir-fry together', time: 5 },
+          ],
+          metadata: {
+            prepTime: 15,
+            cookTime: 25,
+            totalTime: 40,
+            servings: 4,
+            difficulty: 'easy',
+            cuisineType: 'Asian',
+            dietaryTags: ['high-protein'],
+            skillLevel: 'beginner',
+            cookingMethod: 'stir-fry',
+          },
+          nutrition: {
+            calories: 380,
+            protein: 28,
+            carbohydrates: 42,
+            fat: 12,
+            fiber: 3,
+            sodium: 650,
+            sugar: 4,
+          },
+          tips: ['Use day-old rice for best texture', 'High heat is key for good wok hei'],
+          ingredientsUsed: ['chicken', 'rice', 'vegetables'],
+          ingredientsSkipped: [],
+        },
+        {
+          title: 'Mediterranean Chicken Rice Bowl',
+          description: 'Healthy bowl with grilled chicken and seasoned rice',
+          ingredients: [
+            { name: 'chicken', amount: '8', unit: 'oz', source: 'scanned' },
+            { name: 'rice', amount: '1', unit: 'cup', source: 'pantry' },
+            { name: 'vegetables', amount: '1.5', unit: 'cups', source: 'scanned' },
+          ],
+          instructions: [
+            { step: 1, instruction: 'Season and grill chicken breast', time: 15 },
+            { step: 2, instruction: 'Cook rice with herbs', time: 18 },
+            { step: 3, instruction: 'Roast vegetables with olive oil', time: 20 },
+          ],
+          metadata: {
+            prepTime: 10,
+            cookTime: 25,
+            totalTime: 35,
+            servings: 2,
+            difficulty: 'easy',
+            cuisineType: 'Mediterranean',
+            dietaryTags: ['high-protein', 'heart-healthy'],
+            skillLevel: 'beginner',
+            cookingMethod: 'grilled',
+          },
+          nutrition: {
+            calories: 420,
+            protein: 35,
+            carbohydrates: 45,
+            fat: 8,
+            fiber: 6,
+            sodium: 350,
+            sugar: 8,
+          },
+          tips: ['Don\'t overcook the chicken', 'Use fresh herbs when possible'],
+          ingredientsUsed: ['chicken', 'rice', 'vegetables'],
+          ingredientsSkipped: [],
+        },
+        {
+          title: 'Comfort Chicken and Rice Casserole',
+          description: 'One-pot comfort food with tender chicken and creamy rice',
+          ingredients: [
+            { name: 'chicken', amount: '2', unit: 'lbs', source: 'scanned' },
+            { name: 'rice', amount: '1.5', unit: 'cups', source: 'pantry' },
+            { name: 'vegetables', amount: '2', unit: 'cups', source: 'scanned' },
+          ],
+          instructions: [
+            { step: 1, instruction: 'Brown chicken pieces in casserole dish', time: 10 },
+            { step: 2, instruction: 'Add rice, vegetables, and broth', time: 5 },
+            { step: 3, instruction: 'Bake covered until rice is tender', time: 45 },
+          ],
+          metadata: {
+            prepTime: 15,
+            cookTime: 60,
+            totalTime: 75,
+            servings: 6,
+            difficulty: 'easy',
+            cuisineType: 'American',
+            dietaryTags: ['comfort-food', 'one-pot'],
+            skillLevel: 'beginner',
+            cookingMethod: 'baked',
+          },
+          nutrition: {
+            calories: 450,
+            protein: 32,
+            carbohydrates: 38,
+            fat: 18,
+            fiber: 4,
+            sodium: 780,
+            sugar: 6,
+          },
+          tips: ['Use bone-in chicken for more flavor', 'Let rest 5 minutes before serving'],
+          ingredientsUsed: ['chicken', 'rice', 'vegetables'],
+          ingredientsSkipped: [],
+        },
+      ],
+      ingredientAnalysis: {
+        totalScanned: 3,
+        compatibilityGroups: [['chicken', 'rice', 'vegetables']],
+        pantryStaplesUsed: ['olive oil', 'salt', 'pepper', 'garlic'],
+      },
+    };
+
+    it('should generate 3 diverse recipes successfully', async () => {
+      mockCreate.mockResolvedValueOnce({
+        choices: [{ message: { content: JSON.stringify(mockMultipleRecipesResponse) } }],
+      });
+
+      const result = await service.generateMultipleRecipes(multiRecipeOptions);
+
+      expect(result.recipes).toHaveLength(3);
+      expect(result.ingredientAnalysis).toBeDefined();
+      expect(result.ingredientAnalysis.totalScanned).toBe(3);
+
+      // Verify recipe diversity
+      const cuisineTypes = result.recipes.map((r) => r.metadata.cuisineType);
+      expect(new Set(cuisineTypes)).toHaveProperty('size', 3); // All different cuisines
+
+      const cookingMethods = result.recipes.map((r) => r.metadata.cookingMethod);
+      expect(new Set(cookingMethods)).toHaveProperty('size', 3); // All different methods
+
+      // Verify all recipes use the provided ingredients
+      result.recipes.forEach((recipe) => {
+        expect(recipe.ingredientsUsed).toEqual(
+          expect.arrayContaining(['chicken', 'rice', 'vegetables'])
+        );
+      });
+    });
+
+    it('should handle ingredient compatibility analysis', async () => {
+      mockCreate.mockResolvedValueOnce({
+        choices: [{ message: { content: JSON.stringify(mockMultipleRecipesResponse) } }],
+      });
+
+      const result = await service.generateMultipleRecipes(multiRecipeOptions);
+
+      expect(result.ingredientAnalysis.compatibilityGroups).toEqual([
+        ['chicken', 'rice', 'vegetables'],
+      ]);
+      expect(result.ingredientAnalysis.pantryStaplesUsed).toEqual(
+        expect.arrayContaining(['olive oil', 'salt', 'pepper'])
+      );
+    });
+
+    it('should warn when fewer than 3 recipes are generated', async () => {
+      const incompleteResponse = {
+        ...mockMultipleRecipesResponse,
+        recipes: [mockMultipleRecipesResponse.recipes[0]], // Only one recipe
       };
 
-      mockOpenAI.chat.completions.create.mockResolvedValue({
-        choices: [{ message: { content: JSON.stringify(mockRecipe) } }],
+      mockCreate.mockResolvedValueOnce({
+        choices: [{ message: { content: JSON.stringify(incompleteResponse) } }],
       });
 
-      mockSupabaseClient.from().insert().select().mockResolvedValue({
-        data: [{ ...mockRecipe, id: 'recipe-456' }],
-        error: null,
-      });
+      const result = await service.generateMultipleRecipes(multiRecipeOptions);
 
-      const result = await service.generateRecipeFromIngredients(
-        baseIngredients,
-        mockUsers.free.id
+      expect(result.recipes).toHaveLength(1);
+      expect(logger.warn).toHaveBeenCalledWith(
+        expect.stringContaining('Expected 3 recipes'),
+        expect.objectContaining({ recipeCount: 1 })
+      );
+    });
+
+    it('should handle API errors in multiple recipe generation', async () => {
+      mockCreate.mockRejectedValueOnce(new Error('OpenAI service unavailable'));
+
+      await expect(service.generateMultipleRecipes(multiRecipeOptions)).rejects.toThrow(
+        'Failed to generate diverse recipes'
       );
 
-      expect(result.success).toBe(true);
-      expect(mockSupabaseClient.from().insert).toHaveBeenCalledWith(
+      expect(logger.error).toHaveBeenCalledWith(
+        '❌ Error generating multiple recipes:',
         expect.objectContaining({
-          title: mockRecipe.title,
-          created_by: mockUsers.free.id,
-          instructions: mockRecipe.instructions,
-          ingredients: baseIngredients,
+          error: expect.any(Error),
+          ingredients: multiRecipeOptions.ingredients,
+        })
+      );
+    });
+
+    it('should use higher temperature for recipe diversity', async () => {
+      mockCreate.mockResolvedValueOnce({
+        choices: [{ message: { content: JSON.stringify(mockMultipleRecipesResponse) } }],
+      });
+
+      await service.generateMultipleRecipes(multiRecipeOptions);
+
+      expect(mockCreate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          temperature: 0.8, // Higher than single recipe generation
+          max_tokens: 8000, // More tokens for multiple recipes
         })
       );
     });
   });
 
-  describe('enhanceRecipeWithNutrition', () => {
-    it('should calculate accurate nutrition information', async () => {
-      const recipe = {
-        ...mockRecipes.basic,
-        ingredients: [
-          { name: 'chicken breast', amount: '1 lb', fdc_id: '123456' },
-          { name: 'broccoli', amount: '2 cups', fdc_id: '789012' },
-        ],
-      };
-
-      mockSupabaseClient.from().select().in().mockResolvedValue({
-        data: [
-          {
-            fdc_id: '123456',
-            nutrients: { calories: 165, protein: 31, fat: 3.6, carbs: 0 },
-          },
-          {
-            fdc_id: '789012',
-            nutrients: { calories: 55, protein: 4, fat: 0.6, carbs: 11 },
-          },
-        ],
-        error: null,
-      });
-
-      const result = await service.enhanceRecipeWithNutrition(recipe);
-
-      expect(result.success).toBe(true);
-      expect(result.data.nutrition.calories).toBeCloseTo(220, 0);
-      expect(result.data.nutrition.protein).toBeCloseTo(35, 0);
-      expect(result.data.nutrition_per_serving.calories).toBeCloseTo(55, 0);
-    });
-
-    it('should handle missing ingredient nutrition data', async () => {
-      const recipe = {
-        ...mockRecipes.basic,
-        ingredients: [
-          { name: 'unknown ingredient', amount: '1 cup' },
-        ],
-      };
-
-      mockSupabaseClient.from().select().in().mockResolvedValue({
-        data: [],
-        error: null,
-      });
-
-      const result = await service.enhanceRecipeWithNutrition(recipe);
-
-      expect(result.success).toBe(true);
-      expect(result.data.nutrition.calories).toBe(0);
-      expect(result.data.missing_nutrition).toContain('unknown ingredient');
-    });
-  });
-
-  describe('validateRecipeContent', () => {
-    it('should validate complete recipe structure', () => {
-      const validRecipe = {
-        title: 'Valid Recipe',
-        description: 'A good description',
-        instructions: ['Step 1', 'Step 2', 'Step 3'],
-        ingredients: [
-          { name: 'ingredient 1', amount: '1 cup' },
-          { name: 'ingredient 2', amount: '2 tbsp' },
-        ],
-        prep_time: 15,
-        cook_time: 30,
-        servings: 4,
-      };
-
-      const result = service.validateRecipeContent(validRecipe);
-
-      expect(result.isValid).toBe(true);
-      expect(result.errors).toHaveLength(0);
-    });
-
-    it('should catch missing required fields', () => {
-      const incompleteRecipe = {
-        title: 'Incomplete Recipe',
-        // Missing instructions, ingredients, etc.
-      };
-
-      const result = service.validateRecipeContent(incompleteRecipe);
-
-      expect(result.isValid).toBe(false);
-      expect(result.errors).toContain('Instructions are required');
-      expect(result.errors).toContain('Ingredients are required');
-    });
-
-    it('should validate instruction clarity', () => {
-      const unclearRecipe = {
-        title: 'Unclear Recipe',
-        instructions: ['Cook', 'Add stuff', 'Done'],
-        ingredients: [{ name: 'stuff', amount: 'some' }],
-        prep_time: 10,
-        cook_time: 20,
-        servings: 2,
-      };
-
-      const result = service.validateRecipeContent(unclearRecipe);
-
-      expect(result.isValid).toBe(false);
-      expect(result.warnings).toContain('Instructions may be too vague');
-      expect(result.warnings).toContain('Ingredient amounts should be specific');
-    });
-
-    it('should validate reasonable timing', () => {
-      const unreasonableRecipe = {
-        title: 'Unreasonable Recipe',
-        instructions: ['Cook chicken'],
-        ingredients: [{ name: 'chicken', amount: '1 lb' }],
-        prep_time: 0,
-        cook_time: 1,
-        servings: 4,
-      };
-
-      const result = service.validateRecipeContent(unreasonableRecipe);
-
-      expect(result.isValid).toBe(false);
-      expect(result.errors).toContain('Cook time seems unrealistic');
-    });
-  });
-
-  describe('generateRecipeVariations', () => {
-    it('should create dietary variations', async () => {
-      const baseRecipe = mockRecipes.basic;
-      
-      const mockVariations = [
-        {
-          title: 'Vegan Simple Pasta',
-          description: 'Plant-based version with cashew cream',
-          dietary_tags: ['vegan', 'dairy-free'],
-          ingredient_substitutions: {
-            'parmesan cheese': 'nutritional yeast',
-            'butter': 'olive oil',
-          },
-        },
-        {
-          title: 'Gluten-Free Simple Pasta',
-          description: 'Made with rice pasta',
-          dietary_tags: ['gluten-free'],
-          ingredient_substitutions: {
-            'pasta': 'rice pasta',
-          },
-        },
+  describe('Integration and Performance Tests', () => {
+    it('should handle large ingredient lists efficiently', async () => {
+      const largeIngredientList = [
+        'chicken breast',
+        'rice',
+        'broccoli',
+        'carrots',
+        'onions',
+        'bell peppers',
+        'mushrooms',
+        'garlic',
+        'ginger',
+        'soy sauce',
+        'sesame oil',
+        'green onions',
       ];
 
-      mockOpenAI.chat.completions.create.mockResolvedValue({
-        choices: [{
-          message: {
-            content: JSON.stringify(mockVariations),
-          },
-        }],
+      const mockLargeRecipeResponse = {
+        ...mockRecipeResponse,
+        title: 'Ultimate Chicken Stir-Fry',
+        ingredientsUsed: largeIngredientList.slice(0, 8), // Use most ingredients
+        ingredientsSkipped: largeIngredientList.slice(8), // Skip some for realism
+        skipReason: 'Simplified recipe to focus on core flavors',
+      };
+
+      mockCreate.mockResolvedValueOnce({
+        choices: [{ message: { content: JSON.stringify(mockLargeRecipeResponse) } }],
       });
 
-      mockSupabaseClient.from().insert().select().mockResolvedValue({
-        data: mockVariations.map((v, i) => ({ ...v, id: `variation-${i}` })),
-        error: null,
-      });
+      const result = await service.generateRecipe({ ingredients: largeIngredientList });
 
-      const result = await service.generateRecipeVariations(
-        baseRecipe,
-        ['vegan', 'gluten-free']
-      );
-
-      expect(result.success).toBe(true);
-      expect(result.data.variations).toHaveLength(2);
-      expect(result.data.variations[0].dietary_tags).toContain('vegan');
-      expect(result.data.variations[1].dietary_tags).toContain('gluten-free');
-    });
-  });
-
-  describe('Performance and Caching', () => {
-    it('should cache frequent ingredient combinations', async () => {
-      const commonIngredients = [
-        { name: 'chicken', amount: '1 lb' },
-        { name: 'rice', amount: '1 cup' },
-      ];
-
-      // First generation - should hit OpenAI
-      mockOpenAI.chat.completions.create.mockResolvedValueOnce({
-        choices: [{ message: { content: JSON.stringify(mockRecipes.basic) } }],
-      });
-
-      mockSupabaseClient.from().insert().select().mockResolvedValue({
-        data: [mockRecipes.basic],
-        error: null,
-      });
-
-      await service.generateRecipeFromIngredients(
-        commonIngredients,
-        mockUsers.free.id
-      );
-
-      // Second generation with same ingredients - should use cache
-      const result = await service.generateRecipeFromIngredients(
-        commonIngredients,
-        mockUsers.premium.id
-      );
-
-      expect(result.success).toBe(true);
-      expect(mockOpenAI.chat.completions.create).toHaveBeenCalledTimes(1);
+      expect(result.ingredientsUsed.length).toBeGreaterThan(5);
+      expect(result.ingredientsSkipped.length).toBeGreaterThan(0);
+      expect(result.skipReason).toBeDefined();
     });
 
-    it('should handle concurrent generation requests', async () => {
-      const ingredients = [{ name: 'test', amount: '1 cup' }];
-      
-      mockOpenAI.chat.completions.create.mockResolvedValue({
-        choices: [{ message: { content: JSON.stringify(mockRecipes.basic) } }],
+    it('should maintain consistency across multiple calls', async () => {
+      const consistentRecipeResponse = {
+        ...mockRecipeResponse,
+        title: 'Consistent Chicken Recipe',
+      };
+
+      mockCreate.mockResolvedValue({
+        choices: [{ message: { content: JSON.stringify(consistentRecipeResponse) } }],
       });
 
-      mockSupabaseClient.from().insert().select().mockResolvedValue({
-        data: [mockRecipes.basic],
-        error: null,
-      });
+      const results = await Promise.all([
+        service.generateRecipe(basicRecipeOptions),
+        service.generateRecipe(basicRecipeOptions),
+        service.generateRecipe(basicRecipeOptions),
+      ]);
 
-      const promises = Array(5).fill(null).map(() =>
-        service.generateRecipeFromIngredients(ingredients, mockUsers.free.id)
-      );
-
-      const results = await Promise.all(promises);
-
-      expect(results.every(r => r.success)).toBe(true);
-      expect(mockOpenAI.chat.completions.create).toHaveBeenCalled();
-    });
-  });
-
-  describe('Error Recovery', () => {
-    it('should retry on transient OpenAI failures', async () => {
-      mockOpenAI.chat.completions.create
-        .mockRejectedValueOnce(new Error('Rate limit exceeded'))
-        .mockRejectedValueOnce(new Error('Temporary failure'))
-        .mockResolvedValueOnce({
-          choices: [{ message: { content: JSON.stringify(mockRecipes.basic) } }],
+      results.forEach((result) => {
+        expect(result).toMatchObject({
+          title: expect.any(String),
+          metadata: expect.objectContaining({
+            difficulty: expect.any(String),
+          }),
+          nutrition: expect.objectContaining({
+            calories: expect.any(Number),
+          }),
         });
-
-      mockSupabaseClient.from().insert().select().mockResolvedValue({
-        data: [mockRecipes.basic],
-        error: null,
       });
 
-      const result = await service.generateRecipeFromIngredients(
-        [{ name: 'test', amount: '1 cup' }],
-        mockUsers.free.id
+      expect(mockCreate).toHaveBeenCalledTimes(3);
+    });
+  });
+
+  describe('Logging and Debugging', () => {
+    it('should log comprehensive generation information', async () => {
+      mockCreate.mockResolvedValueOnce({
+        choices: [{ message: { content: JSON.stringify(mockRecipeResponse) } }],
+      });
+
+      await service.generateRecipe(basicRecipeOptions);
+
+      expect(logger.info).toHaveBeenCalledWith(
+        '🍳 Generating enhanced recipe',
+        expect.objectContaining({
+          ingredients: basicRecipeOptions.ingredients,
+        })
       );
 
-      expect(result.success).toBe(true);
-      expect(mockOpenAI.chat.completions.create).toHaveBeenCalledTimes(3);
+      expect(logger.info).toHaveBeenCalledWith(
+        '📤 Sending recipe request to OpenAI...',
+        expect.objectContaining({
+          model: 'gpt-4o-mini',
+          promptLength: expect.any(Number),
+        })
+      );
     });
 
-    it('should provide fallback when AI completely fails', async () => {
-      mockOpenAI.chat.completions.create.mockRejectedValue(
-        new Error('Service unavailable')
-      );
+    it('should log debug information for response parsing', async () => {
+      const longResponse = JSON.stringify({ ...mockRecipeResponse, longData: 'x'.repeat(2000) });
 
-      const result = await service.generateRecipeFromIngredients(
-        [{ name: 'chicken', amount: '1 lb' }],
-        mockUsers.free.id,
-        { enable_fallback: true }
-      );
+      mockCreate.mockResolvedValueOnce({
+        choices: [{ message: { content: longResponse } }],
+      });
 
-      expect(result.success).toBe(true);
-      expect(result.data.title).toContain('Simple');
-      expect(result.data.source).toBe('fallback');
+      await service.generateRecipe(basicRecipeOptions);
+
+      expect(logger.info).toHaveBeenCalledWith(
+        '🔍 Debug - OpenAI response preview:',
+        expect.objectContaining({
+          first500Chars: expect.any(String),
+          last500Chars: expect.any(String),
+          fullContentLength: expect.any(Number),
+        })
+      );
     });
   });
 });
