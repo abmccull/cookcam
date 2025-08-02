@@ -112,7 +112,7 @@ export async function generateFullRecipe(
 
     const content = response.choices[0].message.content;
     return JSON.parse(content);
-  } catch (error) {
+  } catch {
     throw new Error('Failed to generate full recipe');
   }
 }

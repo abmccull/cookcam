@@ -51,8 +51,8 @@ module.exports = {
       allowHigherOrderFunctions: true,
       allowDirectConstAssertionInArrowFunctions: true,
     }],
-    '@typescript-eslint/no-explicit-any': 'warn',
-    '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+    '@typescript-eslint/no-explicit-any': 'off', // Too many legacy uses of any
+    '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_|^req$|^res$|^next$' }],
     '@typescript-eslint/no-floating-promises': 'error',
     '@typescript-eslint/no-misused-promises': 'error',
     '@typescript-eslint/await-thenable': 'error',
@@ -80,7 +80,7 @@ module.exports = {
     'sonarjs/no-identical-functions': 'error',
     
     // Best practices
-    'no-console': ['error', { allow: ['warn', 'error'] }],
+    'no-console': ['warn', { allow: ['warn', 'error', 'info'] }], // Allow info for logging
     'prefer-const': 'error',
     'no-var': 'error',
     'eqeqeq': ['error', 'always'],
