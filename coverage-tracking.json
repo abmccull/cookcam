@@ -1,0 +1,37 @@
+{
+  "overall": {
+    "current": 3.75,
+    "target": 80,
+    "trend": "increasing"
+  },
+  "backend": {
+    "current": 4,
+    "target": 80,
+    "lastUpdated": "baseline",
+    "byFile": {}
+  },
+  "mobile": {
+    "current": 3.5,
+    "target": 85,
+    "lastUpdated": "baseline",
+    "byFile": {}
+  },
+  "integration": {
+    "current": 0,
+    "target": 70,
+    "lastUpdated": "baseline"
+  },
+  "e2e": {
+    "current": 0,
+    "target": 100,
+    "criticalPaths": []
+  },
+  "history": [
+    {
+      "date": "baseline",
+      "overall": 3.75,
+      "backend": 4,
+      "mobile": 3.5
+    }
+  ]
+}

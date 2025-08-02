@@ -1,0 +1,89 @@
+codecov:
+  require_ci_to_pass: false
+  notify:
+    wait_for_ci: false
+
+coverage:
+  precision: 2
+  round: down
+  range: "70...100"
+  
+  status:
+    project:
+      default:
+        target: 80%
+        threshold: 5%
+        base: auto
+        if_ci_failed: error
+        
+      backend:
+        target: 80%
+        threshold: 3%
+        paths:
+          - backend/api/src/**
+        flags:
+          - backend
+          
+      mobile:
+        target: 80%
+        threshold: 3%
+        paths:
+          - mobile/CookCam/src/**
+        flags:
+          - mobile
+          
+      integration:
+        target: 70%
+        threshold: 5%
+        paths:
+          - test/integration/**
+        flags:
+          - integration
+    
+    patch:
+      default:
+        target: 80%
+        threshold: 5%
+        base: auto
+
+parsers:
+  gcov:
+    branch_detection:
+      conditional: yes
+      loop: yes
+      method: no
+      macro: no
+
+comment:
+  layout: "reach,diff,flags,tree"
+  behavior: default
+  require_changes: false
+  require_base: false
+  require_head: true
+  
+flags:
+  backend:
+    paths:
+      - backend/api/src/**
+    carryforward: true
+    
+  mobile:
+    paths:
+      - mobile/CookCam/src/**
+    carryforward: true
+    
+  integration:
+    paths:
+      - test/integration/**
+    carryforward: false
+
+ignore:
+  - "**/*.test.ts"
+  - "**/*.test.tsx"
+  - "**/*.spec.ts"
+  - "**/node_modules/**"
+  - "**/dist/**"
+  - "**/coverage/**"
+  - "**/__mocks__/**"
+  - "**/setupTests.ts"
+  - "**/test-utils/**"

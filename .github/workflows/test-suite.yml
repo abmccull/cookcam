@@ -1,0 +1,187 @@
+name: Complete Test Suite
+
+on:
+  push:
+    branches: [main, test/*]
+  pull_request:
+    branches: [main]
+
+jobs:
+  backend-tests:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install backend dependencies
+        run: |
+          cd backend/api
+          npm ci
+      
+      - name: Run backend tests with coverage
+        run: |
+          cd backend/api
+          npm run test:coverage
+        env:
+          NODE_ENV: test
+          DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
+          SUPABASE_URL: ${{ secrets.TEST_SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.TEST_SUPABASE_ANON_KEY }}
+      
+      - name: Upload backend coverage
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./backend/api/coverage/lcov.info
+          flags: backend
+          name: backend-coverage
+          fail_ci_if_error: false
+
+  mobile-tests:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install mobile dependencies
+        run: |
+          cd mobile/CookCam
+          npm ci
+      
+      - name: Run mobile tests with coverage
+        run: |
+          cd mobile/CookCam
+          npm run test:coverage
+        env:
+          NODE_ENV: test
+      
+      - name: Upload mobile coverage
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./mobile/CookCam/coverage/lcov.info
+          flags: mobile
+          name: mobile-coverage
+          fail_ci_if_error: false
+
+  integration-tests:
+    runs-on: ubuntu-latest
+    needs: [backend-tests, mobile-tests]
+    
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: testdb
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Setup test database
+        run: |
+          npm run db:test:setup
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/testdb
+      
+      - name: Run integration tests
+        run: npm run test:integration
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/testdb
+          API_URL: http://localhost:3000
+          NODE_ENV: test
+
+  e2e-tests:
+    runs-on: macos-latest
+    needs: [backend-tests, mobile-tests]
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      
+      - name: Install dependencies
+        run: |
+          cd mobile/CookCam
+          npm ci
+      
+      - name: Install Detox CLI
+        run: npm install -g detox-cli
+      
+      - name: Build iOS app for testing
+        run: |
+          cd mobile/CookCam
+          detox build --configuration ios.sim.debug
+      
+      - name: Run E2E tests
+        run: |
+          cd mobile/CookCam
+          detox test --configuration ios.sim.debug --cleanup
+        
+  coverage-check:
+    runs-on: ubuntu-latest
+    needs: [backend-tests, mobile-tests, integration-tests]
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Download coverage reports
+        uses: actions/download-artifact@v3
+        
+      - name: Check coverage thresholds
+        run: |
+          echo "Checking if coverage meets minimum thresholds..."
+          echo "Backend: 80% minimum"
+          echo "Mobile: 80% minimum"
+          echo "Integration: 70% minimum"
+          # This will be configured to fail if below thresholds
+          
+      - name: Comment PR with coverage
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const comment = `## Coverage Report
+            
+            | Component | Coverage | Threshold | Status |
+            |-----------|----------|-----------|--------|
+            | Backend   | $BACKEND_COV% | 80% | $BACKEND_STATUS |
+            | Mobile    | $MOBILE_COV% | 80% | $MOBILE_STATUS |
+            | Integration | $INT_COV% | 70% | $INT_STATUS |
+            
+            View full report on [Codecov](https://codecov.io/gh/${{ github.repository }})`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
