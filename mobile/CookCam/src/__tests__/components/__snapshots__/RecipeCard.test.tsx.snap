@@ -1,0 +1,306 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`RecipeCard Rendering should render correctly with all props 1`] = `
+<TouchableOpacity
+  activeOpacity={0.9}
+  onPress={[Function]}
+  ref={null}
+  style={
+    {
+      "backgroundColor": "#FFFFFF",
+      "borderRadius": 12,
+      "marginBottom": 16,
+      "overflow": "hidden",
+    }
+  }
+>
+  <View
+    ref={null}
+    style={
+      {
+        "borderTopLeftRadius": 12,
+        "borderTopRightRadius": 12,
+        "height": 200,
+        "overflow": "hidden",
+        "position": "relative",
+      }
+    }
+  >
+    <View
+      ref={null}
+      style={
+        {
+          "alignItems": "center",
+          "backgroundColor": "#E8F5E9",
+          "flex": 1,
+          "justifyContent": "center",
+        }
+      }
+    >
+      <Flame
+        color="#FF6B35"
+        size={48}
+      />
+    </View>
+    <View
+      ref={null}
+      style={
+        {
+          "backgroundColor": "rgba(0,0,0,0.3)",
+          "left": 0,
+          "paddingBottom": 24,
+          "paddingHorizontal": 12,
+          "paddingTop": 12,
+          "position": "absolute",
+          "right": 0,
+          "top": 0,
+        }
+      }
+    >
+      <View
+        ref={null}
+        style={
+          {
+            "alignItems": "center",
+            "flexDirection": "row",
+            "gap": 8,
+          }
+        }
+      >
+        <View
+          ref={null}
+          style={
+            {
+              "borderRadius": 12,
+              "height": 24,
+              "width": 24,
+            }
+          }
+        >
+          <Text
+            ref={null}
+            style={
+              {
+                "color": "#FFFFFF",
+                "fontSize": 14,
+                "fontWeight": "700",
+              }
+            }
+          >
+            C
+          </Text>
+        </View>
+        <Text
+          ref={null}
+          style={
+            {
+              "color": "#FFFFFF",
+              "flex": 1,
+              "fontSize": 14,
+              "fontWeight": "600",
+            }
+          }
+        >
+          Chef Mario
+        </Text>
+        <MockChefBadge
+          testID="ChefBadge-3-small"
+        >
+          ChefBadge-3-small
+        </MockChefBadge>
+      </View>
+    </View>
+    <View
+      ref={null}
+      style={
+        {
+          "bottom": 0,
+          "flexDirection": "row",
+          "gap": 8,
+          "margin": 12,
+          "position": "absolute",
+          "right": 0,
+        }
+      }
+    >
+      <View
+        ref={null}
+        style={
+          {
+            "alignItems": "center",
+            "backgroundColor": "rgba(0,0,0,0.5)",
+            "borderRadius": 8,
+            "flexDirection": "row",
+            "gap": 4,
+            "paddingHorizontal": 12,
+            "paddingVertical": 4,
+          }
+        }
+      >
+        <Clock
+          color="#FFFFFF"
+          size={14}
+        />
+        <Text
+          ref={null}
+          style={
+            {
+              "color": "#FFFFFF",
+              "fontSize": 12,
+              "fontWeight": "600",
+            }
+          }
+        >
+          30
+           min
+        </Text>
+      </View>
+      <View
+        ref={null}
+        style={
+          {
+            "backgroundColor": "#FF9800",
+            "borderRadius": 8,
+            "paddingHorizontal": 12,
+            "paddingVertical": 4,
+          }
+        }
+      >
+        <Text
+          ref={null}
+          style={
+            {
+              "color": "#FFFFFF",
+              "fontSize": 12,
+              "fontWeight": "600",
+            }
+          }
+        >
+          Medium
+        </Text>
+      </View>
+    </View>
+  </View>
+  <View
+    ref={null}
+    style={
+      {
+        "padding": 16,
+      }
+    }
+  >
+    <Text
+      numberOfLines={2}
+      ref={null}
+      style={
+        {
+          "color": "#000000",
+          "fontSize": 18,
+          "fontWeight": "700",
+          "marginBottom": 12,
+        }
+      }
+    >
+      Spaghetti Carbonara
+    </Text>
+    <View
+      ref={null}
+      style={
+        {
+          "borderTopColor": "#E0E0E0",
+          "borderTopWidth": 1,
+          "flexDirection": "row",
+          "justifyContent": "space-around",
+          "marginTop": 8,
+          "paddingTop": 12,
+        }
+      }
+    >
+      <TouchableOpacity
+        onPress={[Function]}
+        ref={null}
+        style={
+          {
+            "alignItems": "center",
+            "flexDirection": "row",
+            "gap": 4,
+          }
+        }
+      >
+        <Heart
+          color="#E91E63"
+          size={20}
+        />
+        <Text
+          ref={null}
+          style={
+            {
+              "color": "#666666",
+              "fontSize": 14,
+              "fontWeight": "500",
+            }
+          }
+        >
+          125
+        </Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        onPress={[Function]}
+        ref={null}
+        style={
+          {
+            "alignItems": "center",
+            "flexDirection": "row",
+            "gap": 4,
+          }
+        }
+      >
+        <MessageCircle
+          color="#666666"
+          size={20}
+        />
+        <Text
+          ref={null}
+          style={
+            {
+              "color": "#666666",
+              "fontSize": 14,
+              "fontWeight": "500",
+            }
+          }
+        >
+          42
+        </Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        onPress={[Function]}
+        ref={null}
+        style={
+          {
+            "alignItems": "center",
+            "flexDirection": "row",
+            "gap": 4,
+          }
+        }
+      >
+        <Share2
+          color="#666666"
+          size={20}
+        />
+        <Text
+          ref={null}
+          style={
+            {
+              "color": "#666666",
+              "fontSize": 14,
+              "fontWeight": "500",
+            }
+          }
+        >
+          Share
+        </Text>
+      </TouchableOpacity>
+    </View>
+  </View>
+</TouchableOpacity>
+`;

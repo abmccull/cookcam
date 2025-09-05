@@ -33,6 +33,9 @@ app.use('/ingredients', ingredientsRouter);
 describe('Ingredients Routes', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // Mock environment variables
+    process.env.USDA_API_KEY = 'test_api_key';
+    process.env.USDA_API_BASE_URL = 'https://api.nal.usda.gov/fdc/v1';
   });
 
   describe('GET /ingredients/search', () => {
@@ -229,31 +232,25 @@ describe('Ingredients Routes', () => {
         foodNutrients: [{ nutrient: { name: 'Protein' }, amount: 20.5, unitName: 'G' }],
       };
 
-      // Mock ingredient fetch (select)
-      const mockSelectQuery = {
+      // Create a chain of mocks that will be called in sequence
+      const mockChain = {
         from: jest.fn().mockReturnThis(),
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValueOnce({
-          data: mockIngredient,
-          error: null,
-        }),
-      };
-
-      // Mock ingredient update
-      const mockUpdateQuery = {
-        from: jest.fn().mockReturnThis(),
+        single: jest.fn().mockReturnThis(),
         update: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockResolvedValueOnce({
-          data: null,
-          error: null,
-        }),
       };
 
-      // Setup mocks in sequence
-      (supabase.from as jest.Mock)
-        .mockReturnValueOnce(mockSelectQuery)
-        .mockReturnValueOnce(mockUpdateQuery);
+      // Mock all the database calls in sequence
+      mockChain.single
+        .mockResolvedValueOnce({ data: mockIngredient, error: null }) // Initial ingredient fetch
+        .mockResolvedValueOnce({ data: { ...mockIngredient, fdc_id: 12345 }, error: null }); // Final ingredient fetch
+
+      mockChain.eq
+        .mockResolvedValueOnce({ data: null, error: null }) // First update (FDC ID)
+        .mockResolvedValueOnce({ data: null, error: null }); // Second update (nutrition)
+
+      (supabase.from as jest.Mock).mockReturnValue(mockChain);
 
       // Mock USDA API calls
       mockedAxios.get

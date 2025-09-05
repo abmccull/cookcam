@@ -1,404 +1,859 @@
-// Mock environment config before any imports
-jest.mock('../../config/env', () => ({
-  __esModule: true,
-  default: () => ({
-    SUPABASE_URL: "https://test.supabase.co",
-    SUPABASE_ANON_KEY: "test-anon-key",
-    API_BASE_URL: "https://test-api.cookcam.com",
-  }),
-}));
-
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react-native';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react-native';
+import { Alert, Animated, Share } from 'react-native';
 import ProfileScreen from '../../screens/ProfileScreen';
+import * as ImagePicker from 'expo-image-picker';
+import * as Haptics from 'expo-haptics';
 
-// Mock react-native modules
-jest.mock('react-native', () => ({
-  View: 'View',
-  Text: 'Text',
-  TouchableOpacity: 'TouchableOpacity',
-  SafeAreaView: 'SafeAreaView',
-  ScrollView: 'ScrollView',
-  ActivityIndicator: 'ActivityIndicator',
-  TextInput: 'TextInput',
-  Image: 'Image',
-  Alert: {
-    alert: jest.fn(),
-  },
-  Platform: {
-    OS: 'ios',
-    select: jest.fn((config) => config.ios || config.default),
-  },
-  Dimensions: {
-    get: jest.fn(() => ({ width: 390, height: 844 })),
-  },
-  StyleSheet: {
-    create: (styles: any) => styles,
-    flatten: (style: any) => style,
-  },
-  Animated: {
-    Value: jest.fn().mockImplementation((initialValue) => ({
-      setValue: jest.fn(),
-      _value: initialValue,
-    })),
-    timing: jest.fn(() => ({
-      start: jest.fn((callback) => callback && callback()),
-    })),
-    View: 'AnimatedView',
-    createAnimatedComponent: jest.fn((component) => component),
-  },
-}));
-
-// Mock icons
-jest.mock('lucide-react-native', () => ({
-  User: 'UserIcon',
-  Settings: 'SettingsIcon',
-  Edit: 'EditIcon',
-  Camera: 'CameraIcon',
-  Trophy: 'TrophyIcon',
-  ChefHat: 'ChefHatIcon',
-  Star: 'StarIcon',
-  LogOut: 'LogOutIcon',
-  ChevronRight: 'ChevronRightIcon',
-}));
+// Global PixelRatio mock
+global.PixelRatio = {
+  roundToNearestPixel: (value) => Math.round(value),
+  get: () => 2,
+  getFontScale: () => 1,
+  getPixelSizeForLayoutSize: (size) => size * 2,
+};
 
 // Mock navigation
-jest.mock('@react-navigation/native', () => ({
-  useNavigation: () => ({
-    navigate: jest.fn(),
-    goBack: jest.fn(),
-  }),
-  useFocusEffect: jest.fn(),
-}));
+const mockNavigation = {
+  navigate: jest.fn(),
+  goBack: jest.fn(),
+  setOptions: jest.fn(),
+  addListener: jest.fn(),
+  removeListener: jest.fn(),
+  canGoBack: jest.fn(() => false),
+  dispatch: jest.fn(),
+  reset: jest.fn(),
+  isFocused: jest.fn(() => true),
+  getId: jest.fn(() => 'test-id'),
+  getParent: jest.fn(),
+  getState: jest.fn(() => ({ index: 0, routes: [] })),
+};
 
 // Mock contexts
-jest.mock('../../context/AuthContext', () => ({
-  useAuth: jest.fn(() => ({
-    user: {
-      id: 'test-user-id',
-      email: 'test@example.com',
-      name: 'Test User',
-      avatar_url: 'https://example.com/avatar.jpg',
+const mockAuthContext = {
+  user: {
+    id: 'test-user-123',
+    name: 'Test Chef Pro',
+    email: 'testchef@cookcam.com',
+    avatarUrl: 'https://example.com/avatar.jpg',
+    isCreator: false,
+  },
+  login: jest.fn(),
+  logout: jest.fn(),
+  updateUser: jest.fn(),
+  loading: false,
+  checkBiometricAuth: jest.fn(),
+};
+
+const mockGamificationContext = {
+  level: 5,
+  xp: 750,
+  streak: 12,
+  badges: [
+    {
+      id: 'first-recipe',
+      name: 'First Recipe',
+      description: 'Created your first recipe',
+      icon: '🍳',
+      unlockedAt: new Date('2023-01-15'),
     },
-    logout: jest.fn(),
-    updateUser: jest.fn(),
-  })),
+    {
+      id: 'streak-master',
+      name: 'Streak Master',
+      description: 'Maintained a 7-day streak',
+      icon: '🔥',
+      unlockedAt: new Date('2023-01-20'),
+    },
+    {
+      id: 'social-butterfly',
+      name: 'Social Butterfly',
+      description: 'Shared 10 recipes',
+      icon: '🦋',
+      unlockedAt: new Date('2023-01-25'),
+    },
+  ],
+  addXP: jest.fn(),
+  updateLevel: jest.fn(),
+  updateStreak: jest.fn(),
+  unlockBadge: jest.fn(),
+};
+
+jest.mock('../../context/AuthContext', () => ({
+  useAuth: () => mockAuthContext,
 }));
 
 jest.mock('../../context/GamificationContext', () => ({
-  useGamification: jest.fn(() => ({
-    userStats: {
-      level: 10,
-      xp: 4500,
-      nextLevelXp: 5000,
-      streakDays: 15,
-      totalRecipesCooked: 45,
-      achievements: [
-        { id: '1', name: 'First Recipe', unlocked: true },
-        { id: '2', name: 'Week Streak', unlocked: true },
-      ],
-    },
-    refreshUserStats: jest.fn(),
-  })),
+  useGamification: () => mockGamificationContext,
 }));
 
+// Mock components
+jest.mock('../../components/ChefBadge', () => ({ tier, size, showLabel }) => (
+  <div testID="chef-badge" data-tier={tier} data-size={size} data-show-label={showLabel}>
+    Chef Badge Tier {tier}
+  </div>
+));
+
+jest.mock('../../components/StreakCalendar', () => () => (
+  <div testID="streak-calendar">Streak Calendar Component</div>
+));
+
 // Mock services
+const mockCookCamApi = {
+  uploadProfilePhoto: jest.fn(),
+  deleteAccount: jest.fn(),
+};
+
 jest.mock('../../services/cookCamApi', () => ({
-  cookCamApi: {
-    updateUserProfile: jest.fn(),
-    uploadAvatar: jest.fn(),
-    getUserRecipes: jest.fn(),
-    getUserStats: jest.fn(),
+  cookCamApi: mockCookCamApi,
+}));
+
+// Mock external libraries
+jest.mock('expo-image-picker', () => ({
+  requestCameraPermissionsAsync: jest.fn(),
+  requestMediaLibraryPermissionsAsync: jest.fn(),
+  launchCameraAsync: jest.fn(),
+  launchImageLibraryAsync: jest.fn(),
+  MediaTypeOptions: {
+    Images: 'Images',
   },
 }));
 
+jest.mock('expo-haptics', () => ({
+  impactAsync: jest.fn().mockResolvedValue(undefined),
+  notificationAsync: jest.fn().mockResolvedValue(undefined),
+  ImpactFeedbackStyle: {
+    Light: 'light',
+    Medium: 'medium',
+    Heavy: 'heavy',
+  },
+  NotificationFeedbackType: {
+    Success: 'success',
+    Warning: 'warning',
+    Error: 'error',
+  },
+}));
+
+jest.mock('expo-secure-store', () => ({
+  setItemAsync: jest.fn(),
+  getItemAsync: jest.fn(),
+  deleteItemAsync: jest.fn(),
+}));
+
+// Mock responsive utilities
+jest.mock('../../utils/responsive', () => ({
+  scale: (value) => value,
+  verticalScale: (value) => value,
+  moderateScale: (value) => value,
+  responsive: {
+    spacing: {
+      s: 8,
+      m: 16,
+      l: 24,
+      xl: 32,
+    },
+    fontSize: {
+      tiny: 10,
+      small: 12,
+      regular: 14,
+      medium: 16,
+      large: 18,
+      xlarge: 20,
+      xxlarge: 24,
+      xxxlarge: 28,
+    },
+    borderRadius: {
+      small: 4,
+      medium: 8,
+      large: 12,
+    },
+  },
+  isSmallScreen: () => false,
+}));
+
+// Mock Alert
+jest.spyOn(Alert, 'alert');
+
+// Mock Share
+jest.spyOn(Share, 'share').mockResolvedValue({ action: 'sharedAction' });
+
+// Mock logger
 jest.mock('../../utils/logger', () => ({
   debug: jest.fn(),
   error: jest.fn(),
   info: jest.fn(),
+  warn: jest.fn(),
 }));
 
-describe('ProfileScreen', () => {
-  const mockNavigation = {
-    navigate: jest.fn(),
-    goBack: jest.fn(),
-  } as any;
+// Mock Animated API
+const mockAnimatedValue = {
+  setValue: jest.fn(),
+  interpolate: jest.fn(() => mockAnimatedValue),
+};
 
+jest.mock('react-native', () => {
+  const RN = jest.requireActual('react-native');
+  return {
+    ...RN,
+    Animated: {
+      ...RN.Animated,
+      Value: jest.fn(() => mockAnimatedValue),
+      timing: jest.fn(() => ({
+        start: jest.fn((callback) => callback && callback()),
+      })),
+      spring: jest.fn(() => ({
+        start: jest.fn((callback) => callback && callback()),
+      })),
+      parallel: jest.fn((animations) => ({
+        start: jest.fn((callback) => callback && callback()),
+      })),
+      View: RN.Animated.View,
+    },
+  };
+});
+
+describe('ProfileScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  describe('Rendering', () => {
-    it('should render user information', () => {
+  describe('Component Rendering', () => {
+    it('should render profile screen with all essential elements', () => {
       render(<ProfileScreen navigation={mockNavigation} />);
 
-      expect(screen.getByText('Test User')).toBeTruthy();
-      expect(screen.getByText('test@example.com')).toBeTruthy();
-    });
-
-    it('should render user avatar', () => {
-      const { UNSAFE_getByType } = render(<ProfileScreen navigation={mockNavigation} />);
-      
-      const image = UNSAFE_getByType('Image');
-      expect(image.props.source).toEqual({ uri: 'https://example.com/avatar.jpg' });
-    });
-
-    it('should render user stats', () => {
-      render(<ProfileScreen navigation={mockNavigation} />);
-
-      expect(screen.getByText(/Level 10/)).toBeTruthy();
-      expect(screen.getByText(/4,500.*XP/)).toBeTruthy();
-      expect(screen.getByText(/15.*day streak/i)).toBeTruthy();
-      expect(screen.getByText(/45.*recipes/i)).toBeTruthy();
-    });
-
-    it('should render achievements section', () => {
-      render(<ProfileScreen navigation={mockNavigation} />);
-
-      expect(screen.getByText('Achievements')).toBeTruthy();
-      expect(screen.getByText('First Recipe')).toBeTruthy();
-      expect(screen.getByText('Week Streak')).toBeTruthy();
-    });
-
-    it('should render menu options', () => {
-      render(<ProfileScreen navigation={mockNavigation} />);
-
-      expect(screen.getByText('Edit Profile')).toBeTruthy();
-      expect(screen.getByText('Settings')).toBeTruthy();
-      expect(screen.getByText('My Recipes')).toBeTruthy();
+      expect(screen.getByText('Your Profile 👤')).toBeTruthy();
+      expect(screen.getByText('Test Chef Pro')).toBeTruthy();
+      expect(screen.getByText('testchef@cookcam.com')).toBeTruthy();
+      expect(screen.getByText('Settings ⚙️')).toBeTruthy();
       expect(screen.getByText('Logout')).toBeTruthy();
     });
+
+    it('should render user stats correctly', () => {
+      render(<ProfileScreen navigation={mockNavigation} />);
+
+      expect(screen.getByText('750')).toBeTruthy(); // XP
+      expect(screen.getByText('Total XP')).toBeTruthy();
+      expect(screen.getByText('5')).toBeTruthy(); // Level
+      expect(screen.getByText('Level')).toBeTruthy();
+      expect(screen.getByText('12')).toBeTruthy(); // Streak
+      expect(screen.getByText('Day Streak')).toBeTruthy();
+    });
+
+    it('should render badges section with correct count', () => {
+      render(<ProfileScreen navigation={mockNavigation} />);
+
+      expect(screen.getByText('Achievements 🏆')).toBeTruthy();
+      expect(screen.getByText('3/12')).toBeTruthy();
+      expect(screen.getByText('First Recipe')).toBeTruthy();
+      expect(screen.getByText('Streak Master')).toBeTruthy();
+      expect(screen.getByText('Social Butterfly')).toBeTruthy();
+    });
+
+    it('should render level progress correctly', () => {
+      render(<ProfileScreen navigation={mockNavigation} />);
+
+      expect(screen.getByText('Level 5')).toBeTruthy();
+      expect(screen.getByText('350 / 400 XP')).toBeTruthy(); // Current level progress
+      expect(screen.getByText('50 XP to Level 6 🎯')).toBeTruthy();
+    });
+
+    it('should render streak calendar component', () => {
+      render(<ProfileScreen navigation={mockNavigation} />);
+
+      expect(screen.getByTestId('streak-calendar')).toBeTruthy();
+    });
   });
 
-  describe('Navigation', () => {
-    it('should navigate to settings when settings button is pressed', () => {
+  describe('User Avatar Handling', () => {
+    it('should show avatar image when user has avatarUrl', () => {
       render(<ProfileScreen navigation={mockNavigation} />);
 
-      const settingsButton = screen.getByText('Settings').parent;
-      fireEvent.press(settingsButton);
-
-      expect(mockNavigation.navigate).toHaveBeenCalledWith('Settings');
+      const avatarImage = screen.getByDisplayValue('https://example.com/avatar.jpg');
+      expect(avatarImage).toBeTruthy();
     });
 
-    it('should navigate to edit profile when edit button is pressed', () => {
-      render(<ProfileScreen navigation={mockNavigation} />);
+    it('should show user initials when no avatar image', () => {
+      const mockContextNoAvatar = {
+        ...mockAuthContext,
+        user: { ...mockAuthContext.user, avatarUrl: null },
+      };
 
-      const editButton = screen.getByText('Edit Profile').parent;
-      fireEvent.press(editButton);
+      jest.doMock('../../context/AuthContext', () => ({
+        useAuth: () => mockContextNoAvatar,
+      }));
 
-      expect(mockNavigation.navigate).toHaveBeenCalledWith('EditProfile');
+      const { unmount } = render(<ProfileScreen navigation={mockNavigation} />);
+      expect(screen.getByText('T')).toBeTruthy(); // First letter of "Test Chef Pro"
+      unmount();
     });
 
-    it('should navigate to my recipes when recipes button is pressed', () => {
+    it('should handle profile photo press with options alert', () => {
       render(<ProfileScreen navigation={mockNavigation} />);
 
-      const recipesButton = screen.getByText('My Recipes').parent;
-      fireEvent.press(recipesButton);
+      const avatarContainer = screen.getByText('Test Chef Pro').parent;
+      fireEvent.press(avatarContainer);
 
-      expect(mockNavigation.navigate).toHaveBeenCalledWith('MyRecipes');
+      expect(Alert.alert).toHaveBeenCalledWith(
+        'Update Profile Photo',
+        "Choose how you'd like to update your profile photo",
+        expect.arrayContaining([
+          expect.objectContaining({ text: 'Take Photo' }),
+          expect.objectContaining({ text: 'Choose from Library' }),
+          expect.objectContaining({ text: 'Cancel' }),
+        ])
+      );
     });
   });
 
-  describe('Logout', () => {
-    it('should show confirmation alert when logout is pressed', () => {
-      const mockAlert = require('react-native').Alert.alert;
+  describe('Image Picker Integration', () => {
+    it('should handle camera permission request and photo capture', async () => {
+      (ImagePicker.requestCameraPermissionsAsync as jest.Mock).mockResolvedValue({
+        granted: true,
+      });
+      (ImagePicker.launchCameraAsync as jest.Mock).mockResolvedValue({
+        canceled: false,
+        assets: [{ uri: 'file://test-photo.jpg' }],
+      });
+      mockCookCamApi.uploadProfilePhoto.mockResolvedValue({
+        success: true,
+        data: { avatarUrl: 'https://example.com/new-avatar.jpg' },
+      });
+
       render(<ProfileScreen navigation={mockNavigation} />);
 
-      const logoutButton = screen.getByText('Logout').parent;
-      fireEvent.press(logoutButton);
+      // Simulate taking photo through alert callback
+      const avatarContainer = screen.getByText('Test Chef Pro').parent;
+      fireEvent.press(avatarContainer);
 
-      expect(mockAlert).toHaveBeenCalledWith(
-        'Logout',
-        'Are you sure you want to logout?',
-        expect.any(Array)
+      // Get the alert call and trigger "Take Photo" option
+      const alertCall = (Alert.alert as jest.Mock).mock.calls[0];
+      const takePhotoOption = alertCall[2].find((option: any) => option.text === 'Take Photo');
+      
+      await act(async () => {
+        await takePhotoOption.onPress();
+      });
+
+      await waitFor(() => {
+        expect(ImagePicker.requestCameraPermissionsAsync).toHaveBeenCalled();
+        expect(ImagePicker.launchCameraAsync).toHaveBeenCalledWith({
+          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          allowsEditing: true,
+          aspect: [1, 1],
+          quality: 0.8,
+        });
+        expect(mockCookCamApi.uploadProfilePhoto).toHaveBeenCalled();
+        expect(mockAuthContext.updateUser).toHaveBeenCalledWith({
+          avatarUrl: 'https://example.com/new-avatar.jpg',
+        });
+      });
+    });
+
+    it('should handle image library permission and selection', async () => {
+      (ImagePicker.requestMediaLibraryPermissionsAsync as jest.Mock).mockResolvedValue({
+        granted: true,
+      });
+      (ImagePicker.launchImageLibraryAsync as jest.Mock).mockResolvedValue({
+        canceled: false,
+        assets: [{ uri: 'file://selected-photo.jpg' }],
+      });
+      mockCookCamApi.uploadProfilePhoto.mockResolvedValue({
+        success: true,
+        data: { avatarUrl: 'https://example.com/selected-avatar.jpg' },
+      });
+
+      render(<ProfileScreen navigation={mockNavigation} />);
+
+      const avatarContainer = screen.getByText('Test Chef Pro').parent;
+      fireEvent.press(avatarContainer);
+
+      const alertCall = (Alert.alert as jest.Mock).mock.calls[0];
+      const libraryOption = alertCall[2].find((option: any) => option.text === 'Choose from Library');
+      
+      await act(async () => {
+        await libraryOption.onPress();
+      });
+
+      await waitFor(() => {
+        expect(ImagePicker.requestMediaLibraryPermissionsAsync).toHaveBeenCalled();
+        expect(ImagePicker.launchImageLibraryAsync).toHaveBeenCalledWith({
+          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          allowsEditing: true,
+          aspect: [1, 1],
+          quality: 0.8,
+        });
+      });
+    });
+
+    it('should handle permission denied gracefully', async () => {
+      (ImagePicker.requestCameraPermissionsAsync as jest.Mock).mockResolvedValue({
+        granted: false,
+      });
+
+      render(<ProfileScreen navigation={mockNavigation} />);
+
+      const avatarContainer = screen.getByText('Test Chef Pro').parent;
+      fireEvent.press(avatarContainer);
+
+      const alertCall = (Alert.alert as jest.Mock).mock.calls[0];
+      const takePhotoOption = alertCall[2].find((option: any) => option.text === 'Take Photo');
+      
+      await act(async () => {
+        await takePhotoOption.onPress();
+      });
+
+      await waitFor(() => {
+        expect(Alert.alert).toHaveBeenCalledWith(
+          'Permission Required',
+          'Camera permission is required to take photos.'
+        );
+      });
+    });
+
+    it('should handle photo upload failure', async () => {
+      (ImagePicker.requestCameraPermissionsAsync as jest.Mock).mockResolvedValue({
+        granted: true,
+      });
+      (ImagePicker.launchCameraAsync as jest.Mock).mockResolvedValue({
+        canceled: false,
+        assets: [{ uri: 'file://test-photo.jpg' }],
+      });
+      mockCookCamApi.uploadProfilePhoto.mockResolvedValue({
+        success: false,
+        error: 'Upload failed',
+      });
+
+      render(<ProfileScreen navigation={mockNavigation} />);
+
+      const avatarContainer = screen.getByText('Test Chef Pro').parent;
+      fireEvent.press(avatarContainer);
+
+      const alertCall = (Alert.alert as jest.Mock).mock.calls[0];
+      const takePhotoOption = alertCall[2].find((option: any) => option.text === 'Take Photo');
+      
+      await act(async () => {
+        await takePhotoOption.onPress();
+      });
+
+      await waitFor(() => {
+        expect(Alert.alert).toHaveBeenCalledWith('Error', 'Upload failed');
+      });
+    });
+  });
+
+  describe('Creator Section', () => {
+    it('should show creator dashboard for existing creators', () => {
+      const mockCreatorContext = {
+        ...mockAuthContext,
+        user: { ...mockAuthContext.user, isCreator: true },
+      };
+
+      jest.doMock('../../context/AuthContext', () => ({
+        useAuth: () => mockCreatorContext,
+      }));
+
+      const { unmount } = render(<ProfileScreen navigation={mockNavigation} />);
+
+      expect(screen.getByTestId('chef-badge')).toBeTruthy();
+      expect(screen.getByText('View Creator Dashboard')).toBeTruthy();
+
+      const dashboardButton = screen.getByText('View Creator Dashboard');
+      fireEvent.press(dashboardButton);
+
+      expect(mockNavigation.navigate).toHaveBeenCalledWith('Creator');
+      unmount();
+    });
+
+    it('should show become creator card for non-creators', () => {
+      render(<ProfileScreen navigation={mockNavigation} />);
+
+      expect(screen.getByText('Become a Creator')).toBeTruthy();
+      expect(screen.getByText('Share recipes and earn up to 30% commission')).toBeTruthy();
+      expect(screen.getByText('Start Earning 💰')).toBeTruthy();
+
+      const becomeCreatorButton = screen.getByText('Start Earning 💰');
+      fireEvent.press(becomeCreatorButton);
+
+      expect(mockNavigation.navigate).toHaveBeenCalledWith('Creator');
+    });
+  });
+
+  describe('Stats and Analytics', () => {
+    it('should toggle analytics view when XP stat is pressed', () => {
+      render(<ProfileScreen navigation={mockNavigation} />);
+
+      const xpStat = screen.getByText('Total XP');
+      fireEvent.press(xpStat);
+
+      expect(screen.getByText('How You Compare')).toBeTruthy();
+
+      // Toggle off
+      fireEvent.press(xpStat);
+      expect(screen.queryByText('How You Compare')).toBeFalsy();
+    });
+
+    it('should handle stats sharing functionality', async () => {
+      render(<ProfileScreen navigation={mockNavigation} />);
+
+      const shareButton = screen.getByText('Your Profile 👤').parent.querySelector('[data-testid="share-button"]');
+      fireEvent.press(shareButton);
+
+      await waitFor(() => {
+        expect(Share.share).toHaveBeenCalledWith({
+          message: expect.stringContaining('🎉 My CookCam Stats!'),
+          title: 'My CookCam Stats',
+        });
+        expect(Haptics.impactAsync).toHaveBeenCalledWith(Haptics.ImpactFeedbackStyle.Medium);
+      });
+    });
+  });
+
+  describe('Badge Interactions', () => {
+    it('should show badge details when badge is pressed', () => {
+      render(<ProfileScreen navigation={mockNavigation} />);
+
+      const firstBadge = screen.getByText('First Recipe');
+      fireEvent.press(firstBadge);
+
+      expect(Haptics.impactAsync).toHaveBeenCalledWith(Haptics.ImpactFeedbackStyle.Light);
+      expect(Alert.alert).toHaveBeenCalledWith(
+        'First Recipe',
+        expect.stringContaining('Created your first recipe')
       );
     });
 
-    it('should call logout when confirmed', async () => {
-      const mockLogout = jest.fn();
-      const mockUseAuth = require('../../context/AuthContext').useAuth;
-      mockUseAuth.mockReturnValue({
-        user: { id: 'test-user-id', email: 'test@example.com' },
-        logout: mockLogout,
-        updateUser: jest.fn(),
-      });
-
-      const mockAlert = require('react-native').Alert.alert;
-      mockAlert.mockImplementation((title, message, buttons) => {
-        // Simulate pressing "Yes" button
-        if (buttons && buttons[1] && buttons[1].onPress) {
-          buttons[1].onPress();
-        }
-      });
-
+    it('should display unlock dates for badges correctly', () => {
       render(<ProfileScreen navigation={mockNavigation} />);
 
-      const logoutButton = screen.getByText('Logout').parent;
+      expect(screen.getByText('Unlocked: 1/15/2023')).toBeTruthy();
+      expect(screen.getByText('Unlocked: 1/20/2023')).toBeTruthy();
+      expect(screen.getByText('Unlocked: 1/25/2023')).toBeTruthy();
+    });
+  });
+
+  describe('Settings and Navigation', () => {
+    it('should show coming soon alerts for privacy and support', () => {
+      render(<ProfileScreen navigation={mockNavigation} />);
+
+      const privacyButton = screen.getByText('Privacy');
+      fireEvent.press(privacyButton);
+
+      expect(Alert.alert).toHaveBeenCalledWith(
+        'Coming Soon',
+        'Privacy settings will be available soon.'
+      );
+
+      const supportButton = screen.getByText('Help & Support');
+      fireEvent.press(supportButton);
+
+      expect(Alert.alert).toHaveBeenCalledWith(
+        'Coming Soon',
+        'Support page will be available soon.'
+      );
+    });
+
+    it('should handle logout confirmation', () => {
+      render(<ProfileScreen navigation={mockNavigation} />);
+
+      const logoutButton = screen.getByText('Logout');
       fireEvent.press(logoutButton);
 
-      await waitFor(() => {
-        expect(mockLogout).toHaveBeenCalled();
-      });
+      expect(Alert.alert).toHaveBeenCalledWith(
+        'Logout',
+        'Are you sure you want to logout?',
+        expect.arrayContaining([
+          expect.objectContaining({ text: 'Cancel' }),
+          expect.objectContaining({ text: 'Logout' }),
+        ])
+      );
+    });
+
+    it('should execute logout when confirmed', () => {
+      render(<ProfileScreen navigation={mockNavigation} />);
+
+      const logoutButton = screen.getByText('Logout');
+      fireEvent.press(logoutButton);
+
+      const alertCall = (Alert.alert as jest.Mock).mock.calls.find(
+        call => call[0] === 'Logout'
+      );
+      const logoutOption = alertCall[2].find((option: any) => option.text === 'Logout');
+      
+      logoutOption.onPress();
+
+      expect(mockAuthContext.logout).toHaveBeenCalledWith(mockNavigation);
     });
   });
 
-  describe('Profile Picture', () => {
-    it('should allow changing profile picture', () => {
+  describe('Account Deletion', () => {
+    it('should show account deletion confirmation dialog', () => {
       render(<ProfileScreen navigation={mockNavigation} />);
 
-      // Find camera/edit icon on avatar
-      const avatarEditButton = screen.UNSAFE_getByType('CameraIcon').parent;
-      fireEvent.press(avatarEditButton);
+      const deleteButton = screen.getByText('Delete Account');
+      fireEvent.press(deleteButton);
 
-      // Should trigger image picker
-      expect(mockNavigation.navigate).toHaveBeenCalledWith('ImagePicker', {
-        onImageSelected: expect.any(Function),
-      });
+      expect(Alert.alert).toHaveBeenCalledWith(
+        'Delete Account',
+        expect.stringContaining('This will permanently delete your account'),
+        expect.arrayContaining([
+          expect.objectContaining({ text: 'Cancel' }),
+          expect.objectContaining({ text: 'Continue' }),
+        ])
+      );
     });
-  });
 
-  describe('Stats Display', () => {
-    it('should show XP progress bar', () => {
+    it('should show delete modal when confirmed', () => {
       render(<ProfileScreen navigation={mockNavigation} />);
 
-      // Should show current and next level XP
-      expect(screen.getByText(/4,500.*\/.*5,000/)).toBeTruthy();
-    });
+      const deleteButton = screen.getByText('Delete Account');
+      fireEvent.press(deleteButton);
 
-    it('should show correct level badge', () => {
-      render(<ProfileScreen navigation={mockNavigation} />);
-
-      // Should show level 10 with appropriate styling
-      const levelBadge = screen.getByText('Level 10');
-      expect(levelBadge).toBeTruthy();
-    });
-
-    it('should handle user without stats', () => {
-      const mockUseGamification = require('../../context/GamificationContext').useGamification;
-      mockUseGamification.mockReturnValue({
-        userStats: null,
-        refreshUserStats: jest.fn(),
+      const alertCall = (Alert.alert as jest.Mock).mock.calls.find(
+        call => call[0] === 'Delete Account'
+      );
+      const continueOption = alertCall[2].find((option: any) => option.text === 'Continue');
+      
+      act(() => {
+        continueOption.onPress();
       });
 
-      render(<ProfileScreen navigation={mockNavigation} />);
-
-      // Should show default values or placeholders
-      expect(screen.getByText(/Level 1/)).toBeTruthy();
-    });
-  });
-
-  describe('Edit Mode', () => {
-    it('should enable edit mode when edit button is pressed', () => {
-      render(<ProfileScreen navigation={mockNavigation} />);
-
-      const editButton = screen.getByText('Edit Profile').parent;
-      fireEvent.press(editButton);
-
-      // Should show save and cancel buttons
-      expect(screen.getByText('Save')).toBeTruthy();
-      expect(screen.getByText('Cancel')).toBeTruthy();
+      expect(screen.getByText('Delete Account')).toBeTruthy(); // Modal title
+      expect(screen.getByText('This will permanently delete your account and all your data:')).toBeTruthy();
+      expect(screen.getByText('Enter your password to confirm:')).toBeTruthy();
     });
 
-    it('should allow editing user name', () => {
+    it('should handle account deletion with password', async () => {
+      mockCookCamApi.deleteAccount.mockResolvedValue({ success: true });
+
       render(<ProfileScreen navigation={mockNavigation} />);
 
-      const editButton = screen.getByText('Edit Profile').parent;
-      fireEvent.press(editButton);
+      // Open delete modal
+      const deleteButton = screen.getByText('Delete Account');
+      fireEvent.press(deleteButton);
 
-      const nameInput = screen.getByDisplayValue('Test User');
-      fireEvent.changeText(nameInput, 'Updated Name');
-
-      expect(nameInput.props.value).toBe('Updated Name');
-    });
-
-    it('should save changes when save button is pressed', async () => {
-      const mockUpdateUser = jest.fn();
-      const mockUseAuth = require('../../context/AuthContext').useAuth;
-      mockUseAuth.mockReturnValue({
-        user: { id: 'test-user-id', name: 'Test User' },
-        updateUser: mockUpdateUser,
-        logout: jest.fn(),
+      const alertCall = (Alert.alert as jest.Mock).mock.calls.find(
+        call => call[0] === 'Delete Account'
+      );
+      const continueOption = alertCall[2].find((option: any) => option.text === 'Continue');
+      
+      act(() => {
+        continueOption.onPress();
       });
 
-      const mockUpdateProfile = require('../../services/cookCamApi').cookCamApi.updateUserProfile;
-      mockUpdateProfile.mockResolvedValueOnce({ success: true });
+      // Enter password
+      const passwordInput = screen.getByPlaceholderText('Your password');
+      fireEvent.changeText(passwordInput, 'test-password');
 
-      render(<ProfileScreen navigation={mockNavigation} />);
-
-      // Enter edit mode
-      const editButton = screen.getByText('Edit Profile').parent;
-      fireEvent.press(editButton);
-
-      // Change name
-      const nameInput = screen.getByDisplayValue('Test User');
-      fireEvent.changeText(nameInput, 'Updated Name');
-
-      // Save changes
-      const saveButton = screen.getByText('Save').parent;
-      fireEvent.press(saveButton);
+      // Confirm deletion
+      const deleteForeverButton = screen.getByText('Delete Forever');
+      fireEvent.press(deleteForeverButton);
 
       await waitFor(() => {
-        expect(mockUpdateProfile).toHaveBeenCalledWith('test-user-id', {
-          name: 'Updated Name',
-        });
-        expect(mockUpdateUser).toHaveBeenCalled();
+        expect(mockCookCamApi.deleteAccount).toHaveBeenCalledWith('test-password');
       });
     });
 
-    it('should cancel edit mode when cancel button is pressed', () => {
+    it('should require password for account deletion', () => {
       render(<ProfileScreen navigation={mockNavigation} />);
 
-      const editButton = screen.getByText('Edit Profile').parent;
-      fireEvent.press(editButton);
+      // Open delete modal
+      const deleteButton = screen.getByText('Delete Account');
+      fireEvent.press(deleteButton);
 
-      const cancelButton = screen.getByText('Cancel').parent;
-      fireEvent.press(cancelButton);
-
-      // Should exit edit mode
-      expect(screen.queryByText('Save')).toBeFalsy();
-      expect(screen.queryByText('Cancel')).toBeFalsy();
-    });
-  });
-
-  describe('Loading States', () => {
-    it('should show loading indicator while fetching data', () => {
-      const mockUseGamification = require('../../context/GamificationContext').useGamification;
-      mockUseGamification.mockReturnValue({
-        userStats: null,
-        refreshUserStats: jest.fn(),
-        loading: true,
+      const alertCall = (Alert.alert as jest.Mock).mock.calls.find(
+        call => call[0] === 'Delete Account'
+      );
+      const continueOption = alertCall[2].find((option: any) => option.text === 'Continue');
+      
+      act(() => {
+        continueOption.onPress();
       });
 
-      render(<ProfileScreen navigation={mockNavigation} />);
+      // Try to delete without password
+      const deleteForeverButton = screen.getByText('Delete Forever');
+      fireEvent.press(deleteForeverButton);
 
-      expect(screen.UNSAFE_queryByType('ActivityIndicator')).toBeTruthy();
+      expect(Alert.alert).toHaveBeenCalledWith(
+        'Error',
+        'Please enter your password to confirm account deletion.'
+      );
     });
   });
 
-  describe('Error Handling', () => {
-    it('should show error message when profile update fails', async () => {
-      const mockAlert = require('react-native').Alert.alert;
-      const mockUpdateProfile = require('../../services/cookCamApi').cookCamApi.updateUserProfile;
-      mockUpdateProfile.mockResolvedValueOnce({ 
-        success: false, 
-        error: 'Update failed' 
-      });
-
+  describe('Animation Behavior', () => {
+    it('should initialize animations on mount', async () => {
       render(<ProfileScreen navigation={mockNavigation} />);
-
-      // Enter edit mode and save
-      const editButton = screen.getByText('Edit Profile').parent;
-      fireEvent.press(editButton);
-
-      const saveButton = screen.getByText('Save').parent;
-      fireEvent.press(saveButton);
 
       await waitFor(() => {
-        expect(mockAlert).toHaveBeenCalledWith(
-          'Error',
-          expect.stringContaining('failed')
-        );
+        expect(Animated.parallel).toHaveBeenCalled();
+        expect(Animated.timing).toHaveBeenCalled();
+        expect(Animated.spring).toHaveBeenCalled();
       });
+    });
+
+    it('should handle delayed achievement animation', async () => {
+      jest.useFakeTimers();
+
+      render(<ProfileScreen navigation={mockNavigation} />);
+
+      // Fast-forward time to trigger delayed animation
+      act(() => {
+        jest.advanceTimersByTime(500);
+      });
+
+      await waitFor(() => {
+        expect(Animated.spring).toHaveBeenCalled();
+      });
+
+      jest.useRealTimers();
+    });
+  });
+
+  describe('Edge Cases and Error Handling', () => {
+    it('should handle missing user data gracefully', () => {
+      const mockNoUserContext = {
+        ...mockAuthContext,
+        user: null,
+      };
+
+      jest.doMock('../../context/AuthContext', () => ({
+        useAuth: () => mockNoUserContext,
+      }));
+
+      const { unmount } = render(<ProfileScreen navigation={mockNavigation} />);
+      expect(screen.getByText('Chef')).toBeTruthy(); // Default name
+      expect(screen.getByText('U')).toBeTruthy(); // Default avatar initial
+      unmount();
+    });
+
+    it('should handle empty badges array', () => {
+      const mockNoBadgesContext = {
+        ...mockGamificationContext,
+        badges: [],
+      };
+
+      jest.doMock('../../context/GamificationContext', () => ({
+        useGamification: () => mockNoBadgesContext,
+      }));
+
+      const { unmount } = render(<ProfileScreen navigation={mockNavigation} />);
+      expect(screen.getByText('0/12')).toBeTruthy(); // No badges
+      unmount();
+    });
+
+    it('should handle image picker cancellation', async () => {
+      (ImagePicker.requestCameraPermissionsAsync as jest.Mock).mockResolvedValue({
+        granted: true,
+      });
+      (ImagePicker.launchCameraAsync as jest.Mock).mockResolvedValue({
+        canceled: true,
+      });
+
+      render(<ProfileScreen navigation={mockNavigation} />);
+
+      const avatarContainer = screen.getByText('Test Chef Pro').parent;
+      fireEvent.press(avatarContainer);
+
+      const alertCall = (Alert.alert as jest.Mock).mock.calls[0];
+      const takePhotoOption = alertCall[2].find((option: any) => option.text === 'Take Photo');
+      
+      await act(async () => {
+        await takePhotoOption.onPress();
+      });
+
+      // Should not call upload API when user cancels
+      expect(mockCookCamApi.uploadProfilePhoto).not.toHaveBeenCalled();
+    });
+
+    it('should handle share functionality errors gracefully', async () => {
+      (Share.share as jest.Mock).mockRejectedValue(new Error('Share failed'));
+
+      render(<ProfileScreen navigation={mockNavigation} />);
+
+      const shareButton = screen.getByText('Your Profile 👤').parent.querySelector('[data-testid="share-button"]');
+      fireEvent.press(shareButton);
+
+      await waitFor(() => {
+        expect(Share.share).toHaveBeenCalled();
+        // Should not crash on share error
+      });
+    });
+  });
+
+  describe('Level Progress Calculations', () => {
+    it('should calculate progress correctly for different levels', () => {
+      const mockHighLevelContext = {
+        ...mockGamificationContext,
+        level: 8,
+        xp: 950,
+      };
+
+      jest.doMock('../../context/GamificationContext', () => ({
+        useGamification: () => mockHighLevelContext,
+      }));
+
+      const { unmount } = render(<ProfileScreen navigation={mockNavigation} />);
+
+      expect(screen.getByText('Level 8')).toBeTruthy();
+      expect(screen.getByText('250 / 400 XP')).toBeTruthy(); // Level 8 progress
+      expect(screen.getByText('150 XP to Level 9 🎯')).toBeTruthy();
+
+      unmount();
+    });
+
+    it('should handle edge case of level 1', () => {
+      const mockLevel1Context = {
+        ...mockGamificationContext,
+        level: 1,
+        xp: 25,
+      };
+
+      jest.doMock('../../context/GamificationContext', () => ({
+        useGamification: () => mockLevel1Context,
+      }));
+
+      const { unmount } = render(<ProfileScreen navigation={mockNavigation} />);
+
+      expect(screen.getByText('Level 1')).toBeTruthy();
+      expect(screen.getByText('25 / 100 XP')).toBeTruthy();
+      expect(screen.getByText('75 XP to Level 2 🎯')).toBeTruthy();
+
+      unmount();
+    });
+  });
+
+  describe('Performance and Memory Management', () => {
+    it('should handle component unmount gracefully', () => {
+      const { unmount } = render(<ProfileScreen navigation={mockNavigation} />);
+      
+      expect(() => unmount()).not.toThrow();
+    });
+
+    it('should handle rapid interactions without memory leaks', () => {
+      render(<ProfileScreen navigation={mockNavigation} />);
+
+      // Rapid badge presses
+      const firstBadge = screen.getByText('First Recipe');
+      for (let i = 0; i < 10; i++) {
+        fireEvent.press(firstBadge);
+      }
+
+      expect(Haptics.impactAsync).toHaveBeenCalledTimes(10);
+    });
+  });
+
+  describe('Accessibility', () => {
+    it('should provide accessible interaction elements', () => {
+      render(<ProfileScreen navigation={mockNavigation} />);
+
+      expect(screen.getByText('Logout')).toBeTruthy();
+      expect(screen.getByText('Privacy')).toBeTruthy();
+      expect(screen.getByText('Help & Support')).toBeTruthy();
+      expect(screen.getByText('Delete Account')).toBeTruthy();
+    });
+
+    it('should show app version for reference', () => {
+      render(<ProfileScreen navigation={mockNavigation} />);
+
+      expect(screen.getByText('CookCam v1.0.0')).toBeTruthy();
     });
   });
 });

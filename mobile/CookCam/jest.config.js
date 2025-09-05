@@ -34,7 +34,8 @@ module.exports = {
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
     '^.*/config/env$': '<rootDir>/src/__mocks__/config/env.ts',
-    '^expo-constants$': '<rootDir>/src/__mocks__/expo-constants.ts',
+    '^expo-constants$': '<rootDir>/__mocks__/expo-constants.js',
+    '^react-native$': '<rootDir>/__mocks__/react-native.js',
     '\\.(jpg|jpeg|png|gif|eot|otf|webp|svg|ttf|woff|woff2|mp4|webm|wav|mp3|m4a|aac|oga)$':
       'identity-obj-proxy',
   },

@@ -1,0 +1,344 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`NutritionBadge Compact Variant should render correctly in compact mode 1`] = `
+<View
+  ref={null}
+  style={
+    {
+      "alignItems": "center",
+      "flexDirection": "row",
+    }
+  }
+>
+  <View
+    ref={null}
+    style={
+      [
+        {
+          "alignItems": "center",
+          "borderRadius": 8,
+          "flexDirection": "row",
+          "gap": 3,
+          "paddingHorizontal": 8,
+          "paddingVertical": 4,
+        },
+        {
+          "backgroundColor": "#FF9800",
+        },
+      ]
+    }
+  >
+    <Zap
+      color="#FFFFFF"
+      size={12}
+    />
+    <Text
+      ref={null}
+      style={
+        {
+          "color": "#FFFFFF",
+          "fontSize": 12,
+          "fontWeight": "700",
+        }
+      }
+    >
+      250
+    </Text>
+  </View>
+  <View
+    ref={null}
+    style={
+      [
+        {
+          "alignItems": "center",
+          "borderRadius": 8,
+          "flexDirection": "row",
+          "gap": 3,
+          "paddingHorizontal": 8,
+          "paddingVertical": 4,
+        },
+        {
+          "backgroundColor": "#FF9800",
+        },
+      ]
+    }
+  >
+    <Activity
+      color="#FFFFFF"
+      size={12}
+    />
+    <Text
+      ref={null}
+      style={
+        {
+          "color": "#FFFFFF",
+          "fontSize": 12,
+          "fontWeight": "700",
+        }
+      }
+    >
+      15
+      g
+    </Text>
+  </View>
+</View>
+`;
+
+exports[`NutritionBadge Full Variant should render correctly with all props 1`] = `
+<View
+  ref={null}
+  style={
+    {
+      "backgroundColor": "#F8F9FA",
+      "borderRadius": 8,
+      "marginTop": 8,
+      "padding": 12,
+    }
+  }
+>
+  <View
+    ref={null}
+    style={
+      {
+        "alignItems": "center",
+        "flexDirection": "row",
+        "gap": 6,
+        "marginBottom": 8,
+      }
+    }
+  >
+    <Text
+      ref={null}
+      style={
+        {
+          "color": "#4CAF50",
+          "fontSize": 14,
+          "fontWeight": "600",
+        }
+      }
+    >
+      Nutrition Facts
+    </Text>
+    <Text
+      ref={null}
+      style={
+        {
+          "color": "#666",
+          "fontSize": 10,
+          "fontWeight": "500",
+        }
+      }
+    >
+      Per serving
+    </Text>
+  </View>
+  <View
+    ref={null}
+    style={
+      {
+        "marginBottom": 16,
+      }
+    }
+  >
+    <View
+      ref={null}
+      style={
+        {
+          "alignItems": "center",
+          "flexDirection": "row",
+          "gap": 6,
+        }
+      }
+    >
+      <Zap
+        color="#FF9800"
+        size={20}
+      />
+      <Text
+        ref={null}
+        style={
+          {
+            "color": "#2D1B69",
+            "fontSize": 14,
+            "fontWeight": "700",
+          }
+        }
+      >
+        250
+      </Text>
+      <Text
+        ref={null}
+        style={
+          {
+            "color": "#666",
+            "fontSize": 10,
+            "fontWeight": "500",
+            "marginTop": 2,
+          }
+        }
+      >
+        calories
+      </Text>
+    </View>
+  </View>
+  <View
+    ref={null}
+    style={
+      {
+        "flexDirection": "row",
+        "justifyContent": "space-between",
+      }
+    }
+  >
+    <View
+      ref={null}
+      style={
+        {
+          "alignItems": "center",
+          "flex": 1,
+        }
+      }
+    >
+      <Activity
+        color="#FF9800"
+        size={16}
+      />
+      <Text
+        ref={null}
+        style={
+          {
+            "color": "#2D1B69",
+            "fontSize": 14,
+            "fontWeight": "700",
+          }
+        }
+      >
+        15
+        g
+      </Text>
+      <Text
+        ref={null}
+        style={
+          {
+            "color": "#666",
+            "fontSize": 10,
+            "fontWeight": "500",
+            "marginTop": 2,
+          }
+        }
+      >
+        protein
+      </Text>
+    </View>
+    <View
+      ref={null}
+      style={
+        {
+          "alignItems": "center",
+          "flex": 1,
+        }
+      }
+    >
+      <Text
+        ref={null}
+        style={
+          {
+            "color": "#2D1B69",
+            "fontSize": 14,
+            "fontWeight": "700",
+          }
+        }
+      >
+        30
+        g
+      </Text>
+      <Text
+        ref={null}
+        style={
+          {
+            "color": "#666",
+            "fontSize": 10,
+            "fontWeight": "500",
+            "marginTop": 2,
+          }
+        }
+      >
+        carbs
+      </Text>
+    </View>
+    <View
+      ref={null}
+      style={
+        {
+          "alignItems": "center",
+          "flex": 1,
+        }
+      }
+    >
+      <Text
+        ref={null}
+        style={
+          {
+            "color": "#2D1B69",
+            "fontSize": 14,
+            "fontWeight": "700",
+          }
+        }
+      >
+        10
+        g
+      </Text>
+      <Text
+        ref={null}
+        style={
+          {
+            "color": "#666",
+            "fontSize": 10,
+            "fontWeight": "500",
+            "marginTop": 2,
+          }
+        }
+      >
+        fat
+      </Text>
+    </View>
+  </View>
+  <View
+    ref={null}
+    style={
+      {
+        "marginTop": 16,
+      }
+    }
+  >
+    <Text
+      ref={null}
+      style={
+        {
+          "color": "#666",
+          "fontSize": 10,
+          "fontWeight": "500",
+        }
+      }
+    >
+      Fiber: 
+      5
+      g
+    </Text>
+    <Text
+      ref={null}
+      style={
+        {
+          "color": "#666",
+          "fontSize": 10,
+          "fontWeight": "500",
+        }
+      }
+    >
+      Sodium: 
+      500
+      mg
+    </Text>
+  </View>
+</View>
+`;

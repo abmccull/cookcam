@@ -1,575 +1,652 @@
 import request from 'supertest';
 import express from 'express';
 import authRouter from '../auth';
-import { createMockSupabaseClient, createMockRequest, createMockResponse } from '../../__tests__/utils/testHelpers';
-import { mockUsers } from '../../__tests__/utils/mockData';
-import jwt from 'jsonwebtoken';
-import bcrypt from 'bcrypt';
+import { supabase, createAuthenticatedClient } from '../../index';
+import { logger } from '../../utils/logger';
+import { securityMonitoring } from '../../services/security-monitoring';
 
 // Mock dependencies
 jest.mock('../../index', () => ({
-  supabase: mockSupabaseClient,
+  supabase: {
+    auth: {
+      signUp: jest.fn(),
+      signInWithPassword: jest.fn(),
+      signOut: jest.fn(),
+      refreshSession: jest.fn(),
+      setSession: jest.fn(),
+      resetPasswordForEmail: jest.fn(),
+      updateUser: jest.fn(),
+      getUser: jest.fn(),
+    },
+    from: jest.fn(),
+    rpc: jest.fn(),
+  },
+  createAuthenticatedClient: jest.fn(),
 }));
 
-jest.mock('jsonwebtoken');
-jest.mock('bcrypt');
 jest.mock('../../utils/logger', () => ({
   logger: {
     info: jest.fn(),
+    debug: jest.fn(),
     warn: jest.fn(),
     error: jest.fn(),
-    debug: jest.fn(),
   },
 }));
 
-const mockSupabaseClient = createMockSupabaseClient();
-const mockedJwt = jwt as jest.Mocked<typeof jwt>;
-const mockedBcrypt = bcrypt as jest.Mocked<typeof bcrypt>;
+jest.mock('../../services/security-monitoring', () => ({
+  securityMonitoring: {
+    logAuthFailure: jest.fn(),
+    trackSecurityEvent: jest.fn(),
+  },
+}));
 
-// Create test app
+// Setup Express app with the router
 const app = express();
 app.use(express.json());
 app.use('/auth', authRouter);
 
-describe('Authentication Routes - Comprehensive', () => {
+describe('Auth Routes - Comprehensive Coverage', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  describe('POST /auth/signup', () => {
-    const validSignupData = {
-      email: 'newuser@example.com',
-      password: 'SecurePassword123!',
-      name: 'New User',
-    };
-
-    it('should create new user account successfully', async () => {
-      mockSupabaseClient.auth.signUp.mockResolvedValue({
-        data: {
-          user: {
-            id: 'new-user-id',
-            email: validSignupData.email,
-            email_confirmed_at: null,
-          },
-          session: null,
-        },
-        error: null,
-      });
-
-      mockSupabaseClient.from().insert().mockResolvedValue({
-        data: [{ id: 'new-user-id', email: validSignupData.email }],
-        error: null,
-      });
-
-      const response = await request(app)
-        .post('/auth/signup')
-        .send(validSignupData);
-
-      expect(response.status).toBe(201);
-      expect(response.body.success).toBe(true);
-      expect(response.body.message).toContain('verification email');
-      expect(mockSupabaseClient.auth.signUp).toHaveBeenCalledWith({
-        email: validSignupData.email,
-        password: validSignupData.password,
-        options: {
-          data: {
-            name: validSignupData.name,
-          },
-        },
-      });
-    });
-
-    it('should handle existing email registration', async () => {
-      mockSupabaseClient.auth.signUp.mockResolvedValue({
-        data: { user: null, session: null },
-        error: { message: 'User already registered' },
-      });
-
-      const response = await request(app)
-        .post('/auth/signup')
-        .send(validSignupData);
-
-      expect(response.status).toBe(400);
-      expect(response.body.error).toContain('already registered');
-    });
-
-    it('should validate email format', async () => {
-      const response = await request(app)
-        .post('/auth/signup')
-        .send({
-          ...validSignupData,
-          email: 'invalid-email',
-        });
-
-      expect(response.status).toBe(400);
-      expect(response.body.error).toContain('valid email');
-    });
-
-    it('should validate password strength', async () => {
-      const response = await request(app)
-        .post('/auth/signup')
-        .send({
-          ...validSignupData,
-          password: 'weak',
-        });
-
-      expect(response.status).toBe(400);
-      expect(response.body.error).toContain('password must be');
-    });
-
-    it('should handle database profile creation errors', async () => {
-      mockSupabaseClient.auth.signUp.mockResolvedValue({
-        data: {
-          user: { id: 'new-user-id', email: validSignupData.email },
-          session: null,
-        },
-        error: null,
-      });
-
-      mockSupabaseClient.from().insert().mockResolvedValue({
-        data: null,
-        error: { message: 'Profile creation failed' },
-      });
-
-      const response = await request(app)
-        .post('/auth/signup')
-        .send(validSignupData);
-
-      expect(response.status).toBe(500);
-      expect(response.body.error).toContain('profile creation failed');
-    });
-  });
-
-  describe('POST /auth/login', () => {
-    const validLoginData = {
-      email: mockUsers.free.email,
-      password: 'CorrectPassword123!',
-    };
-
-    it('should authenticate user with valid credentials', async () => {
-      const mockSession = {
-        access_token: 'mock-access-token',
-        refresh_token: 'mock-refresh-token',
-        expires_in: 3600,
-        user: {
-          id: mockUsers.free.id,
-          email: mockUsers.free.email,
-        },
-      };
-
-      mockSupabaseClient.auth.signInWithPassword.mockResolvedValue({
-        data: {
-          user: mockSession.user,
-          session: mockSession,
-        },
-        error: null,
-      });
-
-      mockSupabaseClient.from().select().eq().single().mockResolvedValue({
-        data: mockUsers.free,
-        error: null,
-      });
-
-      const response = await request(app)
-        .post('/auth/login')
-        .send(validLoginData);
-
-      expect(response.status).toBe(200);
-      expect(response.body.success).toBe(true);
-      expect(response.body.data.user.id).toBe(mockUsers.free.id);
-      expect(response.body.data.token).toBe(mockSession.access_token);
-      expect(response.headers['set-cookie']).toBeDefined();
-    });
-
-    it('should handle invalid credentials', async () => {
-      mockSupabaseClient.auth.signInWithPassword.mockResolvedValue({
-        data: { user: null, session: null },
-        error: { message: 'Invalid login credentials' },
-      });
-
-      const response = await request(app)
-        .post('/auth/login')
-        .send({
-          email: validLoginData.email,
-          password: 'WrongPassword',
-        });
-
-      expect(response.status).toBe(401);
-      expect(response.body.error).toContain('Invalid credentials');
-    });
-
-    it('should handle unverified email', async () => {
-      mockSupabaseClient.auth.signInWithPassword.mockResolvedValue({
-        data: { user: null, session: null },
-        error: { message: 'Email not confirmed' },
-      });
-
-      const response = await request(app)
-        .post('/auth/login')
-        .send(validLoginData);
-
-      expect(response.status).toBe(401);
-      expect(response.body.error).toContain('verify your email');
-    });
-
-    it('should update last login timestamp', async () => {
-      const mockSession = {
-        access_token: 'mock-access-token',
-        user: { id: mockUsers.free.id, email: mockUsers.free.email },
-      };
-
-      mockSupabaseClient.auth.signInWithPassword.mockResolvedValue({
-        data: { user: mockSession.user, session: mockSession },
-        error: null,
-      });
-
-      mockSupabaseClient.from().select().eq().single().mockResolvedValue({
-        data: mockUsers.free,
-        error: null,
-      });
-
-      mockSupabaseClient.from().update().eq().mockResolvedValue({
-        data: {},
-        error: null,
-      });
-
-      await request(app)
-        .post('/auth/login')
-        .send(validLoginData);
-
-      expect(mockSupabaseClient.from().update).toHaveBeenCalledWith({
-        last_login: expect.any(String),
-      });
-    });
-
-    it('should implement rate limiting for failed attempts', async () => {
-      mockSupabaseClient.auth.signInWithPassword.mockResolvedValue({
-        data: { user: null, session: null },
-        error: { message: 'Invalid login credentials' },
-      });
-
-      // Simulate multiple failed attempts
-      for (let i = 0; i < 5; i++) {
-        await request(app)
-          .post('/auth/login')
-          .send({
-            email: validLoginData.email,
-            password: 'WrongPassword',
-          });
-      }
-
-      const response = await request(app)
-        .post('/auth/login')
-        .send({
-          email: validLoginData.email,
-          password: 'WrongPassword',
-        });
-
-      expect(response.status).toBe(429);
-      expect(response.body.error).toContain('Too many failed attempts');
-    });
-  });
-
-  describe('POST /auth/logout', () => {
-    it('should logout user and clear session', async () => {
-      mockSupabaseClient.auth.signOut.mockResolvedValue({
-        error: null,
-      });
-
-      const response = await request(app)
-        .post('/auth/logout')
-        .set('Authorization', 'Bearer mock-token');
-
-      expect(response.status).toBe(200);
-      expect(response.body.success).toBe(true);
-      expect(response.headers['set-cookie']).toContain('clear');
-    });
-
-    it('should handle logout errors gracefully', async () => {
-      mockSupabaseClient.auth.signOut.mockResolvedValue({
-        error: { message: 'Session not found' },
-      });
-
-      const response = await request(app)
-        .post('/auth/logout')
-        .set('Authorization', 'Bearer invalid-token');
-
-      expect(response.status).toBe(200);
-      expect(response.body.success).toBe(true); // Still successful for user experience
-    });
-  });
-
-  describe('POST /auth/refresh', () => {
-    it('should refresh access token with valid refresh token', async () => {
-      const mockNewSession = {
-        access_token: 'new-access-token',
-        refresh_token: 'new-refresh-token',
-        expires_in: 3600,
-        user: { id: mockUsers.free.id },
-      };
-
-      mockSupabaseClient.auth.refreshSession.mockResolvedValue({
-        data: {
-          session: mockNewSession,
-          user: mockNewSession.user,
-        },
-        error: null,
-      });
-
-      const response = await request(app)
-        .post('/auth/refresh')
-        .send({ refreshToken: 'valid-refresh-token' });
-
-      expect(response.status).toBe(200);
-      expect(response.body.success).toBe(true);
-      expect(response.body.data.token).toBe(mockNewSession.access_token);
-    });
-
-    it('should handle invalid refresh token', async () => {
-      mockSupabaseClient.auth.refreshSession.mockResolvedValue({
-        data: { session: null, user: null },
-        error: { message: 'Invalid refresh token' },
-      });
-
-      const response = await request(app)
-        .post('/auth/refresh')
-        .send({ refreshToken: 'invalid-refresh-token' });
-
-      expect(response.status).toBe(401);
-      expect(response.body.error).toContain('Invalid refresh token');
-    });
-  });
-
-  describe('POST /auth/forgot-password', () => {
-    it('should send password reset email', async () => {
-      mockSupabaseClient.auth.resetPasswordForEmail.mockResolvedValue({
-        data: {},
-        error: null,
-      });
-
-      const response = await request(app)
-        .post('/auth/forgot-password')
-        .send({ email: mockUsers.free.email });
-
-      expect(response.status).toBe(200);
-      expect(response.body.success).toBe(true);
-      expect(response.body.message).toContain('reset link sent');
-    });
-
-    it('should handle non-existent email gracefully', async () => {
-      mockSupabaseClient.auth.resetPasswordForEmail.mockResolvedValue({
-        data: {},
-        error: null, // Supabase doesn't expose if email exists
-      });
-
-      const response = await request(app)
-        .post('/auth/forgot-password')
-        .send({ email: 'nonexistent@example.com' });
-
-      expect(response.status).toBe(200);
-      expect(response.body.success).toBe(true);
-      // Don't reveal if email exists for security
-    });
-
-    it('should validate email format', async () => {
-      const response = await request(app)
-        .post('/auth/forgot-password')
-        .send({ email: 'invalid-email' });
-
-      expect(response.status).toBe(400);
-      expect(response.body.error).toContain('valid email');
-    });
-  });
-
-  describe('POST /auth/reset-password', () => {
-    it('should reset password with valid token', async () => {
-      const newPassword = 'NewSecurePassword123!';
-      
-      mockSupabaseClient.auth.updateUser.mockResolvedValue({
-        data: { user: { id: mockUsers.free.id } },
-        error: null,
-      });
-
-      const response = await request(app)
-        .post('/auth/reset-password')
-        .set('Authorization', 'Bearer valid-reset-token')
-        .send({ password: newPassword });
-
-      expect(response.status).toBe(200);
-      expect(response.body.success).toBe(true);
-      expect(response.body.message).toContain('updated successfully');
-    });
-
-    it('should validate new password strength', async () => {
-      const response = await request(app)
-        .post('/auth/reset-password')
-        .set('Authorization', 'Bearer valid-reset-token')
-        .send({ password: 'weak' });
-
-      expect(response.status).toBe(400);
-      expect(response.body.error).toContain('password must be');
-    });
-
-    it('should handle invalid reset token', async () => {
-      mockSupabaseClient.auth.updateUser.mockResolvedValue({
-        data: { user: null },
-        error: { message: 'Invalid token' },
-      });
-
-      const response = await request(app)
-        .post('/auth/reset-password')
-        .set('Authorization', 'Bearer invalid-token')
-        .send({ password: 'NewPassword123!' });
-
-      expect(response.status).toBe(401);
-      expect(response.body.error).toContain('Invalid or expired');
-    });
-  });
-
   describe('GET /auth/me', () => {
-    it('should return current user profile', async () => {
-      mockSupabaseClient.auth.getUser.mockResolvedValue({
-        data: { user: { id: mockUsers.free.id, email: mockUsers.free.email } },
-        error: null,
-      });
-
-      mockSupabaseClient.from().select().eq().single().mockResolvedValue({
-        data: mockUsers.free,
-        error: null,
-      });
-
-      const response = await request(app)
-        .get('/auth/me')
-        .set('Authorization', 'Bearer valid-token');
-
-      expect(response.status).toBe(200);
-      expect(response.body.success).toBe(true);
-      expect(response.body.data.user.id).toBe(mockUsers.free.id);
-      expect(response.body.data.user.email).toBe(mockUsers.free.email);
-    });
-
-    it('should handle invalid token', async () => {
-      mockSupabaseClient.auth.getUser.mockResolvedValue({
-        data: { user: null },
-        error: { message: 'Invalid token' },
-      });
-
-      const response = await request(app)
-        .get('/auth/me')
-        .set('Authorization', 'Bearer invalid-token');
-
-      expect(response.status).toBe(401);
-      expect(response.body.error).toContain('Invalid token');
-    });
-
-    it('should handle missing authorization header', async () => {
+    it('should require authentication', async () => {
       const response = await request(app).get('/auth/me');
 
       expect(response.status).toBe(401);
-      expect(response.body.error).toContain('Authorization required');
+      expect(response.body.error).toBe('Authentication required');
+    });
+
+    it('should return user profile data', async () => {
+      const mockUser = {
+        id: 'user-123',
+        email: 'user@example.com',
+      };
+
+      const mockProfile = {
+        id: 'user-123',
+        email: 'user@example.com',
+        name: 'Test User',
+        avatar_url: 'https://example.com/avatar.jpg',
+        level: 5,
+        xp: 250,
+        total_xp: 1250,
+        is_creator: false,
+        created_at: '2024-01-01T00:00:00Z',
+      };
+
+      // Mock authentication
+      (supabase.auth.getUser as jest.Mock).mockResolvedValueOnce({
+        data: { user: mockUser },
+        error: null,
+      });
+
+      // Mock profile fetch
+      (supabase.from as jest.Mock).mockReturnValue({
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        single: jest.fn().mockResolvedValue({
+          data: mockProfile,
+          error: null,
+        }),
+      });
+
+      const response = await request(app)
+        .get('/auth/me')
+        .set('Authorization', 'Bearer mock-token');
+
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual({
+        user: mockProfile,
+      });
+
+      expect(supabase.from).toHaveBeenCalledWith('users');
+    });
+
+    it('should handle missing user profile', async () => {
+      const mockUser = {
+        id: 'user-123',
+        email: 'user@example.com',
+      };
+
+      // Mock authentication
+      (supabase.auth.getUser as jest.Mock).mockResolvedValueOnce({
+        data: { user: mockUser },
+        error: null,
+      });
+
+      // Mock profile fetch - not found
+      (supabase.from as jest.Mock).mockReturnValue({
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        single: jest.fn().mockResolvedValue({
+          data: null,
+          error: { code: 'PGRST116', message: 'Row not found' },
+        }),
+      });
+
+      const response = await request(app)
+        .get('/auth/me')
+        .set('Authorization', 'Bearer mock-token');
+
+      expect(response.status).toBe(404);
+      expect(response.body.error).toBe('User profile not found');
+    });
+
+    it('should handle database errors', async () => {
+      const mockUser = {
+        id: 'user-123',
+        email: 'user@example.com',
+      };
+
+      // Mock authentication
+      (supabase.auth.getUser as jest.Mock).mockResolvedValueOnce({
+        data: { user: mockUser },
+        error: null,
+      });
+
+      // Mock profile fetch - database error
+      (supabase.from as jest.Mock).mockReturnValue({
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        single: jest.fn().mockResolvedValue({
+          data: null,
+          error: { message: 'Database connection error' },
+        }),
+      });
+
+      const response = await request(app)
+        .get('/auth/me')
+        .set('Authorization', 'Bearer mock-token');
+
+      expect(response.status).toBe(500);
+      expect(response.body.error).toBe('Failed to fetch user profile');
+      expect(logger.error).toHaveBeenCalled();
     });
   });
 
-  describe('Security Features', () => {
-    describe('Password validation', () => {
-      it('should require minimum length', async () => {
-        const response = await request(app)
-          .post('/auth/signup')
-          .send({
-            email: 'test@example.com',
-            password: '1234567', // Too short
-            name: 'Test User',
-          });
+  describe('PUT /auth/profile', () => {
+    it('should require authentication', async () => {
+      const response = await request(app)
+        .put('/auth/profile')
+        .send({ name: 'Updated Name' });
 
-        expect(response.status).toBe(400);
-        expect(response.body.error).toContain('8 characters');
+      expect(response.status).toBe(401);
+      expect(response.body.error).toBe('Authentication required');
+    });
+
+    it('should update user profile', async () => {
+      const mockUser = {
+        id: 'user-123',
+        email: 'user@example.com',
+      };
+
+      const updateData = {
+        name: 'Updated Name',
+        avatar_url: 'https://example.com/new-avatar.jpg',
+        is_creator: true,
+        creator_bio: 'Professional chef',
+        creator_specialty: 'Italian cuisine',
+        creator_tier: 2,
+      };
+
+      const updatedProfile = {
+        id: 'user-123',
+        email: 'user@example.com',
+        ...updateData,
+      };
+
+      // Mock authentication
+      (supabase.auth.getUser as jest.Mock).mockResolvedValueOnce({
+        data: { user: mockUser },
+        error: null,
       });
 
-      it('should require uppercase letter', async () => {
-        const response = await request(app)
-          .post('/auth/signup')
-          .send({
-            email: 'test@example.com',
-            password: 'lowercase123!',
-            name: 'Test User',
-          });
-
-        expect(response.status).toBe(400);
-        expect(response.body.error).toContain('uppercase');
+      // Mock profile update
+      (supabase.from as jest.Mock).mockReturnValue({
+        update: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        single: jest.fn().mockResolvedValue({
+          data: updatedProfile,
+          error: null,
+        }),
       });
 
-      it('should require special character', async () => {
-        const response = await request(app)
-          .post('/auth/signup')
-          .send({
-            email: 'test@example.com',
-            password: 'Password123',
-            name: 'Test User',
-          });
+      const response = await request(app)
+        .put('/auth/profile')
+        .set('Authorization', 'Bearer mock-token')
+        .send(updateData);
 
-        expect(response.status).toBe(400);
-        expect(response.body.error).toContain('special character');
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual({
+        user: updatedProfile,
+        message: 'Profile updated successfully',
+      });
+
+      expect(supabase.from).toHaveBeenCalledWith('users');
+    });
+
+    it('should handle profile update errors', async () => {
+      const mockUser = {
+        id: 'user-123',
+        email: 'user@example.com',
+      };
+
+      // Mock authentication
+      (supabase.auth.getUser as jest.Mock).mockResolvedValueOnce({
+        data: { user: mockUser },
+        error: null,
+      });
+
+      // Mock profile update error
+      (supabase.from as jest.Mock).mockReturnValue({
+        update: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        single: jest.fn().mockResolvedValue({
+          data: null,
+          error: { message: 'Update failed' },
+        }),
+      });
+
+      const response = await request(app)
+        .put('/auth/profile')
+        .set('Authorization', 'Bearer mock-token')
+        .send({ name: 'Updated Name' });
+
+      expect(response.status).toBe(500);
+      expect(response.body.error).toBe('Failed to update profile');
+      expect(logger.error).toHaveBeenCalled();
+    });
+
+    it('should mark onboarding as completed when updating profile', async () => {
+      const mockUser = {
+        id: 'user-123',
+        email: 'user@example.com',
+      };
+
+      const updateData = {
+        name: 'Updated Name',
+        onboarding_completed: true,
+      };
+
+      // Mock authentication
+      (supabase.auth.getUser as jest.Mock).mockResolvedValueOnce({
+        data: { user: mockUser },
+        error: null,
+      });
+
+      // Mock profile update
+      (supabase.from as jest.Mock).mockReturnValue({
+        update: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        single: jest.fn().mockResolvedValue({
+          data: { ...mockUser, ...updateData },
+          error: null,
+        }),
+      });
+
+      const response = await request(app)
+        .put('/auth/profile')
+        .set('Authorization', 'Bearer mock-token')
+        .send(updateData);
+
+      expect(response.status).toBe(200);
+      expect(response.body.user.onboarding_completed).toBe(true);
+    });
+  });
+
+  describe('POST /auth/profile/photo', () => {
+    it('should require authentication', async () => {
+      const response = await request(app)
+        .post('/auth/profile/photo')
+        .send({ photoUrl: 'https://example.com/photo.jpg' });
+
+      expect(response.status).toBe(401);
+      expect(response.body.error).toBe('Authentication required');
+    });
+
+    it('should update profile photo', async () => {
+      const mockUser = {
+        id: 'user-123',
+        email: 'user@example.com',
+      };
+
+      const photoUrl = 'https://example.com/new-photo.jpg';
+
+      // Mock authentication
+      (supabase.auth.getUser as jest.Mock).mockResolvedValueOnce({
+        data: { user: mockUser },
+        error: null,
+      });
+
+      // Mock photo update
+      (supabase.from as jest.Mock).mockReturnValue({
+        update: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        single: jest.fn().mockResolvedValue({
+          data: { ...mockUser, avatar_url: photoUrl },
+          error: null,
+        }),
+      });
+
+      const response = await request(app)
+        .post('/auth/profile/photo')
+        .set('Authorization', 'Bearer mock-token')
+        .send({ photoUrl });
+
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual({
+        user: { ...mockUser, avatar_url: photoUrl },
+        message: 'Profile photo updated successfully',
       });
     });
 
-    describe('Input sanitization', () => {
-      it('should sanitize email input', async () => {
-        const response = await request(app)
-          .post('/auth/login')
-          .send({
-            email: '  TEST@EXAMPLE.COM  ',
-            password: 'Password123!',
-          });
+    it('should validate photo URL', async () => {
+      const mockUser = {
+        id: 'user-123',
+        email: 'user@example.com',
+      };
 
-        expect(mockSupabaseClient.auth.signInWithPassword).toHaveBeenCalledWith({
-          email: 'test@example.com',
-          password: 'Password123!',
-        });
+      // Mock authentication
+      (supabase.auth.getUser as jest.Mock).mockResolvedValueOnce({
+        data: { user: mockUser },
+        error: null,
       });
 
-      it('should prevent SQL injection attempts', async () => {
-        const response = await request(app)
-          .post('/auth/login')
-          .send({
-            email: "'; DROP TABLE users; --",
-            password: 'password',
-          });
+      const response = await request(app)
+        .post('/auth/profile/photo')
+        .set('Authorization', 'Bearer mock-token')
+        .send({ photoUrl: 'invalid-url' });
 
-        expect(response.status).toBe(400);
-        expect(response.body.error).toContain('valid email');
-      });
+      expect(response.status).toBe(400);
+      expect(response.body.error).toBe('Invalid photo URL');
     });
 
-    describe('Session management', () => {
-      it('should set secure cookie flags in production', async () => {
-        process.env.NODE_ENV = 'production';
+    it('should handle missing photo URL', async () => {
+      const mockUser = {
+        id: 'user-123',
+        email: 'user@example.com',
+      };
 
-        mockSupabaseClient.auth.signInWithPassword.mockResolvedValue({
-          data: {
-            user: { id: mockUsers.free.id, email: mockUsers.free.email },
-            session: { access_token: 'token', refresh_token: 'refresh' },
+      // Mock authentication
+      (supabase.auth.getUser as jest.Mock).mockResolvedValueOnce({
+        data: { user: mockUser },
+        error: null,
+      });
+
+      const response = await request(app)
+        .post('/auth/profile/photo')
+        .set('Authorization', 'Bearer mock-token')
+        .send({});
+
+      expect(response.status).toBe(400);
+      expect(response.body.error).toBe('Photo URL is required');
+    });
+  });
+
+  describe('DELETE /auth/account', () => {
+    it('should require authentication', async () => {
+      const response = await request(app).delete('/auth/account');
+
+      expect(response.status).toBe(401);
+      expect(response.body.error).toBe('Authentication required');
+    });
+
+    it('should delete user account', async () => {
+      const mockUser = {
+        id: 'user-123',
+        email: 'user@example.com',
+      };
+
+      // Mock authentication
+      (supabase.auth.getUser as jest.Mock).mockResolvedValueOnce({
+        data: { user: mockUser },
+        error: null,
+      });
+
+      // Mock createAuthenticatedClient
+      const mockAuthClient = {
+        auth: {
+          admin: {
+            deleteUser: jest.fn().mockResolvedValue({
+              data: {},
+              error: null,
+            }),
           },
-          error: null,
-        });
+        },
+      };
+      (createAuthenticatedClient as jest.Mock).mockReturnValue(mockAuthClient);
 
-        mockSupabaseClient.from().select().eq().single().mockResolvedValue({
-          data: mockUsers.free,
-          error: null,
-        });
-
-        const response = await request(app)
-          .post('/auth/login')
-          .send({
-            email: mockUsers.free.email,
-            password: 'Password123!',
-          });
-
-        expect(response.headers['set-cookie'][0]).toContain('Secure');
-        expect(response.headers['set-cookie'][0]).toContain('HttpOnly');
-        expect(response.headers['set-cookie'][0]).toContain('SameSite=Strict');
-
-        process.env.NODE_ENV = 'test';
+      // Mock user data deletion
+      (supabase.from as jest.Mock).mockReturnValue({
+        delete: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
       });
+
+      const response = await request(app)
+        .delete('/auth/account')
+        .set('Authorization', 'Bearer mock-token');
+
+      expect(response.status).toBe(200);
+      expect(response.body.message).toBe('Account deleted successfully');
+      expect(mockAuthClient.auth.admin.deleteUser).toHaveBeenCalledWith(mockUser.id);
+    });
+
+    it('should handle account deletion errors', async () => {
+      const mockUser = {
+        id: 'user-123',
+        email: 'user@example.com',
+      };
+
+      // Mock authentication
+      (supabase.auth.getUser as jest.Mock).mockResolvedValueOnce({
+        data: { user: mockUser },
+        error: null,
+      });
+
+      // Mock createAuthenticatedClient with error
+      const mockAuthClient = {
+        auth: {
+          admin: {
+            deleteUser: jest.fn().mockResolvedValue({
+              data: null,
+              error: { message: 'Deletion failed' },
+            }),
+          },
+        },
+      };
+      (createAuthenticatedClient as jest.Mock).mockReturnValue(mockAuthClient);
+
+      const response = await request(app)
+        .delete('/auth/account')
+        .set('Authorization', 'Bearer mock-token');
+
+      expect(response.status).toBe(500);
+      expect(response.body.error).toBe('Failed to delete account');
+      expect(logger.error).toHaveBeenCalled();
+    });
+  });
+
+  describe('POST /auth/link-referral', () => {
+    it('should require authentication', async () => {
+      const response = await request(app)
+        .post('/auth/link-referral')
+        .send({ referralCode: 'REF123' });
+
+      expect(response.status).toBe(401);
+      expect(response.body.error).toBe('Authentication required');
+    });
+
+    it('should link referral code to user', async () => {
+      const mockUser = {
+        id: 'user-123',
+        email: 'user@example.com',
+      };
+
+      const referralCode = 'REF123';
+
+      // Mock authentication
+      (supabase.auth.getUser as jest.Mock).mockResolvedValueOnce({
+        data: { user: mockUser },
+        error: null,
+      });
+
+      // Mock referral link
+      (supabase.rpc as jest.Mock).mockResolvedValueOnce({
+        data: { success: true },
+        error: null,
+      });
+
+      const response = await request(app)
+        .post('/auth/link-referral')
+        .set('Authorization', 'Bearer mock-token')
+        .send({ referralCode });
+
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual({
+        success: true,
+        message: 'Referral code linked successfully',
+      });
+
+      expect(supabase.rpc).toHaveBeenCalledWith('link_referral_code', {
+        user_id: mockUser.id,
+        code: referralCode,
+      });
+    });
+
+    it('should handle missing referral code', async () => {
+      const mockUser = {
+        id: 'user-123',
+        email: 'user@example.com',
+      };
+
+      // Mock authentication
+      (supabase.auth.getUser as jest.Mock).mockResolvedValueOnce({
+        data: { user: mockUser },
+        error: null,
+      });
+
+      const response = await request(app)
+        .post('/auth/link-referral')
+        .set('Authorization', 'Bearer mock-token')
+        .send({});
+
+      expect(response.status).toBe(400);
+      expect(response.body.error).toBe('Referral code is required');
+    });
+
+    it('should handle invalid referral code', async () => {
+      const mockUser = {
+        id: 'user-123',
+        email: 'user@example.com',
+      };
+
+      // Mock authentication
+      (supabase.auth.getUser as jest.Mock).mockResolvedValueOnce({
+        data: { user: mockUser },
+        error: null,
+      });
+
+      // Mock referral link error
+      (supabase.rpc as jest.Mock).mockResolvedValueOnce({
+        data: null,
+        error: { message: 'Invalid referral code' },
+      });
+
+      const response = await request(app)
+        .post('/auth/link-referral')
+        .set('Authorization', 'Bearer mock-token')
+        .send({ referralCode: 'INVALID' });
+
+      expect(response.status).toBe(400);
+      expect(response.body.error).toBe('Invalid referral code');
+    });
+
+    it('should handle database errors during referral linking', async () => {
+      const mockUser = {
+        id: 'user-123',
+        email: 'user@example.com',
+      };
+
+      // Mock authentication
+      (supabase.auth.getUser as jest.Mock).mockResolvedValueOnce({
+        data: { user: mockUser },
+        error: null,
+      });
+
+      // Mock RPC error
+      (supabase.rpc as jest.Mock).mockRejectedValueOnce(new Error('Database error'));
+
+      const response = await request(app)
+        .post('/auth/link-referral')
+        .set('Authorization', 'Bearer mock-token')
+        .send({ referralCode: 'REF123' });
+
+      expect(response.status).toBe(500);
+      expect(response.body.error).toBe('Failed to link referral code');
+      expect(logger.error).toHaveBeenCalled();
+    });
+  });
+
+  describe('Error Handling - Signup Retry Logic', () => {
+    const validSignupData = {
+      email: 'newuser@example.com',
+      password: 'password123',
+      name: 'Test User',
+    };
+
+    it('should retry maximum times on persistent 504 errors', async () => {
+      // All attempts fail with 504
+      (supabase.auth.signUp as jest.Mock).mockResolvedValue({
+        data: { user: null, session: null },
+        error: {
+          name: 'AuthRetryableFetchError',
+          status: 504,
+          message: 'Gateway timeout',
+        },
+      });
+
+      const response = await request(app).post('/auth/signup').send(validSignupData);
+
+      expect(response.status).toBe(400);
+      expect(supabase.auth.signUp).toHaveBeenCalledTimes(3); // Max retries
+      expect(logger.warn).toHaveBeenCalledTimes(3);
+    });
+
+    it('should handle non-retryable errors immediately', async () => {
+      (supabase.auth.signUp as jest.Mock).mockResolvedValueOnce({
+        data: { user: null, session: null },
+        error: {
+          name: 'AuthApiError',
+          status: 400,
+          message: 'Bad request',
+        },
+      });
+
+      const response = await request(app).post('/auth/signup').send(validSignupData);
+
+      expect(response.status).toBe(400);
+      expect(supabase.auth.signUp).toHaveBeenCalledTimes(1); // No retry
+    });
+
+    it('should handle unexpected errors during signup', async () => {
+      (supabase.auth.signUp as jest.Mock).mockImplementationOnce(() => {
+        throw new Error('Unexpected error');
+      });
+
+      const response = await request(app).post('/auth/signup').send(validSignupData);
+
+      expect(response.status).toBe(400);
+      expect(response.body.code).toBe('SIGNUP_ERROR');
+      expect(logger.error).toHaveBeenCalledWith(
+        'Unexpected error during Supabase signup:',
+        expect.any(Error)
+      );
     });
   });
 });

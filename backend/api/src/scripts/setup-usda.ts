@@ -91,5 +91,8 @@ async function setupUSDAIntegration() {
   }
 }
 
+// Export for testing
+export { setupUSDAIntegration };
+
 // Run the setup
 setupUSDAIntegration();

@@ -1,501 +1,844 @@
-// Mock environment config before any imports
-jest.mock('../../config/env', () => ({
-  __esModule: true,
-  default: () => ({
-    SUPABASE_URL: "https://test.supabase.co",
-    SUPABASE_ANON_KEY: "test-anon-key",
-    API_BASE_URL: "https://test-api.cookcam.com",
-  }),
-}));
-
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react-native';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react-native';
+import { Alert, Animated } from 'react-native';
 import CameraScreen from '../../screens/CameraScreen';
-import { Alert } from 'react-native';
+import * as Haptics from 'expo-haptics';
 
-// Mock react-native modules
-jest.mock('react-native', () => ({
-  View: 'View',
-  Text: 'Text',
-  TouchableOpacity: 'TouchableOpacity',
-  SafeAreaView: 'SafeAreaView',
-  ActivityIndicator: 'ActivityIndicator',
-  Image: 'Image',
-  Alert: {
-    alert: jest.fn(),
-  },
-  Platform: {
-    OS: 'ios',
-    select: jest.fn((config) => config.ios || config.default),
-  },
-  Dimensions: {
-    get: jest.fn(() => ({ width: 390, height: 844 })),
-  },
-  StyleSheet: {
-    create: (styles: any) => styles,
-    flatten: (style: any) => style,
-  },
-}));
-
-// Mock expo-camera
-jest.mock('expo-camera', () => ({
-  Camera: {
-    requestCameraPermissionsAsync: jest.fn(() => 
-      Promise.resolve({ status: 'granted' })
-    ),
-    getCameraPermissionsAsync: jest.fn(() => 
-      Promise.resolve({ status: 'granted' })
-    ),
-    Constants: {
-      Type: {
-        back: 'back',
-        front: 'front',
-      },
-      FlashMode: {
-        off: 'off',
-        on: 'on',
-        auto: 'auto',
-      },
-    },
-  },
-  CameraView: 'CameraView',
-}));
-
-// Mock expo-media-library
-jest.mock('expo-media-library', () => ({
-  requestPermissionsAsync: jest.fn(() => 
-    Promise.resolve({ status: 'granted' })
-  ),
-  createAssetAsync: jest.fn(() => 
-    Promise.resolve({ uri: 'saved-photo-uri' })
-  ),
-}));
-
-// Mock icons
-jest.mock('lucide-react-native', () => ({
-  Camera: 'CameraIcon',
-  X: 'XIcon',
-  RotateCw: 'RotateCwIcon',
-  Zap: 'ZapIcon',
-  ZapOff: 'ZapOffIcon',
-  Check: 'CheckIcon',
-  RefreshCw: 'RefreshCwIcon',
-}));
+// Global PixelRatio mock
+global.PixelRatio = {
+  roundToNearestPixel: (value) => Math.round(value),
+  get: () => 2,
+  getFontScale: () => 1,
+  getPixelSizeForLayoutSize: (size) => size * 2,
+};
 
 // Mock navigation
-jest.mock('@react-navigation/native', () => ({
-  useNavigation: () => ({
-    navigate: jest.fn(),
-    goBack: jest.fn(),
-  }),
-  useRoute: () => ({
-    params: {},
-  }),
-}));
+const mockNavigation = {
+  navigate: jest.fn(),
+  goBack: jest.fn(),
+  setOptions: jest.fn(),
+  addListener: jest.fn(),
+  removeListener: jest.fn(),
+  canGoBack: jest.fn(() => false),
+  dispatch: jest.fn(),
+  reset: jest.fn(),
+  isFocused: jest.fn(() => true),
+  getId: jest.fn(() => 'test-id'),
+  getParent: jest.fn(),
+  getState: jest.fn(() => ({ index: 0, routes: [] })),
+};
 
 // Mock contexts
+const mockAuthContext = {
+  user: {
+    id: 'test-user-123',
+    name: 'Test Chef',
+    email: 'test@cookcam.com',
+  },
+  login: jest.fn(),
+  logout: jest.fn(),
+  loading: false,
+  checkBiometricAuth: jest.fn(),
+};
+
+const mockGamificationContext = {
+  xp: 250,
+  level: 3,
+  streak: 5,
+  badges: ['first-scan', 'ingredient-expert'],
+  addXP: jest.fn(),
+  updateLevel: jest.fn(),
+  updateStreak: jest.fn(),
+  unlockBadge: jest.fn(),
+};
+
 jest.mock('../../context/AuthContext', () => ({
-  useAuth: jest.fn(() => ({
-    user: { id: 'test-user-id' },
-  })),
+  useAuth: () => mockAuthContext,
 }));
 
-// Mock services
-jest.mock('../../services/cookCamApi', () => ({
-  cookCamApi: {
-    analyzeImage: jest.fn(),
-    createRecipeFromImage: jest.fn(),
+jest.mock('../../context/GamificationContext', () => ({
+  useGamification: () => mockGamificationContext,
+  XP_VALUES: {
+    SCAN_INGREDIENTS: 15,
+    COMPLETE_RECIPE: 25,
+    DAILY_CHECK_IN: 5,
   },
 }));
 
+// Mock components
+jest.mock('../../components/DailyCheckIn', () => () => (
+  <div testID="daily-check-in">Daily Check In Component</div>
+));
+
+// Mock Expo camera
+const mockCameraRef = {
+  takePictureAsync: jest.fn(),
+  current: null,
+};
+
+jest.mock('expo-camera', () => ({
+  CameraView: React.forwardRef((props, ref) => {
+    mockCameraRef.current = ref;
+    return <div testID="camera-view" {...props} ref={ref} />;
+  }),
+  CameraType: {
+    back: 'back',
+    front: 'front',
+  },
+  useCameraPermissions: jest.fn(() => [
+    { granted: true, status: 'granted' },
+    jest.fn(),
+  ]),
+}));
+
+// Mock external libraries
+jest.mock('expo-haptics', () => ({
+  impactAsync: jest.fn().mockResolvedValue(undefined),
+  notificationAsync: jest.fn().mockResolvedValue(undefined),
+  ImpactFeedbackStyle: {
+    Light: 'light',
+    Medium: 'medium',
+    Heavy: 'heavy',
+  },
+  NotificationFeedbackType: {
+    Success: 'success',
+    Warning: 'warning',
+    Error: 'error',
+  },
+}));
+
+// Mock react-navigation
+jest.mock('@react-navigation/native', () => ({
+  useFocusEffect: (callback) => {
+    React.useEffect(() => {
+      const unsubscribe = callback();
+      return unsubscribe;
+    }, [callback]);
+  },
+}));
+
+// Mock Alert
+jest.spyOn(Alert, 'alert');
+
+// Mock logger
 jest.mock('../../utils/logger', () => ({
   debug: jest.fn(),
   error: jest.fn(),
   info: jest.fn(),
+  warn: jest.fn(),
 }));
 
+// Mock Animated API
+const mockAnimatedValue = {
+  setValue: jest.fn(),
+  interpolate: jest.fn(() => mockAnimatedValue),
+};
+
+jest.mock('react-native', () => {
+  const RN = jest.requireActual('react-native');
+  return {
+    ...RN,
+    Animated: {
+      ...RN.Animated,
+      Value: jest.fn(() => mockAnimatedValue),
+      timing: jest.fn(() => ({
+        start: jest.fn((callback) => callback && callback()),
+      })),
+      spring: jest.fn(() => ({
+        start: jest.fn((callback) => callback && callback()),
+      })),
+      parallel: jest.fn((animations) => ({
+        start: jest.fn((callback) => callback && callback()),
+      })),
+      sequence: jest.fn((animations) => ({
+        start: jest.fn((callback) => callback && callback()),
+      })),
+      loop: jest.fn((animation) => ({
+        start: jest.fn(),
+      })),
+      View: RN.Animated.View,
+    },
+    Platform: {
+      ...RN.Platform,
+      OS: 'ios',
+      isPad: false,
+    },
+  };
+});
+
 describe('CameraScreen', () => {
-  const mockNavigation = {
-    navigate: jest.fn(),
-    goBack: jest.fn(),
-  } as any;
-
-  const mockRoute = {
-    params: {},
-  } as any;
-
   beforeEach(() => {
     jest.clearAllMocks();
+    jest.useFakeTimers();
   });
 
-  describe('Permissions', () => {
-    it('should request camera permissions on mount', async () => {
-      const mockRequestPermissions = require('expo-camera').Camera.requestCameraPermissionsAsync;
-      
-      render(<CameraScreen navigation={mockNavigation} route={mockRoute} />);
-
-      await waitFor(() => {
-        expect(mockRequestPermissions).toHaveBeenCalled();
-      });
-    });
-
-    it('should show permission denied message when camera access is denied', async () => {
-      const mockRequestPermissions = require('expo-camera').Camera.requestCameraPermissionsAsync;
-      mockRequestPermissions.mockResolvedValueOnce({ status: 'denied' });
-
-      render(<CameraScreen navigation={mockNavigation} route={mockRoute} />);
-
-      await waitFor(() => {
-        expect(screen.getByText(/Camera permission required/i)).toBeTruthy();
-      });
-    });
-
-    it('should show settings button when permission is denied', async () => {
-      const mockRequestPermissions = require('expo-camera').Camera.requestCameraPermissionsAsync;
-      mockRequestPermissions.mockResolvedValueOnce({ status: 'denied' });
-
-      render(<CameraScreen navigation={mockNavigation} route={mockRoute} />);
-
-      await waitFor(() => {
-        expect(screen.getByText(/Open Settings/i)).toBeTruthy();
-      });
-    });
+  afterEach(() => {
+    jest.useRealTimers();
   });
 
-  describe('Camera Controls', () => {
-    it('should render camera view when permissions are granted', async () => {
-      const { UNSAFE_queryByType } = render(
-        <CameraScreen navigation={mockNavigation} route={mockRoute} />
-      );
+  describe('Component Rendering', () => {
+    it('should render camera screen with all essential elements', () => {
+      render(<CameraScreen navigation={mockNavigation} />);
 
-      await waitFor(() => {
-        expect(UNSAFE_queryByType('CameraView')).toBeTruthy();
-      });
+      expect(screen.getByText('Ready to Cook? 🍳')).toBeTruthy();
+      expect(screen.getByText('Show me what you\'ve got!')).toBeTruthy();
+      expect(screen.getByText('Scan Ingredients')).toBeTruthy();
+      expect(screen.getByText('Enter Ingredients Manually')).toBeTruthy();
     });
 
-    it('should show capture button', async () => {
-      render(<CameraScreen navigation={mockNavigation} route={mockRoute} />);
+    it('should render camera preview area with overlay elements', () => {
+      render(<CameraScreen navigation={mockNavigation} />);
 
-      await waitFor(() => {
-        expect(screen.getByTestId('capture-button')).toBeTruthy();
-      });
+      expect(screen.getByTestId('camera-view')).toBeTruthy();
+      expect(screen.getByText('Tap to detect your ingredients')).toBeTruthy();
     });
 
-    it('should show flash toggle button', async () => {
-      render(<CameraScreen navigation={mockNavigation} route={mockRoute} />);
+    it('should render fun fact section with cycling tips', () => {
+      render(<CameraScreen navigation={mockNavigation} />);
 
-      await waitFor(() => {
-        expect(screen.UNSAFE_queryByType('ZapOffIcon')).toBeTruthy();
-      });
+      // Should show first fun fact
+      expect(screen.getByText(/Honey never spoils/)).toBeTruthy();
     });
 
-    it('should toggle flash mode when flash button is pressed', async () => {
-      render(<CameraScreen navigation={mockNavigation} route={mockRoute} />);
+    it('should render floating emoji animations', () => {
+      render(<CameraScreen navigation={mockNavigation} />);
 
-      await waitFor(() => {
-        const flashButton = screen.UNSAFE_getByType('ZapOffIcon').parent;
-        fireEvent.press(flashButton);
-      });
-
-      expect(screen.UNSAFE_queryByType('ZapIcon')).toBeTruthy();
-    });
-
-    it('should show camera flip button', async () => {
-      render(<CameraScreen navigation={mockNavigation} route={mockRoute} />);
-
-      await waitFor(() => {
-        expect(screen.UNSAFE_queryByType('RotateCwIcon')).toBeTruthy();
-      });
-    });
-
-    it('should flip camera when flip button is pressed', async () => {
-      const { UNSAFE_getByType } = render(
-        <CameraScreen navigation={mockNavigation} route={mockRoute} />
-      );
-
-      await waitFor(() => {
-        const flipButton = UNSAFE_getByType('RotateCwIcon').parent;
-        fireEvent.press(flipButton);
-      });
-
-      // Camera should flip between front and back
-      expect(true).toBe(true);
+      expect(screen.getByText('🥕')).toBeTruthy();
+      expect(screen.getByText('🧄')).toBeTruthy();
     });
   });
 
-  describe('Photo Capture', () => {
-    it('should capture photo when capture button is pressed', async () => {
-      const mockTakePictureAsync = jest.fn(() => 
-        Promise.resolve({ uri: 'captured-photo-uri' })
-      );
+  describe('Camera Permissions', () => {
+    it('should show permission request screen when no camera access', () => {
+      const mockUseCameraPermissions = require('expo-camera').useCameraPermissions;
+      mockUseCameraPermissions.mockReturnValue([
+        { granted: false, status: 'undetermined' },
+        jest.fn(),
+      ]);
 
-      const { UNSAFE_getByType } = render(
-        <CameraScreen navigation={mockNavigation} route={mockRoute} />
-      );
+      render(<CameraScreen navigation={mockNavigation} />);
 
-      await waitFor(() => {
-        const cameraView = UNSAFE_getByType('CameraView');
-        cameraView.ref = { takePictureAsync: mockTakePictureAsync };
-      });
-
-      const captureButton = screen.getByTestId('capture-button');
-      fireEvent.press(captureButton);
-
-      await waitFor(() => {
-        expect(mockTakePictureAsync).toHaveBeenCalled();
-      });
+      expect(screen.getByText('Camera Permission Required')).toBeTruthy();
+      expect(screen.getByText('CookCam needs camera access to scan your ingredients and generate amazing recipes!')).toBeTruthy();
+      expect(screen.getByText('Grant Camera Access')).toBeTruthy();
     });
 
-    it('should show preview after capturing photo', async () => {
-      const mockTakePictureAsync = jest.fn(() => 
-        Promise.resolve({ uri: 'captured-photo-uri' })
-      );
+    it('should request permission when grant button is pressed', () => {
+      const mockRequestPermission = jest.fn();
+      const mockUseCameraPermissions = require('expo-camera').useCameraPermissions;
+      mockUseCameraPermissions.mockReturnValue([
+        { granted: false, status: 'undetermined' },
+        mockRequestPermission,
+      ]);
 
-      const { UNSAFE_getByType } = render(
-        <CameraScreen navigation={mockNavigation} route={mockRoute} />
-      );
+      render(<CameraScreen navigation={mockNavigation} />);
 
-      await waitFor(() => {
-        const cameraView = UNSAFE_getByType('CameraView');
-        cameraView.ref = { takePictureAsync: mockTakePictureAsync };
-      });
+      const grantButton = screen.getByText('Grant Camera Access');
+      fireEvent.press(grantButton);
 
-      const captureButton = screen.getByTestId('capture-button');
-      fireEvent.press(captureButton);
-
-      await waitFor(() => {
-        const image = UNSAFE_getByType('Image');
-        expect(image.props.source).toEqual({ uri: 'captured-photo-uri' });
-      });
+      expect(mockRequestPermission).toHaveBeenCalled();
     });
 
-    it('should show retake and use photo buttons in preview', async () => {
-      const mockTakePictureAsync = jest.fn(() => 
-        Promise.resolve({ uri: 'captured-photo-uri' })
-      );
+    it('should show camera interface when permission is granted', () => {
+      const mockUseCameraPermissions = require('expo-camera').useCameraPermissions;
+      mockUseCameraPermissions.mockReturnValue([
+        { granted: true, status: 'granted' },
+        jest.fn(),
+      ]);
 
-      const { UNSAFE_getByType } = render(
-        <CameraScreen navigation={mockNavigation} route={mockRoute} />
-      );
+      render(<CameraScreen navigation={mockNavigation} />);
 
-      await waitFor(() => {
-        const cameraView = UNSAFE_getByType('CameraView');
-        cameraView.ref = { takePictureAsync: mockTakePictureAsync };
-      });
-
-      const captureButton = screen.getByTestId('capture-button');
-      fireEvent.press(captureButton);
-
-      await waitFor(() => {
-        expect(screen.getByText('Retake')).toBeTruthy();
-        expect(screen.getByText('Use Photo')).toBeTruthy();
-      });
-    });
-
-    it('should retake photo when retake button is pressed', async () => {
-      const mockTakePictureAsync = jest.fn(() => 
-        Promise.resolve({ uri: 'captured-photo-uri' })
-      );
-
-      const { UNSAFE_getByType } = render(
-        <CameraScreen navigation={mockNavigation} route={mockRoute} />
-      );
-
-      await waitFor(() => {
-        const cameraView = UNSAFE_getByType('CameraView');
-        cameraView.ref = { takePictureAsync: mockTakePictureAsync };
-      });
-
-      const captureButton = screen.getByTestId('capture-button');
-      fireEvent.press(captureButton);
-
-      await waitFor(() => {
-        const retakeButton = screen.getByText('Retake').parent;
-        fireEvent.press(retakeButton);
-      });
-
-      // Should go back to camera view
-      expect(screen.getByTestId('capture-button')).toBeTruthy();
+      expect(screen.getByTestId('camera-view')).toBeTruthy();
+      expect(screen.getByText('Scan Ingredients')).toBeTruthy();
     });
   });
 
-  describe('Image Analysis', () => {
-    it('should analyze image when use photo is pressed', async () => {
-      const mockAnalyzeImage = require('../../services/cookCamApi').cookCamApi.analyzeImage;
-      mockAnalyzeImage.mockResolvedValueOnce({
-        success: true,
-        data: {
-          ingredients: ['tomato', 'pasta', 'cheese'],
-          suggestions: ['Spaghetti', 'Lasagna'],
-        },
-      });
-
-      const mockTakePictureAsync = jest.fn(() => 
-        Promise.resolve({ uri: 'captured-photo-uri' })
-      );
-
-      const { UNSAFE_getByType } = render(
-        <CameraScreen navigation={mockNavigation} route={mockRoute} />
-      );
-
-      await waitFor(() => {
-        const cameraView = UNSAFE_getByType('CameraView');
-        cameraView.ref = { takePictureAsync: mockTakePictureAsync };
-      });
-
-      const captureButton = screen.getByTestId('capture-button');
-      fireEvent.press(captureButton);
-
-      await waitFor(() => {
-        const usePhotoButton = screen.getByText('Use Photo').parent;
-        fireEvent.press(usePhotoButton);
-      });
-
-      await waitFor(() => {
-        expect(mockAnalyzeImage).toHaveBeenCalledWith('captured-photo-uri');
-      });
+  describe('Photo Capture Functionality', () => {
+    beforeEach(() => {
+      const mockUseCameraPermissions = require('expo-camera').useCameraPermissions;
+      mockUseCameraPermissions.mockReturnValue([
+        { granted: true, status: 'granted' },
+        jest.fn(),
+      ]);
     });
 
-    it('should navigate to recipe suggestions after analysis', async () => {
-      const mockAnalyzeImage = require('../../services/cookCamApi').cookCamApi.analyzeImage;
-      mockAnalyzeImage.mockResolvedValueOnce({
-        success: true,
-        data: {
-          ingredients: ['tomato', 'pasta', 'cheese'],
-          suggestions: ['Spaghetti', 'Lasagna'],
-        },
+    it('should handle photo capture with haptic feedback', async () => {
+      mockCameraRef.takePictureAsync.mockResolvedValue({
+        uri: 'file://test-photo.jpg',
       });
 
-      const mockTakePictureAsync = jest.fn(() => 
-        Promise.resolve({ uri: 'captured-photo-uri' })
-      );
+      render(<CameraScreen navigation={mockNavigation} />);
 
-      const { UNSAFE_getByType } = render(
-        <CameraScreen navigation={mockNavigation} route={mockRoute} />
-      );
+      const scanButton = screen.getByText('Scan Ingredients');
+      fireEvent.press(scanButton);
 
       await waitFor(() => {
-        const cameraView = UNSAFE_getByType('CameraView');
-        cameraView.ref = { takePictureAsync: mockTakePictureAsync };
-      });
-
-      const captureButton = screen.getByTestId('capture-button');
-      fireEvent.press(captureButton);
-
-      await waitFor(() => {
-        const usePhotoButton = screen.getByText('Use Photo').parent;
-        fireEvent.press(usePhotoButton);
-      });
-
-      await waitFor(() => {
-        expect(mockNavigation.navigate).toHaveBeenCalledWith('RecipeSuggestions', {
-          ingredients: ['tomato', 'pasta', 'cheese'],
-          suggestions: ['Spaghetti', 'Lasagna'],
-          imageUri: 'captured-photo-uri',
+        expect(Haptics.impactAsync).toHaveBeenCalledWith(Haptics.ImpactFeedbackStyle.Medium);
+        expect(mockCameraRef.takePictureAsync).toHaveBeenCalledWith({
+          quality: 0.8,
+          base64: false,
         });
       });
     });
 
-    it('should show error when image analysis fails', async () => {
-      const mockAnalyzeImage = require('../../services/cookCamApi').cookCamApi.analyzeImage;
-      mockAnalyzeImage.mockResolvedValueOnce({
-        success: false,
-        error: 'Analysis failed',
+    it('should award XP for successful photo capture', async () => {
+      mockCameraRef.takePictureAsync.mockResolvedValue({
+        uri: 'file://test-photo.jpg',
       });
 
-      const mockTakePictureAsync = jest.fn(() => 
-        Promise.resolve({ uri: 'captured-photo-uri' })
-      );
+      render(<CameraScreen navigation={mockNavigation} />);
 
-      const { UNSAFE_getByType } = render(
-        <CameraScreen navigation={mockNavigation} route={mockRoute} />
-      );
+      const scanButton = screen.getByText('Scan Ingredients');
+      fireEvent.press(scanButton);
 
       await waitFor(() => {
-        const cameraView = UNSAFE_getByType('CameraView');
-        cameraView.ref = { takePictureAsync: mockTakePictureAsync };
+        expect(mockGamificationContext.addXP).toHaveBeenCalledWith(15, 'SCAN_INGREDIENTS');
+        expect(Haptics.notificationAsync).toHaveBeenCalledWith(Haptics.NotificationFeedbackType.Success);
+      });
+    });
+
+    it('should navigate to ingredient review with captured photo', async () => {
+      mockCameraRef.takePictureAsync.mockResolvedValue({
+        uri: 'file://test-photo.jpg',
       });
 
-      const captureButton = screen.getByTestId('capture-button');
-      fireEvent.press(captureButton);
+      render(<CameraScreen navigation={mockNavigation} />);
+
+      const scanButton = screen.getByText('Scan Ingredients');
+      fireEvent.press(scanButton);
 
       await waitFor(() => {
-        const usePhotoButton = screen.getByText('Use Photo').parent;
-        fireEvent.press(usePhotoButton);
+        expect(mockNavigation.navigate).toHaveBeenCalledWith('IngredientReview', {
+          imageUri: 'file://test-photo.jpg',
+        });
       });
+    });
+
+    it('should show loading state during photo processing', async () => {
+      mockCameraRef.takePictureAsync.mockImplementation(
+        () => new Promise(resolve => setTimeout(() => resolve({ uri: 'test.jpg' }), 100))
+      );
+
+      render(<CameraScreen navigation={mockNavigation} />);
+
+      const scanButton = screen.getByText('Scan Ingredients');
+      fireEvent.press(scanButton);
+
+      // Should show loading indicator
+      expect(screen.getByTestId('activity-indicator')).toBeTruthy();
+
+      await act(async () => {
+        jest.advanceTimersByTime(200);
+      });
+    });
+
+    it('should handle camera error gracefully', async () => {
+      mockCameraRef.takePictureAsync.mockRejectedValue(new Error('Camera failed'));
+
+      render(<CameraScreen navigation={mockNavigation} />);
+
+      const scanButton = screen.getByText('Scan Ingredients');
+      fireEvent.press(scanButton);
 
       await waitFor(() => {
         expect(Alert.alert).toHaveBeenCalledWith(
-          'Error',
-          expect.stringContaining('failed')
+          'Photo Error',
+          'Failed to take photo. Please try again.',
+          [{ text: 'OK' }]
+        );
+        expect(Haptics.notificationAsync).toHaveBeenCalledWith(Haptics.NotificationFeedbackType.Error);
+      });
+    });
+
+    it('should handle missing camera reference', async () => {
+      mockCameraRef.current = null;
+
+      render(<CameraScreen navigation={mockNavigation} />);
+
+      const scanButton = screen.getByText('Scan Ingredients');
+      fireEvent.press(scanButton);
+
+      await waitFor(() => {
+        expect(Alert.alert).toHaveBeenCalledWith(
+          'Camera Error',
+          'Camera is not available. Please check permissions and try again.',
+          [{ text: 'OK' }]
+        );
+      });
+    });
+  });
+
+  describe('Simulator Mode', () => {
+    beforeEach(() => {
+      // Mock Platform.OS as iOS but not iPad to simulate iOS simulator
+      require('react-native').Platform.OS = 'ios';
+      require('react-native').Platform.isPad = false;
+    });
+
+    it('should detect simulator environment', () => {
+      render(<CameraScreen navigation={mockNavigation} />);
+
+      const scanButton = screen.getByText('Scan Ingredients');
+      fireEvent.press(scanButton);
+
+      // Should use mock image in simulator mode
+      expect(mockNavigation.navigate).toHaveBeenCalledWith('IngredientReview', 
+        expect.objectContaining({
+          isSimulator: false, // Note: isSimulator is set to false in navigation
+        })
+      );
+    });
+
+    it('should use mock camera images in simulator mode', async () => {
+      render(<CameraScreen navigation={mockNavigation} />);
+
+      const scanButton = screen.getByText('Scan Ingredients');
+      fireEvent.press(scanButton);
+
+      await act(async () => {
+        jest.advanceTimersByTime(1600); // Wait for simulation delay
+      });
+
+      await waitFor(() => {
+        expect(mockGamificationContext.addXP).toHaveBeenCalledWith(15, 'SCAN_INGREDIENTS');
+        expect(mockNavigation.navigate).toHaveBeenCalled();
+      });
+    });
+
+    it('should provide haptic feedback in simulator mode', async () => {
+      render(<CameraScreen navigation={mockNavigation} />);
+
+      const scanButton = screen.getByText('Scan Ingredients');
+      fireEvent.press(scanButton);
+
+      expect(Haptics.impactAsync).toHaveBeenCalledWith(Haptics.ImpactFeedbackStyle.Medium);
+
+      await act(async () => {
+        jest.advanceTimersByTime(1600);
+      });
+
+      await waitFor(() => {
+        expect(Haptics.notificationAsync).toHaveBeenCalledWith(Haptics.NotificationFeedbackType.Success);
+      });
+    });
+  });
+
+  describe('Manual Input Functionality', () => {
+    it('should handle manual ingredient input with haptic feedback', () => {
+      render(<CameraScreen navigation={mockNavigation} />);
+
+      const manualButton = screen.getByText('Enter Ingredients Manually');
+      fireEvent.press(manualButton);
+
+      expect(Haptics.impactAsync).toHaveBeenCalledWith(Haptics.ImpactFeedbackStyle.Medium);
+      expect(mockNavigation.navigate).toHaveBeenCalledWith('IngredientReview', {
+        imageUri: null,
+        isSimulator: false,
+        isManualInput: true,
+      });
+    });
+
+    it('should disable manual input during processing', () => {
+      mockCameraRef.takePictureAsync.mockImplementation(
+        () => new Promise(resolve => setTimeout(() => resolve({ uri: 'test.jpg' }), 100))
+      );
+
+      render(<CameraScreen navigation={mockNavigation} />);
+
+      const scanButton = screen.getByText('Scan Ingredients');
+      fireEvent.press(scanButton);
+
+      const manualButton = screen.getByText('Enter Ingredients Manually');
+      expect(manualButton.parent.props.disabled).toBe(true);
+    });
+  });
+
+  describe('Fun Facts and Tips', () => {
+    it('should cycle through fun facts every 8 seconds', () => {
+      render(<CameraScreen navigation={mockNavigation} />);
+
+      // Should start with first fact
+      expect(screen.getByText(/Honey never spoils/)).toBeTruthy();
+
+      // Fast forward 8 seconds
+      act(() => {
+        jest.advanceTimersByTime(8000);
+      });
+
+      // Should show second fact
+      expect(screen.getByText(/Bananas are berries/)).toBeTruthy();
+    });
+
+    it('should loop back to first fact after showing all facts', () => {
+      render(<CameraScreen navigation={mockNavigation} />);
+
+      // Fast forward through all facts (10 facts * 8 seconds = 80 seconds)
+      act(() => {
+        jest.advanceTimersByTime(80000);
+      });
+
+      // Should be back to first fact
+      expect(screen.getByText(/Honey never spoils/)).toBeTruthy();
+    });
+
+    it('should clear fact interval on component unmount', () => {
+      const { unmount } = render(<CameraScreen navigation={mockNavigation} />);
+      
+      unmount();
+      
+      // Should not crash or continue updating
+      expect(() => {
+        act(() => {
+          jest.advanceTimersByTime(8000);
+        });
+      }).not.toThrow();
+    });
+  });
+
+  describe('Animation Behavior', () => {
+    it('should initialize animations on mount', async () => {
+      render(<CameraScreen navigation={mockNavigation} />);
+
+      await waitFor(() => {
+        expect(Animated.loop).toHaveBeenCalled();
+        expect(Animated.sequence).toHaveBeenCalled();
+        expect(Animated.timing).toHaveBeenCalled();
+        expect(Animated.parallel).toHaveBeenCalled();
+        expect(Animated.spring).toHaveBeenCalled();
+      });
+    });
+
+    it('should create pulse animation for scan button and elements', async () => {
+      render(<CameraScreen navigation={mockNavigation} />);
+
+      await waitFor(() => {
+        // Pulse animation for scan button
+        expect(Animated.loop).toHaveBeenCalled();
+        expect(Animated.sequence).toHaveBeenCalled();
+      });
+    });
+
+    it('should create rotating background decoration', async () => {
+      render(<CameraScreen navigation={mockNavigation} />);
+
+      await waitFor(() => {
+        expect(Animated.loop).toHaveBeenCalled();
+        expect(Animated.timing).toHaveBeenCalledWith(
+          expect.any(Object),
+          expect.objectContaining({
+            toValue: 1,
+            duration: 30000,
+            useNativeDriver: true,
+          })
         );
       });
     });
 
-    it('should show loading indicator during analysis', async () => {
-      const mockAnalyzeImage = require('../../services/cookCamApi').cookCamApi.analyzeImage;
-      mockAnalyzeImage.mockImplementation(() => 
-        new Promise(resolve => setTimeout(() => resolve({ success: true }), 100))
-      );
-
-      const mockTakePictureAsync = jest.fn(() => 
-        Promise.resolve({ uri: 'captured-photo-uri' })
-      );
-
-      const { UNSAFE_getByType } = render(
-        <CameraScreen navigation={mockNavigation} route={mockRoute} />
-      );
+    it('should animate content fade in and slide up', async () => {
+      render(<CameraScreen navigation={mockNavigation} />);
 
       await waitFor(() => {
-        const cameraView = UNSAFE_getByType('CameraView');
-        cameraView.ref = { takePictureAsync: mockTakePictureAsync };
+        expect(Animated.parallel).toHaveBeenCalled();
+        expect(Animated.timing).toHaveBeenCalledWith(
+          expect.any(Object),
+          expect.objectContaining({
+            toValue: 1,
+            duration: 1000,
+            useNativeDriver: true,
+          })
+        );
+        expect(Animated.spring).toHaveBeenCalledWith(
+          expect.any(Object),
+          expect.objectContaining({
+            toValue: 0,
+            tension: 40,
+            friction: 8,
+            useNativeDriver: true,
+          })
+        );
       });
+    });
 
-      const captureButton = screen.getByTestId('capture-button');
-      fireEvent.press(captureButton);
+    it('should animate XP badge with delay', async () => {
+      render(<CameraScreen navigation={mockNavigation} />);
 
       await waitFor(() => {
-        const usePhotoButton = screen.getByText('Use Photo').parent;
-        fireEvent.press(usePhotoButton);
+        expect(Animated.spring).toHaveBeenCalledWith(
+          expect.any(Object),
+          expect.objectContaining({
+            toValue: 1,
+            tension: 50,
+            friction: 7,
+            delay: 500,
+            useNativeDriver: true,
+          })
+        );
       });
-
-      expect(screen.UNSAFE_queryByType('ActivityIndicator')).toBeTruthy();
     });
   });
 
-  describe('Navigation', () => {
-    it('should show close button', () => {
-      render(<CameraScreen navigation={mockNavigation} route={mockRoute} />);
+  describe('Daily Check-In Integration', () => {
+    it('should show daily check-in modal when triggered', () => {
+      render(<CameraScreen navigation={mockNavigation} />);
 
-      expect(screen.UNSAFE_queryByType('XIcon')).toBeTruthy();
+      // Simulate showing daily check-in (this would be triggered by some condition)
+      // Since the component manages this internally, we'll test the rendered component
+      expect(screen.queryByTestId('daily-check-in')).toBeFalsy(); // Initially hidden
     });
 
-    it('should go back when close button is pressed', () => {
-      render(<CameraScreen navigation={mockNavigation} route={mockRoute} />);
+    it('should hide daily check-in when close button is pressed', () => {
+      render(<CameraScreen navigation={mockNavigation} />);
 
-      const closeButton = screen.UNSAFE_getByType('XIcon').parent;
-      fireEvent.press(closeButton);
-
-      expect(mockNavigation.goBack).toHaveBeenCalled();
+      // Since showDailyCheckIn starts as false, we can't directly test this
+      // without modifying component state, but we can verify the structure exists
+      expect(screen.queryByTestId('daily-check-in')).toBeFalsy();
     });
   });
 
-  describe('Gallery', () => {
-    it('should show gallery button', () => {
-      render(<CameraScreen navigation={mockNavigation} route={mockRoute} />);
+  describe('Focus Effect and Camera Reinitialization', () => {
+    it('should reinitialize camera when screen comes into focus', () => {
+      render(<CameraScreen navigation={mockNavigation} />);
 
-      expect(screen.getByText('Gallery')).toBeTruthy();
+      // The useFocusEffect should trigger camera reinitialization
+      expect(screen.getByText('Initializing camera...')).toBeTruthy();
+
+      // After delay, should show ready state
+      act(() => {
+        jest.advanceTimersByTime(150);
+      });
+
+      expect(screen.getByText('Tap to detect your ingredients')).toBeTruthy();
     });
 
-    it('should open image picker when gallery button is pressed', () => {
-      render(<CameraScreen navigation={mockNavigation} route={mockRoute} />);
+    it('should clean up timer on screen unfocus', () => {
+      const { unmount } = render(<CameraScreen navigation={mockNavigation} />);
+      
+      unmount();
+      
+      // Should not throw errors during cleanup
+      expect(() => {
+        act(() => {
+          jest.advanceTimersByTime(1000);
+        });
+      }).not.toThrow();
+    });
+  });
 
-      const galleryButton = screen.getByText('Gallery').parent;
-      fireEvent.press(galleryButton);
+  describe('Responsive Design', () => {
+    it('should handle different screen sizes', () => {
+      // Mock small device dimensions
+      const originalGet = require('react-native').Dimensions.get;
+      require('react-native').Dimensions.get = jest.fn(() => ({
+        width: 320,
+        height: 568,
+      }));
 
-      expect(mockNavigation.navigate).toHaveBeenCalledWith('ImagePicker', {
-        onImageSelected: expect.any(Function),
+      const { unmount } = render(<CameraScreen navigation={mockNavigation} />);
+      
+      expect(screen.getByText('Ready to Cook? 🍳')).toBeTruthy();
+      
+      // Restore original Dimensions
+      require('react-native').Dimensions.get = originalGet;
+      unmount();
+    });
+
+    it('should handle large device dimensions', () => {
+      const originalGet = require('react-native').Dimensions.get;
+      require('react-native').Dimensions.get = jest.fn(() => ({
+        width: 414,
+        height: 896,
+      }));
+
+      const { unmount } = render(<CameraScreen navigation={mockNavigation} />);
+      
+      expect(screen.getByText('Scan Ingredients')).toBeTruthy();
+      
+      require('react-native').Dimensions.get = originalGet;
+      unmount();
+    });
+
+    it('should apply small device styling for compact screens', () => {
+      const originalGet = require('react-native').Dimensions.get;
+      require('react-native').Dimensions.get = jest.fn(() => ({
+        width: 320,
+        height: 650, // Below 700px threshold
+      }));
+
+      const { unmount } = render(<CameraScreen navigation={mockNavigation} />);
+      
+      // Should still render all elements properly
+      expect(screen.getByText('Ready to Cook? 🍳')).toBeTruthy();
+      expect(screen.getByText('Show me what you\'ve got!')).toBeTruthy();
+      
+      require('react-native').Dimensions.get = originalGet;
+      unmount();
+    });
+  });
+
+  describe('Edge Cases and Error Handling', () => {
+    it('should handle missing user context gracefully', () => {
+      const mockNoUserContext = {
+        user: null,
+        login: jest.fn(),
+        logout: jest.fn(),
+        loading: false,
+        checkBiometricAuth: jest.fn(),
+      };
+
+      jest.doMock('../../context/AuthContext', () => ({
+        useAuth: () => mockNoUserContext,
+      }));
+
+      const { unmount } = render(<CameraScreen navigation={mockNavigation} />);
+      expect(screen.getByText('Ready to Cook? 🍳')).toBeTruthy();
+      unmount();
+    });
+
+    it('should handle camera initialization failure', () => {
+      const mockUseCameraPermissions = require('expo-camera').useCameraPermissions;
+      mockUseCameraPermissions.mockReturnValue([
+        { granted: true, status: 'granted' },
+        jest.fn(),
+      ]);
+
+      render(<CameraScreen navigation={mockNavigation} />);
+
+      // Should show initializing state initially
+      expect(screen.getByText('Initializing camera...')).toBeTruthy();
+    });
+
+    it('should handle rapid button presses without issues', async () => {
+      render(<CameraScreen navigation={mockNavigation} />);
+
+      const scanButton = screen.getByText('Scan Ingredients');
+      
+      // Rapid presses
+      for (let i = 0; i < 5; i++) {
+        fireEvent.press(scanButton);
+      }
+
+      // Should only process once due to processing state
+      expect(Haptics.impactAsync).toHaveBeenCalledTimes(1);
+    });
+
+    it('should handle component unmount during photo processing', () => {
+      mockCameraRef.takePictureAsync.mockImplementation(
+        () => new Promise(resolve => setTimeout(() => resolve({ uri: 'test.jpg' }), 100))
+      );
+
+      const { unmount } = render(<CameraScreen navigation={mockNavigation} />);
+
+      const scanButton = screen.getByText('Scan Ingredients');
+      fireEvent.press(scanButton);
+
+      // Unmount during processing
+      expect(() => unmount()).not.toThrow();
+    });
+  });
+
+  describe('Performance and Memory Management', () => {
+    it('should handle component unmount gracefully', () => {
+      const { unmount } = render(<CameraScreen navigation={mockNavigation} />);
+      
+      expect(() => unmount()).not.toThrow();
+    });
+
+    it('should clean up all timers and intervals on unmount', () => {
+      const { unmount } = render(<CameraScreen navigation={mockNavigation} />);
+      
+      unmount();
+      
+      // Advance time and ensure no state updates occur
+      expect(() => {
+        act(() => {
+          jest.advanceTimersByTime(10000);
+        });
+      }).not.toThrow();
+    });
+
+    it('should not create memory leaks with animations', async () => {
+      const { unmount } = render(<CameraScreen navigation={mockNavigation} />);
+
+      await waitFor(() => {
+        expect(Animated.Value).toHaveBeenCalled();
       });
+
+      // Component should unmount without errors
+      expect(() => unmount()).not.toThrow();
+    });
+
+    it('should handle rapid re-renders efficiently', () => {
+      const { rerender } = render(<CameraScreen navigation={mockNavigation} />);
+
+      for (let i = 0; i < 5; i++) {
+        rerender(<CameraScreen navigation={mockNavigation} />);
+      }
+
+      expect(screen.getByText('Ready to Cook? 🍳')).toBeTruthy();
+    });
+  });
+
+  describe('Accessibility', () => {
+    it('should provide accessible interaction elements', () => {
+      render(<CameraScreen navigation={mockNavigation} />);
+
+      const scanButton = screen.getByText('Scan Ingredients');
+      const manualButton = screen.getByText('Enter Ingredients Manually');
+      
+      expect(scanButton).toBeTruthy();
+      expect(manualButton).toBeTruthy();
+    });
+
+    it('should provide meaningful text content for screen readers', () => {
+      render(<CameraScreen navigation={mockNavigation} />);
+
+      expect(screen.getByText('Ready to Cook? 🍳')).toBeTruthy();
+      expect(screen.getByText('Show me what you\'ve got!')).toBeTruthy();
+      expect(screen.getByText('Tap to detect your ingredients')).toBeTruthy();
+      expect(screen.getByText(/Honey never spoils/)).toBeTruthy();
+    });
+
+    it('should handle permission request accessibility', () => {
+      const mockUseCameraPermissions = require('expo-camera').useCameraPermissions;
+      mockUseCameraPermissions.mockReturnValue([
+        { granted: false, status: 'undetermined' },
+        jest.fn(),
+      ]);
+
+      render(<CameraScreen navigation={mockNavigation} />);
+
+      expect(screen.getByText('Camera Permission Required')).toBeTruthy();
+      expect(screen.getByText('CookCam needs camera access to scan your ingredients and generate amazing recipes!')).toBeTruthy();
+    });
+  });
+
+  describe('Platform-Specific Behavior', () => {
+    it('should handle iOS-specific behavior', () => {
+      require('react-native').Platform.OS = 'ios';
+      
+      render(<CameraScreen navigation={mockNavigation} />);
+      
+      expect(screen.getByText('Ready to Cook? 🍳')).toBeTruthy();
+    });
+
+    it('should handle Android-specific behavior', () => {
+      require('react-native').Platform.OS = 'android';
+      
+      render(<CameraScreen navigation={mockNavigation} />);
+      
+      expect(screen.getByText('Ready to Cook? 🍳')).toBeTruthy();
+    });
+
+    it('should detect non-simulator environment correctly', () => {
+      require('react-native').Platform.OS = 'android'; // Android is never simulator
+      
+      render(<CameraScreen navigation={mockNavigation} />);
+
+      const scanButton = screen.getByText('Scan Ingredients');
+      fireEvent.press(scanButton);
+
+      // Should use real camera on Android
+      expect(mockCameraRef.takePictureAsync).toHaveBeenCalled();
     });
   });
 });

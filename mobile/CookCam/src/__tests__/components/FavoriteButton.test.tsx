@@ -13,40 +13,17 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react-nativ
 import { Animated } from 'react-native';
 import FavoriteButton from '../../components/FavoriteButton';
 
-// Mock react-native modules
-jest.mock('react-native', () => ({
-  TouchableOpacity: 'TouchableOpacity',
-  StyleSheet: {
-    create: (styles: any) => styles,
-    flatten: (style: any) => style,
-  },
-  Animated: {
-    View: 'AnimatedView',
-    Value: jest.fn().mockImplementation((initialValue) => ({
-      setValue: jest.fn(),
-      _value: initialValue,
-    })),
-    timing: jest.fn(() => ({
-      start: jest.fn((callback) => callback && callback()),
-    })),
-    sequence: jest.fn((animations) => ({
-      start: jest.fn((callback) => callback && callback()),
-    })),
-  },
-  Platform: {
-    OS: 'ios',
-  },
-  Dimensions: {
-    get: jest.fn(() => ({ width: 390, height: 844 })),
-  },
-}));
+console.log('FavoriteButton:', FavoriteButton);
+
+// Use global React Native mock from jest.config.js
 
 // Mock Lottie
-jest.mock('lottie-react-native', () => 
-  React.forwardRef((props: any, ref: any) => 
-    React.createElement('LottieView', { ...props, ref })
-  )
-);
+jest.mock('lottie-react-native', () => {
+  const mockReact = require('react');
+  return mockReact.forwardRef((props: any, ref: any) => 
+    mockReact.createElement('LottieView', { ...props, ref })
+  );
+});
 
 // Mock icons
 jest.mock('lucide-react-native', () => {

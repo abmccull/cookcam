@@ -9,6 +9,9 @@ describe('Real Service Integration Tests', () => {
     // Set test environment variables
     process.env.OPENAI_API_KEY = process.env.OPENAI_API_KEY || 'test-key';
     process.env.STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || 'sk_test_123';
+    process.env.SUPABASE_URL = process.env.SUPABASE_URL || 'https://test.supabase.co';
+    process.env.SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || 'test-service-key';
+    process.env.SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || 'test-anon-key';
   });
 
   describe('SubscriptionService Real Implementation', () => {

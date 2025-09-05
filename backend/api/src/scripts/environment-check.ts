@@ -243,6 +243,9 @@ async function checkEnvironmentVariables() {
   };
 }
 
+// Export for testing
+export { checkEnvironmentVariables };
+
 // Run the environment check
 checkEnvironmentVariables()
   .then((result) => {

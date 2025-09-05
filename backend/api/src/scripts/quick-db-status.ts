@@ -124,5 +124,8 @@ async function checkDatabaseStatus() {
   }
 }
 
+// Export for testing
+export { checkDatabaseStatus };
+
 // Run the status check
 checkDatabaseStatus().then(() => process.exit(0));

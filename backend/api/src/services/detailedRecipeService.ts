@@ -302,7 +302,7 @@ Requirements:
   private validateIngredients(ingredients: any[]): DetailedRecipe['ingredients'] {
     return ingredients.map((ing, index) => ({
       name: ing.name || `Ingredient ${index + 1}`,
-      amount: ing.amount || '1',
+      amount: ing.amount ? String(ing.amount) : '1', // Ensure amount is always a string
       unit: ing.unit || 'piece',
       source: ['detected', 'pantry', 'store'].includes(ing.source) ? ing.source : 'detected',
     }));

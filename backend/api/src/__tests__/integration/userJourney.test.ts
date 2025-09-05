@@ -284,8 +284,12 @@ describe('User Journey Integration Tests', () => {
 
       // Mock social engagement tracking
       const trackEngagement = async (action: string) => {
-        mockSupabase.from().insert().mockResolvedValue({
+        const mockInsert = jest.fn().mockResolvedValue({
           data: { recipe_id: recipeId, action, count: 1 }
+        });
+        
+        (mockSupabase.from as jest.Mock).mockReturnValue({
+          insert: mockInsert
         });
 
         return { success: true, action };
@@ -378,7 +382,11 @@ describe('User Journey Integration Tests', () => {
       );
 
       // Mock database error
-      mockSupabase.from().select().single.mockRejectedValue(new Error('Database error'));
+      const mockSingle = jest.fn().mockRejectedValue(new Error('Database error'));
+      const mockSelect = jest.fn().mockReturnValue({ single: mockSingle });
+      (mockSupabase.from as jest.Mock).mockReturnValue({
+        select: mockSelect
+      });
       
       const handleDatabaseError = async () => {
         try {
@@ -413,21 +421,20 @@ describe('User Journey Integration Tests', () => {
 
         try {
           // Step 1: Create user (success)
-          mockSupabase.from().insert().select().single.mockResolvedValueOnce({
-            data: { id: userId }
-          });
+          const mockSingle = jest.fn().mockResolvedValue({ data: { id: userId } });
+          const mockSelect = jest.fn().mockReturnValue({ single: mockSingle });
+          const mockInsert = jest.fn().mockReturnValue({ select: mockSelect });
+          (mockSupabase.from as jest.Mock).mockReturnValue({ insert: mockInsert });
+          
           results.userCreated = true;
 
           // Step 2: Setup profile (success)
-          mockSupabase.from().insert().mockResolvedValueOnce({ data: {} });
           results.profileSetup = true;
 
           // Step 3: Award initial XP (failure but handled)
           try {
-            mockSupabase.from().update().eq.mockRejectedValueOnce(
-              new Error('XP service unavailable')
-            );
-            // This would normally fail, but we handle it gracefully
+            // Simulate XP service failure
+            throw new Error('XP service unavailable');
           } catch {
             results.initialXP = false;
           }

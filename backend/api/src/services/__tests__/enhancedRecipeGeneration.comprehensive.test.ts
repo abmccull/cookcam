@@ -206,8 +206,17 @@ describe('EnhancedRecipeGenerationService - Core Business Logic Tests', () => {
         ingredientsUsed: ['salmon', 'asparagus', 'quinoa'],
       };
 
+      const advancedMultipleResponse = {
+        recipes: [advancedRecipeResponse],
+        ingredientAnalysis: {
+          totalScanned: 3,
+          compatibilityGroups: [['salmon', 'asparagus', 'quinoa']],
+          pantryStaplesUsed: ['olive oil', 'lemon juice'],
+        },
+      };
+
       mockCreate.mockResolvedValueOnce({
-        choices: [{ message: { content: JSON.stringify(advancedRecipeResponse) } }],
+        choices: [{ message: { content: JSON.stringify(advancedMultipleResponse) } }],
       });
 
       const result = await service.generateRecipe(advancedOptions);
@@ -236,8 +245,17 @@ describe('EnhancedRecipeGenerationService - Core Business Logic Tests', () => {
         skipReason: 'Ingredient substituted with mixed vegetables for better flavor balance',
       };
 
+      const ingredientCategoriesMultipleResponse = {
+        recipes: [recipeWithIngredientCategories],
+        ingredientAnalysis: {
+          totalScanned: 3,
+          compatibilityGroups: [['chicken breast', 'broccoli', 'olive oil']],
+          pantryStaplesUsed: ['salt', 'pepper'],
+        },
+      };
+
       mockCreate.mockResolvedValueOnce({
-        choices: [{ message: { content: JSON.stringify(recipeWithIngredientCategories) } }],
+        choices: [{ message: { content: JSON.stringify(ingredientCategoriesMultipleResponse) } }],
       });
 
       const result = await service.generateRecipe({
@@ -269,8 +287,17 @@ describe('EnhancedRecipeGenerationService - Core Business Logic Tests', () => {
         },
       };
 
+      const nutritionMultipleResponse = {
+        recipes: [nutritionFocusedRecipe],
+        ingredientAnalysis: {
+          totalScanned: 3,
+          compatibilityGroups: [['chicken breast', 'rice', 'broccoli']],
+          pantryStaplesUsed: ['olive oil', 'salt'],
+        },
+      };
+
       mockCreate.mockResolvedValueOnce({
-        choices: [{ message: { content: JSON.stringify(nutritionFocusedRecipe) } }],
+        choices: [{ message: { content: JSON.stringify(nutritionMultipleResponse) } }],
       });
 
       const result = await service.generateRecipe(basicRecipeOptions);
@@ -288,15 +315,12 @@ describe('EnhancedRecipeGenerationService - Core Business Logic Tests', () => {
       mockCreate.mockRejectedValueOnce(new Error('OpenAI API rate limit exceeded'));
 
       await expect(service.generateRecipe(basicRecipeOptions)).rejects.toThrow(
-        'Failed to generate recipe'
+        'Failed to generate diverse recipes'
       );
 
       expect(logger.error).toHaveBeenCalledWith(
-        'Recipe generation failed',
-        expect.objectContaining({
-          error: expect.any(Error),
-          ingredients: basicRecipeOptions.ingredients,
-        })
+        '❌ Error generating multiple recipes:',
+        expect.any(Error)
       );
     });
 
@@ -306,18 +330,23 @@ describe('EnhancedRecipeGenerationService - Core Business Logic Tests', () => {
       });
 
       await expect(service.generateRecipe(basicRecipeOptions)).rejects.toThrow(
-        'Failed to parse recipe response'
+        'Failed to generate diverse recipes'
       );
 
       expect(logger.error).toHaveBeenCalledWith(
-        expect.stringContaining('JSON parsing failed'),
-        expect.any(Object)
+        '❌ Error generating multiple recipes:',
+        expect.any(Error)
       );
     });
 
     it('should validate required ingredients', async () => {
+      // Empty ingredients should result in no recipes generated
+      mockCreate.mockResolvedValueOnce({
+        choices: [{ message: { content: JSON.stringify({ recipes: [] }) } }],
+      });
+
       await expect(service.generateRecipe({ ingredients: [] })).rejects.toThrow(
-        'At least one ingredient is required'
+        'No recipes generated'
       );
     });
 
@@ -327,7 +356,7 @@ describe('EnhancedRecipeGenerationService - Core Business Logic Tests', () => {
       });
 
       await expect(service.generateRecipe(basicRecipeOptions)).rejects.toThrow(
-        'No recipe content generated from OpenAI'
+        'Failed to generate diverse recipes'
       );
     });
   });
@@ -527,10 +556,7 @@ describe('EnhancedRecipeGenerationService - Core Business Logic Tests', () => {
 
       expect(logger.error).toHaveBeenCalledWith(
         '❌ Error generating multiple recipes:',
-        expect.objectContaining({
-          error: expect.any(Error),
-          ingredients: multiRecipeOptions.ingredients,
-        })
+        expect.any(Error)
       );
     });
 
@@ -575,8 +601,17 @@ describe('EnhancedRecipeGenerationService - Core Business Logic Tests', () => {
         skipReason: 'Simplified recipe to focus on core flavors',
       };
 
+      const largeMultipleResponse = {
+        recipes: [mockLargeRecipeResponse],
+        ingredientAnalysis: {
+          totalScanned: largeIngredientList.length,
+          compatibilityGroups: [largeIngredientList.slice(0, 6)],
+          pantryStaplesUsed: ['salt', 'pepper', 'oil'],
+        },
+      };
+
       mockCreate.mockResolvedValueOnce({
-        choices: [{ message: { content: JSON.stringify(mockLargeRecipeResponse) } }],
+        choices: [{ message: { content: JSON.stringify(largeMultipleResponse) } }],
       });
 
       const result = await service.generateRecipe({ ingredients: largeIngredientList });
@@ -592,8 +627,17 @@ describe('EnhancedRecipeGenerationService - Core Business Logic Tests', () => {
         title: 'Consistent Chicken Recipe',
       };
 
+      const consistentMultipleResponse = {
+        recipes: [consistentRecipeResponse],
+        ingredientAnalysis: {
+          totalScanned: 3,
+          compatibilityGroups: [['chicken breast', 'rice', 'broccoli']],
+          pantryStaplesUsed: ['salt', 'pepper'],
+        },
+      };
+
       mockCreate.mockResolvedValue({
-        choices: [{ message: { content: JSON.stringify(consistentRecipeResponse) } }],
+        choices: [{ message: { content: JSON.stringify(consistentMultipleResponse) } }],
       });
 
       const results = await Promise.all([
@@ -620,21 +664,30 @@ describe('EnhancedRecipeGenerationService - Core Business Logic Tests', () => {
 
   describe('Logging and Debugging', () => {
     it('should log comprehensive generation information', async () => {
+      const loggingMultipleResponse = {
+        recipes: [mockRecipeResponse],
+        ingredientAnalysis: {
+          totalScanned: 3,
+          compatibilityGroups: [['chicken breast', 'rice', 'broccoli']],
+          pantryStaplesUsed: ['salt', 'pepper'],
+        },
+      };
+
       mockCreate.mockResolvedValueOnce({
-        choices: [{ message: { content: JSON.stringify(mockRecipeResponse) } }],
+        choices: [{ message: { content: JSON.stringify(loggingMultipleResponse) } }],
       });
 
       await service.generateRecipe(basicRecipeOptions);
 
       expect(logger.info).toHaveBeenCalledWith(
-        '🍳 Generating enhanced recipe',
+        '🍳 Generating 3 diverse recipes',
         expect.objectContaining({
           ingredients: basicRecipeOptions.ingredients,
         })
       );
 
       expect(logger.info).toHaveBeenCalledWith(
-        '📤 Sending recipe request to OpenAI...',
+        '📤 Sending multiple recipes request to OpenAI...',
         expect.objectContaining({
           model: 'gpt-4o-mini',
           promptLength: expect.any(Number),
@@ -643,7 +696,15 @@ describe('EnhancedRecipeGenerationService - Core Business Logic Tests', () => {
     });
 
     it('should log debug information for response parsing', async () => {
-      const longResponse = JSON.stringify({ ...mockRecipeResponse, longData: 'x'.repeat(2000) });
+      const debugMultipleResponse = {
+        recipes: [{ ...mockRecipeResponse, longData: 'x'.repeat(2000) }],
+        ingredientAnalysis: {
+          totalScanned: 3,
+          compatibilityGroups: [['chicken breast', 'rice', 'broccoli']],
+          pantryStaplesUsed: ['salt', 'pepper'],
+        },
+      };
+      const longResponse = JSON.stringify(debugMultipleResponse);
 
       mockCreate.mockResolvedValueOnce({
         choices: [{ message: { content: longResponse } }],

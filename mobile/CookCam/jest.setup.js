@@ -5,6 +5,44 @@ process.env.SUPABASE_ANON_KEY = "test-anon-key";
 process.env.API_BASE_URL = "https://test-api.cookcam.com";
 process.env.OPENAI_API_KEY = "test-openai-key";
 
+// Global PixelRatio mock
+global.PixelRatio = {
+  roundToNearestPixel: (value) => Math.round(value),
+  get: () => 2,
+  getFontScale: () => 1,
+  getPixelSizeForLayoutSize: (size) => size * 2,
+};
+
+// Mock React Native early to ensure PixelRatio is available
+jest.mock('react-native', () => {
+  const RN = jest.requireActual('react-native');
+  
+  // Override PixelRatio with our mock
+  RN.PixelRatio = global.PixelRatio;
+  
+  return {
+    ...RN,
+    PixelRatio: global.PixelRatio,
+    StyleSheet: {
+      create: (styles) => styles,
+      flatten: (style) => style,
+      roundToNearestPixel: (value) => Math.round(value),
+    },
+    Platform: {
+      OS: 'ios',
+      select: (config) => config.ios || config.default,
+    },
+    Dimensions: {
+      get: () => ({ width: 390, height: 844 }),
+      addEventListener: jest.fn(),
+      removeEventListener: jest.fn(),
+    },
+    Alert: {
+      alert: jest.fn(),
+    },
+  };
+});
+
 // Mock expo-constants before any imports
 const mockConstants = {
   expoConfig: {

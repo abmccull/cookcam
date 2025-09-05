@@ -1,0 +1,22 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`OptimizedImage Rendering should render correctly with all props 1`] = `
+<Image
+  onError={[Function]}
+  onLoad={[Function]}
+  onLoadStart={[Function]}
+  ref={null}
+  resizeMode="cover"
+  source={
+    {
+      "uri": "https://example.com/image.jpg",
+    }
+  }
+  style={
+    {
+      "height": 100,
+      "width": 100,
+    }
+  }
+/>
+`;
