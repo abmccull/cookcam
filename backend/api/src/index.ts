@@ -18,8 +18,8 @@ import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './config/swagger';
 import { securityMonitoring } from './services/security-monitoring';
 import { initializeRealTimeService } from './services/realTimeService';
-import { URL } from 'url';
 import * as Sentry from '@sentry/node';
+import { httpIntegration, expressIntegration, setupExpressErrorHandler } from '@sentry/node';
 import { validateEnv, setEnv } from './config/env';
 
 // Validate environment variables FIRST - fail fast if misconfigured
@@ -104,15 +104,11 @@ if (env.SENTRY_DSN) {
     
     // Performance monitoring integrations
     integrations: [
-      new Sentry.Integrations.Http({ tracing: true }),
-      new Sentry.Integrations.Express({ app }),
+      httpIntegration(),
+      expressIntegration(),
     ],
   });
 
-  // Apply Sentry request handler EARLY (must be before routes)
-  app.use(Sentry.Handlers.requestHandler());
-  app.use(Sentry.Handlers.tracingHandler());
-  
   logger.info('✅ Sentry initialized with enhanced configuration', {
     environment: env.NODE_ENV,
     sampleRate,
@@ -287,7 +283,7 @@ app.use(notFoundHandler);
 
 // Sentry error handler - must be before custom error handler
 if (env.SENTRY_DSN) {
-  app.use(Sentry.Handlers.errorHandler());
+  setupExpressErrorHandler(app);
 }
 
 // Global error handling middleware - must be last

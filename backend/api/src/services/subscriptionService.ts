@@ -43,8 +43,8 @@ interface UserSubscription {
   user_id: string;
   tier_id: number;
   status: 'active' | 'canceled' | 'expired' | 'paused';
-  current_period_start: Date;
-  current_period_end: Date;
+  current_period_start: string;
+  current_period_end: string;
   cancel_at_period_end: boolean;
   provider: 'stripe' | 'ios' | 'android' | 'manual';
   provider_subscription_id?: string;

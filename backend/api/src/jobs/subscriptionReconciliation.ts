@@ -1,5 +1,5 @@
 import { logger } from '../utils/logger';
-import { supabase, supabaseServiceRole } from '../index';
+import { supabaseServiceRole } from '../index';
 import Stripe from 'stripe';
 import { getEnv } from '../config/env';
 
@@ -31,8 +31,8 @@ export class SubscriptionReconciliationService {
   private env = getEnv();
 
   constructor() {
-    this.stripe = new Stripe(this.env.STRIPE_SECRET_KEY, {
-      apiVersion: '2023-10-16',
+    this.stripe = new Stripe(this.env.STRIPE_SECRET_KEY || '', {
+      apiVersion: '2025-05-28.basil',
     });
   }
 
@@ -191,11 +191,14 @@ export class SubscriptionReconciliationService {
           }
 
           const stripeSub = await this.stripe.subscriptions.retrieve(stripeSubId);
+          
+          // Type assertion for current_period_end which exists at runtime but may not be in type definitions
+          const stripeCurrentPeriodEnd = (stripeSub as any).current_period_end as number;
 
           // Check for drift
           const statusMatch = this.mapStripeStatus(stripeSub.status) === localSub.status;
           const periodEndMatch =
-            new Date(stripeSub.current_period_end * 1000).getTime() ===
+            new Date(stripeCurrentPeriodEnd * 1000).getTime() ===
             new Date(localSub.current_period_end).getTime();
 
           if (!statusMatch || !periodEndMatch) {
@@ -205,7 +208,7 @@ export class SubscriptionReconciliationService {
               localStatus: localSub.status,
               stripeStatus: stripeSub.status,
               localPeriodEnd: localSub.current_period_end,
-              stripePeriodEnd: new Date(stripeSub.current_period_end * 1000).toISOString(),
+              stripePeriodEnd: new Date(stripeCurrentPeriodEnd * 1000).toISOString(),
             });
 
             metrics.driftDetected++;
@@ -215,7 +218,7 @@ export class SubscriptionReconciliationService {
               .from('user_subscriptions')
               .update({
                 status: this.mapStripeStatus(stripeSub.status),
-                current_period_end: new Date(stripeSub.current_period_end * 1000).toISOString(),
+                current_period_end: new Date(stripeCurrentPeriodEnd * 1000).toISOString(),
                 updated_at: new Date().toISOString(),
               })
               .eq('id', localSub.id);
@@ -368,7 +371,7 @@ export class SubscriptionReconciliationService {
   /**
    * Update Supabase JWT claims for users with changed subscriptions
    */
-  private async updateJWTClaims(metrics: ReconciliationMetrics): Promise<void> {
+  private async updateJWTClaims(_metrics: ReconciliationMetrics): Promise<void> {
     logger.debug('🔐 Updating JWT claims for affected users...');
 
     try {
