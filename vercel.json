@@ -1,0 +1,44 @@
+{
+  "buildCommand": "cd website && npm install && mkdir -p public && cp -r *.html css js images public/ && if [ -d .well-known ]; then cp -r .well-known public/; fi",
+  "outputDirectory": "website/public",
+  "installCommand": "echo 'No global install needed'",
+  "ignoreCommand": "git diff --quiet HEAD^ HEAD ./website/",
+  "rewrites": [
+    {
+      "source": "/ref/:code",
+      "destination": "/ref.html"
+    },
+    {
+      "source": "/c/:slug", 
+      "destination": "/c.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/.well-known/apple-app-site-association",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        }
+      ]
+    },
+    {
+      "source": "/.well-known/assetlinks.json",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        }
+      ]
+    }
+  ]
+} 

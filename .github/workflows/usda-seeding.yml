@@ -1,0 +1,275 @@
+name: USDA Database Seeding
+
+on:
+  workflow_dispatch:
+    inputs:
+      seeding_type:
+        description: 'Type of seeding to perform'
+        required: true
+        default: 'complete'
+        type: choice
+        options:
+          - complete
+          - resume
+          - status
+          - legacy
+      environment:
+        description: 'Environment to seed'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+  workflow_call:
+    inputs:
+      seeding_type:
+        description: 'Type of seeding to perform'
+        required: false
+        default: 'complete'
+        type: string
+      environment:
+        description: 'Environment to seed'
+        required: false
+        default: 'production'
+        type: string
+
+jobs:
+  usda-seeding:
+    runs-on: ubuntu-latest
+    timeout-minutes: 720  # 12 hours max (seeding can take days)
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: backend/api/package-lock.json
+        
+    - name: Install dependencies
+      run: |
+        cd backend/api
+        npm ci
+        echo "✅ Dependencies installed"
+        
+    - name: Validate seeding parameters
+      run: |
+        echo "🔍 Seeding Configuration:"
+        echo "Type: ${{ inputs.seeding_type || 'complete' }}"
+        echo "Environment: ${{ inputs.environment || 'production' }}"
+        echo "Workflow: ${{ github.workflow }}"
+        echo "Actor: ${{ github.actor }}"
+        
+    - name: Setup environment variables
+      run: |
+        cd backend/api
+        echo "Setting up environment for ${{ inputs.environment || 'production' }}"
+        
+        # Create .env file with secrets
+        cat << EOF > .env
+        NODE_ENV=${{ inputs.environment || 'production' }}
+        USDA_API_KEY=${{ secrets.USDA_API_KEY }}
+        SUPABASE_URL=${{ secrets.SUPABASE_URL }}
+        SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
+        SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        DATABASE_URL=${{ secrets.DATABASE_URL }}
+        EOF
+        
+        echo "✅ Environment configured"
+        
+    - name: Validate USDA API key
+      run: |
+        cd backend/api
+        echo "🔑 Validating USDA API key..."
+        
+        # Test API key with a simple request
+        curl -f "https://api.nal.usda.gov/fdc/v1/foods/search?query=apple&pageSize=1&api_key=${{ secrets.USDA_API_KEY }}" \
+          -H "Accept: application/json" \
+          --silent --output /dev/null || {
+          echo "❌ USDA API key validation failed!"
+          echo "Please check that USDA_API_KEY secret is set correctly"
+          exit 1
+        }
+        
+        echo "✅ USDA API key validated"
+        
+    - name: Check database connection
+      run: |
+        cd backend/api
+        echo "🔗 Testing database connection..."
+        
+        # Test database connection by running a simple query
+        npx ts-node -e "
+        import { supabase } from './src/db/database';
+        (async () => {
+          try {
+            const { data, error } = await supabase.from('ingredients').select('count(*)').limit(1);
+            if (error) throw error;
+            console.log('✅ Database connection successful');
+            console.log('Current ingredients count:', data);
+          } catch (error) {
+            console.error('❌ Database connection failed:', error);
+            process.exit(1);
+          }
+        })();
+        "
+        
+    - name: Run USDA seeding - Complete
+      if: ${{ (inputs.seeding_type || 'complete') == 'complete' }}
+      run: |
+        cd backend/api
+        echo "🚀 Starting complete USDA database seeding..."
+        echo "⏰ This process may take 6-8 days to complete"
+        echo "📊 Expected to process ~617,000 ingredients"
+        
+        # Run the complete seeding with timeout handling
+        timeout 43200 npm run seed-usda:complete || {
+          exit_code=$?
+          if [ $exit_code -eq 124 ]; then
+            echo "⏰ Seeding timed out after 12 hours"
+            echo "💾 Progress has been saved automatically"
+            echo "🔄 Resume with: workflow_dispatch -> seeding_type: resume"
+          else
+            echo "❌ Seeding failed with exit code: $exit_code"
+            exit $exit_code
+          fi
+        }
+        
+    - name: Resume USDA seeding
+      if: ${{ (inputs.seeding_type || 'complete') == 'resume' }}
+      run: |
+        cd backend/api
+        echo "🔄 Resuming USDA database seeding from saved progress..."
+        
+        # Check if progress file exists
+        if [ ! -f "complete-usda-seeding-progress.json" ]; then
+          echo "❌ No progress file found. Start a new seeding process instead."
+          exit 1
+        fi
+        
+        # Show current progress before resuming
+        echo "📊 Current progress:"
+        npm run seed-usda:complete:status
+        
+        # Resume seeding
+        timeout 43200 npm run seed-usda:complete:resume || {
+          exit_code=$?
+          if [ $exit_code -eq 124 ]; then
+            echo "⏰ Seeding timed out after 12 hours"
+            echo "💾 Progress has been saved automatically"
+            echo "🔄 Run this workflow again to continue"
+          else
+            echo "❌ Seeding failed with exit code: $exit_code"
+            exit $exit_code
+          fi
+        }
+        
+    - name: Check seeding status
+      if: ${{ (inputs.seeding_type || 'complete') == 'status' }}
+      run: |
+        cd backend/api
+        echo "📊 Checking USDA seeding status..."
+        npm run seed-usda:complete:status
+        
+    - name: Run legacy seeding
+      if: ${{ (inputs.seeding_type || 'complete') == 'legacy' }}
+      run: |
+        cd backend/api
+        echo "🔄 Running legacy USDA seeding method..."
+        echo "⚠️  This is slower than the complete method"
+        
+        timeout 43200 npm run seed-usda:legacy || {
+          exit_code=$?
+          if [ $exit_code -eq 124 ]; then
+            echo "⏰ Legacy seeding timed out after 12 hours"
+          else
+            echo "❌ Legacy seeding failed with exit code: $exit_code"
+            exit $exit_code
+          fi
+        }
+        
+    - name: Upload progress file
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: usda-seeding-progress-${{ github.run_number }}
+        path: backend/api/complete-usda-seeding-progress.json
+        retention-days: 30
+        if-no-files-found: ignore
+        
+    - name: Final status report
+      if: always()
+      run: |
+        cd backend/api
+        echo "📋 Final USDA Seeding Report"
+        echo "═".repeat(50)
+        echo "Workflow: ${{ github.workflow }}"
+        echo "Run ID: ${{ github.run_id }}"
+        echo "Seeding Type: ${{ inputs.seeding_type || 'complete' }}"
+        echo "Environment: ${{ inputs.environment || 'production' }}"
+        echo "Status: ${{ job.status }}"
+        echo "Timestamp: $(date -u)"
+        
+        # Show final progress if file exists
+        if [ -f "complete-usda-seeding-progress.json" ]; then
+          echo ""
+          echo "📊 Final Progress:"
+          npm run monitor-usda:quick || echo "No progress to display"
+        fi
+        
+        # Show database stats
+        echo ""
+        echo "🗄️  Current Database Stats:"
+        npx ts-node -e "
+        import { supabase } from './src/db/database';
+        (async () => {
+          try {
+            const { count } = await supabase.from('ingredients').select('*', { count: 'exact', head: true });
+            console.log('Total ingredients in database:', count);
+            
+            const { data: categories } = await supabase
+              .from('ingredients')
+              .select('category')
+              .not('category', 'is', null);
+            
+            if (categories) {
+              const categoryCount = new Set(categories.map(c => c.category)).size;
+              console.log('Unique categories:', categoryCount);
+            }
+            
+            const { data: usdaItems } = await supabase
+              .from('ingredients')
+              .select('usda_data_type')
+              .not('fdc_id', 'is', null);
+              
+            if (usdaItems) {
+              console.log('USDA sourced ingredients:', usdaItems.length);
+            }
+            
+          } catch (error) {
+            console.error('Error getting database stats:', error);
+          }
+        })();
+        " || echo "Could not retrieve database stats"
+        
+    - name: Notify completion
+      if: success()
+      run: |
+        echo "🎉 USDA seeding workflow completed successfully!"
+        echo "✅ Database has been updated with USDA food data"
+        echo "📊 Check the 'Final status report' step above for details"
+        
+    - name: Notify failure
+      if: failure()
+      run: |
+        echo "💥 USDA seeding workflow failed!"
+        echo "❌ Check the logs above for error details"
+        echo "💡 Common solutions:"
+        echo "   • Check USDA_API_KEY secret is valid"
+        echo "   • Verify database connection secrets"
+        echo "   • For timeouts, use 'resume' to continue"
+        echo "   • Check progress file artifact for current state" 

@@ -1,0 +1,112 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "🔍 Running pre-commit checks..."
+
+# Check if we're committing to main/master
+branch="$(git rev-parse --abbrev-ref HEAD)"
+if [ "$branch" = "main" ] || [ "$branch" = "master" ]; then
+  echo "⚠️  Warning: You're committing directly to $branch"
+  echo "Consider creating a feature branch instead."
+  read -p "Continue anyway? (y/N) " -n 1 -r
+  echo
+  if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+    exit 1
+  fi
+fi
+
+# Get staged files
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM)
+
+# Backend checks
+BACKEND_FILES=$(echo "$STAGED_FILES" | grep "^backend/api/")
+if [ -n "$BACKEND_FILES" ]; then
+  echo "🔧 Checking backend files..."
+  
+  # TypeScript files
+  BACKEND_TS_FILES=$(echo "$BACKEND_FILES" | grep "\.ts$")
+  if [ -n "$BACKEND_TS_FILES" ]; then
+    echo "  ✓ Running TypeScript compiler..."
+    cd backend/api && npx tsc --noEmit || exit 1
+    cd ../..
+    
+    echo "  ✓ Running ESLint..."
+    cd backend/api && npx eslint $BACKEND_TS_FILES || exit 1
+    cd ../..
+  fi
+  
+  # Check for console.log (except console.error/warn)
+  if echo "$BACKEND_TS_FILES" | xargs grep -n "console\.log" 2>/dev/null; then
+    echo "❌ Found console.log in backend code. Use logger instead."
+    exit 1
+  fi
+  
+  # Check for hardcoded secrets
+  if echo "$BACKEND_FILES" | xargs grep -nE "(password|secret|api[_-]?key|token)[\"']?\s*[:=]\s*[\"'][^\"']+[\"']" 2>/dev/null | grep -v "process.env\|config\|REDACTED"; then
+    echo "❌ Potential hardcoded credentials found."
+    exit 1
+  fi
+fi
+
+# Mobile checks
+MOBILE_FILES=$(echo "$STAGED_FILES" | grep "^mobile/CookCam/")
+if [ -n "$MOBILE_FILES" ]; then
+  echo "📱 Checking mobile files..."
+  
+  # TypeScript/TSX files
+  MOBILE_TS_FILES=$(echo "$MOBILE_FILES" | grep -E "\.(ts|tsx)$")
+  if [ -n "$MOBILE_TS_FILES" ]; then
+    echo "  ✓ Running TypeScript compiler..."
+    cd mobile/CookCam && npx tsc --noEmit || exit 1
+    cd ../..
+    
+    echo "  ✓ Running ESLint..."
+    cd mobile/CookCam && npx eslint $MOBILE_TS_FILES || exit 1
+    cd ../..
+  fi
+fi
+
+# SQL migration checks
+MIGRATION_FILES=$(echo "$STAGED_FILES" | grep "^backend/supabase/migrations/.*\.sql$")
+if [ -n "$MIGRATION_FILES" ]; then
+  echo "🗄️  Checking SQL migrations..."
+  
+  for file in $MIGRATION_FILES; do
+    # Check naming convention
+    filename=$(basename "$file")
+    if ! echo "$filename" | grep -qE "^[0-9]{14}_[a-z0-9_]+\.sql$"; then
+      echo "❌ Invalid migration filename: $filename"
+      echo "   Format should be: YYYYMMDDHHMMSS_description.sql"
+      exit 1
+    fi
+    
+    # Check for common SQL mistakes
+    if grep -qi "CREAT TABLE" "$file"; then
+      echo "❌ Typo found in $filename: 'CREAT TABLE' should be 'CREATE TABLE'"
+      exit 1
+    fi
+    
+    # Check for DROP without IF EXISTS
+    if grep -E "DROP (TABLE|INDEX|FUNCTION)" "$file" | grep -v "IF EXISTS"; then
+      echo "⚠️  Warning: DROP statement without IF EXISTS in $filename"
+      echo "   Consider adding IF EXISTS for safety"
+    fi
+  done
+  
+  echo "  ✓ SQL migrations look good"
+fi
+
+# Check for large files
+for file in $STAGED_FILES; do
+  if [ -f "$file" ]; then
+    size=$(wc -c < "$file")
+    if [ $size -gt 1000000 ]; then  # 1MB
+      echo "❌ File too large: $file ($size bytes)"
+      echo "   Consider using Git LFS for large files"
+      exit 1
+    fi
+  fi
+done
+
+echo "✅ All pre-commit checks passed!"
+

@@ -1,0 +1,61 @@
+name: Deploy Backend
+
+on:
+  push:
+    branches: [ main ]
+    paths: 
+      - 'backend/api/**'
+      - '.github/workflows/backend-deploy-simple.yml'
+  workflow_dispatch: # Allow manual triggering
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: backend/api/package-lock.json
+        
+    - name: Install dependencies
+      run: |
+        cd backend/api
+        npm ci
+        
+    - name: Build TypeScript
+      run: |
+        cd backend/api
+        npm run build
+        
+    - name: Deploy to server
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.DO_HOST }}
+        username: ${{ secrets.DO_USERNAME }}
+        key: ${{ secrets.DO_SSH_KEY }}
+        port: 22
+        script: |
+          cd /var/www/cookcam-api
+          
+          # Pull latest code
+          git pull origin main
+          
+          # Install production dependencies
+          npm ci --production
+          
+          # Build the project
+          npm run build
+          
+          # Restart PM2 process
+          pm2 restart cookcam-api || pm2 start dist/index.js --name cookcam-api
+          
+          # Save PM2 configuration
+          pm2 save
+          
+          echo "✅ Deployment completed successfully!"

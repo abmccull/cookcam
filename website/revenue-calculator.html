@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CookCam Creator Revenue Calculator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .calculator-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            overflow: hidden;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2rem;
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .header h1 {
+            color: white;
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 1.2rem;
+        }
+
+        .social-proof {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-top: 1rem;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .social-proof-item {
+            text-align: center;
+        }
+
+        .social-proof-number {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #FFB800;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            padding: 2rem;
+        }
+
+        .controls-panel {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .results-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .control-group {
+            margin-bottom: 2rem;
+        }
+
+        .control-group label {
+            display: block;
+            color: white;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            font-size: 1.1rem;
+        }
+
+        .slider-container {
+            position: relative;
+            margin: 1rem 0;
+        }
+
+        .slider {
+            width: 100%;
+            height: 8px;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.2);
+            outline: none;
+            appearance: none;
+            cursor: pointer;
+        }
+
+        .slider::-webkit-slider-thumb {
+            appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #FF6B35;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(255, 107, 53, 0.4);
+        }
+
+        .slider::-moz-range-thumb {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #FF6B35;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 4px 12px rgba(255, 107, 53, 0.4);
+        }
+
+        .slider-value {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-weight: 600;
+            margin-top: 0.5rem;
+            text-align: center;
+        }
+
+        .preset-buttons {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .preset-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .preset-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .comparison-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 2rem;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .comparison-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        }
+
+        .comparison-card.better {
+            border: 2px solid #FFB800;
+            background: rgba(255, 184, 0, 0.1);
+        }
+
+        .comparison-card.better::before {
+            content: "⚡ BETTER CHOICE";
+            position: absolute;
+            top: -12px;
+            right: 16px;
+            background: #FFB800;
+            color: #2D1B69;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 0.8rem;
+        }
+
+        .card-title {
+            color: white;
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        .revenue-amount {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            transition: all 0.5s ease;
+        }
+
+        .traditional-revenue {
+            color: #FF6B6B;
+        }
+
+        .cookcam-revenue {
+            color: #4ECDC4;
+        }
+
+        .description {
+            color: rgba(255, 255, 255, 0.8);
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .metric {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1rem;
+            border-radius: 8px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .metric:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .metric-value {
+            color: white;
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .metric-label {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.9rem;
+            margin-top: 0.25rem;
+        }
+
+        .chart-container {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-top: 1rem;
+        }
+
+        .chart-title {
+            color: white;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        .revenue-projection {
+            height: 200px;
+            position: relative;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .advanced-toggle {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+
+        .advanced-toggle:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .advanced-controls {
+            display: none;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .advanced-controls.visible {
+            display: block;
+        }
+
+        .multiplier-highlight {
+            background: linear-gradient(135deg, #4ECDC4, #44A08D);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 800;
+            font-size: 1.2em;
+        }
+
+        .scenario-tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .scenario-tab {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            flex: 1;
+            text-align: center;
+        }
+
+        .scenario-tab.active {
+            background: #FF6B35;
+            border-color: #FF6B35;
+        }
+
+        .growth-indicator {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: rgba(76, 205, 196, 0.2);
+            color: #4ECDC4;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .revenue-amount {
+                font-size: 2rem;
+            }
+
+            .social-proof {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .scenario-tabs {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="calculator-container">
+        <div class="header">
+            <h1>🧮 Creator Revenue Calculator</h1>
+            <p>Compare traditional sponsorships vs. CookCam's recurring revenue model</p>
+            <div class="social-proof">
+                <div class="social-proof-item">
+                    <div class="social-proof-number">500K+</div>
+                    <div>Monthly App Users</div>
+                </div>
+                <div class="social-proof-item">
+                    <div class="social-proof-number">2,500+</div>
+                    <div>Creator Partners</div>
+                </div>
+                <div class="social-proof-item">
+                    <div class="social-proof-number">$1.2M+</div>
+                    <div>Creator Earnings</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="controls-panel">
+                <h3 style="color: white; margin-bottom: 1.5rem;">📊 Your Content Metrics</h3>
+                
+                <div class="scenario-tabs">
+                    <div class="scenario-tab active" onclick="loadScenario('conservative')">Conservative</div>
+                    <div class="scenario-tab" onclick="loadScenario('realistic')">Realistic</div>
+                    <div class="scenario-tab" onclick="loadScenario('optimistic')">Viral Hit</div>
+                </div>
+                
+                <div class="control-group">
+                    <label for="sponsorshipValue">Traditional Sponsorship Value</label>
+                    <div class="slider-container">
+                        <input type="range" id="sponsorshipValue" class="slider" min="100" max="10000" value="1000" step="100">
+                        <div class="slider-value">$<span id="sponsorshipValueDisplay">1,000</span></div>
+                    </div>
+                    <div class="preset-buttons">
+                        <button class="preset-btn" onclick="setSliderValue('sponsorshipValue', 500)">$500</button>
+                        <button class="preset-btn" onclick="setSliderValue('sponsorshipValue', 1000)">$1K</button>
+                        <button class="preset-btn" onclick="setSliderValue('sponsorshipValue', 2500)">$2.5K</button>
+                        <button class="preset-btn" onclick="setSliderValue('sponsorshipValue', 5000)">$5K</button>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label for="monthlyViews">Monthly Video Views</label>
+                    <div class="slider-container">
+                        <input type="range" id="monthlyViews" class="slider" min="10000" max="10000000" value="500000" step="10000">
+                        <div class="slider-value"><span id="monthlyViewsDisplay">500K</span> views</div>
+                    </div>
+                    <div class="preset-buttons">
+                        <button class="preset-btn" onclick="setSliderValue('monthlyViews', 100000)">100K</button>
+                        <button class="preset-btn" onclick="setSliderValue('monthlyViews', 500000)">500K</button>
+                        <button class="preset-btn" onclick="setSliderValue('monthlyViews', 1000000)">1M</button>
+                        <button class="preset-btn" onclick="setSliderValue('monthlyViews', 5000000)">5M</button>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label for="clickRate">Click-Through Rate</label>
+                    <div class="slider-container">
+                        <input type="range" id="clickRate" class="slider" min="0.5" max="5" value="1" step="0.1">
+                        <div class="slider-value"><span id="clickRateDisplay">1.0</span>%</div>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label for="conversionRate">Install → Subscription Rate</label>
+                    <div class="slider-container">
+                        <input type="range" id="conversionRate" class="slider" min="1" max="25" value="10" step="0.5">
+                        <div class="slider-value"><span id="conversionRateDisplay">10.0</span>%</div>
+                    </div>
+                </div>
+
+                <button class="advanced-toggle" onclick="toggleAdvanced()">
+                    ⚙️ Advanced Settings
+                </button>
+
+                <div class="advanced-controls" id="advancedControls">
+                    <div class="control-group">
+                        <label for="churnRate">Monthly Churn Rate</label>
+                        <div class="slider-container">
+                            <input type="range" id="churnRate" class="slider" min="3" max="15" value="6" step="0.5">
+                            <div class="slider-value"><span id="churnRateDisplay">6.0</span>%</div>
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <label for="premiumMix">Premium Subscription Mix</label>
+                        <div class="slider-container">
+                            <input type="range" id="premiumMix" class="slider" min="10" max="40" value="25" step="5">
+                            <div class="slider-value"><span id="premiumMixDisplay">25</span>% Premium ($9.99)</div>
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <label for="revenueShare">Your Revenue Share</label>
+                        <div class="slider-container">
+                            <input type="range" id="revenueShare" class="slider" min="25" max="40" value="30" step="1">
+                            <div class="slider-value"><span id="revenueShareDisplay">30</span>%</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="results-panel">
+                <div class="comparison-card">
+                    <div class="card-title">Traditional Sponsorship</div>
+                    <div class="revenue-amount traditional-revenue">$<span id="traditionalRevenue">1,000</span></div>
+                    <div class="description">One-time payment for a single video</div>
+                    
+                    <div class="metrics-grid">
+                        <div class="metric">
+                            <div class="metric-value">1x</div>
+                            <div class="metric-label">Payment</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-value">$0</div>
+                            <div class="metric-label">Year 2+</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-value">High</div>
+                            <div class="metric-label">Brand Risk</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-value">None</div>
+                            <div class="metric-label">Residuals</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="comparison-card better">
+                    <div class="growth-indicator">+<span id="growthMultiplier">15.9</span>x Revenue</div>
+                    <div class="card-title">CookCam Creator Program</div>
+                    <div class="revenue-amount cookcam-revenue">$<span id="cookcamRevenue">15,975</span></div>
+                    <div class="description">12-month recurring revenue from the same viral video</div>
+                    
+                    <div class="metrics-grid">
+                        <div class="metric">
+                            <div class="metric-value"><span id="totalReferrals">500</span></div>
+                            <div class="metric-label">Total Referrals</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-value"><span id="activeSubscribers">312</span></div>
+                            <div class="metric-label">Active Subs (Month 12)</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-value">$<span id="monthlyRecurring">89</span></div>
+                            <div class="metric-label">Monthly Recurring</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-value"><span id="retentionRate">47</span>%</div>
+                            <div class="metric-label">12-Month Retention</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <div class="chart-title">📈 Revenue Projection Over 12 Months</div>
+                    <div class="revenue-projection" id="revenueChart">
+                        <!-- Chart will be generated here -->
+                    </div>
+                    <div style="color: rgba(255,255,255,0.7); font-size: 0.9rem; text-align: center; margin-top: 1rem;">
+                        Monthly revenue with <span id="churnRateChart">6%</span> churn rate | Total: $<span id="totalProjected">15,975</span>
+                    </div>
+                </div>
+
+                <div class="comparison-card">
+                    <div class="card-title">🚀 Why Creators Choose CookCam</div>
+                    <div style="color: white; text-align: left; line-height: 1.8;">
+                        <div style="margin-bottom: 0.5rem;">✅ <strong>Passive Income:</strong> Earn while you sleep</div>
+                        <div style="margin-bottom: 0.5rem;">✅ <strong>Compound Growth:</strong> Each video builds your income</div>
+                        <div style="margin-bottom: 0.5rem;">✅ <strong>Real-time Analytics:</strong> Track your referral performance</div>
+                        <div style="margin-bottom: 0.5rem;">✅ <strong>Brand Alignment:</strong> Promote what you actually use</div>
+                        <div style="margin-bottom: 0.5rem;">✅ <strong>Creator Community:</strong> Network with top food creators</div>
+                        <div style="margin-bottom: 0.5rem;">✅ <strong>Lifetime Value:</strong> Revenue grows exponentially</div>
+                    </div>
+                </div>
+
+                <div class="comparison-card">
+                    <div class="card-title">📞 Ready to Get Started?</div>
+                    <div style="color: white; text-align: center; line-height: 1.6;">
+                        <p style="margin-bottom: 1rem;">Join 2,500+ creators earning recurring revenue with CookCam</p>
+                        <div style="display: flex; gap: 1rem; justify-content: center; margin-top: 1rem;">
+                            <a href="mailto:creators@cookcam.ai" style="background: #FF6B35; color: white; padding: 0.75rem 1.5rem; border-radius: 8px; text-decoration: none; font-weight: 600;">Apply Now</a>
+                            <a href="#" style="background: rgba(255,255,255,0.1); color: white; padding: 0.75rem 1.5rem; border-radius: 8px; text-decoration: none; font-weight: 600; border: 1px solid rgba(255,255,255,0.2);">Learn More</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Calculator state
+        let calculatorData = {
+            sponsorshipValue: 1000,
+            monthlyViews: 500000,
+            clickRate: 1.0,
+            conversionRate: 10.0,
+            churnRate: 6.0,
+            premiumMix: 25,
+            revenueShare: 30
+        };
+
+        // Predefined scenarios
+        const scenarios = {
+            conservative: {
+                monthlyViews: 100000,
+                clickRate: 0.8,
+                conversionRate: 5.0,
+                sponsorshipValue: 500
+            },
+            realistic: {
+                monthlyViews: 500000,
+                clickRate: 1.2,
+                conversionRate: 10.0,
+                sponsorshipValue: 1500
+            },
+            optimistic: {
+                monthlyViews: 2000000,
+                clickRate: 2.0,
+                conversionRate: 15.0,
+                sponsorshipValue: 5000
+            }
+        };
+
+        // Subscription prices
+        const BASIC_PRICE = 3.99;
+        const PREMIUM_PRICE = 9.99;
+
+        // Initialize calculator
+        function initCalculator() {
+            updateAllDisplays();
+            setupEventListeners();
+            calculateRevenue();
+        }
+
+        function setupEventListeners() {
+            // Add event listeners for all sliders
+            document.getElementById('sponsorshipValue').addEventListener('input', (e) => {
+                calculatorData.sponsorshipValue = parseInt(e.target.value);
+                updateDisplay('sponsorshipValueDisplay', formatNumber(calculatorData.sponsorshipValue));
+                calculateRevenue();
+            });
+
+            document.getElementById('monthlyViews').addEventListener('input', (e) => {
+                calculatorData.monthlyViews = parseInt(e.target.value);
+                updateDisplay('monthlyViewsDisplay', formatViews(calculatorData.monthlyViews));
+                calculateRevenue();
+            });
+
+            document.getElementById('clickRate').addEventListener('input', (e) => {
+                calculatorData.clickRate = parseFloat(e.target.value);
+                updateDisplay('clickRateDisplay', calculatorData.clickRate.toFixed(1));
+                calculateRevenue();
+            });
+
+            document.getElementById('conversionRate').addEventListener('input', (e) => {
+                calculatorData.conversionRate = parseFloat(e.target.value);
+                updateDisplay('conversionRateDisplay', calculatorData.conversionRate.toFixed(1));
+                calculateRevenue();
+            });
+
+            document.getElementById('churnRate').addEventListener('input', (e) => {
+                calculatorData.churnRate = parseFloat(e.target.value);
+                updateDisplay('churnRateDisplay', calculatorData.churnRate.toFixed(1));
+                updateDisplay('churnRateChart', calculatorData.churnRate.toFixed(1));
+                calculateRevenue();
+            });
+
+            document.getElementById('premiumMix').addEventListener('input', (e) => {
+                calculatorData.premiumMix = parseInt(e.target.value);
+                updateDisplay('premiumMixDisplay', calculatorData.premiumMix);
+                calculateRevenue();
+            });
+
+            document.getElementById('revenueShare').addEventListener('input', (e) => {
+                calculatorData.revenueShare = parseInt(e.target.value);
+                updateDisplay('revenueShareDisplay', calculatorData.revenueShare);
+                calculateRevenue();
+            });
+        }
+
+        function updateAllDisplays() {
+            updateDisplay('sponsorshipValueDisplay', formatNumber(calculatorData.sponsorshipValue));
+            updateDisplay('monthlyViewsDisplay', formatViews(calculatorData.monthlyViews));
+            updateDisplay('clickRateDisplay', calculatorData.clickRate.toFixed(1));
+            updateDisplay('conversionRateDisplay', calculatorData.conversionRate.toFixed(1));
+            updateDisplay('churnRateDisplay', calculatorData.churnRate.toFixed(1));
+            updateDisplay('churnRateChart', calculatorData.churnRate.toFixed(1));
+            updateDisplay('premiumMixDisplay', calculatorData.premiumMix);
+            updateDisplay('revenueShareDisplay', calculatorData.revenueShare);
+            
+            // Update slider values
+            document.getElementById('sponsorshipValue').value = calculatorData.sponsorshipValue;
+            document.getElementById('monthlyViews').value = calculatorData.monthlyViews;
+            document.getElementById('clickRate').value = calculatorData.clickRate;
+            document.getElementById('conversionRate').value = calculatorData.conversionRate;
+        }
+
+        function updateDisplay(elementId, value) {
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.textContent = value;
+            }
+        }
+
+        function formatNumber(num) {
+            return num.toLocaleString();
+        }
+
+        function formatViews(views) {
+            if (views >= 1000000) {
+                return (views / 1000000).toFixed(1) + 'M';
+            } else if (views >= 1000) {
+                return (views / 1000).toFixed(0) + 'K';
+            }
+            return views.toString();
+        }
+
+        function setSliderValue(sliderId, value) {
+            const slider = document.getElementById(sliderId);
+            slider.value = value;
+            slider.dispatchEvent(new Event('input'));
+        }
+
+        function loadScenario(scenario) {
+            // Update tab styling
+            document.querySelectorAll('.scenario-tab').forEach(tab => tab.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // Update calculator data
+            const scenarioData = scenarios[scenario];
+            Object.assign(calculatorData, scenarioData);
+            
+            updateAllDisplays();
+            calculateRevenue();
+        }
+
+        function calculateRevenue() {
+            // Calculate referrals from video
+            const clicks = Math.round(calculatorData.monthlyViews * (calculatorData.clickRate / 100));
+            const conversions = Math.round(clicks * (calculatorData.conversionRate / 100));
+            
+            // Calculate subscription mix
+            const premiumSubs = Math.round(conversions * (calculatorData.premiumMix / 100));
+            const basicSubs = conversions - premiumSubs;
+            
+            // Calculate monthly revenue projection with churn
+            let totalRevenue = 0;
+            let currentBasicSubs = basicSubs;
+            let currentPremiumSubs = premiumSubs;
+            let monthlyRevenues = [];
+            
+            for (let month = 1; month <= 12; month++) {
+                const monthlyBasicRevenue = currentBasicSubs * BASIC_PRICE;
+                const monthlyPremiumRevenue = currentPremiumSubs * PREMIUM_PRICE;
+                const monthlyGrossRevenue = monthlyBasicRevenue + monthlyPremiumRevenue;
+                const monthlyCreatorRevenue = monthlyGrossRevenue * (calculatorData.revenueShare / 100);
+                
+                totalRevenue += monthlyCreatorRevenue;
+                monthlyRevenues.push(monthlyCreatorRevenue);
+                
+                // Apply churn for next month
+                if (month < 12) {
+                    currentBasicSubs = Math.round(currentBasicSubs * (1 - calculatorData.churnRate / 100));
+                    currentPremiumSubs = Math.round(currentPremiumSubs * (1 - calculatorData.churnRate / 100));
+                }
+            }
+            
+            // Calculate additional metrics
+            const finalSubs = currentBasicSubs + currentPremiumSubs;
+            const finalMonthlyRevenue = monthlyRevenues[11];
+            const retentionRate = (finalSubs / conversions) * 100;
+            const growthMultiplier = totalRevenue / calculatorData.sponsorshipValue;
+            
+            // Update displays
+            updateDisplay('traditionalRevenue', formatNumber(calculatorData.sponsorshipValue));
+            updateDisplay('cookcamRevenue', formatNumber(Math.round(totalRevenue)));
+            updateDisplay('totalReferrals', formatNumber(conversions));
+            updateDisplay('activeSubscribers', formatNumber(finalSubs));
+            updateDisplay('monthlyRecurring', formatNumber(Math.round(finalMonthlyRevenue)));
+            updateDisplay('retentionRate', retentionRate.toFixed(0));
+            updateDisplay('growthMultiplier', growthMultiplier.toFixed(1));
+            updateDisplay('totalProjected', formatNumber(Math.round(totalRevenue)));
+            
+            // Generate revenue chart
+            generateRevenueChart(monthlyRevenues);
+        }
+
+        function generateRevenueChart(monthlyRevenues) {
+            const chart = document.getElementById('revenueChart');
+            chart.innerHTML = '';
+            
+            const maxRevenue = Math.max(...monthlyRevenues);
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            
+            monthlyRevenues.forEach((revenue, index) => {
+                const bar = document.createElement('div');
+                const height = (revenue / maxRevenue) * 80; // 80% max height
+                
+                bar.style.cssText = `
+                    position: absolute;
+                    bottom: 20px;
+                    left: ${(index / 11) * 90 + 5}%;
+                    width: 6%;
+                    height: ${height}%;
+                    background: linear-gradient(to top, #4ECDC4, #44A08D);
+                    border-radius: 2px 2px 0 0;
+                    transition: all 0.3s ease;
+                    cursor: pointer;
+                `;
+                
+                bar.addEventListener('mouseenter', function() {
+                    this.style.opacity = '0.8';
+                    this.style.transform = 'scaleY(1.05)';
+                    
+                    // Show tooltip
+                    const tooltip = document.createElement('div');
+                    tooltip.style.cssText = `
+                        position: absolute;
+                        bottom: 100%;
+                        left: 50%;
+                        transform: translateX(-50%);
+                        background: rgba(0,0,0,0.9);
+                        color: white;
+                        padding: 0.5rem;
+                        border-radius: 4px;
+                        font-size: 0.8rem;
+                        white-space: nowrap;
+                        z-index: 10;
+                        border: 1px solid rgba(255,255,255,0.2);
+                    `;
+                    tooltip.textContent = `${months[index]}: $${Math.round(revenue).toLocaleString()}`;
+                    this.appendChild(tooltip);
+                });
+                
+                bar.addEventListener('mouseleave', function() {
+                    this.style.opacity = '1';
+                    this.style.transform = 'scaleY(1)';
+                    const tooltip = this.querySelector('div');
+                    if (tooltip) tooltip.remove();
+                });
+                
+                chart.appendChild(bar);
+                
+                // Add month labels
+                const label = document.createElement('div');
+                label.style.cssText = `
+                    position: absolute;
+                    bottom: 2px;
+                    left: ${(index / 11) * 90 + 5}%;
+                    width: 6%;
+                    text-align: center;
+                    font-size: 0.7rem;
+                    color: rgba(255,255,255,0.6);
+                `;
+                label.textContent = months[index];
+                chart.appendChild(label);
+            });
+        }
+
+        function toggleAdvanced() {
+            const controls = document.getElementById('advancedControls');
+            const button = document.querySelector('.advanced-toggle');
+            
+            if (controls.classList.contains('visible')) {
+                controls.classList.remove('visible');
+                button.textContent = '⚙️ Advanced Settings';
+            } else {
+                controls.classList.add('visible');
+                button.textContent = '⚙️ Hide Advanced Settings';
+            }
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', initCalculator);
+    </script>
+    <script src="js/analytics.js"></script>
+</body>
+</html> 

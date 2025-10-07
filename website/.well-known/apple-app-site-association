@@ -1,0 +1,15 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "YOUR_TEAM_ID.com.cookcam.app",
+        "paths": [
+          "/ref/*",
+          "/c/*"
+        ]
+      }
+    ]
+  }
+}
+EOF < /dev/null

@@ -1,0 +1,38 @@
+{
+  "name": "cookcam",
+  "version": "1.0.0",
+  "description": "CookCam - AI-powered cooking companion mobile app",
+  "scripts": {
+    "mobile": "cd mobile/CookCam && npx @expo/cli start",
+    "mobile:ios": "cd mobile/CookCam && npx @expo/cli start --ios",
+    "mobile:android": "cd mobile/CookCam && npx @expo/cli start --android",
+    "mobile:web": "cd mobile/CookCam && npx @expo/cli start --web",
+    "mobile:tunnel": "cd mobile/CookCam && npx @expo/cli start --tunnel",
+    "mobile:build:ios": "cd mobile/CookCam && npx eas build --platform ios",
+    "mobile:build:android": "cd mobile/CookCam && npx eas build --platform android",
+    "mobile:build:all": "cd mobile/CookCam && npx eas build --platform all",
+    "mobile:submit:ios": "cd mobile/CookCam && npx eas submit --platform ios",
+    "mobile:submit:android": "cd mobile/CookCam && npx eas submit --platform android",
+    "mobile:update": "cd mobile/CookCam && npx eas update",
+    "backend": "cd backend && npm start",
+    "install:mobile": "cd mobile/CookCam && npm install",
+    "install:backend": "cd backend && npm install",
+    "install:all": "npm run install:mobile && npm run install:backend"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/cookcam.git"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@react-native/virtualized-lists": "^0.80.0",
+    "@supabase/supabase-js": "^2.49.5-next.1",
+    "dotenv": "^16.5.0",
+    "react-native-svg": "^15.12.0"
+  },
+  "devDependencies": {
+    "react-error-boundary": "^6.0.0"
+  }
+}

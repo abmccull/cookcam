@@ -1,0 +1,5 @@
+# Ignore everything except website folder
+*
+!website/
+!website/**
+!vercel.json 
