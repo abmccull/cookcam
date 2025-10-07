@@ -7,22 +7,20 @@ import {
   TouchableOpacity,
   StyleSheet,
   KeyboardAvoidingView,
-  Platform,
-} from "react-native";
+  Platform} from "react-native";
 import { X, Plus } from "lucide-react-native";
 import { tokens, mixins } from "../../styles";
 
 interface AddIngredientModalProps {
   visible: boolean;
   onClose: () => void;
-  onAdd: (ingredientName: string) => void;
+  onAdd: (_ingredientName: string) => void;
 }
 
 const AddIngredientModal: React.FC<AddIngredientModalProps> = ({
   visible,
   onClose,
-  onAdd,
-}) => {
+  onAdd}) => {
   const [ingredientName, setIngredientName] = useState("");
 
   const handleAdd = () => {
@@ -111,16 +109,14 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: "center",
-    alignItems: "center",
-  },
+    alignItems: "center"},
   backdrop: {
     position: "absolute",
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-  },
+    backgroundColor: "rgba(0, 0, 0, 0.5)"},
   content: {
     backgroundColor: tokens.colors.background.primary,
     borderRadius: tokens.borderRadius.large,
@@ -130,31 +126,25 @@ const styles = StyleSheet.create({
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
-      height: 2,
-    },
+      height: 2},
     shadowOpacity: 0.25,
     shadowRadius: 8,
-    elevation: 5,
-  },
+    elevation: 5},
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: tokens.spacing.sm,
-  },
+    marginBottom: tokens.spacing.sm},
   title: {
     ...mixins.text.h3,
     color: tokens.colors.text.primary,
-    fontWeight: "700",
-  },
+    fontWeight: "700"},
   closeButton: {
-    padding: tokens.spacing.xs,
-  },
+    padding: tokens.spacing.xs},
   subtitle: {
     ...mixins.text.body,
     color: tokens.colors.text.secondary,
-    marginBottom: tokens.spacing.lg,
-  },
+    marginBottom: tokens.spacing.lg},
   input: {
     ...mixins.text.body,
     backgroundColor: tokens.colors.background.secondary,
@@ -163,12 +153,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: tokens.colors.border.primary,
     color: tokens.colors.text.primary,
-    marginBottom: tokens.spacing.lg,
-  },
+    marginBottom: tokens.spacing.lg},
   buttonContainer: {
     flexDirection: "row",
-    gap: tokens.spacing.sm,
-  },
+    gap: tokens.spacing.sm},
   button: {
     flex: 1,
     paddingVertical: tokens.spacing.md,
@@ -176,30 +164,23 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: tokens.spacing.xs,
-  },
+    gap: tokens.spacing.xs},
   cancelButton: {
     backgroundColor: tokens.colors.background.secondary,
     borderWidth: 1,
-    borderColor: tokens.colors.border.primary,
-  },
+    borderColor: tokens.colors.border.primary},
   cancelButtonText: {
     ...mixins.text.body,
     color: tokens.colors.text.secondary,
-    fontWeight: "600",
-  },
+    fontWeight: "600"},
   addButton: {
-    backgroundColor: tokens.colors.brand.primary,
-  },
+    backgroundColor: tokens.colors.brand.primary},
   addButtonText: {
     ...mixins.text.body,
     color: "#FFFFFF",
-    fontWeight: "600",
-  },
+    fontWeight: "600"},
   disabledButton: {
     backgroundColor: tokens.colors.background.tertiary,
-    opacity: 0.5,
-  },
-});
+    opacity: 0.5}});
 
 export default AddIngredientModal;

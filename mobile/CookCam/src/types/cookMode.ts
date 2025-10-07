@@ -14,15 +14,15 @@ export interface CookingStep {
 }
 
 export interface CookModeScreenProps {
-  navigation: any;
-  route: any;
+  navigation: unknown;
+  route: unknown;
 }
 
 export interface Recipe {
   id?: string;
   title?: string;
-  instructions?: any[];
-  ingredients?: any[];
+  instructions?: unknown[];
+  ingredients?: unknown[];
   isGenerated?: boolean;
 }
 
@@ -40,7 +40,7 @@ export interface CookModeHeaderProps {
   voiceEnabled: boolean;
   onPlayPause: () => void;
   onToggleVoice: () => void;
-  formatTime: (seconds: number) => string;
+  formatTime: (_seconds: number) => string;
 }
 
 export interface ProgressSectionProps {
@@ -48,14 +48,14 @@ export interface ProgressSectionProps {
   totalSteps: number;
   completedSteps: number;
   progress: number;
-  progressAnim: any; // Animated.Value
+  progressAnim: unknown; // Animated.Value
 }
 
 export interface StepCardProps {
   currentStepData?: CookingStep;
   currentStep: number;
   totalSteps: number;
-  stepTranslateX: any; // Animated.Value
+  stepTranslateX: unknown; // Animated.Value
   onShowIngredients: () => void;
   onShowAllSteps: () => void;
   nextStepPreview?: string;
@@ -74,7 +74,7 @@ export interface NavigationControlsProps {
 
 export interface IngredientsModalProps {
   visible: boolean;
-  ingredients?: any[];
+  ingredients?: unknown[];
   onClose: () => void;
 }
 
@@ -83,5 +83,5 @@ export interface AllStepsModalProps {
   steps: CookingStep[];
   currentStep: number;
   onClose: () => void;
-  onStepSelect: (stepIndex: number) => void;
+  onStepSelect: (_stepIndex: number) => void;
 }

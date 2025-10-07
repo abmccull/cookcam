@@ -19,7 +19,7 @@ interface HapticOptions {
 // Safe haptic feedback wrapper
 class HapticFeedback {
   private isAvailable = false;
-  private nativeModule: any = null;
+  private nativeModule: unknown = null;
 
   constructor() {
     this.initialize();

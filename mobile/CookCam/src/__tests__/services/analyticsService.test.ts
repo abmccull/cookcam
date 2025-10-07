@@ -4,10 +4,7 @@ import { analyticsService } from '../../services/analyticsService';
 jest.mock('../../services/supabaseClient', () => ({
   supabase: {
     from: jest.fn(() => ({
-      insert: jest.fn(() => Promise.resolve({ error: null })),
-    })),
-  },
-}));
+      insert: jest.fn(() => Promise.resolve({ error: null }))}))}}));
 
 describe('analyticsService', () => {
   beforeEach(() => {
@@ -21,14 +18,11 @@ describe('analyticsService', () => {
         user_id: 'test-user-id',
         properties: {
           recipe_id: 'recipe-123',
-          category: 'dinner',
-        },
-      };
+          category: 'dinner'}};
 
       await analyticsService.trackEvent(eventData.event_name, {
         ...eventData.properties,
-        user_id: eventData.user_id,
-      });
+        user_id: eventData.user_id});
 
       // Verify the event was tracked (this would depend on your actual implementation)
       expect(true).toBe(true); // Placeholder assertion
@@ -38,9 +32,7 @@ describe('analyticsService', () => {
       const eventData = {
         event_name: 'app_opened',
         properties: {
-          source: 'notification',
-        },
-      };
+          source: 'notification'}};
 
       await analyticsService.trackEvent(eventData.event_name, eventData.properties);
 
@@ -52,8 +44,9 @@ describe('analyticsService', () => {
       const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
 
       try {
-        await analyticsService.trackEvent('invalid_event', null as any);
-      } catch (error) {
+        // Test with invalid properties (null) to verify error handling
+        await analyticsService.trackEvent('invalid_event', null as unknown as Record<string, string | number | boolean>);
+      } catch (_error) {
         // Should not throw
       }
 

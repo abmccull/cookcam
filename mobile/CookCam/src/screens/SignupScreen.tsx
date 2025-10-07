@@ -30,7 +30,7 @@ import { cookCamApi } from "../services/cookCamApi";
 import logger from "../utils/logger";
 
 interface SignupScreenProps {
-  navigation: any;
+  navigation: unknown;
 }
 
 interface PasswordValidation {

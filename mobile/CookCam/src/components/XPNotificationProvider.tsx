@@ -1,5 +1,5 @@
 import React from "react";
-import { View } from "react-native";
+
 import XPNotification from "./XPNotification";
 import { useGamification } from "../context/GamificationContext";
 
@@ -8,16 +8,14 @@ interface XPNotificationProviderProps {
 }
 
 const XPNotificationProvider: React.FC<XPNotificationProviderProps> = ({
-  children,
-}) => {
+  children}) => {
   const {
     xp,
     level,
     levelProgress,
     nextLevelXP,
     xpNotification,
-    hideXPNotification,
-  } = useGamification();
+    hideXPNotification} = useGamification();
 
   return (
     <>

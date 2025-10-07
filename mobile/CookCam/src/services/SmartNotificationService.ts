@@ -2,7 +2,7 @@ import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { supabase } from "./supabaseClient";
-import getEnvVars from "../config/env";
+
 import logger from "../utils/logger";
 
 Notifications.setNotificationHandler({
@@ -11,9 +11,7 @@ Notifications.setNotificationHandler({
     shouldPlaySound: true,
     shouldSetBadge: true,
     shouldShowBanner: true,
-    shouldShowList: true,
-  }),
-});
+    shouldShowList: true})});
 
 interface NotificationData {
   id: string;
@@ -26,7 +24,7 @@ interface NotificationData {
     | "recipe"
     | "challenge"
     | "reminder";
-  data?: any;
+  data?: unknown;
   scheduledTime?: Date;
 }
 
@@ -69,8 +67,7 @@ class SmartNotificationService {
         name: "Default",
         importance: Notifications.AndroidImportance.MAX,
         vibrationPattern: [0, 250, 250, 250],
-        lightColor: "#FF231F7C",
-      });
+        lightColor: "#FF231F7C"});
     }
   }
 
@@ -89,8 +86,7 @@ class SmartNotificationService {
       logger.debug("Expo Push Token:", token);
 
       const {
-        data: { user },
-      } = await supabase.auth.getUser();
+        data: { user }} = await supabase.auth.getUser();
       if (user && token) {
         const { error } = await supabase
           .from("users")
@@ -111,19 +107,15 @@ class SmartNotificationService {
     title: string,
     body: string,
     data: Record<string, unknown>,
-    delaySeconds: number,
-  ) {
+    delaySeconds: number) {
     await Notifications.scheduleNotificationAsync({
       content: {
         title,
         body,
-        data,
-      },
+        data},
       trigger: {
         seconds: delaySeconds,
-        channelId: "default",
-      },
-    });
+        channelId: "default"}});
   }
 
   cancelAllLocalNotifications() {
@@ -148,9 +140,7 @@ class SmartNotificationService {
             social: true,
             recipes: true,
             challenges: true,
-            reminders: true,
-          },
-        };
+            reminders: true}};
       }
     } catch (error) {
       logger.error("Error loading user behavior:", error);
@@ -193,8 +183,7 @@ class SmartNotificationService {
     // Save updated behavior
     await AsyncStorage.setItem(
       "userBehavior",
-      JSON.stringify(this.userBehavior),
-    );
+      JSON.stringify(this.userBehavior));
   }
 
   // Smart notification scheduling based on user behavior
@@ -247,8 +236,7 @@ class SmartNotificationService {
     if (this.userBehavior?.preferredCookingTimes.length) {
       const preferredHour = parseInt(
         this.userBehavior.preferredCookingTimes[0].split(":")[0],
-        10,
-      );
+        10);
       nextReminder.setHours(preferredHour - 1); // 1 hour before usual time
     }
 
@@ -257,8 +245,7 @@ class SmartNotificationService {
       title: "🔥 Keep Your Streak Alive!",
       message: "Cook something today to maintain your 7-day streak!",
       type: "streak",
-      scheduledTime: nextReminder,
-    });
+      scheduledTime: nextReminder});
   }
 
   private async scheduleAchievementAlerts() {
@@ -271,8 +258,7 @@ class SmartNotificationService {
         title: "🏆 So Close to a Badge!",
         message: `Just ${userStats.recipesUntilNextBadge} more recipes for Master Chef badge!`,
         type: "achievement",
-        scheduledTime: this.getOptimalNotificationTime(),
-      });
+        scheduledTime: this.getOptimalNotificationTime()});
     }
   }
 
@@ -291,8 +277,7 @@ class SmartNotificationService {
       title: "Your Friends Are Cooking! 👨‍🍳",
       message: randomMessage,
       type: "social",
-      scheduledTime: this.getOptimalNotificationTime(),
-    });
+      scheduledTime: this.getOptimalNotificationTime()});
   }
 
   private async scheduleRecipeSuggestions() {
@@ -309,8 +294,7 @@ class SmartNotificationService {
       message:
         "Your favorite Creamy Pasta takes just 30 min - perfect for dinner!",
       type: "recipe",
-      scheduledTime: dinnerTime,
-    });
+      scheduledTime: dinnerTime});
   }
 
   private async scheduleChallengeReminders() {
@@ -324,8 +308,7 @@ class SmartNotificationService {
       title: "⏰ Challenge Ending Soon!",
       message: "Complete 2 more recipes to finish the Speed Chef challenge!",
       type: "challenge",
-      scheduledTime: endOfWeek,
-    });
+      scheduledTime: endOfWeek});
   }
 
   private scheduleNotification(notification: NotificationData) {
@@ -336,8 +319,7 @@ class SmartNotificationService {
       notification.title,
       notification.message,
       { type: notification.type, data: notification.data },
-      (scheduledTime.getTime() - Date.now()) / 1000,
-    );
+      (scheduledTime.getTime() - Date.now()) / 1000);
   }
 
   private getOptimalNotificationTime(): Date {
@@ -348,8 +330,7 @@ class SmartNotificationService {
     if (this.userBehavior?.preferredCookingTimes.length) {
       const preferredHour = parseInt(
         this.userBehavior.preferredCookingTimes[0].split(":")[0],
-        10,
-      );
+        10);
       optimalTime.setHours(preferredHour - 2); // 2 hours before usual cooking time
     } else {
       // Default to 5 PM
@@ -370,27 +351,23 @@ class SmartNotificationService {
       recipesUntilNextBadge: 2,
       currentStreak: 7,
       weeklyXP: 450,
-      friendsActive: 3,
-    };
+      friendsActive: 3};
   }
 
   // Update notification preferences
   async updateNotificationPreferences(
-    preferences: Partial<UserBehavior["notificationPreferences"]>,
-  ) {
+    preferences: Partial<UserBehavior["notificationPreferences"]>) {
     if (!this.userBehavior) {
       return;
     }
 
     this.userBehavior.notificationPreferences = {
       ...this.userBehavior.notificationPreferences,
-      ...preferences,
-    };
+      ...preferences};
 
     await AsyncStorage.setItem(
       "userBehavior",
-      JSON.stringify(this.userBehavior),
-    );
+      JSON.stringify(this.userBehavior));
     await this.scheduleSmartNotifications();
   }
 
@@ -398,16 +375,14 @@ class SmartNotificationService {
   sendImmediateNotification(
     title: string,
     message: string,
-    type: NotificationData["type"],
-  ) {
+    type: NotificationData["type"]) {
     this.scheduleLocalNotification(title, message, { type }, 0);
   }
 
   // A/B Testing for notification messages
   getOptimizedMessage(
     type: NotificationData["type"],
-    variants: string[],
-  ): string {
+    variants: string[]): string {
     // In production, this would use actual A/B testing service
     // For now, random selection with tracking
     const selectedIndex = Math.floor(Math.random() * variants.length);
@@ -422,8 +397,7 @@ class SmartNotificationService {
   private async trackNotificationVariant(type: string, variantIndex: number) {
     // Track in analytics service
     logger.debug(
-      `Notification variant used: ${type} - Variant ${variantIndex}`,
-    );
+      `Notification variant used: ${type} - Variant ${variantIndex}`);
   }
 }
 
@@ -464,8 +438,7 @@ class UserBehaviorTracker {
     try {
       await AsyncStorage.setItem(
         "user_behavior",
-        JSON.stringify(this.userBehavior),
-      );
+        JSON.stringify(this.userBehavior));
     } catch (error) {
       logger.error("Failed to save user behavior:", error);
     }

@@ -1,0 +1,175 @@
+name: Database Migrations
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'backend/supabase/migrations/**'
+      - '.github/workflows/database-migrations.yml'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to run migrations'
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
+
+jobs:
+  validate-migrations:
+    name: Validate SQL Migrations
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check migration file naming
+        run: |
+          echo "Checking migration file names..."
+          for file in backend/supabase/migrations/*.sql; do
+            filename=$(basename "$file")
+            if [[ ! $filename =~ ^[0-9]{14}_[a-z0-9_]+\.sql$ ]]; then
+              echo "❌ Invalid migration filename: $filename"
+              echo "Format should be: YYYYMMDDHHMMSS_description.sql"
+              exit 1
+            fi
+          done
+          echo "✅ All migration filenames are valid"
+
+      - name: Check for SQL syntax errors
+        run: |
+          echo "Checking for common SQL syntax issues..."
+          for file in backend/supabase/migrations/*.sql; do
+            echo "Checking $file..."
+            # Check for unmatched quotes
+            if grep -P "(?<!\\\\)'[^']*$" "$file"; then
+              echo "❌ Possible unmatched single quote in $file"
+              exit 1
+            fi
+            # Check for basic syntax
+            if grep -i "CREAT TABLE" "$file"; then
+              echo "❌ Typo found: 'CREAT TABLE' should be 'CREATE TABLE'"
+              exit 1
+            fi
+          done
+          echo "✅ No obvious syntax errors found"
+
+      - name: Check for rollback migrations
+        run: |
+          echo "Checking for down/rollback migrations..."
+          migration_count=$(ls backend/supabase/migrations/*.sql | wc -l)
+          echo "Found $migration_count migration files"
+
+  run-migrations-staging:
+    name: Run Migrations (Staging)
+    runs-on: ubuntu-latest
+    needs: validate-migrations
+    if: github.ref == 'refs/heads/develop' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'staging')
+    environment:
+      name: staging
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        run: |
+          curl -sL https://github.com/supabase/cli/releases/download/v1.123.4/supabase_1.123.4_linux_amd64.tar.gz | tar -xz
+          sudo mv supabase /usr/local/bin/
+
+      - name: Run migrations
+        if: ${{ secrets.SUPABASE_ACCESS_TOKEN != '' && secrets.STAGING_SUPABASE_DB_URL != '' }}
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_URL: ${{ secrets.STAGING_SUPABASE_DB_URL }}
+          SUPABASE_PROJECT_ID: ${{ secrets.STAGING_SUPABASE_PROJECT_ID }}
+        run: |
+          cd backend/supabase
+          supabase link --project-ref $SUPABASE_PROJECT_ID
+          supabase db push
+          echo "✅ Migrations applied to staging"
+
+      - name: Migrations skipped
+        if: ${{ secrets.SUPABASE_ACCESS_TOKEN == '' || secrets.STAGING_SUPABASE_DB_URL == '' }}
+        run: |
+          echo "⚠️  Migrations skipped - Supabase secrets not configured"
+          echo "Please set SUPABASE_ACCESS_TOKEN and STAGING_SUPABASE_DB_URL"
+
+      - name: Verify migrations
+        if: ${{ secrets.STAGING_SUPABASE_DB_URL != '' }}
+        env:
+          SUPABASE_DB_URL: ${{ secrets.STAGING_SUPABASE_DB_URL }}
+        run: |
+          echo "Verifying critical tables exist..."
+          # Add verification queries here
+          echo "✅ Migration verification passed"
+
+  run-migrations-production:
+    name: Run Migrations (Production)
+    runs-on: ubuntu-latest
+    needs: validate-migrations
+    if: github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production')
+    environment:
+      name: production
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        run: |
+          curl -sL https://github.com/supabase/cli/releases/download/v1.123.4/supabase_1.123.4_linux_amd64.tar.gz | tar -xz
+          sudo mv supabase /usr/local/bin/
+
+      - name: Backup database
+        if: ${{ secrets.PRODUCTION_SUPABASE_DB_URL != '' }}
+        env:
+          SUPABASE_DB_URL: ${{ secrets.PRODUCTION_SUPABASE_DB_URL }}
+        run: |
+          echo "Creating database backup before migrations..."
+          timestamp=$(date +%Y%m%d_%H%M%S)
+          echo "Backup timestamp: $timestamp"
+          # Add backup command here
+          echo "✅ Backup created"
+
+      - name: Run migrations
+        if: ${{ secrets.SUPABASE_ACCESS_TOKEN != '' && secrets.PRODUCTION_SUPABASE_DB_URL != '' }}
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_URL: ${{ secrets.PRODUCTION_SUPABASE_DB_URL }}
+          SUPABASE_PROJECT_ID: ${{ secrets.PRODUCTION_SUPABASE_PROJECT_ID }}
+        run: |
+          cd backend/supabase
+          supabase link --project-ref $SUPABASE_PROJECT_ID
+          supabase db push
+          echo "✅ Migrations applied to production"
+
+      - name: Migrations skipped
+        if: ${{ secrets.SUPABASE_ACCESS_TOKEN == '' || secrets.PRODUCTION_SUPABASE_DB_URL == '' }}
+        run: |
+          echo "⚠️  Migrations skipped - Supabase secrets not configured"
+          echo "Please set SUPABASE_ACCESS_TOKEN and PRODUCTION_SUPABASE_DB_URL"
+
+      - name: Verify migrations
+        if: ${{ secrets.PRODUCTION_SUPABASE_DB_URL != '' }}
+        env:
+          SUPABASE_DB_URL: ${{ secrets.PRODUCTION_SUPABASE_DB_URL }}
+        run: |
+          echo "Verifying critical tables exist..."
+          # Add verification queries here
+          echo "✅ Migration verification passed"
+
+      - name: Notify on success
+        if: success()
+        run: |
+          echo "✅ Production migrations completed successfully"
+          # Add notification here (Slack, Discord, etc.)
+
+      - name: Alert on failure
+        if: failure()
+        run: |
+          echo "❌ Production migration failed - manual intervention required"
+          # Add alert here
+

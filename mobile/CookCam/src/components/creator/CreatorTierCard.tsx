@@ -10,10 +10,9 @@ const CreatorTierCard: React.FC<CreatorTierCardProps> = React.memo(({
   currentTier,
   nextTier,
   analytics,
-  progressToNext,
+  _progressToNext,
   progressAnim,
-  fadeAnim,
-}) => {
+  fadeAnim}) => {
   const subscriberCount = analytics?.referrals.active || 0;
 
   return (
@@ -26,8 +25,7 @@ const CreatorTierCard: React.FC<CreatorTierCardProps> = React.memo(({
           borderWidth: 2,
           borderColor: currentTier.color,
           opacity: fadeAnim,
-          padding: tokens.spacing.md,
-        },
+          padding: tokens.spacing.md},
       ]}
     >
       <View style={mixins.layout.flexRow}>
@@ -46,8 +44,7 @@ const CreatorTierCard: React.FC<CreatorTierCardProps> = React.memo(({
                 {
                   color: currentTier.color,
                   fontWeight: "600",
-                  marginTop: tokens.spacing.xs,
-                },
+                  marginTop: tokens.spacing.xs},
               ]}
             >
               Revenue Share • {currentTier.title}
@@ -62,8 +59,7 @@ const CreatorTierCard: React.FC<CreatorTierCardProps> = React.memo(({
               paddingHorizontal: tokens.spacing.sm,
               paddingVertical: tokens.spacing.xs,
               borderRadius: tokens.borderRadius.large,
-              gap: tokens.spacing.xs,
-            },
+              gap: tokens.spacing.xs},
           ]}
         >
           <Users size={16} color={tokens.colors.text.secondary} />
@@ -72,8 +68,7 @@ const CreatorTierCard: React.FC<CreatorTierCardProps> = React.memo(({
               mixins.text.body,
               {
                 fontWeight: "600",
-                color: tokens.colors.text.primary,
-              },
+                color: tokens.colors.text.primary},
             ]}
           >
             {subscriberCount.toLocaleString()}
@@ -98,8 +93,7 @@ const CreatorTierCard: React.FC<CreatorTierCardProps> = React.memo(({
                 mixins.text.caption,
                 {
                   fontWeight: "600",
-                  color: tokens.colors.text.primary,
-                },
+                  color: tokens.colors.text.primary},
               ]}
             >
               {subscriberCount.toLocaleString()} / {nextTier.minSubscribers}
@@ -110,8 +104,7 @@ const CreatorTierCard: React.FC<CreatorTierCardProps> = React.memo(({
               height: 8,
               backgroundColor: tokens.colors.background.tertiary,
               borderRadius: tokens.borderRadius.small,
-              overflow: "hidden",
-            }}
+              overflow: "hidden"}}
           >
             <Animated.View
               style={{
@@ -120,9 +113,7 @@ const CreatorTierCard: React.FC<CreatorTierCardProps> = React.memo(({
                 borderRadius: tokens.borderRadius.small,
                 width: progressAnim.interpolate({
                   inputRange: [0, 100],
-                  outputRange: ["0%", "100%"],
-                }),
-              }}
+                  outputRange: ["0%", "100%"]})}}
             />
           </View>
           <Text
@@ -131,8 +122,7 @@ const CreatorTierCard: React.FC<CreatorTierCardProps> = React.memo(({
               {
                 color: tokens.colors.text.secondary,
                 marginTop: tokens.spacing.xs,
-                textAlign: "center",
-              },
+                textAlign: "center"},
             ]}
           >
             {nextTier.minSubscribers - subscriberCount} more subscribers to unlock{" "}

@@ -1,4 +1,5 @@
 import "react-native-gesture-handler/jestSetup";
+import React from "react";
 
 // Mock AsyncStorage
 jest.mock("@react-native-async-storage/async-storage", () =>
@@ -70,7 +71,7 @@ jest.mock("@react-navigation/native", () => ({
 }));
 
 // Global test utilities
-global.console = {
+(globalThis as unknown).console = {
   ...console,
   warn: jest.fn(),
   error: jest.fn(),

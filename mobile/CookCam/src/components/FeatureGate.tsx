@@ -54,9 +54,21 @@ const FeatureGate: React.FC<FeatureGateProps> = ({
       setIsLoading(true);
       const subscriptionState =
         await lifecycleService.getSubscriptionState(userId);
-      const access = (lifecycleService as any).getFeatureAccess(
-        subscriptionState,
-      );
+      // TODO: Implement proper getFeatureAccess method on lifecycleService
+      // For now, derive access from subscription state
+      const isFree = subscriptionState.tier === 'free';
+      const access: FeatureAccess = {
+        canScan: true,
+        scanLimit: isFree ? 3 : null,
+        canGenerateRecipes: true,
+        recipeLimit: isFree ? 2 : null,
+        canAccessCookMode: !isFree,
+        canFavoriteRecipes: !isFree,
+        canAccessLeaderboard: true,
+        canCreateRecipes: subscriptionState.tier === 'creator',
+        canEarnRevenue: subscriptionState.tier === 'creator',
+        hasAds: isFree,
+      };
       setFeatureAccess(access);
     } catch (error) {
       logger.error("Error loading feature access:", error);

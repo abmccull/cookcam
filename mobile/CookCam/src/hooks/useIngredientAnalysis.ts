@@ -1,13 +1,11 @@
-import { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Ingredient } from "../types/ingredientReview";
 import {
   getEmojiForIngredient,
   getMockIngredients,
   getFallbackIngredients,
-  getSimulatedIngredients,
-} from "../data/ingredientReviewData";
+  getSimulatedIngredients} from "../data/ingredientReviewData";
 import { cookCamApi } from "../services/cookCamApi";
-import { useGamification, XP_VALUES } from "../context/GamificationContext";
 import logger from "../utils/logger";
 
 export interface UseIngredientAnalysisReturn {
@@ -21,8 +19,7 @@ export interface UseIngredientAnalysisReturn {
 export const useIngredientAnalysis = (
   imageUri: string,
   isSimulator: boolean,
-  user: any,
-): UseIngredientAnalysisReturn => {
+  _user: unknown): UseIngredientAnalysisReturn => {
   const { addXP } = useGamification();
   const [loading, setLoading] = useState(false);
   const [hasAnalyzedImage, setHasAnalyzedImage] = useState(false);
@@ -74,8 +71,7 @@ export const useIngredientAnalysis = (
                 id: ingredient.id || `detected-${i}`,
                 name: ingredient.name || name,
                 confidence: 0.9 - i * 0.1,
-                emoji: getEmojiForIngredient(ingredient.name || name),
-              });
+                emoji: getEmojiForIngredient(ingredient.name || name)});
             }
           } catch (error) {
             logger.debug(`Failed to find ingredient ${name}:`, error);
@@ -120,8 +116,7 @@ export const useIngredientAnalysis = (
           const scanResult = apiResponse.data;
           logger.debug(
             "🎯 Backend analysis successful:",
-            scanResult.ingredients,
-          );
+            scanResult.ingredients);
 
           // Convert backend response to our local ingredient format
           const foundIngredients: Ingredient[] = scanResult.ingredients.map(
@@ -133,15 +128,12 @@ export const useIngredientAnalysis = (
               quantity: detectedIng.quantity || "",
               unit: detectedIng.unit || "",
               variety: detectedIng.variety || "",
-              category: detectedIng.category || "",
-            }),
-          );
+              category: detectedIng.category || ""}));
 
           if (foundIngredients.length > 0) {
             setIngredients(foundIngredients);
             logger.debug(
-              `✅ Successfully analyzed image: ${foundIngredients.length} ingredients found`,
-            );
+              `✅ Successfully analyzed image: ${foundIngredients.length} ingredients found`);
 
             // Award bonus XP for successful real analysis
             await addXP(XP_VALUES.SCAN_INGREDIENTS, "SUCCESSFUL_SCAN");
@@ -174,8 +166,7 @@ export const useIngredientAnalysis = (
               id: ingredient.id || `detected-${i}`,
               name: ingredient.name || name,
               confidence: 0.9 - i * 0.1,
-              emoji: getEmojiForIngredient(ingredient.name || name),
-            });
+              emoji: getEmojiForIngredient(ingredient.name || name)});
           }
         } catch (error) {
           logger.debug(`Failed to find fallback ingredient ${name}:`, error);
@@ -185,8 +176,7 @@ export const useIngredientAnalysis = (
       if (foundIngredients.length > 0) {
         setIngredients(foundIngredients);
         logger.debug(
-          `✅ Fallback successful: ${foundIngredients.length} ingredients found`,
-        );
+          `✅ Fallback successful: ${foundIngredients.length} ingredients found`);
       } else {
         // Ultimate fallback
         setIngredients([
@@ -194,14 +184,12 @@ export const useIngredientAnalysis = (
             id: "1",
             name: "Detected Ingredient 1",
             confidence: 0.85,
-            emoji: "🥘",
-          },
+            emoji: "🥘"},
           {
             id: "2",
             name: "Detected Ingredient 2",
             confidence: 0.75,
-            emoji: "🍽️",
-          },
+            emoji: "🍽️"},
         ]);
       }
     } finally {
@@ -214,6 +202,5 @@ export const useIngredientAnalysis = (
     loading,
     hasAnalyzedImage,
     setIngredients,
-    analyzeImageIngredients,
-  };
+    analyzeImageIngredients};
 };

@@ -4,7 +4,23 @@
  */
 
 import { ViewStyle, TextStyle } from "react-native";
-import tokens from "./tokens";
+import { Colors, Typography, Spacing, BorderRadius, Shadow } from "./tokens";
+
+// Create tokens object for backward compatibility
+const tokens = {
+  colors: Colors,
+  spacing: Spacing,
+  borderRadius: BorderRadius,
+  shadow: Shadow,
+  fontSize: Typography.fontSize,
+  fontWeight: Typography.fontWeight,
+  // Add missing properties with placeholder values
+  lineHeight: {
+    tight: 1.2,
+    normal: 1.5,
+    relaxed: 1.75,
+  },
+};
 
 // Layout Mixins
 export const layout = {

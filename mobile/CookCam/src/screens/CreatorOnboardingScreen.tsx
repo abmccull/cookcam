@@ -11,8 +11,7 @@ import {
   Animated,
   Dimensions,
   ActivityIndicator,
-  Linking,
-} from "react-native";
+  Linking} from "react-native";
 import {
   ChefHat,
   Users,
@@ -20,29 +19,26 @@ import {
   CheckCircle,
   ArrowRight,
   Camera,
-  Target,
+  _Target,
   Star,
   Trophy,
-  Share2,
+  _Share2,
   Heart,
   TrendingUp,
   Clock,
   Shield,
   ExternalLink,
-  Building2,
-} from "lucide-react-native";
+  Building2} from "lucide-react-native";
 import { useAuth } from "../context/AuthContext";
-import { useGamification, XP_VALUES } from "../context/GamificationContext";
 import { authService } from "../services/api";
 import StripeConnectService from "../services/StripeConnectService";
-import * as SecureStore from "expo-secure-store";
 import * as Haptics from "expo-haptics";
 import logger from "../utils/logger";
 
-const { width: SCREEN_WIDTH } = Dimensions.get("window");
+const { width: _SCREEN_WIDTH } = Dimensions.get("window");
 
 interface CreatorOnboardingScreenProps {
-  navigation: any;
+  navigation: unknown;
   route: {
     params?: {
       returnToTab?: string;
@@ -55,15 +51,14 @@ interface OnboardingStep {
   title: string;
   subtitle: string;
   description: string;
-  icon: any;
+  icon: unknown;
   color: string;
   requirement?: string;
 }
 
 const CreatorOnboardingScreen: React.FC<CreatorOnboardingScreenProps> = ({
   navigation,
-  route,
-}) => {
+  route}) => {
   const { user, updateUser } = useAuth();
   const { addXP, unlockBadge } = useGamification();
   const [currentStep, setCurrentStep] = useState(0);
@@ -77,7 +72,7 @@ const CreatorOnboardingScreen: React.FC<CreatorOnboardingScreenProps> = ({
     "none" | "creating" | "onboarding" | "complete" | "error"
   >("none");
 
-  const stripeConnectService = StripeConnectService.getInstance();
+  const _stripeConnectService = StripeConnectService.getInstance();
 
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -93,8 +88,7 @@ const CreatorOnboardingScreen: React.FC<CreatorOnboardingScreenProps> = ({
       description:
         "Join thousands of creators sharing recipes and earning revenue through CookCam",
       icon: ChefHat,
-      color: "#FF6B35",
-    },
+      color: "#FF6B35"},
     {
       id: 1,
       title: "Build Your Audience 👥",
@@ -102,8 +96,7 @@ const CreatorOnboardingScreen: React.FC<CreatorOnboardingScreenProps> = ({
       description:
         "Create engaging content that brings people together around food and cooking",
       icon: Users,
-      color: "#66BB6A",
-    },
+      color: "#66BB6A"},
     {
       id: 2,
       title: "Earn Real Money 💰",
@@ -111,8 +104,7 @@ const CreatorOnboardingScreen: React.FC<CreatorOnboardingScreenProps> = ({
       description:
         "Earn up to 30% commission on subscribers you bring to CookCam",
       icon: DollarSign,
-      color: "#2196F3",
-    },
+      color: "#2196F3"},
     {
       id: 3,
       title: "Setup Your Profile 📝",
@@ -120,8 +112,7 @@ const CreatorOnboardingScreen: React.FC<CreatorOnboardingScreenProps> = ({
       description:
         "Let people know who you are and what makes your cooking special",
       icon: Star,
-      color: "#9C27B0",
-    },
+      color: "#9C27B0"},
     {
       id: 4,
       title: "Setup Payouts 💳",
@@ -129,8 +120,7 @@ const CreatorOnboardingScreen: React.FC<CreatorOnboardingScreenProps> = ({
       description:
         "Verify your identity and connect a bank account to receive your creator earnings",
       icon: Building2,
-      color: "#2196F3",
-    },
+      color: "#2196F3"},
     {
       id: 5,
       title: "You're All Set! 🚀",
@@ -138,8 +128,7 @@ const CreatorOnboardingScreen: React.FC<CreatorOnboardingScreenProps> = ({
       description:
         "Your creator account is now active. Start sharing recipes and building your community!",
       icon: Trophy,
-      color: "#FFB800",
-    },
+      color: "#FFB800"},
   ];
 
   const specialties = [
@@ -169,28 +158,24 @@ const CreatorOnboardingScreen: React.FC<CreatorOnboardingScreenProps> = ({
       Animated.timing(fadeAnim, {
         toValue: 1,
         duration: 600,
-        useNativeDriver: true,
-      }),
+        useNativeDriver: true}),
       Animated.spring(slideAnim, {
         toValue: 0,
         tension: 40,
         friction: 8,
-        useNativeDriver: true,
-      }),
+        useNativeDriver: true}),
       Animated.spring(scaleAnim, {
         toValue: 1,
         tension: 40,
         friction: 8,
-        useNativeDriver: true,
-      }),
+        useNativeDriver: true}),
     ]).start();
 
     // Update progress bar
     Animated.timing(progressAnim, {
       toValue: ((currentStep + 1) / onboardingSteps.length) * 100,
       duration: 400,
-      useNativeDriver: false,
-    }).start();
+      useNativeDriver: false}).start();
   };
 
   const handleNext = async () => {
@@ -223,7 +208,7 @@ const CreatorOnboardingScreen: React.FC<CreatorOnboardingScreenProps> = ({
           setLoading(false);
           return;
         }
-      } catch (error) {
+      } catch (_error) {
         // No existing account, continue with creation
         logger.debug("No existing Stripe account found, creating new one");
       }
@@ -232,8 +217,7 @@ const CreatorOnboardingScreen: React.FC<CreatorOnboardingScreenProps> = ({
       const result = await stripeService.createConnectAccount({
         userId: user?.id || "",
         email: user?.email || "",
-        country: "US",
-      });
+        country: "US"});
 
       if (!result.success) {
         throw new Error("Failed to create Stripe account");
@@ -277,8 +261,7 @@ const CreatorOnboardingScreen: React.FC<CreatorOnboardingScreenProps> = ({
               setLoading(false);
             }
           },
-          10 * 60 * 1000,
-        );
+          10 * 60 * 1000);
       } else {
         // Fallback: Create account link manually
         setKycStatus("onboarding");
@@ -286,8 +269,7 @@ const CreatorOnboardingScreen: React.FC<CreatorOnboardingScreenProps> = ({
         const accountLink = await stripeService.createAccountLink(
           result.accountId,
           "cookcam://creator-onboarding-complete",
-          "cookcam://creator-onboarding-refresh",
-        );
+          "cookcam://creator-onboarding-refresh");
 
         await Linking.openURL(accountLink.url);
       }
@@ -301,8 +283,7 @@ const CreatorOnboardingScreen: React.FC<CreatorOnboardingScreenProps> = ({
         error instanceof Error
           ? error.message
           : "Failed to setup Stripe account. Please try again.",
-        [{ text: "OK" }],
-      );
+        [{ text: "OK" }]);
     }
   };
 
@@ -329,8 +310,7 @@ const CreatorOnboardingScreen: React.FC<CreatorOnboardingScreenProps> = ({
           `Passionate cook specializing in ${specialty || "delicious recipes"}`,
         creator_specialty: specialty || "General Cooking",
         creator_tier: 1, // Start at Sous Chef level
-        onboarding_completed: true,
-      };
+        onboarding_completed: true};
 
       // Call API to update user
       const response = await authService.updateProfile(updateData);
@@ -340,8 +320,7 @@ const CreatorOnboardingScreen: React.FC<CreatorOnboardingScreenProps> = ({
         await updateUser({
           ...user,
           isCreator: true,
-          creatorTier: 1,
-        });
+          creatorTier: 1});
 
         // Award massive XP for becoming a creator
         await addXP(XP_VALUES.BECOME_CREATOR || 500, "BECOME_CREATOR");
@@ -363,12 +342,9 @@ const CreatorOnboardingScreen: React.FC<CreatorOnboardingScreenProps> = ({
                   const returnTab = route.params?.returnToTab || "Creator";
                   navigation.navigate("Main", {
                     screen: returnTab,
-                    params: { newCreator: true },
-                  });
-                },
-              },
-            ],
-          );
+                    params: { newCreator: true }});
+                }},
+            ]);
         }, 1500);
       } else {
         // Check if this is a development environment issue
@@ -380,15 +356,13 @@ const CreatorOnboardingScreen: React.FC<CreatorOnboardingScreenProps> = ({
 
         if (isDevelopmentError) {
           logger.debug(
-            "🧪 Development Mode: Bypassing subscription requirement for creator activation",
-          );
+            "🧪 Development Mode: Bypassing subscription requirement for creator activation");
 
           // In development, proceed with local-only creator activation
           await updateUser({
             ...user,
             isCreator: true,
-            creatorTier: 1,
-          });
+            creatorTier: 1});
 
           // Award XP locally
           await addXP(XP_VALUES.BECOME_CREATOR || 500, "BECOME_CREATOR");
@@ -408,12 +382,9 @@ const CreatorOnboardingScreen: React.FC<CreatorOnboardingScreenProps> = ({
                     const returnTab = route.params?.returnToTab || "Creator";
                     navigation.navigate("Main", {
                       screen: returnTab,
-                      params: { newCreator: true },
-                    });
-                  },
-                },
-              ],
-            );
+                      params: { newCreator: true }});
+                  }},
+              ]);
           }, 1500);
         } else {
           throw new Error("Failed to activate creator account");
@@ -440,18 +411,14 @@ const CreatorOnboardingScreen: React.FC<CreatorOnboardingScreenProps> = ({
                 await updateUser({
                   ...user,
                   isCreator: true,
-                  creatorTier: 1,
-                });
+                  creatorTier: 1});
                 setCompleted(true);
                 navigation.navigate("Main", {
                   screen: "Creator",
-                  params: { newCreator: true, devMode: true },
-                });
-              },
-            },
+                  params: { newCreator: true, devMode: true }});
+              }},
             { text: "Go Back", onPress: () => navigation.goBack() },
-          ],
-        );
+          ]);
       } else {
         Alert.alert(
           "Setup Error",
@@ -459,8 +426,7 @@ const CreatorOnboardingScreen: React.FC<CreatorOnboardingScreenProps> = ({
           [
             { text: "Retry", onPress: () => setLoading(false) },
             { text: "Skip for Now", onPress: () => navigation.goBack() },
-          ],
-        );
+          ]);
       }
     }
   };
@@ -475,9 +441,7 @@ const CreatorOnboardingScreen: React.FC<CreatorOnboardingScreenProps> = ({
               width: progressAnim.interpolate({
                 inputRange: [0, 100],
                 outputRange: ["0%", "100%"],
-                extrapolate: "clamp",
-              }),
-            },
+                extrapolate: "clamp"})},
           ]}
         />
       </View>
@@ -711,8 +675,7 @@ const CreatorOnboardingScreen: React.FC<CreatorOnboardingScreenProps> = ({
             styles.stepContainer,
             {
               opacity: fadeAnim,
-              transform: [{ translateY: slideAnim }, { scale: scaleAnim }],
-            },
+              transform: [{ translateY: slideAnim }, { scale: scaleAnim }]},
           ]}
         >
           {/* Icon */}
@@ -804,88 +767,73 @@ const CreatorOnboardingScreen: React.FC<CreatorOnboardingScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8F8FF",
-  },
+    backgroundColor: "#F8F8FF"},
   progressContainer: {
     paddingHorizontal: 20,
     paddingVertical: 16,
     backgroundColor: "#FFFFFF",
     borderBottomWidth: 1,
-    borderBottomColor: "#E5E5E7",
-  },
+    borderBottomColor: "#E5E5E7"},
   progressBackground: {
     height: 4,
     backgroundColor: "#E5E5E7",
     borderRadius: 2,
     overflow: "hidden",
-    marginBottom: 8,
-  },
+    marginBottom: 8},
   progressFill: {
     height: "100%",
     backgroundColor: "#FF6B35",
-    borderRadius: 2,
-  },
+    borderRadius: 2},
   progressText: {
     fontSize: 14,
     color: "#8E8E93",
-    textAlign: "center",
-  },
+    textAlign: "center"},
   content: {
-    flex: 1,
-  },
+    flex: 1},
   stepContainer: {
     padding: 32,
-    alignItems: "center",
-  },
+    alignItems: "center"},
   iconContainer: {
     width: 120,
     height: 120,
     borderRadius: 60,
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 32,
-  },
+    marginBottom: 32},
   stepTitle: {
     fontSize: 28,
     fontWeight: "bold",
     color: "#2D1B69",
     textAlign: "center",
-    marginBottom: 12,
-  },
+    marginBottom: 12},
   stepSubtitle: {
     fontSize: 20,
     fontWeight: "600",
     color: "#2D1B69",
     textAlign: "center",
-    marginBottom: 16,
-  },
+    marginBottom: 16},
   stepDescription: {
     fontSize: 16,
     color: "#8E8E93",
     textAlign: "center",
     lineHeight: 24,
-    marginBottom: 32,
-  },
+    marginBottom: 32},
   profileSetupContainer: {
     width: "100%",
-    marginTop: 16,
-  },
+    marginTop: 16},
   profileSetupTitle: {
     fontSize: 20,
     fontWeight: "600",
     color: "#2D1B69",
     marginBottom: 24,
-    textAlign: "center",
-  },
+    textAlign: "center"},
   inputContainer: {
-    marginBottom: 20,
-  },
+    marginBottom: 20},
   inputLabel: {
     fontSize: 16,
     fontWeight: "600",
     color: "#2D1B69",
-    marginBottom: 8,
-  },
+    marginBottom: 8},
   textInput: {
     backgroundColor: "#FFFFFF",
     borderWidth: 1,
@@ -894,15 +842,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     fontSize: 16,
-    color: "#2D1B69",
-  },
+    color: "#2D1B69"},
   bioInput: {
     height: 80,
-    textAlignVertical: "top",
-  },
+    textAlignVertical: "top"},
   specialtyScroll: {
-    marginTop: 8,
-  },
+    marginTop: 8},
   specialtyChip: {
     backgroundColor: "#FFFFFF",
     borderWidth: 1,
@@ -910,65 +855,53 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 8,
-    marginRight: 12,
-  },
+    marginRight: 12},
   specialtyChipSelected: {
     backgroundColor: "#FF6B35",
-    borderColor: "#FF6B35",
-  },
+    borderColor: "#FF6B35"},
   specialtyChipText: {
     fontSize: 14,
     color: "#2D1B69",
-    fontWeight: "500",
-  },
+    fontWeight: "500"},
   specialtyChipTextSelected: {
     color: "#FFFFFF",
-    fontWeight: "600",
-  },
+    fontWeight: "600"},
   featuresContainer: {
     width: "100%",
-    marginTop: 16,
-  },
+    marginTop: 16},
   featureRow: {
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 16,
-    gap: 12,
-  },
+    gap: 12},
   featureText: {
     fontSize: 16,
     color: "#2D1B69",
-    fontWeight: "500",
-  },
+    fontWeight: "500"},
   earningsContainer: {
     width: "100%",
-    marginTop: 16,
-  },
+    marginTop: 16},
   tierShowcase: {
     backgroundColor: "#FFFFFF",
     borderRadius: 16,
     padding: 20,
     alignItems: "center",
     borderWidth: 2,
-    borderColor: "#4CAF50",
-  },
+    borderColor: "#4CAF50"},
   tierTitle: {
     fontSize: 18,
     fontWeight: "bold",
     color: "#2D1B69",
-    marginBottom: 4,
-  },
+    marginBottom: 4},
   tierRevenue: {
     fontSize: 24,
     fontWeight: "bold",
     color: "#4CAF50",
-    marginBottom: 8,
-  },
+    marginBottom: 8},
   tierDescription: {
     fontSize: 14,
     color: "#8E8E93",
-    textAlign: "center",
-  },
+    textAlign: "center"},
   bottomNavigation: {
     flexDirection: "row",
     paddingHorizontal: 20,
@@ -976,19 +909,16 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     borderTopWidth: 1,
     borderTopColor: "#E5E5E7",
-    gap: 12,
-  },
+    gap: 12},
   skipButton: {
     flex: 1,
     paddingVertical: 16,
     justifyContent: "center",
-    alignItems: "center",
-  },
+    alignItems: "center"},
   skipButtonText: {
     fontSize: 16,
     color: "#8E8E93",
-    fontWeight: "600",
-  },
+    fontWeight: "600"},
   nextButton: {
     flex: 2,
     flexDirection: "row",
@@ -997,179 +927,146 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     justifyContent: "center",
     alignItems: "center",
-    gap: 8,
-  },
+    gap: 8},
   disabledButton: {
-    opacity: 0.6,
-  },
+    opacity: 0.6},
   nextButtonText: {
     fontSize: 18,
     fontWeight: "bold",
-    color: "#FFFFFF",
-  },
+    color: "#FFFFFF"},
   completedContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    padding: 32,
-  },
+    padding: 32},
   completedIcon: {
-    marginBottom: 24,
-  },
+    marginBottom: 24},
   completedTitle: {
     fontSize: 28,
     fontWeight: "bold",
     color: "#2D1B69",
     textAlign: "center",
-    marginBottom: 12,
-  },
+    marginBottom: 12},
   completedSubtitle: {
     fontSize: 16,
     color: "#8E8E93",
     textAlign: "center",
-    marginBottom: 32,
-  },
+    marginBottom: 32},
   completedFeatures: {
-    width: "100%",
-  },
+    width: "100%"},
   featureItem: {
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 16,
-    gap: 16,
-  },
+    gap: 16},
   // KYC Styles
   kycContainer: {
     width: "100%",
-    marginTop: 16,
-  },
+    marginTop: 16},
   kycTitle: {
     fontSize: 20,
     fontWeight: "600",
     color: "#2D1B69",
     marginBottom: 24,
-    textAlign: "center",
-  },
+    textAlign: "center"},
   kycBenefits: {
-    marginBottom: 24,
-  },
+    marginBottom: 24},
   benefitRow: {
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 12,
-    gap: 12,
-  },
+    gap: 12},
   benefitText: {
     fontSize: 14,
     color: "#2D1B69",
-    fontWeight: "500",
-  },
+    fontWeight: "500"},
   kycInfo: {
     backgroundColor: "#FFFFFF",
     borderRadius: 12,
     padding: 16,
-    marginBottom: 24,
-  },
+    marginBottom: 24},
   kycInfoTitle: {
     fontSize: 16,
     fontWeight: "600",
     color: "#2D1B69",
-    marginBottom: 8,
-  },
+    marginBottom: 8},
   kycInfoText: {
     fontSize: 14,
     color: "#8E8E93",
-    lineHeight: 20,
-  },
+    lineHeight: 20},
   kycLoading: {
     alignItems: "center",
-    padding: 32,
-  },
+    padding: 32},
   kycLoadingText: {
     fontSize: 16,
     color: "#8E8E93",
     marginTop: 16,
-    textAlign: "center",
-  },
+    textAlign: "center"},
   kycOnboarding: {
     alignItems: "center",
-    padding: 32,
-  },
+    padding: 32},
   kycOnboardingTitle: {
     fontSize: 18,
     fontWeight: "600",
     color: "#2D1B69",
     marginTop: 16,
     marginBottom: 8,
-    textAlign: "center",
-  },
+    textAlign: "center"},
   kycOnboardingText: {
     fontSize: 14,
     color: "#8E8E93",
     textAlign: "center",
     marginBottom: 24,
-    lineHeight: 20,
-  },
+    lineHeight: 20},
   checkStatusButton: {
     backgroundColor: "#FFFFFF",
     borderWidth: 2,
     borderColor: "#FF6B35",
     paddingVertical: 12,
     paddingHorizontal: 24,
-    borderRadius: 12,
-  },
+    borderRadius: 12},
   checkStatusText: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#FF6B35",
-  },
+    color: "#FF6B35"},
   kycComplete: {
     alignItems: "center",
-    padding: 32,
-  },
+    padding: 32},
   kycCompleteTitle: {
     fontSize: 18,
     fontWeight: "600",
     color: "#66BB6A",
     marginTop: 16,
     marginBottom: 8,
-    textAlign: "center",
-  },
+    textAlign: "center"},
   kycCompleteText: {
     fontSize: 14,
     color: "#8E8E93",
     textAlign: "center",
-    lineHeight: 20,
-  },
+    lineHeight: 20},
   kycError: {
     alignItems: "center",
-    padding: 32,
-  },
+    padding: 32},
   kycErrorTitle: {
     fontSize: 18,
     fontWeight: "600",
     color: "#FF3B30",
     marginBottom: 8,
-    textAlign: "center",
-  },
+    textAlign: "center"},
   kycErrorText: {
     fontSize: 14,
     color: "#8E8E93",
     textAlign: "center",
     marginBottom: 24,
-    lineHeight: 20,
-  },
+    lineHeight: 20},
   retryButton: {
     backgroundColor: "#FF6B35",
     paddingVertical: 12,
     paddingHorizontal: 24,
-    borderRadius: 12,
-  },
+    borderRadius: 12},
   retryButtonText: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#FFFFFF",
-  },
-});
+    color: "#FFFFFF"}});
 
 export default CreatorOnboardingScreen;

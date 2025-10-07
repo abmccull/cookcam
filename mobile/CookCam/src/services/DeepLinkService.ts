@@ -12,7 +12,7 @@ interface DeepLinkData {
 class DeepLinkService {
   private static instance: DeepLinkService;
   private pendingLink: DeepLinkData | null = null;
-  private navigationRef: any = null;
+  private navigationRef: unknown = null;
 
   static getInstance(): DeepLinkService {
     if (!DeepLinkService.instance) {
@@ -21,7 +21,7 @@ class DeepLinkService {
     return DeepLinkService.instance;
   }
 
-  setNavigationRef(ref: any) {
+  setNavigationRef(ref: unknown) {
     this.navigationRef = ref;
   }
 
@@ -68,7 +68,7 @@ class DeepLinkService {
   private parseURL(url: string): DeepLinkData | null {
     try {
       const urlObj = new URL(url);
-      const path = urlObj.pathname;
+      const path = (urlObj as unknown).pathname || '/';
 
       logger.debug("🔍 Parsing URL path:", path);
 

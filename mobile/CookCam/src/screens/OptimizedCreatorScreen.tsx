@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, {useRef, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -11,24 +11,22 @@ import {
   Clipboard,
   Linking,
   ActivityIndicator,
-  RefreshControl,
-} from "react-native";
+  RefreshControl} from "react-native";
 import {
-  Crown,
-  Sparkles,
-  CheckCircle,
-  Info,
-  Lock,
-  ChefHat,
-  Play,
+  _Crown,
+  _Sparkles,
+  _CheckCircle,
+  _Info,
+  _Lock,
+  _ChefHat,
+  _Play,
   RefreshCw,
-  TrendingUp,
-  Star,
-} from "lucide-react-native";
+  _TrendingUp,
+  _Star} from "lucide-react-native";
 import { useAuth } from "../context/AuthContext";
 import { useSubscription } from "../context/SubscriptionContext";
 import * as Haptics from "expo-haptics";
-import { useGamification, XP_VALUES } from "../context/GamificationContext";
+import { useGamification} from "../context/GamificationContext";
 import logger from "../utils/logger";
 import StripeConnectService from "../services/StripeConnectService";
 import { useCreatorData } from "../hooks/useCreatorData";
@@ -38,27 +36,25 @@ import {
   calculateProgressToNext,
   getCreatorShareableLink,
   creatorTips,
-  successStories,
-  getCreatorTiers,
-} from "../data/creatorData";
+  _successStories,
+  getCreatorTiers} from "../data/creatorData";
 import {
   CreatorTierCard,
   CreatorLinkSection,
   PayoutSection,
   AnalyticsSection,
-  CreatorTipsSection,
-} from "../components/creator";
+  CreatorTipsSection} from "../components/creator";
 import { CreatorScreenProps } from "../types/creator";
 import { tokens, mixins } from "../styles";
 
 const OptimizedCreatorScreen: React.FC<CreatorScreenProps> = React.memo(
   ({ navigation }) => {
     const { user } = useAuth();
-    const { addXP } = useGamification();
+    const { _addXP } = useGamification();
     const { state: subscriptionState, isCreator } = useSubscription();
 
     // Animation refs
-    const scaleAnim = useRef(new Animated.Value(1)).current;
+    const _scaleAnim = useRef(new Animated.Value(1)).current;
     const progressAnim = useRef(new Animated.Value(0)).current;
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const slideAnim = useRef(new Animated.Value(50)).current;
@@ -75,12 +71,11 @@ const OptimizedCreatorScreen: React.FC<CreatorScreenProps> = React.memo(
     const progressToNext = calculateProgressToNext(
       currentTierData,
       nextTier,
-      activeSubscribers,
-    );
-    const tiers = getCreatorTiers(activeSubscribers);
+      activeSubscribers);
+    const _tiers = getCreatorTiers(activeSubscribers);
 
     // Check subscription access
-    const hasCreatorSubscription =
+    const _hasCreatorSubscription =
       isCreator() ||
       subscriptionState.currentSubscription?.tier_slug === "creator";
 
@@ -99,19 +94,17 @@ const OptimizedCreatorScreen: React.FC<CreatorScreenProps> = React.memo(
         await Share.share({
           message: `Join me on CookCam AI! 🍳✨ Get AI-powered recipes from your ingredients and discover amazing dishes. Use my creator link to get started: ${shareableLink}`,
           url: shareableLink,
-          title: `Join ${user?.name || "me"} on CookCam AI!`,
-        });
+          title: `Join ${user?.name || "me"} on CookCam AI!`});
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       } catch (error) {
         logger.error("Share error:", error);
       }
     }, [user?.id, user?.name]);
 
-    const handleBecomeCreator = useCallback(async () => {
+    const _handleBecomeCreator = useCallback(async () => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       navigation.navigate("CreatorOnboarding", {
-        returnToTab: "Creator",
-      });
+        returnToTab: "Creator"});
     }, [navigation]);
 
     const handleOpenStripeConnect = useCallback(async () => {
@@ -126,8 +119,7 @@ const OptimizedCreatorScreen: React.FC<CreatorScreenProps> = React.memo(
         } else {
           Alert.alert(
             "Setup Required",
-            "Please complete your Stripe Connect setup first.",
-          );
+            "Please complete your Stripe Connect setup first.");
           navigation.navigate("CreatorOnboarding");
         }
       } catch (error) {
@@ -143,13 +135,11 @@ const OptimizedCreatorScreen: React.FC<CreatorScreenProps> = React.memo(
         Animated.timing(fadeAnim, {
           toValue: 1,
           duration: 600,
-          useNativeDriver: true,
-        }),
+          useNativeDriver: true}),
         Animated.timing(slideAnim, {
           toValue: 0,
           duration: 600,
-          useNativeDriver: true,
-        }),
+          useNativeDriver: true}),
       ]).start();
 
       // Animate progress bar to actual value
@@ -157,8 +147,7 @@ const OptimizedCreatorScreen: React.FC<CreatorScreenProps> = React.memo(
         Animated.timing(progressAnim, {
           toValue: progressToNext,
           duration: 1000,
-          useNativeDriver: false,
-        }).start();
+          useNativeDriver: false}).start();
       }
 
       // Pulse effect for tier card
@@ -167,15 +156,12 @@ const OptimizedCreatorScreen: React.FC<CreatorScreenProps> = React.memo(
           Animated.timing(pulseAnim, {
             toValue: 1.02,
             duration: 2000,
-            useNativeDriver: true,
-          }),
+            useNativeDriver: true}),
           Animated.timing(pulseAnim, {
             toValue: 1,
             duration: 2000,
-            useNativeDriver: true,
-          }),
-        ]),
-      );
+            useNativeDriver: true}),
+        ]));
       pulseAnimation.start();
 
       return () => {
@@ -231,8 +217,7 @@ const OptimizedCreatorScreen: React.FC<CreatorScreenProps> = React.memo(
                     mixins.text.caption,
                     {
                       color: tokens.colors.text.tertiary,
-                      marginLeft: tokens.spacing.xs,
-                    },
+                      marginLeft: tokens.spacing.xs},
                   ]}
                 >
                   Loading analytics...
@@ -252,8 +237,7 @@ const OptimizedCreatorScreen: React.FC<CreatorScreenProps> = React.memo(
                   padding: tokens.spacing.md,
                   borderRadius: 12,
                   borderLeftWidth: 3,
-                  borderLeftColor: tokens.colors.status.error,
-                },
+                  borderLeftColor: tokens.colors.status.error},
               ]}
             >
               <Text
@@ -261,8 +245,7 @@ const OptimizedCreatorScreen: React.FC<CreatorScreenProps> = React.memo(
                   mixins.text.body,
                   {
                     color: "#DC2626",
-                    marginBottom: tokens.spacing.xs,
-                  },
+                    marginBottom: tokens.spacing.xs},
                 ]}
               >
                 {error}
@@ -278,8 +261,7 @@ const OptimizedCreatorScreen: React.FC<CreatorScreenProps> = React.memo(
                     {
                       color: tokens.colors.brand.primary,
                       marginLeft: tokens.spacing.xs / 2,
-                      fontWeight: "500",
-                    },
+                      fontWeight: "500"},
                   ]}
                 >
                   Try Again
@@ -320,8 +302,7 @@ const OptimizedCreatorScreen: React.FC<CreatorScreenProps> = React.memo(
         </ScrollView>
       </View>
     );
-  },
-);
+  });
 
 OptimizedCreatorScreen.displayName = "OptimizedCreatorScreen";
 

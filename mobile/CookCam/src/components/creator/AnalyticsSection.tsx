@@ -108,7 +108,7 @@ const AnalyticsSection: React.FC<AnalyticsSectionProps> = React.memo(({
               },
             ]}
           >
-            <Users size={20} color={tokens.colors.interactive.discover} />
+            <Users size={20} color={tokens.colors.discover} />
             <Text style={[mixins.text.caption, { color: tokens.colors.text.secondary }]}>
               Sign-ups
             </Text>
@@ -212,7 +212,7 @@ const AnalyticsSection: React.FC<AnalyticsSectionProps> = React.memo(({
               },
             ]}
           >
-            <DollarSign size={20} color={tokens.colors.interactive.leaderboard} />
+            <DollarSign size={20} color={tokens.colors.leaderboard} />
             <Text style={[mixins.text.caption, { color: tokens.colors.text.secondary }]}>
               Monthly Revenue
             </Text>

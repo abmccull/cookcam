@@ -4,8 +4,7 @@ import React, {
   useState,
   useEffect,
   ReactNode,
-  useRef,
-} from "react";
+  useRef} from "react";
 import { useAuth } from "./AuthContext";
 import GamificationService from "../services/gamificationService";
 import { StreakService } from "../services/streakService";
@@ -28,10 +27,10 @@ interface GamificationContextType {
   streak: number;
   freezeTokens: number;
   badges: Badge[];
-  addXP: (amount: number, reason: string) => Promise<void>;
+  addXP: (_amount: number, _reason: string) => Promise<void>;
   checkStreak: () => Promise<void>;
   useFreeze: () => Promise<boolean>;
-  unlockBadge: (badgeId: string) => Promise<void>;
+  unlockBadge: (_badgeId: string) => Promise<void>;
   loadGamificationProgress: () => Promise<void>;
   refreshUserStats: () => Promise<void>; // Force refresh bypassing cache
   xpNotification: {
@@ -44,14 +43,14 @@ interface GamificationContextType {
 }
 
 const GamificationContext = createContext<GamificationContextType | undefined>(
-  undefined,
-);
+  undefined);
 
 interface GamificationProviderProps {
   children: ReactNode;
 }
 
 // XP values for different actions
+// eslint-disable-next-line react-refresh/only-export-components
 export const XP_VALUES = {
   SCAN_INGREDIENTS: 15,
   APPLY_FILTERS: 5,
@@ -106,8 +105,7 @@ export const XP_VALUES = {
   FIRST_CREATOR_RECIPE: 100,
   CREATOR_MILESTONE_100_FOLLOWERS: 250,
   CREATOR_MILESTONE_1K_FOLLOWERS: 1000,
-  CREATOR_MILESTONE_10K_FOLLOWERS: 5000,
-};
+  CREATOR_MILESTONE_10K_FOLLOWERS: 5000};
 
 // Enhanced level system: Progressive but achievable
 // Uses formula: baseXP + (level * multiplier) + (level^2 * quadratic)
@@ -147,12 +145,10 @@ if (__DEV__) {
       continue;
     const xpForLevel = currentThreshold - previousThreshold;
     logger.debug(
-      `Level ${i}: ${xpForLevel} XP (Total: ${LEVEL_THRESHOLDS[i]})`,
-    );
+      `Level ${i}: ${xpForLevel} XP (Total: ${LEVEL_THRESHOLDS[i]})`);
   }
   logger.debug(
-    `...Level 100: Total XP needed: ${LEVEL_THRESHOLDS[100]?.toLocaleString()}`,
-  );
+    `...Level 100: Total XP needed: ${LEVEL_THRESHOLDS[100]?.toLocaleString()}`);
 }
 
 // Available badges
@@ -161,83 +157,71 @@ const ALL_BADGES: Badge[] = [
     id: "first_scan",
     name: "First Scan",
     description: "Scanned your first ingredients",
-    icon: "📸",
-  },
+    icon: "📸"},
   {
     id: "first_recipe",
     name: "First Recipe",
     description: "Completed your first recipe",
-    icon: "👨‍🍳",
-  },
+    icon: "👨‍🍳"},
   {
     id: "streak_7",
     name: "Week Warrior",
     description: "Maintained a 7-day streak",
-    icon: "🔥",
-  },
+    icon: "🔥"},
   {
     id: "streak_30",
     name: "Monthly Master",
     description: "Maintained a 30-day streak",
-    icon: "💎",
-  },
+    icon: "💎"},
   {
     id: "level_5",
     name: "Rising Chef",
     description: "Reached level 5",
-    icon: "⭐",
-  },
+    icon: "⭐"},
   {
     id: "level_10",
     name: "Master Chef",
     description: "Reached level 10",
-    icon: "👑",
-  },
+    icon: "👑"},
   {
     id: "level_25",
     name: "Culinary Expert",
     description: "Reached level 25",
-    icon: "🏆",
-  },
+    icon: "🏆"},
   {
     id: "level_50",
     name: "Kitchen Legend",
     description: "Reached level 50",
-    icon: "🌟",
-  },
+    icon: "🌟"},
   {
     id: "level_75",
     name: "Cooking Virtuoso",
     description: "Reached level 75",
-    icon: "💫",
-  },
+    icon: "💫"},
   {
     id: "level_100",
     name: "Ultimate Chef",
     description: "Reached the maximum level 100!",
-    icon: "🚀",
-  },
+    icon: "🚀"},
   {
     id: "recipes_10",
     name: "Recipe Explorer",
     description: "Completed 10 recipes",
-    icon: "🍳",
-  },
+    icon: "🍳"},
   {
     id: "recipes_50",
     name: "Culinary Expert",
     description: "Completed 50 recipes",
-    icon: "🎖️",
-  },
+    icon: "🎖️"},
   {
     id: "share_master",
     name: "Social Chef",
     description: "Shared 10 recipes",
-    icon: "📢",
-  },
+    icon: "📢"},
 ];
 
 // Define badge types
+// eslint-disable-next-line react-refresh/only-export-components
 export const BADGES = {
   // Existing badges
   FIRST_RECIPE: "first_recipe",
@@ -261,8 +245,7 @@ export const BADGES = {
 };
 
 export const GamificationProvider: React.FC<GamificationProviderProps> = ({
-  children,
-}) => {
+  children}) => {
   const { user, updateUser } = useAuth();
 
   const [xp, setXP] = useState(user?.xp || 0);
@@ -283,8 +266,7 @@ export const GamificationProvider: React.FC<GamificationProviderProps> = ({
     visible: false,
     xpGained: 0,
     reason: "",
-    showConfetti: false,
-  });
+    showConfetti: false});
 
   useEffect(() => {
     const currentUserId = user?.id || null;
@@ -369,8 +351,7 @@ export const GamificationProvider: React.FC<GamificationProviderProps> = ({
       } else {
         logger.error(
           "❌ Failed to load gamification progress:",
-          response.error,
-        );
+          response.error);
       }
     } catch (error) {
       logger.error("❌ Error loading gamification progress:", error);
@@ -426,8 +407,7 @@ export const GamificationProvider: React.FC<GamificationProviderProps> = ({
 
     const progress = Math.min(
       (xpInCurrentLevel / xpNeededForNextLevel) * 100,
-      100,
-    );
+      100);
     return Math.max(progress, 0);
   };
 
@@ -480,8 +460,7 @@ export const GamificationProvider: React.FC<GamificationProviderProps> = ({
       visible: true,
       xpGained: amount,
       reason,
-      showConfetti,
-    });
+      showConfetti});
 
     // NOTE: Don't call updateUser here to prevent circular dependency
     // The AuthContext will sync with backend data when needed
@@ -492,32 +471,28 @@ export const GamificationProvider: React.FC<GamificationProviderProps> = ({
       const response = await GamificationService.getInstance().addXP(
         user?.id || "default",
         amount,
-        reason,
-      );
+        reason);
       if (response.success) {
         logger.debug(
           `✅ Added ${amount} XP for ${reason} - Response:`,
-          response,
-        );
+          response);
       } else {
         logger.error(
-          `❌ Failed to add XP to backend - Error: ${response.error}`,
-        );
+          `❌ Failed to add XP to backend - Error: ${response.error}`);
 
         // If authentication error, log additional details
         if (
           response.error?.includes("Authentication") ||
           response.error?.includes("401")
         ) {
-          const AsyncStorage =
+          const _AsyncStorage =
             require("@react-native-async-storage/async-storage").default;
           const token = await SecureStore.getItemAsync("@cookcam_token");
           logger.error("🔍 Debug info:", {
             hasToken: !!token,
             tokenLength: token?.length,
             tokenPrefix: token?.substring(0, 20),
-            userAuthState: user,
-          });
+            userAuthState: user});
         }
       }
     } catch (error) {
@@ -609,6 +584,7 @@ export const GamificationProvider: React.FC<GamificationProviderProps> = ({
       yesterday.setDate(yesterday.getDate() - 1);
       const yesterdayStr = yesterday.toISOString().split("T")[0];
 
+      // eslint-disable-next-line react-hooks/rules-of-hooks
       const success = await StreakService.useFreezeToken(user.id, yesterdayStr);
 
       if (success) {
@@ -655,8 +631,7 @@ export const GamificationProvider: React.FC<GamificationProviderProps> = ({
     loadGamificationProgress,
     refreshUserStats,
     xpNotification,
-    hideXPNotification,
-  };
+    hideXPNotification};
 
   return (
     <GamificationContext.Provider value={value}>
@@ -665,12 +640,13 @@ export const GamificationProvider: React.FC<GamificationProviderProps> = ({
   );
 };
 
+// Exporting hook alongside provider is standard React Context pattern
+// eslint-disable-next-line react-refresh/only-export-components
 export const useGamification = (): GamificationContextType => {
   const context = useContext(GamificationContext);
   if (!context) {
     throw new Error(
-      "useGamification must be used within a GamificationProvider",
-    );
+      "useGamification must be used within a GamificationProvider");
   }
   return context;
 };

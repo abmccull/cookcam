@@ -9,20 +9,17 @@ import {
   Animated,
   Dimensions,
   Platform,
-  Alert,
-} from "react-native";
+  Alert} from "react-native";
 import {
   Image as ImageIcon,
   X,
-  Star,
+  _Star,
   ChefHat,
   Zap,
-  Flame,
+  _Flame,
   Camera as CameraIcon,
-  PenTool,
-} from "lucide-react-native";
-import { CameraView, CameraType, useCameraPermissions } from "expo-camera";
-import { useGamification, XP_VALUES } from "../context/GamificationContext";
+  PenTool} from "lucide-react-native";
+import { CameraView,useCameraPermissions } from "expo-camera";
 import { useAuth } from "../context/AuthContext";
 import { useFocusEffect } from "@react-navigation/native";
 import * as Haptics from "expo-haptics";
@@ -30,7 +27,7 @@ import DailyCheckIn from "../components/DailyCheckIn";
 import logger from "../utils/logger";
 
 interface CameraScreenProps {
-  navigation: any;
+  navigation: unknown;
 }
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
@@ -69,12 +66,12 @@ const moderateScale = (size: number, factor = 0.5) =>
 const CameraScreen: React.FC<CameraScreenProps> = ({ navigation }) => {
   const [permission, requestPermission] = useCameraPermissions();
   const camera = useRef<CameraView>(null);
-  const [photoUri, setPhotoUri] = useState<string | null>(null);
+  const [_photoUri, setPhotoUri] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isCameraReady, setIsCameraReady] = useState(false);
-  const { addXP, streak } = useGamification();
-  const { user } = useAuth();
-  const [hasCookedToday, setHasCookedToday] = useState(false);
+  const { addXP, _streak } = useGamification();
+  const { _user } = useAuth();
+  const [_hasCookedToday, _setHasCookedToday] = useState(false);
   const [showDailyCheckIn, setShowDailyCheckIn] = useState(false);
   const [currentTip, setCurrentTip] = useState(0);
 
@@ -92,37 +89,30 @@ const CameraScreen: React.FC<CameraScreenProps> = ({ navigation }) => {
         Animated.timing(pulseAnim, {
           toValue: 1.2,
           duration: 800,
-          useNativeDriver: true,
-        }),
+          useNativeDriver: true}),
         Animated.timing(pulseAnim, {
           toValue: 1,
           duration: 800,
-          useNativeDriver: true,
-        }),
-      ]),
-    ).start();
+          useNativeDriver: true}),
+      ])).start();
 
     Animated.loop(
       Animated.timing(rotateAnim, {
         toValue: 1,
         duration: 30000,
-        useNativeDriver: true,
-      }),
-    ).start();
+        useNativeDriver: true})).start();
 
     // Fade in content
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
         duration: 1000,
-        useNativeDriver: true,
-      }),
+        useNativeDriver: true}),
       Animated.spring(slideAnim, {
         toValue: 0,
         tension: 40,
         friction: 8,
-        useNativeDriver: true,
-      }),
+        useNativeDriver: true}),
     ]).start();
 
     // Animate XP badge
@@ -131,8 +121,7 @@ const CameraScreen: React.FC<CameraScreenProps> = ({ navigation }) => {
       tension: 50,
       friction: 7,
       delay: 500,
-      useNativeDriver: true,
-    }).start();
+      useNativeDriver: true}).start();
 
     // Cycle through fun facts every 8 seconds
     const tipInterval = setInterval(() => {
@@ -165,16 +154,14 @@ const CameraScreen: React.FC<CameraScreenProps> = ({ navigation }) => {
         clearTimeout(timer);
         logger.debug("📹 Camera screen unfocused - cleaning up");
       };
-    }, []),
-  );
+    }, []));
 
   // Take actual photo for testing
   const handleTakePhoto = async () => {
     // Simulator detection and mock functionality
     if (isSimulator || !permission?.granted) {
       logger.debug(
-        "📱 Simulator detected or no camera permission - using mock mode",
-      );
+        "📱 Simulator detected or no camera permission - using mock mode");
 
       setIsProcessing(true);
 
@@ -182,7 +169,7 @@ const CameraScreen: React.FC<CameraScreenProps> = ({ navigation }) => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
       // Simulate photo capture delay
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      await new Promise<void>((resolve) => setTimeout(() => resolve(), 1500));
 
       // Use the first mock image (our test image)
       const mockImageUri = MOCK_CAMERA_IMAGES[0];
@@ -191,17 +178,14 @@ const CameraScreen: React.FC<CameraScreenProps> = ({ navigation }) => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
       logger.debug(
-        "🎯 About to add XP for ingredient scan (simulator mode)...",
-      );
+        "🎯 About to add XP for ingredient scan (simulator mode)...");
       await addXP(XP_VALUES.SCAN_INGREDIENTS, "SCAN_INGREDIENTS");
       logger.debug(
-        "✅ XP addition completed for ingredient scan (simulator mode)",
-      );
+        "✅ XP addition completed for ingredient scan (simulator mode)");
 
       navigation.navigate("IngredientReview", {
         imageUri: mockImageUri,
-        isSimulator: false,
-      });
+        isSimulator: false});
 
       setIsProcessing(false);
       return;
@@ -217,8 +201,7 @@ const CameraScreen: React.FC<CameraScreenProps> = ({ navigation }) => {
         // Take actual photo using Expo camera
         const photo = await camera.current.takePictureAsync({
           quality: 0.8,
-          base64: false,
-        });
+          base64: false});
 
         logger.debug("Photo taken:", photo.uri);
         setPhotoUri(photo.uri);
@@ -230,13 +213,11 @@ const CameraScreen: React.FC<CameraScreenProps> = ({ navigation }) => {
         logger.debug("🎯 About to add XP for ingredient scan (real camera)...");
         await addXP(XP_VALUES.SCAN_INGREDIENTS, "SCAN_INGREDIENTS");
         logger.debug(
-          "✅ XP addition completed for ingredient scan (real camera)",
-        );
+          "✅ XP addition completed for ingredient scan (real camera)");
 
         // Navigate to ingredient review with actual image
         navigation.navigate("IngredientReview", {
-          imageUri: photo.uri,
-        });
+          imageUri: photo.uri});
       } else {
         // Camera ref not available - show error
         logger.error("Camera ref not available");
@@ -244,8 +225,7 @@ const CameraScreen: React.FC<CameraScreenProps> = ({ navigation }) => {
         Alert.alert(
           "Camera Error",
           "Camera is not available. Please check permissions and try again.",
-          [{ text: "OK" }],
-        );
+          [{ text: "OK" }]);
       }
     } catch (error) {
       logger.error("Failed to take photo:", error);
@@ -267,14 +247,12 @@ const CameraScreen: React.FC<CameraScreenProps> = ({ navigation }) => {
     navigation.navigate("IngredientReview", {
       imageUri: null,
       isSimulator: false,
-      isManualInput: true,
-    });
+      isManualInput: true});
   };
 
   const spin = rotateAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: ["0deg", "360deg"],
-  });
+    outputRange: ["0deg", "360deg"]});
 
   // Calculate responsive sizes
   const cameraPreviewSize = Math.min(screenWidth * 0.9, screenHeight * 0.45);
@@ -325,8 +303,7 @@ const CameraScreen: React.FC<CameraScreenProps> = ({ navigation }) => {
             {
               transform: [{ rotate: spin }],
               width: screenWidth * 0.6,
-              height: screenWidth * 0.6,
-            },
+              height: screenWidth * 0.6},
           ]}
         >
           <ChefHat size={screenWidth * 0.6} color="#FF6B35" />
@@ -339,8 +316,7 @@ const CameraScreen: React.FC<CameraScreenProps> = ({ navigation }) => {
               styles.header,
               {
                 opacity: fadeAnim,
-                transform: [{ translateY: slideAnim }],
-              },
+                transform: [{ translateY: slideAnim }]},
             ]}
           >
             <Text
@@ -369,8 +345,7 @@ const CameraScreen: React.FC<CameraScreenProps> = ({ navigation }) => {
                 styles.cameraContainer,
                 {
                   opacity: fadeAnim,
-                  transform: [{ scale: fadeAnim }],
-                },
+                  transform: [{ scale: fadeAnim }]},
               ]}
             >
               <View
@@ -378,8 +353,7 @@ const CameraScreen: React.FC<CameraScreenProps> = ({ navigation }) => {
                   styles.cameraPreview,
                   {
                     width: cameraPreviewSize,
-                    height: cameraPreviewSize,
-                  },
+                    height: cameraPreviewSize},
                 ]}
               >
                 {/* Real Camera View */}
@@ -499,8 +473,7 @@ const CameraScreen: React.FC<CameraScreenProps> = ({ navigation }) => {
                 styles.tipSection,
                 {
                   opacity: fadeAnim,
-                  transform: [{ translateY: slideAnim }],
-                },
+                  transform: [{ translateY: slideAnim }]},
               ]}
             >
               <View style={styles.tipContainer}>
@@ -518,15 +491,13 @@ const CameraScreen: React.FC<CameraScreenProps> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#2D1B69",
-  },
+    backgroundColor: "#2D1B69"},
   backgroundDecoration: {
     position: "absolute",
     top: "30%",
     alignSelf: "center",
     zIndex: 0,
-    opacity: 0.05,
-  },
+    opacity: 0.05},
   content: {
     flex: 1,
     paddingHorizontal: scale(20),
@@ -544,19 +515,15 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#F8F8FF",
     marginBottom: verticalScale(8),
-    textAlign: "center",
-  },
+    textAlign: "center"},
   headerTitleSmall: {
-    fontSize: moderateScale(24),
-  },
+    fontSize: moderateScale(24)},
   headerSubtitle: {
     fontSize: moderateScale(16), // Slightly larger
     color: "rgba(248, 248, 255, 0.8)", // Higher opacity for better readability
-    textAlign: "center",
-  },
+    textAlign: "center"},
   headerSubtitleSmall: {
-    fontSize: moderateScale(14),
-  },
+    fontSize: moderateScale(14)},
   mainContent: {
     flex: 1,
     justifyContent: "flex-start",
@@ -577,18 +544,15 @@ const styles = StyleSheet.create({
     shadowColor: "#FF6B35",
     shadowOffset: {
       width: 0,
-      height: 4,
-    },
+      height: 4},
     shadowOpacity: 0.2,
     shadowRadius: 12,
-    elevation: 8,
-  },
+    elevation: 8},
   cameraOverlay: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    position: "relative",
-  },
+    position: "relative"},
   cornerTL: {
     position: "absolute",
     top: "10%",
@@ -597,8 +561,7 @@ const styles = StyleSheet.create({
     height: moderateScale(30),
     borderTopWidth: 3,
     borderLeftWidth: 3,
-    borderColor: "#FF6B35",
-  },
+    borderColor: "#FF6B35"},
   cornerTR: {
     position: "absolute",
     top: "10%",
@@ -607,8 +570,7 @@ const styles = StyleSheet.create({
     height: moderateScale(30),
     borderTopWidth: 3,
     borderRightWidth: 3,
-    borderColor: "#FF6B35",
-  },
+    borderColor: "#FF6B35"},
   cornerBL: {
     position: "absolute",
     bottom: "10%",
@@ -617,8 +579,7 @@ const styles = StyleSheet.create({
     height: moderateScale(30),
     borderBottomWidth: 3,
     borderLeftWidth: 3,
-    borderColor: "#FF6B35",
-  },
+    borderColor: "#FF6B35"},
   cornerBR: {
     position: "absolute",
     bottom: "10%",
@@ -627,45 +588,36 @@ const styles = StyleSheet.create({
     height: moderateScale(30),
     borderBottomWidth: 3,
     borderRightWidth: 3,
-    borderColor: "#FF6B35",
-  },
+    borderColor: "#FF6B35"},
   cameraText: {
     marginTop: verticalScale(16),
     fontSize: moderateScale(16),
     color: "#F8F8FF",
     opacity: 0.7,
-    textAlign: "center",
-  },
+    textAlign: "center"},
   floatingEmoji: {
-    position: "absolute",
-  },
+    position: "absolute"},
   emoji1: {
     top: "15%",
-    left: "15%",
-  },
+    left: "15%"},
   emoji2: {
     top: "15%",
-    right: "15%",
-  },
+    right: "15%"},
   emojiText: {
-    fontSize: moderateScale(32),
-  },
+    fontSize: moderateScale(32)},
   emojiTextSmall: {
-    fontSize: moderateScale(28),
-  },
+    fontSize: moderateScale(28)},
   captureSection: {
     alignItems: "center",
     justifyContent: "center",
     marginTop: verticalScale(15),
     marginBottom: verticalScale(15),
-    width: "100%",
-  },
+    width: "100%"},
   captureRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    width: "100%",
-  },
+    width: "100%"},
   captureButton: {
     alignItems: "center",
     justifyContent: "center",
@@ -676,15 +628,12 @@ const styles = StyleSheet.create({
     shadowColor: "#FF6B35",
     shadowOffset: {
       width: 0,
-      height: 4,
-    },
+      height: 4},
     shadowOpacity: 0.3,
     shadowRadius: 8,
-    elevation: 8,
-  },
+    elevation: 8},
   captureButtonDisabled: {
-    opacity: 0.7,
-  },
+    opacity: 0.7},
   captureButtonOuter: {
     backgroundColor: "#FF6B35",
     justifyContent: "center",
@@ -692,32 +641,26 @@ const styles = StyleSheet.create({
     shadowColor: "#FF6B35",
     shadowOffset: {
       width: 0,
-      height: 4,
-    },
+      height: 4},
     shadowOpacity: 0.3,
     shadowRadius: 8,
-    elevation: 8,
-  },
+    elevation: 8},
   captureButtonInner: {
     backgroundColor: "#FF8B65",
     borderWidth: 3,
-    borderColor: "#F8F8FF",
-  },
+    borderColor: "#F8F8FF"},
   captureText: {
     marginTop: verticalScale(12),
     fontSize: moderateScale(18),
     fontWeight: "bold",
     color: "#F8F8FF",
-    letterSpacing: 2,
-  },
+    letterSpacing: 2},
   processingContainer: {
-    alignItems: "center",
-  },
+    alignItems: "center"},
   processingText: {
     marginTop: verticalScale(12),
     fontSize: moderateScale(16),
-    color: "#F8F8FF",
-  },
+    color: "#F8F8FF"},
   streakReminder: {
     flexDirection: "row",
     alignItems: "center",
@@ -730,13 +673,11 @@ const styles = StyleSheet.create({
     gap: scale(8),
     borderWidth: 1,
     borderColor: "rgba(255, 107, 53, 0.3)",
-    alignSelf: "center",
-  },
+    alignSelf: "center"},
   streakText: {
     color: "#FF6B35",
     fontSize: moderateScale(14),
-    fontWeight: "600",
-  },
+    fontWeight: "600"},
   xpBadge: {
     marginLeft: scale(20),
     backgroundColor: "#FFB800",
@@ -749,19 +690,16 @@ const styles = StyleSheet.create({
     shadowColor: "#FFB800",
     shadowOffset: {
       width: 0,
-      height: 2,
-    },
+      height: 2},
     shadowOpacity: 0.3,
     shadowRadius: 4,
     elevation: 4,
     alignSelf: "flex-start",
-    marginTop: verticalScale(-10),
-  },
+    marginTop: verticalScale(-10)},
   xpBadgeText: {
     color: "#2D1B69",
     fontSize: moderateScale(12),
-    fontWeight: "bold",
-  },
+    fontWeight: "bold"},
   dailyCheckInContainer: {
     position: "absolute",
     top: 0,
@@ -771,8 +709,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0, 0, 0, 0.8)",
     justifyContent: "center",
     alignItems: "center",
-    zIndex: 999,
-  },
+    zIndex: 999},
   closeDailyCheckIn: {
     position: "absolute",
     top: verticalScale(60),
@@ -787,8 +724,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 3,
-  },
+    elevation: 3},
   simulatorBadge: {
     position: "absolute",
     top: "10%",
@@ -796,21 +732,18 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255, 107, 53, 0.7)",
     paddingHorizontal: scale(8),
     paddingVertical: verticalScale(4),
-    borderRadius: moderateScale(16),
-  },
+    borderRadius: moderateScale(16)},
   simulatorText: {
     color: "#FFFFFF",
     fontSize: moderateScale(12),
-    fontWeight: "bold",
-  },
+    fontWeight: "bold"},
   bottomSection: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: scale(20),
     paddingTop: verticalScale(20),
-    paddingBottom: verticalScale(20),
-  },
+    paddingBottom: verticalScale(20)},
   tipContainer: {
     flexDirection: "row",
     alignItems: "center",
@@ -823,15 +756,13 @@ const styles = StyleSheet.create({
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
-      height: 3,
-    },
+      height: 3},
     shadowOpacity: 0.15,
     shadowRadius: 6,
     elevation: 5,
     flex: 1,
     minHeight: verticalScale(70),
-    marginHorizontal: scale(15),
-  },
+    marginHorizontal: scale(15)},
   tipText: {
     marginLeft: scale(12),
     fontSize: moderateScale(14),
@@ -839,43 +770,36 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     flex: 1,
     lineHeight: moderateScale(20),
-    textAlign: "left",
-  },
+    textAlign: "left"},
   permissionContainer: {
     flex: 1,
     justifyContent: "center",
-    alignItems: "center",
-  },
+    alignItems: "center"},
   permissionTitle: {
     fontSize: moderateScale(24),
     fontWeight: "bold",
     color: "#F8F8FF",
-    marginBottom: verticalScale(16),
-  },
+    marginBottom: verticalScale(16)},
   permissionText: {
     fontSize: moderateScale(16),
     color: "rgba(248, 248, 255, 0.7)",
     textAlign: "center",
     marginHorizontal: scale(20),
-    marginBottom: verticalScale(24),
-  },
+    marginBottom: verticalScale(24)},
   permissionButton: {
     backgroundColor: "#FF6B35",
     paddingHorizontal: scale(20),
     paddingVertical: verticalScale(12),
-    borderRadius: moderateScale(20),
-  },
+    borderRadius: moderateScale(20)},
   permissionButtonText: {
     fontSize: moderateScale(18),
     fontWeight: "bold",
-    color: "#FFFFFF",
-  },
+    color: "#FFFFFF"},
   captureButtonText: {
     fontSize: moderateScale(16),
     fontWeight: "bold",
     color: "#FFFFFF",
-    marginLeft: scale(8),
-  },
+    marginLeft: scale(8)},
   tipSection: {
     flexDirection: "row",
     alignItems: "center",
@@ -883,21 +807,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: scale(20),
     paddingTop: verticalScale(10),
     paddingBottom:
-      Platform.OS === "android" ? verticalScale(80) : verticalScale(60),
-  },
+      Platform.OS === "android" ? verticalScale(80) : verticalScale(60)},
   safeArea: {
     flex: 1,
-    backgroundColor: "#2D1B69",
-  },
+    backgroundColor: "#2D1B69"},
   captureButtonContent: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-  },
+    justifyContent: "center"},
   manualInputContainer: {
     marginTop: verticalScale(20),
-    alignItems: "center",
-  },
+    alignItems: "center"},
   manualInputButton: {
     flexDirection: "row",
     alignItems: "center",
@@ -908,13 +828,10 @@ const styles = StyleSheet.create({
     borderRadius: moderateScale(25),
     paddingHorizontal: scale(24),
     paddingVertical: verticalScale(12),
-    gap: scale(8),
-  },
+    gap: scale(8)},
   manualInputText: {
     fontSize: moderateScale(14),
     fontWeight: "600",
-    color: "#FF6B35",
-  },
-});
+    color: "#FF6B35"}});
 
 export default CameraScreen;

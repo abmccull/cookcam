@@ -9,7 +9,7 @@ import {
   Animated,
   ActivityIndicator,
   RefreshControl,
-} from "react-native";
+  _FlatList} from "react-native";
 import OptimizedImage from "../components/OptimizedImage";
 import {
   Heart,
@@ -18,8 +18,7 @@ import {
   Star,
   Trophy,
   TrendingUp,
-  Award,
-} from "lucide-react-native";
+  _Award} from "lucide-react-native";
 import { useGamification } from "../context/GamificationContext";
 import { useAuth } from "../context/AuthContext";
 import { cookCamApi } from "../services/cookCamApi";
@@ -41,10 +40,10 @@ interface SavedRecipe {
     difficulty?: string;
     cuisine_type?: string;
     servings?: number;
-    ingredients?: any[];
-    instructions?: any[];
+    ingredients?: unknown[];
+    instructions?: unknown[];
     image_url?: string;
-    nutrition_info?: any;
+    nutrition_info?: unknown;
     creator?: {
       id: string;
       name: string;
@@ -75,7 +74,7 @@ const FavoritesScreen = ({ navigation }: FavoritesScreenProps) => {
   const [completedRecipes, setCompletedRecipes] = useState<SavedRecipe[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const { addXP } = useGamification();
+  const { _addXP } = useGamification();
   const { user } = useAuth();
 
   // Track last user ID to prevent unnecessary loads
@@ -100,8 +99,7 @@ const FavoritesScreen = ({ navigation }: FavoritesScreenProps) => {
         hasData: !!response.data,
         dataKeys: response.data ? Object.keys(response.data) : [],
         error: response.error,
-        fullResponse: response,
-      });
+        fullResponse: response});
 
       if (response.success && response.data) {
         // Check if it's direct saved_recipes array or wrapped in data
@@ -110,11 +108,9 @@ const FavoritesScreen = ({ navigation }: FavoritesScreenProps) => {
         if (Array.isArray(savedRecipesArray)) {
           // Transform API response to match SavedRecipe interface
           const transformedRecipes: SavedRecipe[] = savedRecipesArray.map(
-            (savedRecipe: any) => ({
+            (savedRecipe: unknown) => ({
               created_at: savedRecipe.created_at,
-              recipe: savedRecipe.recipe,
-            }),
-          );
+              recipe: savedRecipe.recipe}));
           setSavedRecipes(transformedRecipes);
         } else {
           logger.error("Saved recipes is not an array:", savedRecipesArray);
@@ -123,8 +119,7 @@ const FavoritesScreen = ({ navigation }: FavoritesScreenProps) => {
       } else {
         logger.error(
           "Failed to fetch saved recipes:",
-          response.error || "Unknown error",
-        );
+          response.error || "Unknown error");
         setSavedRecipes([]);
       }
     } catch (error) {
@@ -143,14 +138,12 @@ const FavoritesScreen = ({ navigation }: FavoritesScreenProps) => {
 
     try {
       const completedRecipeIds = await AsyncStorage.getItem(
-        `completed_recipes_${user.id}`,
-      );
+        `completed_recipes_${user.id}`);
       if (completedRecipeIds) {
         const ids = JSON.parse(completedRecipeIds);
         // Filter saved recipes to only show completed ones
         const completed = savedRecipes.filter((recipe) =>
-          ids.includes(recipe.recipe.id),
-        );
+          ids.includes(recipe.recipe.id));
         setCompletedRecipes(completed);
       }
     } catch (error) {
@@ -177,19 +170,20 @@ const FavoritesScreen = ({ navigation }: FavoritesScreenProps) => {
       if (
         response.success &&
         response.data &&
-        (response.data as any).recipes &&
-        (response.data as any).recipes.length > 0
+        typeof response.data === 'object' &&
+        'recipes' in response.data &&
+        Array.isArray((response.data as { recipes: unknown[] }).recipes)
       ) {
         // Transform recent recipes into recommendation format
-        const recentRecipes = (response.data as any).recipes
+        const recipesData = response.data as { recipes: unknown[] };
+        const recentRecipes = recipesData.recipes
           .slice(0, 3)
-          .map((recipe: any, index: number) => ({
-            id: recipe.id,
-            title: recipe.title,
-            cuisine: recipe.cuisine_type || "Various",
+          .map((recipe: unknown, index: number) => ({
+            id: (recipe as { id: string }).id,
+            title: (recipe as { title: string }).title,
+            cuisine: (recipe as { cuisine_type?: string }).cuisine_type || "Various",
             match: `${95 - index * 3}%`, // Simple match calculation
-            recipe: recipe,
-          }));
+            recipe: recipe}));
 
         setRecommendations(recentRecipes);
       } else {
@@ -212,40 +206,35 @@ const FavoritesScreen = ({ navigation }: FavoritesScreenProps) => {
       icon: "🇮🇹",
       requirement: 10,
       cuisineType: "Italian",
-      earned: false,
-    },
+      earned: false},
     {
       id: "2",
       name: "Asian Explorer",
       icon: "🥢",
       requirement: 10,
       cuisineType: "Asian",
-      earned: false,
-    },
+      earned: false},
     {
       id: "3",
       name: "Indian Guru",
       icon: "🌶️",
       requirement: 10,
       cuisineType: "Indian",
-      earned: false,
-    },
+      earned: false},
     {
       id: "4",
       name: "French Connoisseur",
       icon: "🥖",
       requirement: 10,
       cuisineType: "French",
-      earned: false,
-    },
+      earned: false},
     {
       id: "5",
       name: "Mexican Aficionado",
       icon: "🌮",
       requirement: 10,
       cuisineType: "Mexican",
-      earned: false,
-    },
+      earned: false},
   ];
 
   // Savings milestones
@@ -262,15 +251,17 @@ const FavoritesScreen = ({ navigation }: FavoritesScreenProps) => {
     savingsMilestones[savingsMilestones.length - 1];
   const progress = Math.min(
     ((savedRecipes?.length || 0) / currentMilestone.count) * 100,
-    100,
-  );
+    100);
 
   // State for recommendations
-  const [recommendations, setRecommendations] = useState<any[]>([]);
+  const [recommendations, setRecommendations] = useState<unknown[]>([]);
   const [isLoadingRecommendations, setIsLoadingRecommendations] =
     useState(false);
 
-  const filters = [
+  const filters: Array<{
+    key: "all" | "recent" | "top-rated" | "collections" | "completed";
+    label: string;
+  }> = [
     { key: "all", label: "All" },
     { key: "recent", label: "Recent" },
     { key: "completed", label: "Cooked" },
@@ -312,8 +303,7 @@ const FavoritesScreen = ({ navigation }: FavoritesScreenProps) => {
         toValue: 1,
         tension: 50,
         friction: 7,
-        useNativeDriver: true,
-      }).start();
+        useNativeDriver: true}).start();
     }
 
     // Pulse recommendations
@@ -322,15 +312,12 @@ const FavoritesScreen = ({ navigation }: FavoritesScreenProps) => {
         Animated.timing(recommendScale, {
           toValue: 1,
           duration: 1500,
-          useNativeDriver: true,
-        }),
+          useNativeDriver: true}),
         Animated.timing(recommendScale, {
           toValue: 0.95,
           duration: 1500,
-          useNativeDriver: true,
-        }),
-      ]),
-    ).start();
+          useNativeDriver: true}),
+      ])).start();
   }, []);
 
   const getDifficultyColor = (difficulty: string) => {
@@ -360,18 +347,15 @@ const FavoritesScreen = ({ navigation }: FavoritesScreenProps) => {
         description: savedRecipe.recipe.description || "",
         ingredients: savedRecipe.recipe.ingredients || [],
         steps:
-          savedRecipe.recipe.instructions?.map((inst: any, index: number) => ({
+          savedRecipe.recipe.instructions?.map((inst: unknown, index: number) => ({
             step: index + 1,
             instruction:
               typeof inst === "string" ? inst : inst.instruction || "",
             time: inst.time,
-            temperature: inst.temperature,
-          })) || [],
+            temperature: inst.temperature})) || [],
         totalTime: savedRecipe.recipe.total_time_minutes || 0,
         difficulty: savedRecipe.recipe.difficulty || "Medium",
-        servings: savedRecipe.recipe.servings || 4,
-      },
-    });
+        servings: savedRecipe.recipe.servings || 4}});
   };
 
   const handleUnsaveRecipe = async (recipeId: string) => {
@@ -381,8 +365,7 @@ const FavoritesScreen = ({ navigation }: FavoritesScreenProps) => {
       if (response.success) {
         // Remove from local state
         setSavedRecipes((prev) =>
-          prev.filter((item) => item.recipe.id !== recipeId),
-        );
+          prev.filter((item) => item.recipe.id !== recipeId));
       }
     } catch (error) {
       logger.error("Error unsaving recipe:", error);
@@ -425,7 +408,7 @@ const FavoritesScreen = ({ navigation }: FavoritesScreenProps) => {
               ]}
               onPress={() => {
                 Haptics.selectionAsync();
-                setSelectedFilter(filter.key as any);
+                setSelectedFilter(filter.key);
               }}
             >
               <Text
@@ -456,8 +439,7 @@ const FavoritesScreen = ({ navigation }: FavoritesScreenProps) => {
         >
           {collectionBadges.map((badge) => {
             const cuisineCount = (savedRecipes || []).filter(
-              (r) => r.recipe.cuisine_type === badge.cuisineType,
-            ).length;
+              (r) => r.recipe.cuisine_type === badge.cuisineType).length;
             const progress = (cuisineCount / badge.requirement) * 100;
 
             return (
@@ -524,21 +506,17 @@ const FavoritesScreen = ({ navigation }: FavoritesScreenProps) => {
                             ingredients: rec.recipe?.ingredients || [],
                             steps:
                               rec.recipe?.instructions?.map(
-                                (inst: any, index: number) => ({
+                                (inst: unknown, index: number) => ({
                                   step: index + 1,
                                   instruction:
                                     typeof inst === "string"
                                       ? inst
                                       : inst.instruction || "",
                                   time: inst.time,
-                                  temperature: inst.temperature,
-                                }),
-                              ) || [],
+                                  temperature: inst.temperature})) || [],
                             totalTime: rec.recipe?.total_time_minutes || 0,
                             difficulty: rec.recipe?.difficulty || "Medium",
-                            servings: rec.recipe?.servings || 4,
-                          },
-                        });
+                            servings: rec.recipe?.servings || 4}});
                       }}
                     >
                       <View style={styles.recommendMatch}>
@@ -566,17 +544,7 @@ const FavoritesScreen = ({ navigation }: FavoritesScreenProps) => {
           )}
 
           {/* Recipe Grid */}
-          <ScrollView
-            style={styles.recipeList}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.recipeListContent}
-            refreshControl={
-              <RefreshControl
-                refreshing={isRefreshing}
-                onRefresh={handleRefresh}
-              />
-            }
-          >
+          <ScrollView style={styles.recipeList} contentContainerStyle={styles.recipeListContent}>
             {(() => {
               const recipesToShow =
                 selectedFilter === "completed"
@@ -601,7 +569,7 @@ const FavoritesScreen = ({ navigation }: FavoritesScreenProps) => {
                 );
               }
 
-              return (recipesToShow || []).map((savedRecipe, index) => (
+              return (recipesToShow || []).map((savedRecipe) => (
                 <TouchableOpacity
                   key={savedRecipe.recipe.id}
                   style={styles.recipeCard}
@@ -662,9 +630,7 @@ const FavoritesScreen = ({ navigation }: FavoritesScreenProps) => {
                             {
                               backgroundColor:
                                 getDifficultyColor(
-                                  savedRecipe.recipe.difficulty,
-                                ) + "20",
-                            },
+                                  savedRecipe.recipe.difficulty) + "20"},
                           ]}
                         >
                           <Text
@@ -672,9 +638,7 @@ const FavoritesScreen = ({ navigation }: FavoritesScreenProps) => {
                               styles.difficultyText,
                               {
                                 color: getDifficultyColor(
-                                  savedRecipe.recipe.difficulty,
-                                ),
-                              },
+                                  savedRecipe.recipe.difficulty)},
                             ]}
                           >
                             {savedRecipe.recipe.difficulty}
@@ -725,40 +689,33 @@ const FavoritesScreen = ({ navigation }: FavoritesScreenProps) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8F8FF",
-  },
+    backgroundColor: "#F8F8FF"},
   loadingContainer: {
     justifyContent: "center",
-    alignItems: "center",
-  },
+    alignItems: "center"},
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: "#8E8E93",
-  },
+    color: "#8E8E93"},
   emptyState: {
     alignItems: "center",
     paddingVertical: 48,
-    paddingHorizontal: 20,
-  },
+    paddingHorizontal: 20},
   emptyStateTitle: {
     fontSize: 20,
     fontWeight: "bold",
     color: "#2D1B69",
     marginTop: 16,
-    marginBottom: 8,
-  },
+    marginBottom: 8},
   emptyStateText: {
     fontSize: 16,
     color: "#8E8E93",
     textAlign: "center",
-    lineHeight: 22,
-  },
+    lineHeight: 22},
   recipeImage: {
     width: "100%",
     height: "100%",
-    borderRadius: 12,
-  },
+    borderRadius: 12},
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -766,26 +723,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 20,
     paddingBottom: 4,
-    backgroundColor: "#F8F8FF",
-  },
+    backgroundColor: "#F8F8FF"},
   headerTitle: {
     fontSize: 28,
     fontWeight: "bold",
-    color: "#2D1B69",
-  },
+    color: "#2D1B69"},
   favoritesCounter: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-  },
+    gap: 6},
   heartEmoji: {
-    fontSize: 18,
-  },
+    fontSize: 18},
   counterText: {
     fontSize: 18,
     fontWeight: "bold",
-    color: "#2D1B69",
-  },
+    color: "#2D1B69"},
   milestoneCard: {
     marginHorizontal: 20,
     marginBottom: 2,
@@ -796,53 +748,43 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 4,
-    elevation: 3,
-  },
+    elevation: 3},
   milestoneHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 12,
-  },
+    marginBottom: 12},
   milestoneTitle: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#2D1B69",
-  },
+    color: "#2D1B69"},
   milestoneReward: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
-  },
+    gap: 4},
   milestoneXP: {
     fontSize: 14,
     fontWeight: "bold",
-    color: "#FFB800",
-  },
+    color: "#FFB800"},
   progressBar: {
     height: 8,
     backgroundColor: "#E5E5E7",
     borderRadius: 4,
     overflow: "hidden",
-    marginBottom: 8,
-  },
+    marginBottom: 8},
   progressFill: {
     height: "100%",
     backgroundColor: "#4CAF50",
-    borderRadius: 4,
-  },
+    borderRadius: 4},
   progressText: {
     fontSize: 12,
     color: "#8E8E93",
-    textAlign: "center",
-  },
+    textAlign: "center"},
   filterContainer: {
     paddingHorizontal: 20,
-    marginBottom: 4,
-  },
+    marginBottom: 4},
   filterContent: {
-    alignItems: "center",
-  },
+    alignItems: "center"},
   filterButton: {
     backgroundColor: "#FFFFFF",
     borderRadius: 16,
@@ -850,20 +792,16 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     marginRight: 8,
     borderWidth: 1,
-    borderColor: "#E5E5E7",
-  },
+    borderColor: "#E5E5E7"},
   filterButtonActive: {
     backgroundColor: "#2D1B69",
-    borderColor: "#2D1B69",
-  },
+    borderColor: "#2D1B69"},
   filterText: {
     fontSize: 13,
     fontWeight: "500",
-    color: "#2D1B69",
-  },
+    color: "#2D1B69"},
   filterTextActive: {
-    color: "#FFFFFF",
-  },
+    color: "#FFFFFF"},
   collectionCard: {
     backgroundColor: "#FFFFFF",
     borderRadius: 12,
@@ -875,8 +813,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 2,
-    elevation: 2,
-  },
+    elevation: 2},
   collectionIcon: {
     width: 48,
     height: 48,
@@ -885,52 +822,42 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginRight: 12,
-    position: "relative",
-  },
+    position: "relative"},
   collectionEmoji: {
-    fontSize: 24,
-  },
+    fontSize: 24},
   earnedBadge: {
     position: "absolute",
     top: -2,
-    right: -2,
-  },
+    right: -2},
   collectionInfo: {
-    flex: 1,
-  },
+    flex: 1},
   collectionName: {
     fontSize: 16,
     fontWeight: "600",
     color: "#2D1B69",
-    marginBottom: 4,
-  },
+    marginBottom: 4},
   collectionProgress: {
     height: 4,
     backgroundColor: "#E5E5E7",
     borderRadius: 2,
     overflow: "hidden",
-    marginBottom: 4,
-  },
+    marginBottom: 4},
   collectionProgressFill: {
     height: "100%",
     backgroundColor: "#4CAF50",
-    borderRadius: 2,
-  },
+    borderRadius: 2},
   collectionProgressText: {
     fontSize: 12,
-    color: "#8E8E93",
-  },
+    color: "#8E8E93"},
   recommendationsSection: {
     paddingLeft: 20,
     marginTop: 8,
-    marginBottom: 4,
-  },
+    marginBottom: 4},
   recommendationsTitle: {
     fontSize: 18,
     fontWeight: "600",
     color: "#2D1B69",
-    marginBottom: 8,
-  },
+    marginBottom: 8},
   recommendCard: {
     backgroundColor: "#FFFFFF",
     borderRadius: 12,
@@ -941,36 +868,29 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 2,
-    elevation: 2,
-  },
+    elevation: 2},
   recommendMatch: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    marginBottom: 8,
-  },
+    marginBottom: 8},
   recommendMatchText: {
     fontSize: 12,
     fontWeight: "600",
-    color: "#4CAF50",
-  },
+    color: "#4CAF50"},
   recommendTitle: {
     fontSize: 14,
     fontWeight: "600",
     color: "#2D1B69",
-    marginBottom: 4,
-  },
+    marginBottom: 4},
   recommendCuisine: {
     fontSize: 12,
-    color: "#8E8E93",
-  },
+    color: "#8E8E93"},
   recipeList: {
     flex: 1,
-    paddingHorizontal: 20,
-  },
+    paddingHorizontal: 20},
   recipeListContent: {
-    paddingBottom: 20,
-  },
+    paddingBottom: 20},
   recipeCard: {
     backgroundColor: "#FFFFFF",
     borderRadius: 16,
@@ -980,63 +900,50 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 4,
     elevation: 3,
-    overflow: "hidden",
-  },
+    overflow: "hidden"},
   imageContainer: {
     height: 160,
-    position: "relative",
-  },
+    position: "relative"},
   imagePlaceholder: {
     flex: 1,
     backgroundColor: "#F8F8FF",
     justifyContent: "center",
-    alignItems: "center",
-  },
+    alignItems: "center"},
   favoriteButton: {
     position: "absolute",
     top: 12,
     right: 12,
     backgroundColor: "rgba(255, 255, 255, 0.9)",
     borderRadius: 20,
-    padding: 8,
-  },
+    padding: 8},
   recipeInfo: {
-    padding: 16,
-  },
+    padding: 16},
   recipeTitle: {
     fontSize: 18,
     fontWeight: "bold",
     color: "#2D1B69",
-    marginBottom: 4,
-  },
+    marginBottom: 4},
   recipeCuisine: {
     fontSize: 14,
     color: "#8E8E93",
-    marginBottom: 12,
-  },
+    marginBottom: 12},
   recipeStats: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
-  },
+    gap: 12},
   stat: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
-  },
+    gap: 4},
   statText: {
     fontSize: 12,
-    color: "#8E8E93",
-  },
+    color: "#8E8E93"},
   difficultyBadge: {
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 8,
-  },
+    borderRadius: 8},
   difficultyText: {
     fontSize: 11,
-    fontWeight: "600",
-  },
-});
+    fontWeight: "600"}});
 
 export default FavoritesScreen;

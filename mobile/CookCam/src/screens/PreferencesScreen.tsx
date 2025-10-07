@@ -6,8 +6,7 @@ import {
   TouchableOpacity,
   Animated,
   Dimensions,
-  ScrollView,
-} from "react-native";
+  ScrollView} from "react-native";
 import {
   Check,
   ChevronRight,
@@ -15,23 +14,20 @@ import {
   SkipForward,
   Star,
   Trophy,
-  Globe,
-} from "lucide-react-native";
+  Globe} from "lucide-react-native";
 import SafeScreen from "../components/SafeScreen";
-import { useGamification, XP_VALUES } from "../context/GamificationContext";
 import * as Haptics from "expo-haptics";
 
 interface PreferencesScreenProps {
-  navigation: any;
-  route: any;
+  navigation: unknown;
+  route: unknown;
 }
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
+const { width: _SCREEN_WIDTH, height: _SCREEN_HEIGHT } = Dimensions.get("window");
 
 const PreferencesScreen: React.FC<PreferencesScreenProps> = ({
   navigation,
-  route,
-}) => {
+  route}) => {
   const { ingredients, imageUri } = route.params || {};
   const { addXP, unlockBadge } = useGamification();
 
@@ -66,8 +62,7 @@ const PreferencesScreen: React.FC<PreferencesScreenProps> = ({
         "Low-Carb",
         "Low-Fat",
         "Nut-Free",
-      ],
-    },
+      ]},
     {
       id: "cuisine",
       title: "What cuisine are you craving?",
@@ -93,8 +88,7 @@ const PreferencesScreen: React.FC<PreferencesScreenProps> = ({
         "Southern",
         "Fusion",
         "🎲 Surprise Me!",
-      ],
-    },
+      ]},
     {
       id: "time",
       title: "How much time do you have?",
@@ -104,17 +98,14 @@ const PreferencesScreen: React.FC<PreferencesScreenProps> = ({
         {
           label: "⚡ Quick & Easy",
           subtitle: "Under 20 minutes",
-          value: "quick",
-        },
+          value: "quick"},
         { label: "⏱️ Medium", subtitle: "20-45 minutes", value: "medium" },
         {
           label: "🍖 Worth the Wait",
           subtitle: "Over 45 minutes",
-          value: "long",
-        },
+          value: "long"},
         { label: "🤷 Flexible", subtitle: "Any cooking time", value: "any" },
-      ],
-    },
+      ]},
     {
       id: "difficulty",
       title: "What's your skill level?",
@@ -124,21 +115,17 @@ const PreferencesScreen: React.FC<PreferencesScreenProps> = ({
         {
           label: "👶 Beginner",
           subtitle: "Simple recipes only",
-          value: "easy",
-        },
+          value: "easy"},
         {
           label: "👨‍🍳 Home Cook",
           subtitle: "Some experience needed",
-          value: "medium",
-        },
+          value: "medium"},
         {
           label: "👨‍🍳 Chef Mode",
           subtitle: "Bring on the challenge!",
-          value: "hard",
-        },
+          value: "hard"},
         { label: "🎲 Surprise Me", subtitle: "Any difficulty", value: "any" },
-      ],
-    },
+      ]},
   ];
 
   const animateTransition = (direction: "next" | "prev") => {
@@ -146,13 +133,11 @@ const PreferencesScreen: React.FC<PreferencesScreenProps> = ({
       Animated.timing(fadeAnim, {
         toValue: 0,
         duration: 150,
-        useNativeDriver: true,
-      }),
+        useNativeDriver: true}),
       Animated.timing(slideAnim, {
         toValue: direction === "next" ? -50 : 50,
         duration: 150,
-        useNativeDriver: true,
-      }),
+        useNativeDriver: true}),
     ]).start(() => {
       slideAnim.setValue(direction === "next" ? 50 : -50);
 
@@ -160,13 +145,11 @@ const PreferencesScreen: React.FC<PreferencesScreenProps> = ({
         Animated.timing(fadeAnim, {
           toValue: 1,
           duration: 150,
-          useNativeDriver: true,
-        }),
+          useNativeDriver: true}),
         Animated.timing(slideAnim, {
           toValue: 0,
           duration: 150,
-          useNativeDriver: true,
-        }),
+          useNativeDriver: true}),
       ]).start();
     });
   };
@@ -177,8 +160,7 @@ const PreferencesScreen: React.FC<PreferencesScreenProps> = ({
       toValue: (currentStep + 1) / steps.length,
       tension: 50,
       friction: 7,
-      useNativeDriver: false,
-    }).start();
+      useNativeDriver: false}).start();
   }, [currentStep]);
 
   const handleNext = () => {
@@ -197,8 +179,7 @@ const PreferencesScreen: React.FC<PreferencesScreenProps> = ({
         dietary: selectedDietary,
         cuisine: selectedCuisine,
         cookingTime: selectedCookingTime || "any",
-        difficulty: selectedDifficulty || "any",
-      };
+        difficulty: selectedDifficulty || "any"};
 
       // Check for badge unlocks
       checkForBadges();
@@ -213,10 +194,7 @@ const PreferencesScreen: React.FC<PreferencesScreenProps> = ({
             params: {
               ingredients,
               imageUri,
-              preferences,
-            },
-          },
-        });
+              preferences}}});
       }, 1500);
     }
   };
@@ -242,8 +220,7 @@ const PreferencesScreen: React.FC<PreferencesScreenProps> = ({
       setSelectedDietary((prev) =>
         prev.includes(option)
           ? prev.filter((item) => item !== option)
-          : [...prev, option],
-      );
+          : [...prev, option]);
     } else if (step.id === "cuisine") {
       // Handle "Surprise Me!" option
       if (option === "🎲 Surprise Me!") {
@@ -276,7 +253,7 @@ const PreferencesScreen: React.FC<PreferencesScreenProps> = ({
     setTimeout(() => handleNext(), 300);
   };
 
-  const isOptionSelected = (option: any): boolean => {
+  const isOptionSelected = (option: unknown): boolean => {
     const step = steps[currentStep];
 
     if (step.id === "dietary") {
@@ -343,7 +320,7 @@ const PreferencesScreen: React.FC<PreferencesScreenProps> = ({
 
     return (
       <View style={styles.singleChoiceContainer}>
-        {step.options.map((option: any, index: number) => (
+        {step.options.map((option: unknown, index: number) => (
           <TouchableOpacity
             key={`${step.id}-${index}-${option.value}`}
             style={[
@@ -396,13 +373,11 @@ const PreferencesScreen: React.FC<PreferencesScreenProps> = ({
         toValue: 1.2,
         tension: 50,
         friction: 3,
-        useNativeDriver: true,
-      }),
+        useNativeDriver: true}),
       Animated.timing(xpRewardScale, {
         toValue: 1,
         duration: 200,
-        useNativeDriver: true,
-      }),
+        useNativeDriver: true}),
     ]).start();
 
     // Award XP
@@ -423,8 +398,7 @@ const PreferencesScreen: React.FC<PreferencesScreenProps> = ({
         toValue: 1,
         tension: 50,
         friction: 3,
-        useNativeDriver: true,
-      }).start();
+        useNativeDriver: true}).start();
     }
 
     // Check for adventurous eater (selected 5+ cuisines)
@@ -435,8 +409,7 @@ const PreferencesScreen: React.FC<PreferencesScreenProps> = ({
 
   const currentStepData = steps[currentStep];
   const completionPercentage = Math.round(
-    ((currentStep + 1) / steps.length) * 100,
-  );
+    ((currentStep + 1) / steps.length) * 100);
 
   return (
     <SafeScreen>
@@ -453,9 +426,7 @@ const PreferencesScreen: React.FC<PreferencesScreenProps> = ({
               {
                 width: progressAnim.interpolate({
                   inputRange: [0, 1],
-                  outputRange: ["0%", "100%"],
-                }),
-              },
+                  outputRange: ["0%", "100%"]})},
             ]}
           />
         </View>
@@ -471,8 +442,7 @@ const PreferencesScreen: React.FC<PreferencesScreenProps> = ({
             styles.questionContainer,
             {
               opacity: fadeAnim,
-              transform: [{ translateX: slideAnim }],
-            },
+              transform: [{ translateX: slideAnim }]},
           ]}
         >
           <Text style={styles.title}>{currentStepData.title}</Text>
@@ -556,55 +526,45 @@ const PreferencesScreen: React.FC<PreferencesScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8F8FF",
-  },
+    backgroundColor: "#F8F8FF"},
   progressContainer: {
     paddingHorizontal: 20,
     paddingTop: 16,
-    paddingBottom: 12,
-  },
+    paddingBottom: 12},
   progressHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 10,
-  },
+    marginBottom: 10},
   progressLabel: {
     fontSize: 18,
     fontWeight: "700",
     color: "#2D1B69",
-    letterSpacing: -0.5,
-  },
+    letterSpacing: -0.5},
   progressPercentage: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#FF6B35",
-  },
+    color: "#FF6B35"},
   progressBar: {
     height: 6,
     backgroundColor: "#E5E5E7",
     borderRadius: 3,
-    overflow: "hidden",
-  },
+    overflow: "hidden"},
   progressFill: {
     height: "100%",
     backgroundColor: "#FF6B35",
-    borderRadius: 3,
-  },
+    borderRadius: 3},
   progressText: {
     fontSize: 13,
     color: "#8E8E93",
-    marginTop: 6,
-  },
+    marginTop: 6},
   content: {
     flex: 1,
-    paddingHorizontal: 20,
-  },
+    paddingHorizontal: 20},
   questionContainer: {
     flex: 1,
     paddingTop: 5,
-    justifyContent: "flex-start",
-  },
+    justifyContent: "flex-start"},
   title: {
     fontSize: 22,
     fontWeight: "700",
@@ -612,28 +572,23 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 16,
     lineHeight: 26,
-    letterSpacing: -0.5,
-  },
+    letterSpacing: -0.5},
   subtitle: {
     fontSize: 16,
     color: "#8E8E93",
     textAlign: "center",
-    marginBottom: 32,
-  },
+    marginBottom: 32},
   scrollContainer: {
-    flex: 1,
-  },
+    flex: 1},
   scrollContent: {
-    paddingBottom: 20,
-  },
+    paddingBottom: 20},
   optionsGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "center",
     gap: 6,
     paddingTop: 8,
-    paddingHorizontal: 4,
-  },
+    paddingHorizontal: 4},
   optionChip: {
     flexDirection: "row",
     alignItems: "center",
@@ -649,33 +604,27 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 4,
     marginHorizontal: 2,
-    marginVertical: 2,
-  },
+    marginVertical: 2},
   selectedChip: {
     backgroundColor: "#2D1B69",
     borderColor: "#2D1B69",
     elevation: 4,
-    shadowOpacity: 0.15,
-  },
+    shadowOpacity: 0.15},
   chipText: {
     fontSize: 13,
     color: "#2D1B69",
     marginRight: 2,
-    fontWeight: "500",
-  },
+    fontWeight: "500"},
   selectedChipText: {
     color: "#F8F8FF",
-    fontWeight: "600",
-  },
+    fontWeight: "600"},
   checkIcon: {
-    marginLeft: 4,
-  },
+    marginLeft: 4},
   singleChoiceContainer: {
     width: "100%",
     gap: 8,
     paddingTop: 8,
-    paddingHorizontal: 4,
-  },
+    paddingHorizontal: 4},
   singleOption: {
     flexDirection: "row",
     alignItems: "center",
@@ -691,36 +640,29 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 3,
-    minHeight: 70,
-  },
+    minHeight: 70},
   selectedSingleOption: {
     borderColor: "#FF6B35",
     backgroundColor: "#FFF9F7",
     elevation: 3,
-    shadowOpacity: 0.1,
-  },
+    shadowOpacity: 0.1},
   optionContent: {
     flex: 1,
-    marginRight: 12,
-  },
+    marginRight: 12},
   optionLabel: {
     fontSize: 16,
     fontWeight: "600",
     color: "#2D1B69",
     marginBottom: 2,
-    letterSpacing: -0.3,
-  },
+    letterSpacing: -0.3},
   selectedOptionLabel: {
-    color: "#FF6B35",
-  },
+    color: "#FF6B35"},
   optionSubtitle: {
     fontSize: 12,
     color: "#8E8E93",
-    lineHeight: 14,
-  },
+    lineHeight: 14},
   selectedOptionSubtitle: {
-    color: "#FF6B35",
-  },
+    color: "#FF6B35"},
   radioCircle: {
     width: 20,
     height: 20,
@@ -728,17 +670,14 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: "#E5E5E7",
     alignItems: "center",
-    justifyContent: "center",
-  },
+    justifyContent: "center"},
   selectedRadioCircle: {
-    borderColor: "#FF6B35",
-  },
+    borderColor: "#FF6B35"},
   radioInner: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: "#FF6B35",
-  },
+    backgroundColor: "#FF6B35"},
   navigation: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -747,32 +686,26 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 20,
     borderTopWidth: 1,
-    borderTopColor: "#E5E5E7",
-  },
+    borderTopColor: "#E5E5E7"},
   navButton: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-  },
+    gap: 6},
   invisibleButton: {
-    opacity: 0,
-  },
+    opacity: 0},
   navButtonText: {
     fontSize: 15,
     color: "#2D1B69",
-    fontWeight: "500",
-  },
+    fontWeight: "500"},
   skipButton: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
     paddingHorizontal: 10,
-    paddingVertical: 6,
-  },
+    paddingVertical: 6},
   skipButtonText: {
     fontSize: 15,
-    color: "#8E8E93",
-  },
+    color: "#8E8E93"},
   nextButton: {
     backgroundColor: "#FF6B35",
     paddingHorizontal: 24,
@@ -782,18 +715,15 @@ const styles = StyleSheet.create({
     shadowColor: "#FF6B35",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
-    shadowRadius: 4,
-  },
+    shadowRadius: 4},
   nextButtonText: {
     fontSize: 15,
     fontWeight: "600",
-    color: "#F8F8FF",
-  },
+    color: "#F8F8FF"},
   disabledButton: {
     backgroundColor: "#E5E5E7",
     shadowOpacity: 0,
-    elevation: 0,
-  },
+    elevation: 0},
   badgeHint: {
     flexDirection: "row",
     alignItems: "center",
@@ -803,13 +733,11 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     backgroundColor: "rgba(255, 184, 0, 0.1)",
     borderRadius: 18,
-    alignSelf: "center",
-  },
+    alignSelf: "center"},
   badgeHintText: {
     fontSize: 12,
     color: "#FFB800",
-    fontWeight: "500",
-  },
+    fontWeight: "500"},
   xpReward: {
     position: "absolute",
     top: "40%",
@@ -825,13 +753,11 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
-    elevation: 6,
-  },
+    elevation: 6},
   xpRewardText: {
     fontSize: 18,
     fontWeight: "bold",
-    color: "#2D1B69",
-  },
+    color: "#2D1B69"},
   badgeUnlock: {
     position: "absolute",
     top: "50%",
@@ -844,14 +770,11 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 8,
-    elevation: 6,
-  },
+    elevation: 6},
   badgeUnlockText: {
     fontSize: 16,
     fontWeight: "bold",
     color: "#FFB800",
-    marginTop: 8,
-  },
-});
+    marginTop: 8}});
 
 export default PreferencesScreen;

@@ -384,7 +384,7 @@ class StripeConnectService {
   // --- Removed deprecated mock methods ---
   // All functionality now uses real Stripe Connect API calls
 
-  async setupInstantPayouts(_creatorData: any) {
+  async setupInstantPayouts(_creatorData: unknown) {
     // Implementation needed - this would configure instant payouts
     // if the creator's account supports it
     logger.debug("⚡ Setup instant payouts (not yet implemented)");

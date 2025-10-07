@@ -2,12 +2,13 @@ import React, { lazy, Suspense } from "react";
 import { View, ActivityIndicator, StyleSheet } from "react-native";
 import { tokens } from "../styles";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { RouteProp } from "@react-navigation/native";
 import { RootStackParamList } from "../App";
 
 // Generic screen props type
 type ScreenProps<T extends keyof RootStackParamList> = {
   navigation: NativeStackNavigationProp<RootStackParamList, T>;
-  route: any;
+  route: RouteProp<RootStackParamList, T>;
 };
 
 // Simple loading component
@@ -20,25 +21,19 @@ const LoadingFallback = () => (
 // Lazy-loaded screens (heaviest components)
 export const LazyCreatorScreen = lazy(() => import("../screens/CreatorScreen"));
 export const LazyIngredientReviewScreen = lazy(
-  () => import("../screens/IngredientReviewScreen"),
-);
+  () => import("../screens/IngredientReviewScreen"));
 export const LazyProfileScreen = lazy(() => import("../screens/ProfileScreen"));
 export const LazyCreatorOnboardingScreen = lazy(
-  () => import("../screens/CreatorOnboardingScreen"),
-);
+  () => import("../screens/CreatorOnboardingScreen"));
 export const LazyCameraScreen = lazy(() => import("../screens/CameraScreen"));
 export const LazyPreferencesScreen = lazy(
-  () => import("../screens/PreferencesScreen"),
-);
+  () => import("../screens/PreferencesScreen"));
 export const LazyFavoritesScreen = lazy(
-  () => import("../screens/FavoritesScreen"),
-);
+  () => import("../screens/FavoritesScreen"));
 export const LazyLeaderboardScreen = lazy(
-  () => import("../screens/LeaderboardScreen"),
-);
+  () => import("../screens/LeaderboardScreen"));
 export const LazyDiscoverScreen = lazy(
-  () => import("../screens/DiscoverScreen"),
-);
+  () => import("../screens/DiscoverScreen"));
 
 // Wrapped components with Suspense
 export const CreatorScreen = (props: ScreenProps<"Creator">) => (
@@ -60,8 +55,7 @@ export const ProfileScreen = (props: ScreenProps<"Profile">) => (
 );
 
 export const CreatorOnboardingScreen = (
-  props: ScreenProps<"CreatorOnboarding">,
-) => (
+  props: ScreenProps<"CreatorOnboarding">) => (
   <Suspense fallback={<LoadingFallback />}>
     <LazyCreatorOnboardingScreen {...props} />
   </Suspense>
@@ -85,7 +79,7 @@ export const FavoritesScreen = (props: ScreenProps<"Favorites">) => (
   </Suspense>
 );
 
-export const LeaderboardScreen = (props: ScreenProps<"Leaderboard">) => (
+export const LeaderboardScreen = (_props: ScreenProps<"Leaderboard">) => (
   <Suspense fallback={<LoadingFallback />}>
     <LazyLeaderboardScreen />
   </Suspense>
@@ -103,8 +97,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: tokens.colors.background.tertiary,
-    minHeight: 200,
-  },
-});
+    minHeight: 200}});
 
 export { LoadingFallback };

@@ -1,26 +1,25 @@
 import React, { useState, useEffect } from "react";
 import {
-  View,
+  _View,
   Text,
   TouchableOpacity,
   StyleSheet,
   Alert,
   ActivityIndicator,
-  AppState,
-} from "react-native";
+  AppState} from "react-native";
 import { Fingerprint, Scan, Shield } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
 import BiometricAuthService from "../services/biometricAuth";
 import logger from "../utils/logger";
 
 interface BiometricLoginProps {
-  onSuccess: (credentials: {
+  onSuccess: (_credentials: {
     email: string;
     token: string;
     refreshToken?: string | undefined;
   }) => void;
-  onError?: (error: string) => void;
-  style?: any;
+  onError?: (_error: string) => void;
+  style?: unknown;
   disabled?: boolean;
   showLabel?: boolean;
   size?: "small" | "medium" | "large";
@@ -34,14 +33,12 @@ const BiometricLogin: React.FC<BiometricLoginProps> = ({
   disabled = false,
   showLabel = true,
   size = "medium",
-  refreshTrigger,
-}) => {
+  refreshTrigger}) => {
   const [isAvailable, setIsAvailable] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [biometricMethod, setBiometricMethod] = useState(
-    "Biometric Authentication",
-  );
-  const [biometricIcon, setBiometricIcon] = useState("🔐");
+    "Biometric Authentication");
+  const [_biometricIcon, setBiometricIcon] = useState("🔐");
 
   const biometricService = BiometricAuthService.getInstance();
 
@@ -69,8 +66,7 @@ const BiometricLogin: React.FC<BiometricLoginProps> = ({
 
     const subscription = AppState.addEventListener(
       "change",
-      handleAppStateChange,
-    );
+      handleAppStateChange);
     return () => subscription?.remove();
   }, []);
 
@@ -97,8 +93,7 @@ const BiometricLogin: React.FC<BiometricLoginProps> = ({
         isEnrolled: capabilities.isEnrolled,
         isAvailable: capabilities.isAvailable,
         isEnabled,
-        hasCredentials,
-      });
+        hasCredentials});
 
       const canUse = capabilities.isAvailable && isEnabled && hasCredentials;
       setIsAvailable(canUse);
@@ -117,8 +112,7 @@ const BiometricLogin: React.FC<BiometricLoginProps> = ({
               ? "Not enabled in app"
               : !hasCredentials
                 ? "No stored credentials"
-                : "Unknown",
-        });
+                : "Unknown"});
       }
     } catch (error) {
       logger.error("❌ Error checking biometric availability:", error);
@@ -137,8 +131,7 @@ const BiometricLogin: React.FC<BiometricLoginProps> = ({
       const authResult = await biometricService.authenticateWithBiometrics({
         promptMessage: `Sign in to CookCam with ${biometricMethod}`,
         cancelLabel: "Cancel",
-        fallbackLabel: "Use Password",
-      });
+        fallbackLabel: "Use Password"});
 
       if (authResult.success) {
         // Get stored credentials
@@ -171,8 +164,7 @@ const BiometricLogin: React.FC<BiometricLoginProps> = ({
       // Show user-friendly message for expired sessions
       if (errorMessage.includes("session has expired")) {
         onError?.(
-          "Please sign in with your password once to refresh biometric login",
-        );
+          "Please sign in with your password once to refresh biometric login");
       } else {
         onError?.(errorMessage);
       }
@@ -277,41 +269,30 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     borderColor: "rgba(45, 27, 105, 0.2)",
-    gap: 8,
-  },
+    gap: 8},
   buttonSmall: {
     paddingVertical: 8,
-    paddingHorizontal: 12,
-  },
+    paddingHorizontal: 12},
   buttonMedium: {
     paddingVertical: 12,
-    paddingHorizontal: 16,
-  },
+    paddingHorizontal: 16},
   buttonLarge: {
     paddingVertical: 16,
-    paddingHorizontal: 20,
-  },
+    paddingHorizontal: 20},
   label: {
     color: "#2D1B69",
-    fontWeight: "600",
-  },
+    fontWeight: "600"},
   textSmall: {
-    fontSize: 12,
-  },
+    fontSize: 12},
   textMedium: {
-    fontSize: 14,
-  },
+    fontSize: 14},
   textLarge: {
-    fontSize: 16,
-  },
+    fontSize: 16},
   disabled: {
     opacity: 0.5,
     backgroundColor: "#F0F0F0",
-    borderColor: "#E0E0E0",
-  },
+    borderColor: "#E0E0E0"},
   disabledText: {
-    color: "#8E8E93",
-  },
-});
+    color: "#8E8E93"}});
 
 export default BiometricLogin;

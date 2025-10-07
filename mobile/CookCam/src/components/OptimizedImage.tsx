@@ -28,13 +28,11 @@ const OptimizedImage: React.FC<OptimizedImageProps> = ({
   resizeMode = "cover",
   placeholder,
   fallbackColor = "#E5E5E7",
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _priority = "normal", // Note: priority is ignored for standard Image
   onLoadStart,
   onLoad,
   onError,
 }) => {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [_isLoading, setIsLoading] = useState(true); // Note: not used in UI but tracks state
   const [hasError, setHasError] = useState(false);
 

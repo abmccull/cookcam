@@ -13,8 +13,7 @@ import {
   Platform,
   Linking,
   ActivityIndicator,
-  RefreshControl,
-} from "react-native";
+  RefreshControl} from "react-native";
 import {
   Users,
   DollarSign,
@@ -35,8 +34,7 @@ import {
   RefreshCw,
   Crown,
   Sparkles,
-  TrendingUp,
-} from "lucide-react-native";
+  TrendingUp} from "lucide-react-native";
 import { useAuth } from "../context/AuthContext";
 import { useSubscription } from "../context/SubscriptionContext";
 import {
@@ -44,11 +42,10 @@ import {
   verticalScale,
   moderateScale,
   responsive,
-  isSmallScreen,
-} from "../utils/responsive";
+  _isSmallScreen} from "../utils/responsive";
 import * as Haptics from "expo-haptics";
 import ChefBadge from "../components/ChefBadge";
-import { useGamification, XP_VALUES } from "../context/GamificationContext";
+import { useGamification} from "../context/GamificationContext";
 import logger from "../utils/logger";
 import StripeConnectService from "../services/StripeConnectService";
 import { cookCamApi } from "../services/cookCamApi";
@@ -70,7 +67,7 @@ interface CreatorTip {
   id: string;
   title: string;
   description: string;
-  icon: any;
+  icon: unknown;
   category: "content" | "growth" | "monetization";
 }
 
@@ -85,10 +82,10 @@ interface CreatorAnalytics {
   referrals: {
     total: number;
     active: number;
-    data: any[];
+    data: unknown[];
   };
-  recipes: any[];
-  recentTips: any[];
+  recipes: unknown[];
+  recentTips: unknown[];
   stripeAccount?: {
     isConnected: boolean;
     canReceivePayouts: boolean;
@@ -110,9 +107,9 @@ interface CreatorScreenProps {
 
 const CreatorScreen = ({ navigation }: CreatorScreenProps) => {
   const { user } = useAuth();
-  const { addXP } = useGamification();
+  const { _addXP } = useGamification();
   const { state: subscriptionState, isCreator } = useSubscription();
-  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const _scaleAnim = useRef(new Animated.Value(1)).current;
   const progressAnim = useRef(new Animated.Value(0)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
@@ -133,29 +130,25 @@ const CreatorScreen = ({ navigation }: CreatorScreenProps) => {
       description:
         "Share recipes between 6-8 PM when most users are planning dinner",
       icon: Clock,
-      category: "growth",
-    },
+      category: "growth"},
     {
       id: "2",
       title: "Use Trending Ingredients",
       description: "Recipes with trending ingredients get 3x more views",
       icon: Star,
-      category: "content",
-    },
+      category: "content"},
     {
       id: "3",
       title: "Engage with Comments",
       description: "Responding to comments increases follower retention by 45%",
       icon: Users,
-      category: "growth",
-    },
+      category: "growth"},
     {
       id: "4",
       title: "Create Recipe Series",
       description: "Series keep viewers coming back for more",
       icon: BookOpen,
-      category: "content",
-    },
+      category: "content"},
   ];
 
   // Chef-themed tiers with 30% flat revenue share + gamified benefits
@@ -168,8 +161,7 @@ const CreatorScreen = ({ navigation }: CreatorScreenProps) => {
       maxSubscribers: 100,
       revenueShare: 30, // Flat 30% for all tiers
       color: "#4CAF50",
-      unlocked: true,
-    },
+      unlocked: true},
     {
       id: 2,
       title: "Pastry Chef",
@@ -178,8 +170,7 @@ const CreatorScreen = ({ navigation }: CreatorScreenProps) => {
       maxSubscribers: 1000,
       revenueShare: 30, // Flat 30% for all tiers
       color: "#2196F3",
-      unlocked: (analytics?.referrals.active || 0) >= 100,
-    },
+      unlocked: (analytics?.referrals.active || 0) >= 100},
     {
       id: 3,
       title: "Head Chef",
@@ -188,8 +179,7 @@ const CreatorScreen = ({ navigation }: CreatorScreenProps) => {
       maxSubscribers: 10000,
       revenueShare: 30, // Flat 30% for all tiers
       color: "#9C27B0",
-      unlocked: (analytics?.referrals.active || 0) >= 1000,
-    },
+      unlocked: (analytics?.referrals.active || 0) >= 1000},
     {
       id: 4,
       title: "Executive Chef",
@@ -198,8 +188,7 @@ const CreatorScreen = ({ navigation }: CreatorScreenProps) => {
       maxSubscribers: 100000,
       revenueShare: 30, // Flat 30% for all tiers
       color: "#FF6B35",
-      unlocked: (analytics?.referrals.active || 0) >= 10000,
-    },
+      unlocked: (analytics?.referrals.active || 0) >= 10000},
     {
       id: 5,
       title: "Master Chef",
@@ -208,8 +197,7 @@ const CreatorScreen = ({ navigation }: CreatorScreenProps) => {
       maxSubscribers: null,
       revenueShare: 30, // Flat 30% for all tiers
       color: "#FFB800",
-      unlocked: (analytics?.referrals.active || 0) >= 100000,
-    },
+      unlocked: (analytics?.referrals.active || 0) >= 100000},
   ];
 
   // Calculate current tier based on real subscriber count
@@ -220,8 +208,7 @@ const CreatorScreen = ({ navigation }: CreatorScreenProps) => {
         (tier) =>
           subscriberCount >= tier.minSubscribers &&
           (tier.maxSubscribers === null ||
-            subscriberCount < tier.maxSubscribers),
-      ) || tiers[0]
+            subscriberCount < tier.maxSubscribers)) || tiers[0]
     );
   };
 
@@ -235,8 +222,7 @@ const CreatorScreen = ({ navigation }: CreatorScreenProps) => {
           ((analytics.referrals.active - currentTierData.minSubscribers) /
             (nextTier.minSubscribers - currentTierData.minSubscribers)) *
             100,
-          100,
-        )
+          100)
       : 100;
 
   // Generate proper shareable creator link
@@ -276,23 +262,20 @@ const CreatorScreen = ({ navigation }: CreatorScreenProps) => {
             last_payout_date:
               earningsResponse.lastPayoutDate?.toISOString() || null,
             next_payout_date:
-              earningsResponse.nextPayoutDate?.toISOString() || null,
-          });
+              earningsResponse.nextPayoutDate?.toISOString() || null});
           logger.debug("✅ Creator earnings loaded", earningsResponse);
         }
       } catch (earningsError) {
         logger.error(
           "❌ Earnings error (Stripe may not be configured):",
-          earningsError,
-        );
+          earningsError);
         // Set default earnings state instead of failing completely
         setEarnings({
           total_earnings: 0,
           available_balance: 0,
           pending_balance: 0,
           last_payout_date: null,
-          next_payout_date: null,
-        });
+          next_payout_date: null});
       }
     } catch (error) {
       logger.error("❌ Failed to load creator data:", error);
@@ -313,13 +296,11 @@ const CreatorScreen = ({ navigation }: CreatorScreenProps) => {
       Animated.timing(fadeAnim, {
         toValue: 1,
         duration: 600,
-        useNativeDriver: true,
-      }),
+        useNativeDriver: true}),
       Animated.timing(slideAnim, {
         toValue: 0,
         duration: 600,
-        useNativeDriver: true,
-      }),
+        useNativeDriver: true}),
     ]).start();
 
     // Animate progress bar to actual value
@@ -327,8 +308,7 @@ const CreatorScreen = ({ navigation }: CreatorScreenProps) => {
       Animated.timing(progressAnim, {
         toValue: progressToNext,
         duration: 1000,
-        useNativeDriver: false,
-      }).start();
+        useNativeDriver: false}).start();
     }
 
     // Pulse effect for tier card
@@ -337,15 +317,12 @@ const CreatorScreen = ({ navigation }: CreatorScreenProps) => {
         Animated.timing(pulseAnim, {
           toValue: 1.02,
           duration: 2000,
-          useNativeDriver: true,
-        }),
+          useNativeDriver: true}),
         Animated.timing(pulseAnim, {
           toValue: 1,
           duration: 2000,
-          useNativeDriver: true,
-        }),
-      ]),
-    );
+          useNativeDriver: true}),
+      ]));
     pulseAnimation.start();
 
     return () => {
@@ -368,13 +345,12 @@ const CreatorScreen = ({ navigation }: CreatorScreenProps) => {
   const handleShare = async () => {
     try {
       const shareableLink = getCreatorShareableLink();
-      const creatorCode = `CHEF_${user?.id?.slice(-8)?.toUpperCase()}`;
+      const _creatorCode = `CHEF_${user?.id?.slice(-8)?.toUpperCase()}`;
 
       await Share.share({
         message: `Join me on CookCam AI! 🍳✨ Get AI-powered recipes from your ingredients and discover amazing dishes. Use my creator link to get started: ${shareableLink}`,
         url: shareableLink,
-        title: `Join ${user?.name || "me"} on CookCam AI!`,
-      });
+        title: `Join ${user?.name || "me"} on CookCam AI!`});
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     } catch (error) {
       logger.error("Share error:", error);
@@ -398,8 +374,7 @@ const CreatorScreen = ({ navigation }: CreatorScreenProps) => {
       } else {
         Alert.alert(
           "Setup Required",
-          "Please complete your Stripe Connect setup first.",
-        );
+          "Please complete your Stripe Connect setup first.");
         navigation.navigate("CreatorOnboarding");
       }
     } catch (error) {
@@ -441,8 +416,7 @@ const CreatorScreen = ({ navigation }: CreatorScreenProps) => {
           <Animated.View
             style={{
               opacity: fadeAnim,
-              transform: [{ translateY: slideAnim }],
-            }}
+              transform: [{ translateY: slideAnim }]}}
           >
             {/* Header */}
             <View style={styles.header}>
@@ -563,8 +537,7 @@ const CreatorScreen = ({ navigation }: CreatorScreenProps) => {
           <Animated.View
             style={{
               opacity: fadeAnim,
-              transform: [{ translateY: slideAnim }],
-            }}
+              transform: [{ translateY: slideAnim }]}}
           >
             {/* Header */}
             <View style={styles.header}>
@@ -755,10 +728,8 @@ const CreatorScreen = ({ navigation }: CreatorScreenProps) => {
                     {
                       width: progressAnim.interpolate({
                         inputRange: [0, 100],
-                        outputRange: ["0%", "100%"],
-                      }),
-                      backgroundColor: nextTier.color,
-                    },
+                        outputRange: ["0%", "100%"]}),
+                      backgroundColor: nextTier.color},
                   ]}
                 />
               </View>
@@ -891,15 +862,14 @@ const CreatorScreen = ({ navigation }: CreatorScreenProps) => {
               onPress={() =>
                 Alert.alert(
                   "Creator Tier System",
-                  "All creators earn 30% commission on subscribers! Tiers unlock recognition, badges, exclusive features, and special perks as you grow your audience.",
-                )
+                  "All creators earn 30% commission on subscribers! Tiers unlock recognition, badges, exclusive features, and special perks as you grow your audience.")
               }
             >
               <Info size={moderateScale(20)} color="#8E8E93" />
             </TouchableOpacity>
           </View>
 
-          {tiers.map((tier, index) => (
+          {tiers.map((tier, _index) => (
             <View
               key={tier.id}
               style={[
@@ -961,33 +931,27 @@ const CreatorScreen = ({ navigation }: CreatorScreenProps) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8F8FF",
-  },
+    backgroundColor: "#F8F8FF"},
   header: {
     paddingHorizontal: responsive.spacing.m,
     paddingTop: responsive.spacing.m,
-    paddingBottom: responsive.spacing.m,
-  },
+    paddingBottom: responsive.spacing.m},
   headerTitle: {
     fontSize: responsive.fontSize.xxlarge,
     fontWeight: "bold",
     color: "#2D1B69",
-    marginBottom: verticalScale(4),
-  },
+    marginBottom: verticalScale(4)},
   headerSubtitle: {
     fontSize: responsive.fontSize.medium,
-    color: "#8E8E93",
-  },
+    color: "#8E8E93"},
   loadingIndicator: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: verticalScale(8),
-  },
+    marginTop: verticalScale(8)},
   loadingText: {
     fontSize: responsive.fontSize.small,
     color: "#8E8E93",
-    marginLeft: scale(8),
-  },
+    marginLeft: scale(8)},
   errorContainer: {
     backgroundColor: "#FFF5F5",
     marginHorizontal: responsive.spacing.m,
@@ -995,24 +959,20 @@ const styles = StyleSheet.create({
     padding: responsive.spacing.m,
     borderRadius: 12,
     borderLeftWidth: 3,
-    borderLeftColor: "#EF4444",
-  },
+    borderLeftColor: "#EF4444"},
   errorText: {
     fontSize: responsive.fontSize.medium,
     color: "#DC2626",
-    marginBottom: verticalScale(8),
-  },
+    marginBottom: verticalScale(8)},
   retryButton: {
     flexDirection: "row",
     alignItems: "center",
-    alignSelf: "flex-start",
-  },
+    alignSelf: "flex-start"},
   retryText: {
     fontSize: responsive.fontSize.small,
     color: "#4CAF50",
     marginLeft: scale(4),
-    fontWeight: "500",
-  },
+    fontWeight: "500"},
   heroCard: {
     marginHorizontal: responsive.spacing.m,
     marginBottom: responsive.spacing.l,
@@ -1024,23 +984,20 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 12,
-    elevation: 5,
-  },
+    elevation: 5},
   heroTitle: {
     fontSize: responsive.fontSize.xlarge,
     fontWeight: "bold",
     color: "#2D1B69",
     marginTop: responsive.spacing.m,
     marginBottom: responsive.spacing.s,
-    textAlign: "center",
-  },
+    textAlign: "center"},
   heroSubtitle: {
     fontSize: responsive.fontSize.medium,
     color: "#8E8E93",
     textAlign: "center",
     marginBottom: responsive.spacing.l,
-    lineHeight: moderateScale(22),
-  },
+    lineHeight: moderateScale(22)},
   startButton: {
     flexDirection: "row",
     alignItems: "center",
@@ -1053,49 +1010,39 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
-    elevation: 4,
-  },
+    elevation: 4},
   startButtonText: {
     fontSize: responsive.fontSize.large,
     fontWeight: "bold",
-    color: "#F8F8FF",
-  },
+    color: "#F8F8FF"},
   benefitsSection: {
-    marginBottom: responsive.spacing.l,
-  },
+    marginBottom: responsive.spacing.l},
   sectionTitle: {
     fontSize: responsive.fontSize.xlarge,
     fontWeight: "700",
     color: "#2D1B69",
     paddingHorizontal: responsive.spacing.m,
-    marginBottom: responsive.spacing.m,
-  },
+    marginBottom: responsive.spacing.m},
   benefitsList: {
-    paddingHorizontal: responsive.spacing.m,
-  },
+    paddingHorizontal: responsive.spacing.m},
   benefitItem: {
     flexDirection: "row",
     alignItems: "flex-start",
     marginBottom: responsive.spacing.m,
-    gap: scale(16),
-  },
+    gap: scale(16)},
   benefitText: {
-    flex: 1,
-  },
+    flex: 1},
   benefitTitle: {
     fontSize: responsive.fontSize.medium,
     fontWeight: "600",
     color: "#2D1B69",
-    marginBottom: verticalScale(4),
-  },
+    marginBottom: verticalScale(4)},
   benefitDescription: {
     fontSize: responsive.fontSize.regular,
     color: "#8E8E93",
-    lineHeight: moderateScale(20),
-  },
+    lineHeight: moderateScale(20)},
   successSection: {
-    marginBottom: responsive.spacing.xl,
-  },
+    marginBottom: responsive.spacing.xl},
   successCard: {
     backgroundColor: "#FFFFFF",
     borderRadius: responsive.borderRadius.large,
@@ -1107,25 +1054,21 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 4,
-    elevation: 3,
-  },
+    elevation: 3},
   successQuote: {
     fontSize: responsive.fontSize.medium,
     color: "#2D1B69",
     fontStyle: "italic",
     marginBottom: responsive.spacing.s,
-    lineHeight: moderateScale(22),
-  },
+    lineHeight: moderateScale(22)},
   successAuthor: {
     fontSize: responsive.fontSize.regular,
     color: "#FF6B35",
     fontWeight: "600",
-    marginBottom: responsive.spacing.s,
-  },
+    marginBottom: responsive.spacing.s},
   successStats: {
     fontSize: responsive.fontSize.regular,
-    color: "#666",
-  },
+    color: "#666"},
 
   tierCard: {
     marginHorizontal: responsive.spacing.m,
@@ -1137,38 +1080,30 @@ const styles = StyleSheet.create({
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
-      height: 2,
-    },
+      height: 2},
     shadowOpacity: 0.1,
     shadowRadius: 8,
-    elevation: 4,
-  },
+    elevation: 4},
   tierHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
-  },
+    alignItems: "center"},
   tierInfo: {
     flexDirection: "row",
     alignItems: "center",
-    gap: scale(16),
-  },
+    gap: scale(16)},
   tierTextInfo: {
-    flex: 1,
-  },
+    flex: 1},
   tierEmoji: {
-    fontSize: responsive.fontSize.xxxlarge + scale(8),
-  },
+    fontSize: responsive.fontSize.xxxlarge + scale(8)},
   tierTitle: {
     fontSize: responsive.fontSize.xlarge,
     fontWeight: "bold",
     color: "#2D1B69",
-    marginBottom: verticalScale(4),
-  },
+    marginBottom: verticalScale(4)},
   tierRevenue: {
     fontSize: responsive.fontSize.medium,
-    fontWeight: "600",
-  },
+    fontWeight: "600"},
   subscriberBadge: {
     flexDirection: "row",
     alignItems: "center",
@@ -1176,49 +1111,39 @@ const styles = StyleSheet.create({
     paddingHorizontal: scale(12),
     paddingVertical: verticalScale(6),
     borderRadius: responsive.borderRadius.large,
-    gap: scale(6),
-  },
+    gap: scale(6)},
   subscriberCount: {
     fontSize: responsive.fontSize.medium,
     fontWeight: "600",
-    color: "#2D1B69",
-  },
+    color: "#2D1B69"},
   progressSection: {
-    marginTop: responsive.spacing.m,
-  },
+    marginTop: responsive.spacing.m},
   progressHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: verticalScale(8),
-  },
+    marginBottom: verticalScale(8)},
   progressLabel: {
     fontSize: responsive.fontSize.regular,
-    color: "#666",
-  },
+    color: "#666"},
   progressText: {
     fontSize: responsive.fontSize.regular,
     fontWeight: "600",
-    color: "#2D1B69",
-  },
+    color: "#2D1B69"},
   progressBar: {
     height: verticalScale(8),
     backgroundColor: "#E5E5E7",
     borderRadius: responsive.borderRadius.small / 2,
-    overflow: "hidden",
-  },
+    overflow: "hidden"},
   progressFill: {
     height: "100%",
-    borderRadius: responsive.borderRadius.small / 2,
-  },
+    borderRadius: responsive.borderRadius.small / 2},
   progressHint: {
     fontSize: responsive.fontSize.small,
     color: "#8E8E93",
     marginTop: verticalScale(8),
-    textAlign: "center",
-  },
+    textAlign: "center"},
   codeSection: {
-    marginBottom: responsive.spacing.l,
-  },
+    marginBottom: responsive.spacing.l},
   codeCard: {
     marginHorizontal: responsive.spacing.m,
     backgroundColor: "#FFFFFF",
@@ -1227,35 +1152,29 @@ const styles = StyleSheet.create({
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
-      height: 2,
-    },
+      height: 2},
     shadowOpacity: 0.08,
     shadowRadius: 4,
-    elevation: 3,
-  },
+    elevation: 3},
   codeLabel: {
     fontSize: responsive.fontSize.regular,
     color: "#666",
-    marginBottom: verticalScale(12),
-  },
+    marginBottom: verticalScale(12)},
   codeContainer: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#F5F5F5",
     borderRadius: responsive.borderRadius.medium,
     padding: responsive.spacing.m,
-    marginBottom: verticalScale(12),
-  },
+    marginBottom: verticalScale(12)},
   codeText: {
     flex: 1,
     fontSize: responsive.fontSize.medium,
     fontWeight: "600",
     color: "#2D1B69",
-    fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
-  },
+    fontFamily: Platform.OS === "ios" ? "Courier" : "monospace"},
   copyButton: {
-    padding: scale(8),
-  },
+    padding: scale(8)},
   shareButton: {
     flexDirection: "row",
     alignItems: "center",
@@ -1263,22 +1182,18 @@ const styles = StyleSheet.create({
     backgroundColor: "#FF6B35",
     paddingVertical: verticalScale(12),
     borderRadius: responsive.borderRadius.medium,
-    gap: scale(8),
-  },
+    gap: scale(8)},
   shareButtonText: {
     fontSize: responsive.fontSize.medium,
     fontWeight: "600",
-    color: "#F8F8FF",
-  },
+    color: "#F8F8FF"},
   analyticsSection: {
-    marginBottom: responsive.spacing.l,
-  },
+    marginBottom: responsive.spacing.l},
   statsGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
     paddingHorizontal: responsive.spacing.m,
-    gap: scale(12),
-  },
+    gap: scale(12)},
   statCard: {
     flex: 1,
     minWidth: scale(150),
@@ -1288,51 +1203,41 @@ const styles = StyleSheet.create({
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
-      height: 2,
-    },
+      height: 2},
     shadowOpacity: 0.06,
     shadowRadius: 4,
-    elevation: 2,
-  },
+    elevation: 2},
   revenueCard: {
     minWidth: scale(312),
     backgroundColor: "#FFF9F7",
     borderWidth: 1,
-    borderColor: "#FFE5DC",
-  },
+    borderColor: "#FFE5DC"},
   statHeader: {
     flexDirection: "row",
     alignItems: "center",
     gap: scale(8),
-    marginBottom: verticalScale(12),
-  },
+    marginBottom: verticalScale(12)},
   statLabel: {
     fontSize: responsive.fontSize.regular,
-    color: "#666",
-  },
+    color: "#666"},
   statValue: {
     fontSize: responsive.fontSize.xlarge + scale(4),
     fontWeight: "bold",
-    color: "#2D1B69",
-  },
+    color: "#2D1B69"},
   revenueValue: {
-    color: "#FF6B35",
-  },
+    color: "#FF6B35"},
   statSubtext: {
     fontSize: responsive.fontSize.small,
     color: "#8E8E93",
-    marginTop: verticalScale(4),
-  },
+    marginTop: verticalScale(4)},
   tiersSection: {
-    marginBottom: responsive.spacing.l,
-  },
+    marginBottom: responsive.spacing.l},
   tiersHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: responsive.spacing.m,
-    marginBottom: responsive.spacing.m,
-  },
+    marginBottom: responsive.spacing.m},
   tierItem: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -1344,53 +1249,42 @@ const styles = StyleSheet.create({
     padding: responsive.spacing.m,
     paddingRight: responsive.spacing.xl,
     borderWidth: 1,
-    borderColor: "#E5E5E7",
-  },
+    borderColor: "#E5E5E7"},
   currentTierItem: {
     borderColor: "#FF6B35",
     borderWidth: 2,
-    backgroundColor: "#FFF9F7",
-  },
+    backgroundColor: "#FFF9F7"},
   lockedTierItem: {
-    opacity: 0.6,
-  },
+    opacity: 0.6},
   tierItemLeft: {
     flexDirection: "row",
     alignItems: "center",
     gap: scale(16),
-    flex: 1,
-  },
+    flex: 1},
   tierItemInfo: {
-    flex: 1,
-  },
+    flex: 1},
   tierItemTitle: {
     fontSize: responsive.fontSize.medium,
     fontWeight: "600",
-    color: "#2D1B69",
-  },
+    color: "#2D1B69"},
   tierItemRange: {
     fontSize: responsive.fontSize.small,
     color: "#8E8E93",
-    marginTop: verticalScale(2),
-  },
+    marginTop: verticalScale(2)},
   tierItemRight: {
     alignItems: "center",
     justifyContent: "center",
-    minWidth: scale(32),
-  },
+    minWidth: scale(32)},
   tierItemRevenue: {
     fontSize: responsive.fontSize.large,
-    fontWeight: "bold",
-  },
+    fontWeight: "bold"},
   tierUnlockedText: {
     fontSize: responsive.fontSize.small,
     fontWeight: "600",
-    marginTop: verticalScale(2),
-  },
+    marginTop: verticalScale(2)},
   tipsSection: {
     paddingHorizontal: responsive.spacing.m,
-    paddingBottom: verticalScale(100),
-  },
+    paddingBottom: verticalScale(100)},
   tipCard: {
     backgroundColor: "#FFFFFF",
     borderRadius: responsive.borderRadius.large,
@@ -1402,26 +1296,22 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 4,
-    elevation: 3,
-  },
+    elevation: 3},
   tipTitle: {
     fontSize: responsive.fontSize.medium,
     fontWeight: "600",
     color: "#2D1B69",
     marginTop: responsive.spacing.s,
     marginBottom: responsive.spacing.xs,
-    textAlign: "center",
-  },
+    textAlign: "center"},
   tipDescription: {
     fontSize: responsive.fontSize.regular,
     color: "#8E8E93",
     textAlign: "center",
-    lineHeight: moderateScale(20),
-  },
+    lineHeight: moderateScale(20)},
   // Payout Section Styles
   payoutSection: {
-    marginBottom: responsive.spacing.l,
-  },
+    marginBottom: responsive.spacing.l},
   payoutCard: {
     marginHorizontal: responsive.spacing.m,
     backgroundColor: "#FFFFFF",
@@ -1430,42 +1320,34 @@ const styles = StyleSheet.create({
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
-      height: 2,
-    },
+      height: 2},
     shadowOpacity: 0.08,
     shadowRadius: 4,
     elevation: 3,
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
-  },
+    alignItems: "center"},
   payoutStatus: {
     flexDirection: "row",
     alignItems: "center",
-    flex: 1,
-  },
+    flex: 1},
   payoutStatusIcon: {
-    marginRight: responsive.spacing.s,
-  },
+    marginRight: responsive.spacing.s},
   payoutStatusText: {
-    flex: 1,
-  },
+    flex: 1},
   payoutStatusTitle: {
     fontSize: responsive.fontSize.medium,
     fontWeight: "600",
     color: "#2D1B69",
-    marginBottom: verticalScale(2),
-  },
+    marginBottom: verticalScale(2)},
   payoutStatusSubtitle: {
     fontSize: responsive.fontSize.small,
-    color: "#8E8E93",
-  },
+    color: "#8E8E93"},
   availableBalance: {
     fontSize: responsive.fontSize.small,
     color: "#4CAF50",
     fontWeight: "600",
-    marginTop: verticalScale(2),
-  },
+    marginTop: verticalScale(2)},
   manageBankButton: {
     flexDirection: "row",
     alignItems: "center",
@@ -1473,13 +1355,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: responsive.spacing.s,
     paddingVertical: responsive.spacing.xs,
     borderRadius: responsive.borderRadius.medium,
-    gap: scale(4),
-  },
+    gap: scale(4)},
   manageBankText: {
     fontSize: responsive.fontSize.regular,
     fontWeight: "600",
-    color: "#007AFF",
-  },
+    color: "#007AFF"},
   // Subscription Protection Styles
   subscriptionCard: {
     marginHorizontal: responsive.spacing.m,
@@ -1490,39 +1370,32 @@ const styles = StyleSheet.create({
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
-      height: 2,
-    },
+      height: 2},
     shadowOpacity: 0.08,
     shadowRadius: 8,
-    elevation: 4,
-  },
+    elevation: 4},
   subscriptionHeader: {
     alignItems: "center",
-    marginBottom: responsive.spacing.l,
-  },
+    marginBottom: responsive.spacing.l},
   subscriptionTitle: {
     fontSize: responsive.fontSize.xlarge,
     fontWeight: "bold",
     color: "#2D1B69",
     textAlign: "center",
     marginTop: responsive.spacing.m,
-    marginBottom: responsive.spacing.s,
-  },
+    marginBottom: responsive.spacing.s},
   subscriptionDescription: {
     fontSize: responsive.fontSize.medium,
     color: "#8E8E93",
     textAlign: "center",
-    lineHeight: moderateScale(20),
-  },
+    lineHeight: moderateScale(20)},
   subscriptionBenefits: {
-    marginBottom: responsive.spacing.l,
-  },
+    marginBottom: responsive.spacing.l},
   benefitsTitle: {
     fontSize: responsive.fontSize.large,
     fontWeight: "600",
     color: "#2D1B69",
-    marginBottom: responsive.spacing.m,
-  },
+    marginBottom: responsive.spacing.m},
   upgradeButton: {
     flexDirection: "row",
     alignItems: "center",
@@ -1532,22 +1405,17 @@ const styles = StyleSheet.create({
     paddingVertical: responsive.spacing.m,
     paddingHorizontal: responsive.spacing.l,
     marginBottom: responsive.spacing.m,
-    gap: scale(8),
-  },
+    gap: scale(8)},
   upgradeButtonText: {
     fontSize: responsive.fontSize.medium,
     fontWeight: "600",
-    color: "#FFFFFF",
-  },
+    color: "#FFFFFF"},
   learnMoreButton: {
     alignItems: "center",
-    paddingVertical: responsive.spacing.s,
-  },
+    paddingVertical: responsive.spacing.s},
   learnMoreText: {
     fontSize: responsive.fontSize.medium,
     color: "#FF6B35",
-    fontWeight: "500",
-  },
-});
+    fontWeight: "500"}});
 
 export default CreatorScreen;

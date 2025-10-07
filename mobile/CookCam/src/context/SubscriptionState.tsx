@@ -66,6 +66,7 @@ const initialState: SubscriptionState = {
 };
 
 // Optimized reducer with proper memoization
+// eslint-disable-next-line react-refresh/only-export-components
 export function subscriptionReducer(
   state: SubscriptionState,
   action: SubscriptionAction,
@@ -175,6 +176,7 @@ export function SubscriptionStateProvider({
 }
 
 // Hook to use subscription state context
+// eslint-disable-next-line react-refresh/only-export-components
 export function useSubscriptionState() {
   const context = useContext(SubscriptionStateContext);
   if (!context) {

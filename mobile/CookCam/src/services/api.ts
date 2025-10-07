@@ -1,5 +1,4 @@
 // API service for CookCam backend integration
-import { secureStorage, SECURE_KEYS } from "./secureStorage";
 import config from "../config/env";
 import logger from "../utils/logger";
 
@@ -24,7 +23,7 @@ interface ApiResponse<T> {
 }
 
 interface AuthResponse {
-  user?: any;
+  user?: unknown;
   session?: {
     access_token: string;
     refresh_token?: string;
@@ -138,7 +137,7 @@ class ApiClient {
   }
 
   // Health check
-  async healthCheck(): Promise<ApiResponse<any>> {
+  async healthCheck(): Promise<ApiResponse<unknown>> {
     return this.makeRequest("/health");
   }
 
@@ -180,7 +179,7 @@ class ApiClient {
     return response;
   }
 
-  async signOut(): Promise<ApiResponse<any>> {
+  async signOut(): Promise<ApiResponse<unknown>> {
     const response = await this.makeRequest("/auth/signout", {
       method: "POST",
     });
@@ -191,11 +190,11 @@ class ApiClient {
     return response;
   }
 
-  async getProfile(): Promise<ApiResponse<any>> {
+  async getProfile(): Promise<ApiResponse<unknown>> {
     return this.makeRequest("/auth/me");
   }
 
-  async updateProfile(data: any): Promise<ApiResponse<any>> {
+  async updateProfile(data: unknown): Promise<ApiResponse<unknown>> {
     return this.makeRequest("/auth/profile", {
       method: "PUT",
       body: JSON.stringify(data),
@@ -213,7 +212,7 @@ class ApiClient {
     mealPrepEnabled?: boolean;
     mealPrepPortions?: number;
     selectedAppliances?: string[];
-  }): Promise<ApiResponse<any>> {
+  }): Promise<ApiResponse<unknown>> {
     logger.warn(
       "⚠️ generateRecipeSuggestions is deprecated. Use generatePreviews + generateDetailedRecipe instead.",
     );
@@ -237,7 +236,7 @@ class ApiClient {
       mealPrepPortions?: number;
     };
     sessionId?: string;
-  }): Promise<ApiResponse<any>> {
+  }): Promise<ApiResponse<unknown>> {
     return this.makeRequest("/recipes/generate-previews", {
       method: "POST",
       body: JSON.stringify(data),
@@ -256,7 +255,7 @@ class ApiClient {
       mainIngredients: string[];
     };
     sessionId: string;
-  }): Promise<ApiResponse<any>> {
+  }): Promise<ApiResponse<unknown>> {
     return this.makeRequest("/recipes/generate-detailed", {
       method: "POST",
       body: JSON.stringify(data),
@@ -266,7 +265,7 @@ class ApiClient {
   async generateFullRecipe(
     selectedTitle: string,
     sessionId: string,
-  ): Promise<ApiResponse<any>> {
+  ): Promise<ApiResponse<unknown>> {
     return this.makeRequest("/recipes/generate-full", {
       method: "POST",
       body: JSON.stringify({ selectedTitle, sessionId }),
@@ -279,7 +278,7 @@ class ApiClient {
     difficulty?: string;
     limit?: number;
     offset?: number;
-  }): Promise<ApiResponse<any>> {
+  }): Promise<ApiResponse<unknown>> {
     const queryParams = new URLSearchParams();
     if (params) {
       Object.entries(params).forEach(([key, value]) => {
@@ -295,11 +294,11 @@ class ApiClient {
     return this.makeRequest(endpoint);
   }
 
-  async getRecipe(recipeId: string): Promise<ApiResponse<any>> {
+  async getRecipe(recipeId: string): Promise<ApiResponse<unknown>> {
     return this.makeRequest(`/recipes/${recipeId}`);
   }
 
-  async saveRecipe(recipeId: string): Promise<ApiResponse<any>> {
+  async saveRecipe(recipeId: string): Promise<ApiResponse<unknown>> {
     return this.makeRequest(`/recipes/${recipeId}/save`, {
       method: "POST",
     });
@@ -308,7 +307,7 @@ class ApiClient {
   async getSavedRecipes(params?: {
     limit?: number;
     offset?: number;
-  }): Promise<ApiResponse<any>> {
+  }): Promise<ApiResponse<unknown>> {
     const queryParams = new URLSearchParams();
     if (params) {
       Object.entries(params).forEach(([key, value]) => {
@@ -324,7 +323,7 @@ class ApiClient {
     return this.makeRequest(endpoint);
   }
 
-  async unsaveRecipe(recipeId: string): Promise<ApiResponse<any>> {
+  async unsaveRecipe(recipeId: string): Promise<ApiResponse<unknown>> {
     return this.makeRequest(`/recipes/${recipeId}/save`, {
       method: "DELETE",
     });
@@ -334,7 +333,7 @@ class ApiClient {
     recipeId: string,
     rating: number,
     review?: string,
-  ): Promise<ApiResponse<any>> {
+  ): Promise<ApiResponse<unknown>> {
     return this.makeRequest(`/recipes/${recipeId}/rate`, {
       method: "POST",
       body: JSON.stringify({ rating, review }),
@@ -345,7 +344,7 @@ class ApiClient {
   async getRecipeNutrition(
     recipeId: string,
     servings?: number,
-  ): Promise<ApiResponse<any>> {
+  ): Promise<ApiResponse<unknown>> {
     const params = servings ? `?servings=${servings}` : "";
     return this.makeRequest(`/recipes/${recipeId}/nutrition${params}`);
   }
@@ -353,14 +352,14 @@ class ApiClient {
   async saveRecipeNutrition(
     recipeId: string,
     servings?: number,
-  ): Promise<ApiResponse<any>> {
+  ): Promise<ApiResponse<unknown>> {
     return this.makeRequest(`/recipes/${recipeId}/save-nutrition`, {
       method: "POST",
       body: JSON.stringify({ servings: servings || 1 }),
     });
   }
 
-  async testNutritionAnalysis(): Promise<ApiResponse<any>> {
+  async testNutritionAnalysis(): Promise<ApiResponse<unknown>> {
     return this.makeRequest("/recipes/test-nutrition", {
       method: "POST",
     });
@@ -371,7 +370,7 @@ class ApiClient {
     recipeId: string,
     imageData: string,
     description?: string,
-  ): Promise<ApiResponse<any>> {
+  ): Promise<ApiResponse<unknown>> {
     return this.makeRequest(`/recipes/${recipeId}/upload-completion-photo`, {
       method: "POST",
       body: JSON.stringify({ imageData, description }),
@@ -382,7 +381,7 @@ class ApiClient {
     recipeId: string,
     limit = 20,
     offset = 0,
-  ): Promise<ApiResponse<any>> {
+  ): Promise<ApiResponse<unknown>> {
     return this.makeRequest(
       `/recipes/${recipeId}/completion-photos?limit=${limit}&offset=${offset}`,
     );
@@ -392,81 +391,81 @@ class ApiClient {
   async addXP(
     xpAmount: number,
     action: string,
-    metadata?: any,
-  ): Promise<ApiResponse<any>> {
+    metadata?: Record<string, unknown>,
+  ): Promise<ApiResponse<unknown>> {
     return this.makeRequest("/gamification/add-xp", {
       method: "POST",
       body: JSON.stringify({ xp_amount: xpAmount, action, metadata }),
     });
   }
 
-  async checkStreak(): Promise<ApiResponse<any>> {
+  async checkStreak(): Promise<ApiResponse<unknown>> {
     return this.makeRequest("/gamification/check-streak", {
       method: "POST",
     });
   }
 
-  async getProgress(): Promise<ApiResponse<any>> {
+  async getProgress(): Promise<ApiResponse<unknown>> {
     return this.makeRequest("/gamification/progress");
   }
 
   async getLeaderboard(
     type = "global",
     period = "weekly",
-  ): Promise<ApiResponse<any>> {
+  ): Promise<ApiResponse<unknown>> {
     return this.makeRequest(
       `/gamification/leaderboard?type=${type}&period=${period}`,
     );
   }
 
   // Mystery box endpoint
-  async openMysteryBox(): Promise<ApiResponse<any>> {
+  async openMysteryBox(): Promise<ApiResponse<unknown>> {
     return this.makeRequest("/mystery-box/open", {
       method: "POST",
     });
   }
 
-  async getMysteryBoxHistory(): Promise<ApiResponse<any>> {
+  async getMysteryBoxHistory(): Promise<ApiResponse<unknown>> {
     return this.makeRequest("/mystery-box/history");
   }
 
   // User endpoints
-  async getUserProfile(): Promise<ApiResponse<any>> {
+  async getUserProfile(): Promise<ApiResponse<unknown>> {
     return this.makeRequest("/users/profile");
   }
 
-  async updateUserProfile(data: any): Promise<ApiResponse<any>> {
+  async updateUserProfile(data: unknown): Promise<ApiResponse<unknown>> {
     return this.makeRequest("/users/profile", {
       method: "PUT",
       body: JSON.stringify(data),
     });
   }
 
-  async followUser(userId: string): Promise<ApiResponse<any>> {
+  async followUser(userId: string): Promise<ApiResponse<unknown>> {
     return this.makeRequest(`/users/follow/${userId}`, {
       method: "POST",
     });
   }
 
-  async unfollowUser(userId: string): Promise<ApiResponse<any>> {
+  async unfollowUser(userId: string): Promise<ApiResponse<unknown>> {
     return this.makeRequest(`/users/follow/${userId}`, {
       method: "DELETE",
     });
   }
 
-  async getFollowers(userId: string): Promise<ApiResponse<any>> {
+  async getFollowers(userId: string): Promise<ApiResponse<unknown>> {
     return this.makeRequest(`/users/${userId}/followers`);
   }
 
-  async getFollowing(userId: string): Promise<ApiResponse<any>> {
+  async getFollowing(userId: string): Promise<ApiResponse<unknown>> {
     return this.makeRequest(`/users/${userId}/following`);
   }
 
   // Scanning endpoints
   async analyzeScan(
-    imageData: any,
+    imageData: unknown,
     detectedIngredients: string[],
-  ): Promise<ApiResponse<any>> {
+  ): Promise<ApiResponse<unknown>> {
     return this.makeRequest("/scan/analyze", {
       method: "POST",
       body: JSON.stringify({
@@ -476,11 +475,11 @@ class ApiClient {
     });
   }
 
-  async getScanHistory(limit = 20): Promise<ApiResponse<any>> {
+  async getScanHistory(limit = 20): Promise<ApiResponse<unknown>> {
     return this.makeRequest(`/scan/history?limit=${limit}`);
   }
 
-  async getScan(scanId: string): Promise<ApiResponse<any>> {
+  async getScan(scanId: string): Promise<ApiResponse<unknown>> {
     return this.makeRequest(`/scan/${scanId}`);
   }
 
@@ -488,13 +487,13 @@ class ApiClient {
   async searchIngredients(
     query: string,
     limit = 20,
-  ): Promise<ApiResponse<any>> {
+  ): Promise<ApiResponse<unknown>> {
     return this.makeRequest(
       `/ingredients/search?query=${encodeURIComponent(query)}&limit=${limit}`,
     );
   }
 
-  async scanIngredients(imageData: string): Promise<ApiResponse<any>> {
+  async scanIngredients(imageData: string): Promise<ApiResponse<unknown>> {
     return this.makeRequest("/scan/ingredients", {
       method: "POST",
       body: JSON.stringify({ image_data: imageData }),
@@ -507,7 +506,7 @@ class ApiClient {
     category?: string;
     search?: string;
     has_nutrition?: boolean;
-  }): Promise<ApiResponse<any>> {
+  }): Promise<ApiResponse<unknown>> {
     const queryParams = new URLSearchParams();
     if (params) {
       Object.entries(params).forEach(([key, value]) => {
@@ -523,7 +522,7 @@ class ApiClient {
     return this.makeRequest(endpoint);
   }
 
-  async getIngredient(id: string): Promise<ApiResponse<any>> {
+  async getIngredient(id: string): Promise<ApiResponse<unknown>> {
     return this.makeRequest(`/ingredients/${id}`);
   }
 
@@ -531,7 +530,7 @@ class ApiClient {
     id: string,
     servingSize = 100,
     unit = "g",
-  ): Promise<ApiResponse<any>> {
+  ): Promise<ApiResponse<unknown>> {
     return this.makeRequest(
       `/ingredients/${id}/nutrition?serving_size=${servingSize}&unit=${unit}`,
     );
@@ -539,7 +538,7 @@ class ApiClient {
 
   async syncIngredientWithUSDA(
     ingredientName: string,
-  ): Promise<ApiResponse<any>> {
+  ): Promise<ApiResponse<unknown>> {
     return this.makeRequest("/ingredients/sync-usda", {
       method: "POST",
       body: JSON.stringify({ ingredientName }),
@@ -548,7 +547,7 @@ class ApiClient {
 
   async batchSyncIngredientsWithUSDA(
     ingredientNames: string[],
-  ): Promise<ApiResponse<any>> {
+  ): Promise<ApiResponse<unknown>> {
     return this.makeRequest("/ingredients/batch-sync-usda", {
       method: "POST",
       body: JSON.stringify({ ingredientNames }),
@@ -559,7 +558,7 @@ class ApiClient {
     query: string,
     dataType = "Foundation",
     pageSize = 25,
-  ): Promise<ApiResponse<any>> {
+  ): Promise<ApiResponse<unknown>> {
     return this.makeRequest(
       `/ingredients/usda/search?query=${encodeURIComponent(
         query,
@@ -567,14 +566,14 @@ class ApiClient {
     );
   }
 
-  async getIngredientCategories(): Promise<ApiResponse<any>> {
+  async getIngredientCategories(): Promise<ApiResponse<unknown>> {
     return this.makeRequest("/ingredients/meta/categories");
   }
 
   async getIngredientSuggestions(
     query: string,
     limit = 10,
-  ): Promise<ApiResponse<any>> {
+  ): Promise<ApiResponse<unknown>> {
     return this.makeRequest(
       `/ingredients/suggestions?query=${encodeURIComponent(
         query,
@@ -582,7 +581,7 @@ class ApiClient {
     );
   }
 
-  async batchSearchIngredients(queries: string[]): Promise<ApiResponse<any>> {
+  async batchSearchIngredients(queries: string[]): Promise<ApiResponse<unknown>> {
     return this.makeRequest("/ingredients/batch-search", {
       method: "POST",
       body: JSON.stringify({ queries }),
@@ -590,7 +589,7 @@ class ApiClient {
   }
 
   // Creator analytics endpoint
-  async getCreatorAnalytics(): Promise<ApiResponse<any>> {
+  async getCreatorAnalytics(): Promise<ApiResponse<unknown>> {
     return this.makeRequest("/analytics/creator");
   }
 
@@ -598,7 +597,7 @@ class ApiClient {
   async linkUserToReferral(
     userId: string,
     referralCode: string,
-  ): Promise<ApiResponse<any>> {
+  ): Promise<ApiResponse<unknown>> {
     return this.makeRequest("/users/link-referral", {
       method: "POST",
       body: JSON.stringify({ user_id: userId, referral_code: referralCode }),

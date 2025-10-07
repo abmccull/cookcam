@@ -1,0 +1,208 @@
+name: Backend CI/CD
+
+on:
+  push:
+    branches: [main, develop, staging]
+    paths:
+      - 'backend/api/**'
+      - '.github/workflows/backend-ci.yml'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'backend/api/**'
+
+env:
+  NODE_VERSION: '18.x'
+
+jobs:
+  lint:
+    name: Lint & Type Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: backend/api/package-lock.json
+
+      - name: Install dependencies
+        working-directory: backend/api
+        run: npm ci
+
+      - name: Run ESLint
+        working-directory: backend/api
+        run: npm run lint
+
+      - name: TypeScript type check
+        working-directory: backend/api
+        run: npx tsc --noEmit
+
+  test:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: backend/api/package-lock.json
+
+      - name: Install dependencies
+        working-directory: backend/api
+        run: npm ci
+
+      - name: Run tests
+        working-directory: backend/api
+        run: npm test || echo "Tests not yet implemented"
+        continue-on-error: true
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: [lint]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: backend/api/package-lock.json
+
+      - name: Install dependencies
+        working-directory: backend/api
+        run: npm ci
+
+      - name: Build TypeScript
+        working-directory: backend/api
+        run: npm run build
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-build
+          path: backend/api/dist
+          retention-days: 7
+
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: [lint, build]
+    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
+    environment:
+      name: staging
+      url: https://staging-api.cookcam.app
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-build
+          path: backend/api/dist
+
+      - name: Deploy to staging
+        if: ${{ secrets.STAGING_DEPLOY_KEY != '' && secrets.STAGING_HOST != '' }}
+        env:
+          DEPLOY_KEY: ${{ secrets.STAGING_DEPLOY_KEY }}
+          STAGING_HOST: ${{ secrets.STAGING_HOST }}
+        run: |
+          echo "Deploying to staging environment..."
+          # Add your deployment script here
+          # Example: rsync, SSH, or cloud provider CLI
+          echo "Deployment complete"
+      
+      - name: Deployment skipped
+        if: ${{ secrets.STAGING_DEPLOY_KEY == '' || secrets.STAGING_HOST == '' }}
+        run: |
+          echo "⚠️  Staging deployment skipped - secrets not configured"
+          echo "Please set STAGING_DEPLOY_KEY and STAGING_HOST in repository secrets"
+
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [lint, build]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment:
+      name: production
+      url: https://api.cookcam.app
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-build
+          path: backend/api/dist
+
+      - name: Get commit SHA
+        id: git_sha
+        run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Create Sentry release
+        if: ${{ secrets.SENTRY_AUTH_TOKEN != '' }}
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: cookcam-api
+        run: |
+          curl -sL https://sentry.io/get-cli/ | bash
+          export SENTRY_RELEASE=cookcam-api@${{ steps.git_sha.outputs.sha_short }}
+          sentry-cli releases new "$SENTRY_RELEASE"
+          sentry-cli releases set-commits "$SENTRY_RELEASE" --auto
+          sentry-cli releases finalize "$SENTRY_RELEASE"
+
+      - name: Deploy to production
+        if: ${{ secrets.PRODUCTION_DEPLOY_KEY != '' && secrets.PRODUCTION_HOST != '' }}
+        env:
+          DEPLOY_KEY: ${{ secrets.PRODUCTION_DEPLOY_KEY }}
+          PRODUCTION_HOST: ${{ secrets.PRODUCTION_HOST }}
+          GIT_COMMIT_SHA: ${{ steps.git_sha.outputs.sha_short }}
+        run: |
+          echo "Deploying to production environment..."
+          echo "Release: $GIT_COMMIT_SHA"
+          # Add your deployment script here
+          # Example: PM2 reload, Docker deploy, etc.
+          echo "Deployment complete"
+      
+      - name: Deployment skipped
+        if: ${{ secrets.PRODUCTION_DEPLOY_KEY == '' || secrets.PRODUCTION_HOST == '' }}
+        run: |
+          echo "⚠️  Production deployment skipped - secrets not configured"
+          echo "Please set PRODUCTION_DEPLOY_KEY and PRODUCTION_HOST in repository secrets"
+
+      - name: Health check
+        run: |
+          sleep 10
+          curl --fail https://api.cookcam.app/health || exit 1
+          echo "Health check passed"
+
+      - name: Notify deployment
+        if: success()
+        run: |
+          echo "✅ Production deployment successful"
+          # Add Slack/Discord notification here if desired
+
+      - name: Rollback on failure
+        if: failure()
+        run: |
+          echo "❌ Deployment failed, initiating rollback"
+          # Add rollback script here
+

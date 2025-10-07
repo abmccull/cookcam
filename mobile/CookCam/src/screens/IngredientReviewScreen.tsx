@@ -10,30 +10,29 @@ import {
   Animated,
   Modal,
   StatusBar,
-  Platform,
-} from "react-native";
+  Platform} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
-  Check,
+  _Check,
   X,
   Plus,
   Star,
   Camera,
-  ChefHat,
-  TrendingUp,
-  Trophy,
-} from "lucide-react-native";
+  _ChefHat,
+  _TrendingUp,
+  _Trophy} from "lucide-react-native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { RouteProp } from "@react-navigation/native";
+import { RootStackParamList } from "../App";
 import {
   scale,
   verticalScale,
   moderateScale,
-  responsive,
-} from "../utils/responsive";
+  responsive} from "../utils/responsive";
 import * as Haptics from "expo-haptics";
-import { useGamification, XP_VALUES } from "../context/GamificationContext";
 import { useAuth } from "../context/AuthContext";
 import { cookCamApi } from "../services/cookCamApi";
-import MysteryBox from "../components/MysteryBox";
+
 import AIChefIcon from "../components/AIChefIcon";
 import LoadingAnimation from "../components/LoadingAnimation";
 import logger from "../utils/logger";
@@ -49,20 +48,14 @@ interface Ingredient {
   category?: string;
 }
 
-interface IngredientReviewScreenProps {
-  navigation: any;
-  route: {
-    params: {
-      imageUri: string;
-      isSimulator: boolean;
-    };
-  };
+export interface IngredientReviewScreenProps {
+  navigation: NativeStackNavigationProp<RootStackParamList, "IngredientReview">;
+  route: RouteProp<RootStackParamList, "IngredientReview">;
 }
 
 const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
   navigation,
-  route,
-}) => {
+  route}) => {
   const { imageUri, isSimulator } = route.params;
   const { addXP, unlockBadge } = useGamification();
   const { user } = useAuth();
@@ -70,7 +63,7 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
     // 25% chance (1/4) of mystery box appearing
     return Math.random() < 0.25;
   });
-  const [mysteryReward, setMysteryReward] = useState<any>(null);
+  const [mysteryReward, setMysteryReward] = useState<unknown>(null);
   const [showRewardModal, setShowRewardModal] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -150,8 +143,7 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
                 id: ingredient.id || `detected-${i}`,
                 name: ingredient.name || name,
                 confidence: 0.9 - i * 0.1,
-                emoji: getEmojiForIngredient(ingredient.name || name),
-              });
+                emoji: getEmojiForIngredient(ingredient.name || name)});
             }
           } catch (error) {
             logger.debug(`Failed to find ingredient ${name}:`, error);
@@ -196,8 +188,7 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
           const scanResult = apiResponse.data;
           logger.debug(
             "🎯 Backend analysis successful:",
-            scanResult.ingredients,
-          );
+            scanResult.ingredients);
 
           // Convert backend response to our local ingredient format
           const foundIngredients: Ingredient[] = scanResult.ingredients.map(
@@ -209,15 +200,12 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
               quantity: detectedIng.quantity || "",
               unit: detectedIng.unit || "",
               variety: detectedIng.variety || "",
-              category: detectedIng.category || "",
-            }),
-          );
+              category: detectedIng.category || ""}));
 
           if (foundIngredients.length > 0) {
             setIngredients(foundIngredients);
             logger.debug(
-              `✅ Successfully analyzed image: ${foundIngredients.length} ingredients found`,
-            );
+              `✅ Successfully analyzed image: ${foundIngredients.length} ingredients found`);
 
             // Award bonus XP for successful real analysis
             await addXP(XP_VALUES.SCAN_INGREDIENTS, "SUCCESSFUL_SCAN");
@@ -256,8 +244,7 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
               id: ingredient.id || `detected-${i}`,
               name: ingredient.name || name,
               confidence: 0.9 - i * 0.1,
-              emoji: getEmojiForIngredient(ingredient.name || name),
-            });
+              emoji: getEmojiForIngredient(ingredient.name || name)});
           }
         } catch (error) {
           logger.debug(`Failed to find fallback ingredient ${name}:`, error);
@@ -267,8 +254,7 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
       if (foundIngredients.length > 0) {
         setIngredients(foundIngredients);
         logger.debug(
-          `✅ Fallback successful: ${foundIngredients.length} ingredients found`,
-        );
+          `✅ Fallback successful: ${foundIngredients.length} ingredients found`);
       } else {
         // Ultimate fallback
         setIngredients([
@@ -276,14 +262,12 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
             id: "1",
             name: "Detected Ingredient 1",
             confidence: 0.85,
-            emoji: "🥘",
-          },
+            emoji: "🥘"},
           {
             id: "2",
             name: "Detected Ingredient 2",
             confidence: 0.75,
-            emoji: "🍽️",
-          },
+            emoji: "🍽️"},
         ]);
       }
     } finally {
@@ -322,8 +306,7 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
       eggs: "🥚",
       apple: "🍎",
       banana: "🍌",
-      orange: "🍊",
-    };
+      orange: "🍊"};
 
     const lowerName = name.toLowerCase();
     return emojiMap[lowerName] || "🥘";
@@ -340,8 +323,7 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
   };
 
   const getSmartIncrement = (
-    ingredient: Ingredient,
-  ): { increment: number; minValue: number } => {
+    ingredient: Ingredient): { increment: number; minValue: number } => {
     const name = ingredient.name.toLowerCase();
     const unit = (ingredient.unit || "").toLowerCase();
 
@@ -421,8 +403,7 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
 
   const handleQuantityChange = (
     ingredientId: string,
-    action: "increase" | "decrease",
-  ) => {
+    action: "increase" | "decrease") => {
     setIngredients(
       ingredients.map((ing) => {
         if (ing.id === ingredientId) {
@@ -441,12 +422,10 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
 
           return {
             ...ing,
-            quantity: newQty.toString(),
-          };
+            quantity: newQty.toString()};
         }
         return ing;
-      }),
-    );
+      }));
 
     // Haptic feedback
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -471,13 +450,11 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
               Animated.timing(addAnimScale, {
                 toValue: 1.2,
                 duration: 150,
-                useNativeDriver: true,
-              }),
+                useNativeDriver: true}),
               Animated.timing(addAnimScale, {
                 toValue: 1,
                 duration: 150,
-                useNativeDriver: true,
-              }),
+                useNativeDriver: true}),
             ]).start();
 
             // Haptic feedback
@@ -498,22 +475,19 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
                 id: foundIngredient.id || Date.now().toString(),
                 name: foundIngredient.name || text,
                 confidence: 1.0, // User-added = 100% confidence
-                emoji: getEmojiForIngredient(foundIngredient.name || text),
-              };
+                emoji: getEmojiForIngredient(foundIngredient.name || text)};
 
               // Award XP for finding real ingredient
               await addXP(5, "ADD_REAL_INGREDIENT");
             } else {
               logger.debug(
-                "⚠️ Ingredient not found in database, adding as custom",
-              );
+                "⚠️ Ingredient not found in database, adding as custom");
 
               newIngredient = {
                 id: Date.now().toString(),
                 name: text,
                 confidence: 1.0,
-                emoji: getEmojiForIngredient(text),
-              };
+                emoji: getEmojiForIngredient(text)};
             }
 
             setIngredients([...ingredients, newIngredient]);
@@ -531,21 +505,18 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
               id: Date.now().toString(),
               name: text,
               confidence: 1.0,
-              emoji: getEmojiForIngredient(text),
-            };
+              emoji: getEmojiForIngredient(text)};
             setIngredients([...ingredients, newIngredient]);
           }
         }
-      },
-    );
+      });
   };
 
   const handleContinue = () => {
     if (ingredients.length === 0) {
       Alert.alert(
         "No Ingredients",
-        "Please add at least one ingredient to continue.",
-      );
+        "Please add at least one ingredient to continue.");
       return;
     }
 
@@ -553,8 +524,7 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
 
     navigation.navigate("EnhancedPreferences", {
       ingredients,
-      imageUri,
-    });
+      imageUri});
   };
 
   // Mystery reward system with proper probabilities
@@ -570,21 +540,18 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
           title: "LEGENDARY!",
           description: "Free month of premium features!",
           icon: "👑",
-          color: "#FFD700",
-        },
+          color: "#FFD700"},
         {
           type: "xp",
           value: 1000,
           title: "MEGA JACKPOT!",
           description: "1000 XP bonus!",
           icon: "🌟",
-          color: "#FFD700",
-        },
+          color: "#FFD700"},
       ];
       return {
         ...ultraRare[Math.floor(Math.random() * ultraRare.length)],
-        rarity: "legendary",
-      };
+        rarity: "legendary"};
     }
 
     // Rare rewards (0.9% chance)
@@ -596,29 +563,25 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
           title: "Amazing Find!",
           description: "Free week of premium features!",
           icon: "💎",
-          color: "#9C27B0",
-        },
+          color: "#9C27B0"},
         {
           type: "xp",
           value: 200,
           title: "XP Bonanza!",
           description: "200 XP bonus!",
           icon: "✨",
-          color: "#9C27B0",
-        },
+          color: "#9C27B0"},
         {
           type: "badge",
           value: "mystery_hunter",
           title: "Mystery Hunter!",
           description: "Rare badge unlocked!",
           icon: "🎖️",
-          color: "#9C27B0",
-        },
+          color: "#9C27B0"},
       ];
       return {
         ...rare[Math.floor(Math.random() * rare.length)],
-        rarity: "rare",
-      };
+        rarity: "rare"};
     }
 
     // Uncommon rewards (9% chance)
@@ -630,21 +593,18 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
           title: "Nice Find!",
           description: "50 XP bonus!",
           icon: "⚡",
-          color: "#2196F3",
-        },
+          color: "#2196F3"},
         {
           type: "recipe_unlock",
           value: "premium_recipe",
           title: "Recipe Unlocked!",
           description: "Exclusive recipe revealed!",
           icon: "📜",
-          color: "#2196F3",
-        },
+          color: "#2196F3"},
       ];
       return {
         ...uncommon[Math.floor(Math.random() * uncommon.length)],
-        rarity: "uncommon",
-      };
+        rarity: "uncommon"};
     }
 
     // Common rewards (90% chance)
@@ -655,29 +615,25 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
         title: "Bonus XP!",
         description: "10 XP added!",
         icon: "🎯",
-        color: "#4CAF50",
-      },
+        color: "#4CAF50"},
       {
         type: "xp",
         value: 15,
         title: "Small Bonus!",
         description: "15 XP reward!",
         icon: "🍀",
-        color: "#4CAF50",
-      },
+        color: "#4CAF50"},
       {
         type: "tip",
         value: "cooking_tip",
         title: "Pro Tip!",
         description: "Cooking tip unlocked!",
         icon: "💡",
-        color: "#4CAF50",
-      },
+        color: "#4CAF50"},
     ];
     return {
       ...common[Math.floor(Math.random() * common.length)],
-      rarity: "common",
-    };
+      rarity: "common"};
   };
 
   const handleMysteryBoxOpen = async () => {
@@ -771,10 +727,8 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
                   opacity: new Animated.Value(1),
                   transform: [
                     {
-                      translateX: new Animated.Value(0),
-                    },
-                  ],
-                },
+                      translateX: new Animated.Value(0)},
+                  ]},
               ]}
             >
               <View style={styles.ingredientLeft}>
@@ -785,10 +739,8 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
                       transform: [
                         {
                           scale:
-                            index === ingredients.length - 1 ? addAnimScale : 1,
-                        },
-                      ],
-                    },
+                            index === ingredients.length - 1 ? addAnimScale : 1},
+                      ]},
                   ]}
                 >
                   {ingredient.emoji}
@@ -835,9 +787,7 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
                           {
                             width: `${ingredient.confidence * 100}%`,
                             backgroundColor: getConfidenceColor(
-                              ingredient.confidence,
-                            ),
-                          },
+                              ingredient.confidence)},
                         ]}
                       />
                     </View>
@@ -962,11 +912,9 @@ const IngredientReviewScreen: React.FC<IngredientReviewScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8F8FF",
-  },
+    backgroundColor: "#F8F8FF"},
   mainContainer: {
-    flex: 1,
-  },
+    flex: 1},
   headerContainer: {
     alignItems: "center",
     padding: responsive.spacing.m,
@@ -980,22 +928,18 @@ const styles = StyleSheet.create({
     shadowColor: "#000", // iOS shadow
     shadowOffset: {
       width: 0,
-      height: 2,
-    },
+      height: 2},
     shadowOpacity: 0.1,
-    shadowRadius: 2,
-  },
+    shadowRadius: 2},
   headerTitle: {
     fontSize: responsive.fontSize.large,
     fontWeight: "bold",
     color: "#2D1B69",
     marginTop: verticalScale(4),
-    marginBottom: verticalScale(2),
-  },
+    marginBottom: verticalScale(2)},
   headerSubtitle: {
     fontSize: responsive.fontSize.regular,
-    color: "#8E8E93",
-  },
+    color: "#8E8E93"},
   statsRow: {
     flexDirection: "row",
     justifyContent: "space-around",
@@ -1003,53 +947,43 @@ const styles = StyleSheet.create({
     paddingHorizontal: responsive.spacing.m,
     paddingVertical: responsive.spacing.s,
     backgroundColor: "#FFFFFF",
-    gap: scale(16),
-  },
+    gap: scale(16)},
   statItem: {
     flex: 1,
-    alignItems: "center",
-  },
+    alignItems: "center"},
   statDivider: {
     width: 1,
     height: verticalScale(40),
-    backgroundColor: "#E5E5E7",
-  },
+    backgroundColor: "#E5E5E7"},
   statValue: {
     fontSize: responsive.fontSize.large,
     fontWeight: "bold",
     color: "#2D1B69",
-    marginTop: verticalScale(2),
-  },
+    marginTop: verticalScale(2)},
   statLabel: {
     fontSize: responsive.fontSize.tiny,
     color: "#8E8E93",
     textAlign: "center",
-    marginTop: verticalScale(2),
-  },
+    marginTop: verticalScale(2)},
   miniMysteryBox: {
     padding: responsive.spacing.s,
     backgroundColor: "rgba(255, 184, 0, 0.1)",
     borderRadius: responsive.borderRadius.medium,
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "rgba(255, 184, 0, 0.2)",
-  },
+    borderColor: "rgba(255, 184, 0, 0.2)"},
   miniBoxEmoji: {
-    fontSize: responsive.fontSize.large,
-  },
+    fontSize: responsive.fontSize.large},
   miniBoxLabel: {
     fontSize: responsive.fontSize.tiny,
     fontWeight: "600",
     color: "#FFB800",
-    marginTop: verticalScale(2),
-  },
+    marginTop: verticalScale(2)},
   ingredientsScrollView: {
-    flex: 1,
-  },
+    flex: 1},
   ingredientsContent: {
     padding: responsive.spacing.m,
-    paddingBottom: verticalScale(20),
-  },
+    paddingBottom: verticalScale(20)},
   ingredientCard: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -1059,41 +993,33 @@ const styles = StyleSheet.create({
     borderRadius: responsive.borderRadius.medium,
     marginBottom: verticalScale(8),
     borderWidth: 1,
-    borderColor: "#E5E5E7",
-  },
+    borderColor: "#E5E5E7"},
   ingredientLeft: {
     flexDirection: "row",
     alignItems: "center",
-    gap: scale(12),
-  },
+    gap: scale(12)},
   ingredientEmoji: {
-    fontSize: responsive.fontSize.xxxlarge,
-  },
+    fontSize: responsive.fontSize.xxxlarge},
   ingredientInfo: {
     flexDirection: "column",
-    flex: 1,
-  },
+    flex: 1},
   ingredientNameRow: {
     flexDirection: "row",
     alignItems: "center",
-    flexWrap: "wrap",
-  },
+    flexWrap: "wrap"},
   ingredientName: {
     fontSize: responsive.fontSize.medium,
     fontWeight: "600",
-    color: "#2D1B69",
-  },
+    color: "#2D1B69"},
   ingredientVariety: {
     fontSize: responsive.fontSize.small,
     color: "#8E8E93",
     marginLeft: scale(4),
-    fontStyle: "italic",
-  },
+    fontStyle: "italic"},
   quantityRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginVertical: verticalScale(4),
-  },
+    marginVertical: verticalScale(4)},
   quantityButton: {
     width: moderateScale(24),
     height: moderateScale(24),
@@ -1101,49 +1027,41 @@ const styles = StyleSheet.create({
     backgroundColor: "#F0F0F0",
     justifyContent: "center",
     alignItems: "center",
-    marginHorizontal: scale(4),
-  },
+    marginHorizontal: scale(4)},
   quantityButtonText: {
     fontSize: responsive.fontSize.medium,
     fontWeight: "bold",
-    color: "#2D1B69",
-  },
+    color: "#2D1B69"},
   quantityText: {
     fontSize: responsive.fontSize.small,
     color: "#2D1B69",
     fontWeight: "500",
     minWidth: scale(60),
-    textAlign: "center",
-  },
+    textAlign: "center"},
   confidenceContainer: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: verticalScale(2),
-  },
+    marginTop: verticalScale(2)},
   confidenceBar: {
     height: verticalScale(4),
     backgroundColor: "#E5E5E7",
     borderRadius: responsive.borderRadius.small,
     overflow: "hidden",
     flex: 1,
-    marginRight: scale(8),
-  },
+    marginRight: scale(8)},
   confidenceFill: {
-    height: "100%",
-  },
+    height: "100%"},
   confidenceText: {
     fontSize: responsive.fontSize.tiny,
     fontWeight: "600",
-    minWidth: scale(30),
-  },
+    minWidth: scale(30)},
   removeButton: {
     width: moderateScale(32),
     height: moderateScale(32),
     borderRadius: moderateScale(16),
     backgroundColor: "rgba(255, 59, 48, 0.1)",
     justifyContent: "center",
-    alignItems: "center",
-  },
+    alignItems: "center"},
   addButton: {
     flexDirection: "row",
     alignItems: "center",
@@ -1155,21 +1073,18 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#4CAF50",
     borderStyle: "dashed",
-    marginTop: verticalScale(8),
-  },
+    marginTop: verticalScale(8)},
   addButtonText: {
     fontSize: responsive.fontSize.medium,
     fontWeight: "600",
-    color: "#4CAF50",
-  },
+    color: "#4CAF50"},
   bottomContainer: {
     backgroundColor: "#F8F8FF",
     paddingHorizontal: responsive.spacing.m,
     paddingBottom: verticalScale(20),
     paddingTop: verticalScale(12),
     borderTopWidth: 1,
-    borderTopColor: "#E5E5E7",
-  },
+    borderTopColor: "#E5E5E7"},
   continueButton: {
     flexDirection: "row",
     alignItems: "center",
@@ -1181,17 +1096,14 @@ const styles = StyleSheet.create({
     shadowColor: "#FF6B35",
     shadowOffset: {
       width: 0,
-      height: 4,
-    },
+      height: 4},
     shadowOpacity: 0.2,
     shadowRadius: 8,
-    elevation: 4,
-  },
+    elevation: 4},
   continueButtonText: {
     fontSize: responsive.fontSize.large,
     fontWeight: "bold",
-    color: "#F8F8FF",
-  },
+    color: "#F8F8FF"},
   confettiOverlay: {
     position: "absolute",
     top: "50%",
@@ -1204,13 +1116,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: scale(24),
     paddingVertical: verticalScale(12),
     borderRadius: responsive.borderRadius.large,
-    zIndex: 999,
-  },
+    zIndex: 999},
   confettiText: {
     fontSize: responsive.fontSize.large,
     fontWeight: "bold",
-    color: "#FFFFFF",
-  },
+    color: "#FFFFFF"},
   tipContainer: {
     marginHorizontal: responsive.spacing.m,
     marginBottom: verticalScale(20),
@@ -1218,68 +1128,55 @@ const styles = StyleSheet.create({
     padding: responsive.spacing.m,
     borderRadius: responsive.borderRadius.medium,
     borderWidth: 1,
-    borderColor: "rgba(255, 184, 0, 0.3)",
-  },
+    borderColor: "rgba(255, 184, 0, 0.3)"},
   tipText: {
     fontSize: responsive.fontSize.regular,
     color: "#FFB800",
-    textAlign: "center",
-  },
+    textAlign: "center"},
   modalOverlay: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-  },
+    backgroundColor: "rgba(0, 0, 0, 0.5)"},
   rewardModal: {
     backgroundColor: "#FFFFFF",
     padding: responsive.spacing.m,
     borderRadius: responsive.borderRadius.medium,
     borderWidth: 2,
-    borderColor: "#4CAF50",
-  },
+    borderColor: "#4CAF50"},
   rewardHeader: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: responsive.spacing.m,
-  },
+    marginBottom: responsive.spacing.m},
   rewardRarity: {
     fontSize: responsive.fontSize.large,
     fontWeight: "bold",
-    color: "#FFFFFF",
-  },
+    color: "#FFFFFF"},
   rewardIcon: {
-    fontSize: responsive.fontSize.large,
-  },
+    fontSize: responsive.fontSize.large},
   rewardContent: {
-    alignItems: "center",
-  },
+    alignItems: "center"},
   rewardTitle: {
     fontSize: responsive.fontSize.large,
     fontWeight: "bold",
     color: "#2D1B69",
-    marginBottom: responsive.spacing.m,
-  },
+    marginBottom: responsive.spacing.m},
   rewardDescription: {
     fontSize: responsive.fontSize.regular,
     color: "#8E8E93",
     textAlign: "center",
-    marginBottom: responsive.spacing.m,
-  },
+    marginBottom: responsive.spacing.m},
   collectButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     padding: responsive.spacing.m,
     borderRadius: responsive.borderRadius.medium,
-    gap: scale(8),
-  },
+    gap: scale(8)},
   collectButtonText: {
     fontSize: responsive.fontSize.medium,
     fontWeight: "bold",
-    color: "#FFFFFF",
-  },
-});
+    color: "#FFFFFF"}});
 
 export default IngredientReviewScreen;

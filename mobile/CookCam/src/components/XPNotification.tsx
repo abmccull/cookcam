@@ -5,8 +5,7 @@ import {
   StyleSheet,
   Animated,
   Dimensions,
-  Easing,
-} from "react-native";
+  Easing} from "react-native";
 import { TrendingUp } from "lucide-react-native";
 import { haptics } from "../utils/haptics";
 
@@ -30,11 +29,10 @@ const XPNotification: React.FC<XPNotificationProps> = ({
   reason,
   currentXP,
   currentLevel,
-  levelProgress, // eslint-disable-line @typescript-eslint/no-unused-vars
+  _levelProgress,
   nextLevelXP,
   onComplete,
-  showConfetti = false,
-}) => {
+  showConfetti = false}) => {
   const slideAnim = useRef(new Animated.Value(-200)).current;
   const scaleAnim = useRef(new Animated.Value(0)).current;
   const progressAnim = useRef(new Animated.Value(0)).current;
@@ -43,9 +41,7 @@ const XPNotification: React.FC<XPNotificationProps> = ({
       x: new Animated.Value(0),
       y: new Animated.Value(0),
       rotate: new Animated.Value(0),
-      opacity: new Animated.Value(0),
-    })),
-  ).current;
+      opacity: new Animated.Value(0)}))).current;
 
   const [progressWidth, setProgressWidth] = useState(0);
 
@@ -59,8 +55,7 @@ const XPNotification: React.FC<XPNotificationProps> = ({
       RECEIVE_5_STAR: "5-star rating! 🌟",
       HELPFUL_REVIEW: "Helpful review! 💬",
       DAILY_STREAK: "Daily streak! 🔥",
-      WEEKLY_STREAK: "Weekly streak! 💎",
-    };
+      WEEKLY_STREAK: "Weekly streak! 💎"};
     return reasonMap[reason] || "Great job! ✨";
   };
 
@@ -69,8 +64,7 @@ const XPNotification: React.FC<XPNotificationProps> = ({
       // Trigger haptic feedback
       haptics.success({
         enableVibrateFallback: true,
-        ignoreAndroidSystemSettings: false,
-      });
+        ignoreAndroidSystemSettings: false});
 
       // Calculate new progress
       const newProgress =
@@ -83,14 +77,12 @@ const XPNotification: React.FC<XPNotificationProps> = ({
           toValue: 0,
           tension: 40,
           friction: 8,
-          useNativeDriver: true,
-        }),
+          useNativeDriver: true}),
         Animated.spring(scaleAnim, {
           toValue: 1,
           tension: 40,
           friction: 8,
-          useNativeDriver: true,
-        }),
+          useNativeDriver: true}),
       ]).start();
 
       // Animate progress bar after a short delay
@@ -99,8 +91,7 @@ const XPNotification: React.FC<XPNotificationProps> = ({
           toValue: progressWidth,
           duration: 1000,
           easing: Easing.out(Easing.cubic),
-          useNativeDriver: false,
-        }).start();
+          useNativeDriver: false}).start();
       }, 300);
 
       // Trigger confetti if enabled
@@ -127,30 +118,25 @@ const XPNotification: React.FC<XPNotificationProps> = ({
           Animated.timing(anim.opacity, {
             toValue: 1,
             duration: 200,
-            useNativeDriver: true,
-          }),
+            useNativeDriver: true}),
           Animated.timing(anim.y, {
             toValue: 300,
             duration: 2000,
             easing: Easing.out(Easing.quad),
-            useNativeDriver: true,
-          }),
+            useNativeDriver: true}),
           Animated.timing(anim.x, {
             toValue: randomX,
             duration: 2000,
-            useNativeDriver: true,
-          }),
+            useNativeDriver: true}),
           Animated.timing(anim.rotate, {
             toValue: randomRotation,
             duration: 2000,
-            useNativeDriver: true,
-          }),
+            useNativeDriver: true}),
           Animated.timing(anim.opacity, {
             toValue: 0,
             duration: 2000,
             delay: 500,
-            useNativeDriver: true,
-          }),
+            useNativeDriver: true}),
         ]),
       ]).start();
     });
@@ -161,13 +147,11 @@ const XPNotification: React.FC<XPNotificationProps> = ({
       Animated.timing(slideAnim, {
         toValue: -200,
         duration: 300,
-        useNativeDriver: true,
-      }),
+        useNativeDriver: true}),
       Animated.timing(scaleAnim, {
         toValue: 0,
         duration: 300,
-        useNativeDriver: true,
-      }),
+        useNativeDriver: true}),
     ]).start(() => {
       // Reset animations
       progressAnim.setValue(0);
@@ -201,8 +185,7 @@ const XPNotification: React.FC<XPNotificationProps> = ({
         style={[
           styles.container,
           {
-            transform: [{ translateY: slideAnim }, { scale: scaleAnim }],
-          },
+            transform: [{ translateY: slideAnim }, { scale: scaleAnim }]},
         ]}
       >
         {/* XP Icon and Amount */}
@@ -233,9 +216,7 @@ const XPNotification: React.FC<XPNotificationProps> = ({
                 {
                   width: progressAnim.interpolate({
                     inputRange: [0, 100],
-                    outputRange: ["0%", "100%"],
-                  }),
-                },
+                    outputRange: ["0%", "100%"]})},
               ]}
             />
             <View style={styles.progressBarShine} />
@@ -269,11 +250,8 @@ const XPNotification: React.FC<XPNotificationProps> = ({
                     {
                       rotate: anim.rotate.interpolate({
                         inputRange: [0, 360],
-                        outputRange: ["0deg", "360deg"],
-                      }),
-                    },
-                  ],
-                },
+                        outputRange: ["0deg", "360deg"]})},
+                  ]},
               ]}
             />
           ))}
@@ -295,18 +273,15 @@ const styles = StyleSheet.create({
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
-      height: 4,
-    },
+      height: 4},
     shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 10,
-    zIndex: 1000,
-  },
+    zIndex: 1000},
   xpSection: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 12,
-  },
+    marginBottom: 12},
   xpIcon: {
     width: 40,
     height: 40,
@@ -314,58 +289,48 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255, 184, 0, 0.2)",
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 12,
-  },
+    marginRight: 12},
   xpAmount: {
     fontSize: 28,
     fontWeight: "bold",
-    color: "#FFB800",
-  },
+    color: "#FFB800"},
   reasonText: {
     fontSize: 16,
     color: "#2D1B69",
     marginBottom: 16,
-    fontWeight: "500",
-  },
+    fontWeight: "500"},
   progressSection: {
-    marginTop: 8,
-  },
+    marginTop: 8},
   levelInfo: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 8,
-  },
+    marginBottom: 8},
   levelText: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#2D1B69",
-  },
+    color: "#2D1B69"},
   progressText: {
     fontSize: 12,
-    color: "#8E8E93",
-  },
+    color: "#8E8E93"},
   progressBarContainer: {
     position: "relative",
     height: 12,
     borderRadius: 6,
-    overflow: "hidden",
-  },
+    overflow: "hidden"},
   progressBarBg: {
     position: "absolute",
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: "#E5E5E7",
-  },
+    backgroundColor: "#E5E5E7"},
   progressBarFill: {
     position: "absolute",
     top: 0,
     left: 0,
     bottom: 0,
     backgroundColor: "#FFB800",
-    borderRadius: 6,
-  },
+    borderRadius: 6},
   progressBarShine: {
     position: "absolute",
     top: 0,
@@ -373,8 +338,7 @@ const styles = StyleSheet.create({
     right: 0,
     height: 4,
     backgroundColor: "rgba(255, 255, 255, 0.3)",
-    borderRadius: 2,
-  },
+    borderRadius: 2},
   trendingBadge: {
     position: "absolute",
     top: 16,
@@ -385,25 +349,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
-    gap: 4,
-  },
+    gap: 4},
   trendingText: {
     fontSize: 12,
     color: "#4CAF50",
-    fontWeight: "600",
-  },
+    fontWeight: "600"},
   confettiContainer: {
     ...StyleSheet.absoluteFillObject,
-    zIndex: 999,
-  },
+    zIndex: 999},
   confettiParticle: {
     position: "absolute",
     width: 10,
     height: 10,
     borderRadius: 2,
     top: 120,
-    left: screenWidth / 2 - 5,
-  },
-});
+    left: screenWidth / 2 - 5}});
 
 export default XPNotification;

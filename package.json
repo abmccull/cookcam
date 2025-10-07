@@ -31,5 +31,8 @@
     "@supabase/supabase-js": "^2.49.5-next.1",
     "dotenv": "^16.5.0",
     "react-native-svg": "^15.12.0"
+  },
+  "devDependencies": {
+    "react-error-boundary": "^6.0.0"
   }
 }

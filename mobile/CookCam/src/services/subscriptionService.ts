@@ -8,20 +8,17 @@ import {
   getProducts,
   requestPurchase,
   finishTransaction,
-  flushFailedPurchasesCachedAsPendingAndroid,
-} from "react-native-iap";
+  flushFailedPurchasesCachedAsPendingAndroid} from "react-native-iap";
 import logger from "../utils/logger";
-import { cookCamApi } from "./cookCamApi";
 
 const itemSkus = Platform.select({
   ios: ["com.cookcam.pro.monthly", "com.cookcam.creator.monthly"],
-  android: ["cookcam_pro_monthly", "cookcam_creator_monthly"],
-});
+  android: ["cookcam_pro_monthly", "cookcam_creator_monthly"]});
 
 class SubscriptionService {
   private static instance: SubscriptionService;
-  private purchaseUpdateSubscription: any = null;
-  private purchaseErrorSubscription: any = null;
+  private purchaseUpdateSubscription: unknown = null;
+  private purchaseErrorSubscription: unknown = null;
 
   private constructor() {
     this.initialize();
@@ -53,8 +50,7 @@ class SubscriptionService {
           try {
             logger.debug("🛒 Purchase completed, validating receipt...", {
               productId: purchase.productId,
-              platform: Platform.OS,
-            });
+              platform: Platform.OS});
 
             // Validate receipt with backend
             const validationResult =
@@ -70,15 +66,13 @@ class SubscriptionService {
             } else {
               logger.error(
                 "❌ Receipt validation failed:",
-                validationResult.error,
-              );
+                validationResult.error);
               // Don't finish transaction if validation failed
             }
           } catch (error) {
             logger.error("❌ Error processing purchase:", error);
           }
-        },
-      );
+        });
 
       this.purchaseErrorSubscription = purchaseErrorListener((error) => {
         logger.error("❌ Purchase error:", error);
@@ -92,8 +86,7 @@ class SubscriptionService {
   }
 
   private async validateReceiptWithBackend(
-    purchase: SubscriptionPurchase | ProductPurchase,
-  ) {
+    purchase: SubscriptionPurchase | ProductPurchase) {
     try {
       let validationData;
 
@@ -102,15 +95,13 @@ class SubscriptionService {
         validationData = {
           platform: "ios" as const,
           productId: purchase.productId,
-          receipt: purchase.transactionReceipt,
-        };
+          receipt: purchase.transactionReceipt};
       } else {
         // For Android, send the purchase token
         validationData = {
           platform: "android" as const,
           productId: purchase.productId,
-          purchaseToken: purchase.purchaseToken,
-        };
+          purchaseToken: purchase.purchaseToken};
       }
 
       // Call backend validation API
@@ -122,9 +113,7 @@ class SubscriptionService {
             "Content-Type": "application/json",
             // Add auth header here
           },
-          body: JSON.stringify(validationData),
-        },
-      );
+          body: JSON.stringify(validationData)});
 
       const result = await response.json();
       return result;
@@ -132,8 +121,7 @@ class SubscriptionService {
       logger.error("❌ Backend validation failed:", error);
       return {
         success: false,
-        error: "Failed to validate receipt with backend",
-      };
+        error: "Failed to validate receipt with backend"};
     }
   }
 
@@ -191,11 +179,10 @@ export interface SubscriptionProduct {
 }
 
 export enum SubscriptionStatus {
-  NONE = "none",
-  ACTIVE = "active",
-  EXPIRED = "expired",
-  CANCELLED = "cancelled",
-  PENDING = "pending",
-}
+  _NONE = "none",
+  _ACTIVE = "active",
+  _EXPIRED = "expired",
+  _CANCELLED = "cancelled",
+  _PENDING = "pending"}
 
 export default SubscriptionService;

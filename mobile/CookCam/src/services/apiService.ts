@@ -9,7 +9,6 @@ import {
   LOG_API_RESPONSES,
   LOG_API_ERRORS,
 } from "../config/api";
-import { secureStorage, SECURE_KEYS, STORAGE_KEYS } from "./secureStorage";
 import logger from "../utils/logger";
 
 // Types
@@ -96,7 +95,7 @@ class ApiService {
   }
 
   // Log API requests (development only)
-  private logRequest(method: string, url: string, data?: any) {
+  private logRequest(method: string, url: string, data?: unknown) {
     if (LOG_API_REQUESTS) {
       logger.debug(
         `🔄 API ${method.toUpperCase()} ${url}`,
@@ -106,21 +105,21 @@ class ApiService {
   }
 
   // Log API responses (development only)
-  private logResponse(method: string, url: string, response: any) {
+  private logResponse(method: string, url: string, response: unknown) {
     if (LOG_API_RESPONSES) {
       logger.debug(`✅ API ${method.toUpperCase()} ${url} Response:`, response);
     }
   }
 
   // Log API errors
-  private logError(method: string, url: string, error: any) {
+  private logError(method: string, url: string, error: unknown) {
     if (LOG_API_ERRORS) {
       logger.error(`❌ API ${method.toUpperCase()} ${url} Error:`, error);
     }
   }
 
   // Handle API errors
-  private handleApiError(error: any, url: string): ApiError {
+  private handleApiError(error: unknown, url: string): ApiError {
     let apiError: ApiError;
 
     if (error.response) {
@@ -169,7 +168,7 @@ class ApiService {
   }
 
   // Check if request should be retried
-  private shouldRetry(error: any): boolean {
+  private shouldRetry(error: unknown): boolean {
     // Retry on network errors or 5xx server errors
     if (!error.response) {
       return true;
@@ -237,7 +236,7 @@ class ApiService {
           status: response.status,
         };
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       const apiError = this.handleApiError(error, url);
 
       // Handle unauthorized errors by clearing tokens
@@ -254,7 +253,7 @@ class ApiService {
   }
 
   // GET request
-  async get<T = any>(
+  async get<T = unknown>(
     endpoint: string,
     headers?: Record<string, string>,
   ): Promise<ApiResponse<T>> {
@@ -262,25 +261,25 @@ class ApiService {
   }
 
   // POST request
-  async post<T = any>(
+  async post<T = unknown>(
     endpoint: string,
-    data?: any,
+    data?: unknown,
     headers?: Record<string, string>,
   ): Promise<ApiResponse<T>> {
     return this.request<T>("POST", endpoint, data, headers);
   }
 
   // PUT request
-  async put<T = any>(
+  async put<T = unknown>(
     endpoint: string,
-    data?: any,
+    data?: unknown,
     headers?: Record<string, string>,
   ): Promise<ApiResponse<T>> {
     return this.request<T>("PUT", endpoint, data, headers);
   }
 
   // DELETE request
-  async delete<T = any>(
+  async delete<T = unknown>(
     endpoint: string,
     headers?: Record<string, string>,
   ): Promise<ApiResponse<T>> {
@@ -288,9 +287,9 @@ class ApiService {
   }
 
   // PATCH request
-  async patch<T = any>(
+  async patch<T = unknown>(
     endpoint: string,
-    data?: any,
+    data?: unknown,
     headers?: Record<string, string>,
   ): Promise<ApiResponse<T>> {
     return this.request<T>("PATCH", endpoint, data, headers);

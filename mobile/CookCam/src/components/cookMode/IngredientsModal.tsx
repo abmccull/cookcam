@@ -14,7 +14,7 @@ const IngredientsModal: React.FC<IngredientsModalProps> = React.memo(({
   ingredients = [],
   onClose,
 }) => {
-  const formatIngredient = (ingredient: any): string => {
+  const formatIngredient = (ingredient: unknown): string => {
     if (typeof ingredient === "string") {
       return ingredient;
     }

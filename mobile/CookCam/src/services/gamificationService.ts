@@ -50,7 +50,7 @@ class GamificationService {
   private lastXPCall: { [key: string]: number } = {};
   private readonly XP_COOLDOWN = 5000; // 5 seconds between same action XP calls
 
-  async addXP(userId: string, amount: number, reason: string, _metadata?: any) {
+  async addXP(userId: string, amount: number, reason: string, _metadata?: Record<string, unknown>) {
     try {
       logger.debug(`🎮 Adding ${amount} XP for action: ${reason}`);
 
@@ -70,8 +70,7 @@ class GamificationService {
 
       // Get current user from auth
       const {
-        data: { user },
-      } = await supabase.auth.getUser();
+        data: { user }} = await supabase.auth.getUser();
 
       if (!user) {
         logger.debug("❌ No authenticated user found");
@@ -83,22 +82,18 @@ class GamificationService {
         const response = await gamificationService.addXP(
           amount,
           reason,
-          _metadata || {},
-        );
+          _metadata || {});
 
         if (response.success) {
           logger.debug(
             `✅ Added ${amount} XP via API. Response:`,
-            response.data,
-          );
+            response.data);
           return {
             success: true,
             data: {
               xp_gained: amount,
               total_xp: response.data?.new_total_xp,
-              level: response.data?.new_level,
-            },
-          };
+              level: response.data?.new_level}};
         } else {
           logger.error("❌ API call failed:", response.error);
           return { success: false, error: response.error };
@@ -116,8 +111,7 @@ class GamificationService {
   async checkStreak() {
     try {
       const {
-        data: { user },
-      } = await supabase.auth.getUser();
+        data: { user }} = await supabase.auth.getUser();
 
       if (!user) {
         return { success: false, error: "User not authenticated" };
@@ -129,9 +123,7 @@ class GamificationService {
         data: {
           current_streak: 1,
           longest_streak: 1,
-          last_check_in: new Date().toISOString(),
-        },
-      };
+          last_check_in: new Date().toISOString()}};
     } catch (error) {
       logger.error("❌ Error checking streak:", error);
       return { success: false, error: "Failed to check streak" };
@@ -141,8 +133,7 @@ class GamificationService {
   async getProgress() {
     try {
       const {
-        data: { user },
-      } = await supabase.auth.getUser();
+        data: { user }} = await supabase.auth.getUser();
 
       if (!user) {
         return { success: false, error: "User not authenticated" };
@@ -164,9 +155,7 @@ class GamificationService {
         data: {
           total_xp: data.total_xp || 0,
           current_xp: data.xp || 0,
-          level: data.level || 1,
-        },
-      };
+          level: data.level || 1}};
     } catch (error) {
       logger.error("❌ Error getting progress:", error);
       return { success: false, error: "Failed to get progress" };
@@ -175,8 +164,7 @@ class GamificationService {
 
   async getLeaderboard(
     type: "xp" | "cooking_streak" | "recipes_completed" = "xp",
-    period: "daily" | "weekly" | "monthly" | "yearly" | "allTime" = "allTime",
-  ): Promise<LeaderboardResponse> {
+    period: "daily" | "weekly" | "monthly" | "yearly" | "allTime" = "allTime"): Promise<LeaderboardResponse> {
     try {
       logger.debug(`🏆 Fetching ${type} leaderboard for ${period}`);
 
@@ -184,8 +172,7 @@ class GamificationService {
       const { data, error } = await supabase
         .from("users")
         .select(
-          "id, name, avatar_url, level, total_xp, is_creator, creator_tier",
-        )
+          "id, name, avatar_url, level, total_xp, is_creator, creator_tier")
         .gt("total_xp", 0)
         .order("total_xp", { ascending: false })
         .limit(50);
@@ -207,9 +194,7 @@ class GamificationService {
             avatar_url: user.avatar_url,
             level: user.level,
             is_creator: user.is_creator,
-            creator_tier: user.creator_tier,
-          },
-        }));
+            creator_tier: user.creator_tier}}));
 
       logger.debug(`✅ Leaderboard fetched: ${leaderboard.length} entries`);
 
@@ -221,23 +206,19 @@ class GamificationService {
             type,
             period,
             updated_at: new Date().toISOString(),
-            note: "Simplified leaderboard based on total XP",
-          },
-        },
-      };
+            note: "Simplified leaderboard based on total XP"}}};
     } catch (error) {
       logger.error("❌ Error getting leaderboard:", error);
       return { success: false, error: "Failed to get leaderboard" };
     }
   }
 
-  async unlockBadge(badgeId: string, metadata?: any) {
+  async unlockBadge(badgeId: string, _metadata?: Record<string, unknown>) {
     try {
       logger.debug(`🏅 Unlocking badge: ${badgeId}`);
 
       const {
-        data: { user },
-      } = await supabase.auth.getUser();
+        data: { user }} = await supabase.auth.getUser();
 
       if (!user) {
         return { success: false, error: "User not authenticated" };
@@ -250,9 +231,7 @@ class GamificationService {
         success: true,
         data: {
           badge_id: badgeId,
-          unlocked_at: new Date().toISOString(),
-        },
-      };
+          unlocked_at: new Date().toISOString()}};
     } catch (error) {
       logger.error("❌ Error unlocking badge:", error);
       return { success: false, error: "Failed to unlock badge" };
@@ -262,8 +241,7 @@ class GamificationService {
   async getUserRank(userId?: string) {
     try {
       const {
-        data: { user },
-      } = await supabase.auth.getUser();
+        data: { user }} = await supabase.auth.getUser();
       const targetUserId = userId || user?.id;
 
       if (!targetUserId) {
@@ -297,16 +275,14 @@ class GamificationService {
         success: true,
         data: {
           rank,
-          total_xp: userData.total_xp || 0,
-        },
-      };
+          total_xp: userData.total_xp || 0}};
     } catch (error) {
       logger.error("❌ Error getting user rank:", error);
       return { success: false, error: "Failed to get user rank" };
     }
   }
 
-  async loadLeaderboard(type: string, period: string, _metadata?: any) {
+  async loadLeaderboard(_type: string, _period: string, _metadata?: Record<string, unknown>) {
     // Implementation of loadLeaderboard method
   }
 }

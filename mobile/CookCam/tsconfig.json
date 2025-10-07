@@ -1,20 +1,52 @@
 {
-  "extends": "expo/tsconfig.base",
   "compilerOptions": {
+    // Strict Type Checking
     "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictBindCallApply": true,
+    "strictPropertyInitialization": true,
+    "noImplicitThis": true,
+    "alwaysStrict": true,
+    
+    // Additional Checks
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noPropertyAccessFromIndexSignature": true,
+    
+    // Module Resolution
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
-    "jsx": "react-native",
-    "lib": ["es2017"],
-    "moduleResolution": "bundler",
-    "noEmit": true,
+    "module": "esnext",
+    "moduleResolution": "node",
     "resolveJsonModule": true,
+    "isolatedModules": true,
+    
+    // React Native
+    "jsx": "react-native",
+    "lib": ["es2017", "dom"],
+    "target": "esnext",
+    
+    // Build Settings
+    "noEmit": true,
     "skipLibCheck": true,
-    "target": "es2017",
     "downlevelIteration": true,
     "forceConsistentCasingInFileNames": true,
-    "types": ["react-native", "jest"],
-    "isolatedModules": true
+    "allowJs": true,
+    
+    // Paths
+    "baseUrl": ".",
+    "paths": {
+      "*": ["src/*"]
+    },
+    
+    // Types
+    "types": ["react-native", "jest"]
   },
   "include": [
     "src/**/*.ts",

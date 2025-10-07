@@ -11,49 +11,43 @@ import {
   Animated,
   Dimensions,
   StatusBar,
-  Platform,
-} from "react-native";
+  Platform} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
-  Users,
-  ChefHat,
-  Clock,
-  Utensils,
-  Flame,
-  Zap,
+  _Users,
+  _ChefHat,
+  _Clock,
+  _Utensils,
+  _Flame,
+  _Zap,
   X,
   Check,
-  ArrowRight,
+  _ArrowRight,
   ChevronRight,
   ChevronLeft,
   SkipForward,
   Star,
   Trophy,
   Globe,
-  Plus,
-} from "lucide-react-native";
+  _Plus} from "lucide-react-native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { RouteProp } from "@react-navigation/native";
+import { RootStackParamList } from "../App";
 import {
   scale,
   verticalScale,
   moderateScale,
-  responsive,
-} from "../utils/responsive";
+  responsive} from "../utils/responsive";
 import * as Haptics from "expo-haptics";
 import { useAuth } from "../context/AuthContext";
-import { useGamification, XP_VALUES } from "../context/GamificationContext";
 import KitchenApplianceIcon from "../components/KitchenApplianceIcon";
 import ServingSizeIcon from "../components/ServingSizeIcon";
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
+const { width: _SCREEN_WIDTH, height: _SCREEN_HEIGHT } = Dimensions.get("window");
 
-interface EnhancedPreferencesScreenProps {
-  navigation: any;
-  route: {
-    params: {
-      ingredients: any[];
-      imageUri?: string;
-    };
-  };
+export interface EnhancedPreferencesScreenProps {
+  navigation: NativeStackNavigationProp<RootStackParamList, "EnhancedPreferences">;
+  route: RouteProp<RootStackParamList, "EnhancedPreferences">;
 }
 
 interface ServingOption {
@@ -75,8 +69,7 @@ interface Appliance {
 
 const EnhancedPreferencesScreen: React.FC<EnhancedPreferencesScreenProps> = ({
   navigation,
-  route,
-}) => {
+  route}) => {
   const { ingredients, imageUri } = route.params;
   const { user } = useAuth();
   const { addXP, unlockBadge } = useGamification();
@@ -103,28 +96,25 @@ const EnhancedPreferencesScreen: React.FC<EnhancedPreferencesScreenProps> = ({
       id: "large-family",
       label: "Large group (6)",
       value: 6,
-      icon: "👨‍👩‍👧‍👧‍👦‍👧",
-    },
+      icon: "👨‍👩‍👧‍👧‍👦‍👧"},
     {
       id: "custom",
       label: "Custom amount",
       value: 0,
       icon: "✏️",
-      isCustom: true,
-    },
+      isCustom: true},
   ]);
 
   // State management
   const [selectedServing, setSelectedServing] = useState<ServingOption>(
-    servingOptions[1],
-  );
+    servingOptions[1]);
   const [customServingAmount, setCustomServingAmount] = useState("");
   const [showCustomInput, setShowCustomInput] = useState(false);
 
   // Meal prep options
   const [mealPrepEnabled, setMealPrepEnabled] = useState(false);
   const [mealPrepPortions, setMealPrepPortions] = useState(4);
-  const [showMealPrepInput, setShowMealPrepInput] = useState(false);
+  const [_showMealPrepInput, _setShowMealPrepInput] = useState(false);
 
   // Meal type selection
   const [mealType, setMealType] = useState("dinner");
@@ -137,96 +127,84 @@ const EnhancedPreferencesScreen: React.FC<EnhancedPreferencesScreenProps> = ({
       category: "cooking",
       icon: "oven",
       description: "Standard kitchen oven",
-      selected: true,
-    },
+      selected: true},
     {
       id: "stove",
       name: "Stove",
       category: "cooking",
       icon: "stove",
       description: "Stovetop cooking",
-      selected: true,
-    },
+      selected: true},
     {
       id: "air-fryer",
       name: "Air Fryer",
       category: "appliance",
       icon: "air fryer",
       description: "Crispy cooking",
-      selected: false,
-    },
+      selected: false},
     {
       id: "slow-cooker",
       name: "Slow Cooker",
       category: "appliance",
       icon: "slow cooker",
       description: "Long, slow cooking",
-      selected: false,
-    },
+      selected: false},
     {
       id: "grill",
       name: "Grill",
       category: "outdoor",
       icon: "grill",
       description: "Outdoor grilling",
-      selected: false,
-    },
+      selected: false},
     {
       id: "smoker",
       name: "BBQ Smoker",
       category: "outdoor",
       icon: "bbq smoker",
       description: "BBQ smoking",
-      selected: false,
-    },
+      selected: false},
     {
       id: "microwave",
       name: "Microwave",
       category: "appliance",
       icon: "microwave",
       description: "Quick heating",
-      selected: true,
-    },
+      selected: true},
     {
       id: "instant-pot",
       name: "Pressure Cooker",
       category: "appliance",
       icon: "pressure cooker",
       description: "Pressure cooking",
-      selected: false,
-    },
+      selected: false},
     {
       id: "food-processor",
       name: "Food Processor",
       category: "tool",
       icon: "food processor",
       description: "Chopping and mixing",
-      selected: false,
-    },
+      selected: false},
     {
       id: "stand-mixer",
       name: "Stand Mixer",
       category: "tool",
       icon: "stand mixer",
       description: "Baking and mixing",
-      selected: false,
-    },
+      selected: false},
     {
       id: "blender",
       name: "Blender",
       category: "tool",
       icon: "blender",
       description: "Smoothies and sauces",
-      selected: false,
-    },
+      selected: false},
     {
       id: "toaster-oven",
       name: "Toaster Oven",
       category: "appliance",
       icon: "toaster oven",
       description: "Small countertop oven",
-      selected: false,
-    },
+      selected: false},
   ]);
 
   // Standard preferences
@@ -246,47 +224,38 @@ const EnhancedPreferencesScreen: React.FC<EnhancedPreferencesScreenProps> = ({
         {
           label: "🍳 Breakfast",
           subtitle: "Start your day right",
-          value: "breakfast",
-        },
+          value: "breakfast"},
         {
           label: "🥙 Lunch",
           subtitle: "Midday fuel",
-          value: "lunch",
-        },
+          value: "lunch"},
         {
           label: "🍽️ Dinner",
           subtitle: "Main evening meal",
-          value: "dinner",
-        },
+          value: "dinner"},
         {
           label: "🍰 Dessert",
           subtitle: "Sweet treats",
-          value: "dessert",
-        },
+          value: "dessert"},
         {
           label: "🍿 Snacks",
           subtitle: "Light bites",
-          value: "snacks",
-        },
+          value: "snacks"},
         {
           label: "🥗 Appetizer",
           subtitle: "Start the meal",
-          value: "appetizer",
-        },
-      ],
-    },
+          value: "appetizer"},
+      ]},
     {
       id: "serving",
       title: "How many people are you cooking for?",
       subtitle: "Select your serving size and meal prep preference",
-      type: "serving",
-    },
+      type: "serving"},
     {
       id: "appliances",
       title: "What kitchen equipment do you have?",
       subtitle: "Select all the appliances you can use",
-      type: "appliances",
-    },
+      type: "appliances"},
     {
       id: "dietary",
       title: "Any dietary restrictions?",
@@ -303,8 +272,7 @@ const EnhancedPreferencesScreen: React.FC<EnhancedPreferencesScreenProps> = ({
         "Low-Carb",
         "Low-Fat",
         "Nut-Free",
-      ],
-    },
+      ]},
     {
       id: "cuisine",
       title: "What cuisine are you craving?",
@@ -330,8 +298,7 @@ const EnhancedPreferencesScreen: React.FC<EnhancedPreferencesScreenProps> = ({
         "Southern",
         "Fusion",
         "🎲 Surprise Me!",
-      ],
-    },
+      ]},
     {
       id: "time",
       title: "How much time do you have?",
@@ -341,17 +308,14 @@ const EnhancedPreferencesScreen: React.FC<EnhancedPreferencesScreenProps> = ({
         {
           label: "⚡ Quick & Easy",
           subtitle: "Under 20 minutes",
-          value: "quick",
-        },
+          value: "quick"},
         { label: "⏱️ Medium", subtitle: "20-45 minutes", value: "medium" },
         {
           label: "🍖 Worth the Wait",
           subtitle: "Over 45 minutes",
-          value: "long",
-        },
+          value: "long"},
         { label: "🤷 Flexible", subtitle: "Any cooking time", value: "any" },
-      ],
-    },
+      ]},
     {
       id: "difficulty",
       title: "What's your skill level?",
@@ -361,21 +325,17 @@ const EnhancedPreferencesScreen: React.FC<EnhancedPreferencesScreenProps> = ({
         {
           label: "🥄 Beginner",
           subtitle: "Simple recipes only",
-          value: "easy",
-        },
+          value: "easy"},
         {
           label: "🍳 Home Cook",
           subtitle: "Some experience needed",
-          value: "medium",
-        },
+          value: "medium"},
         {
           label: "👨‍🍳 Chef Mode",
           subtitle: "Bring on the challenge!",
-          value: "hard",
-        },
+          value: "hard"},
         { label: "🎲 Surprise Me", subtitle: "Any difficulty", value: "any" },
-      ],
-    },
+      ]},
   ];
 
   // Load user defaults
@@ -390,31 +350,28 @@ const EnhancedPreferencesScreen: React.FC<EnhancedPreferencesScreenProps> = ({
       toValue: (currentStep + 1) / steps.length,
       tension: 50,
       friction: 7,
-      useNativeDriver: false,
-    }).start();
+      useNativeDriver: false}).start();
   }, [currentStep]);
 
   const loadUserDefaults = () => {
     if (user) {
       // Load saved preferences from user profile using optional chaining
-      const defaultServing = (user as any).default_serving_size || 2;
+      const defaultServing = (user as unknown).default_serving_size || 2;
       const defaultOption =
         servingOptions.find((opt) => opt.value === defaultServing) ||
         servingOptions[1];
       setSelectedServing(defaultOption);
 
-      setMealPrepEnabled((user as any).meal_prep_enabled || false);
-      setMealPrepPortions((user as any).default_meal_prep_count || 4);
+      setMealPrepEnabled((user as unknown).meal_prep_enabled || false);
+      setMealPrepPortions((user as unknown).default_meal_prep_count || 4);
 
       // Load kitchen appliances
-      const userAppliances = (user as any).kitchen_appliances;
+      const userAppliances = (user as unknown).kitchen_appliances;
       if (userAppliances && Array.isArray(userAppliances)) {
         setAppliances((prev) =>
           prev.map((appliance) => ({
             ...appliance,
-            selected: userAppliances.includes(appliance.id),
-          })),
-        );
+            selected: userAppliances.includes(appliance.id)})));
       }
     }
   };
@@ -438,8 +395,7 @@ const EnhancedPreferencesScreen: React.FC<EnhancedPreferencesScreenProps> = ({
         label: `${amount} people`,
         value: amount,
         icon: "✏️",
-        isCustom: true,
-      });
+        isCustom: true});
       setShowCustomInput(false);
       setCustomServingAmount("");
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -464,9 +420,7 @@ const EnhancedPreferencesScreen: React.FC<EnhancedPreferencesScreenProps> = ({
       prev.map((appliance) =>
         appliance.id === applianceId
           ? { ...appliance, selected: !appliance.selected }
-          : appliance,
-      ),
-    );
+          : appliance));
   };
 
   // Quiz navigation functions
@@ -475,13 +429,11 @@ const EnhancedPreferencesScreen: React.FC<EnhancedPreferencesScreenProps> = ({
       Animated.timing(fadeAnim, {
         toValue: 0,
         duration: 150,
-        useNativeDriver: true,
-      }),
+        useNativeDriver: true}),
       Animated.timing(slideAnim, {
         toValue: direction === "next" ? -50 : 50,
         duration: 150,
-        useNativeDriver: true,
-      }),
+        useNativeDriver: true}),
     ]).start(() => {
       slideAnim.setValue(direction === "next" ? 50 : -50);
 
@@ -489,13 +441,11 @@ const EnhancedPreferencesScreen: React.FC<EnhancedPreferencesScreenProps> = ({
         Animated.timing(fadeAnim, {
           toValue: 1,
           duration: 150,
-          useNativeDriver: true,
-        }),
+          useNativeDriver: true}),
         Animated.timing(slideAnim, {
           toValue: 0,
           duration: 150,
-          useNativeDriver: true,
-        }),
+          useNativeDriver: true}),
       ]).start();
     });
   };
@@ -570,7 +520,7 @@ const EnhancedPreferencesScreen: React.FC<EnhancedPreferencesScreenProps> = ({
     setTimeout(() => handleNext(), 300);
   };
 
-  const isOptionSelected = (option: any): boolean => {
+  const isOptionSelected = (option: unknown): boolean => {
     const step = steps[currentStep];
 
     if (step.id === "mealtype") {
@@ -618,13 +568,11 @@ const EnhancedPreferencesScreen: React.FC<EnhancedPreferencesScreenProps> = ({
         toValue: 1.2,
         tension: 50,
         friction: 3,
-        useNativeDriver: true,
-      }),
+        useNativeDriver: true}),
       Animated.timing(xpRewardScale, {
         toValue: 1,
         duration: 200,
-        useNativeDriver: true,
-      }),
+        useNativeDriver: true}),
     ]).start();
 
     await addXP(XP_VALUES.COMPLETE_PREFERENCES, "COMPLETE_PREFERENCES");
@@ -643,8 +591,7 @@ const EnhancedPreferencesScreen: React.FC<EnhancedPreferencesScreenProps> = ({
         toValue: 1,
         tension: 50,
         friction: 3,
-        useNativeDriver: true,
-      }).start();
+        useNativeDriver: true}).start();
     }
 
     if (cuisine.length >= 5) {
@@ -675,8 +622,7 @@ const EnhancedPreferencesScreen: React.FC<EnhancedPreferencesScreenProps> = ({
       cookingTime,
       difficulty,
       dietary,
-      cuisine,
-    };
+      cuisine};
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
@@ -689,18 +635,14 @@ const EnhancedPreferencesScreen: React.FC<EnhancedPreferencesScreenProps> = ({
           params: {
             ingredients,
             imageUri,
-            preferences,
-          },
-        },
-      });
+            preferences}}});
     }, 1500);
   };
 
   const selectedApplianceCount = appliances.filter((a) => a.selected).length;
   const currentStepData = steps[currentStep];
   const completionPercentage = Math.round(
-    ((currentStep + 1) / steps.length) * 100,
-  );
+    ((currentStep + 1) / steps.length) * 100);
 
   // Render functions for different step types
   const renderServingStep = () => (
@@ -888,7 +830,7 @@ const EnhancedPreferencesScreen: React.FC<EnhancedPreferencesScreenProps> = ({
 
     return (
       <View style={styles.singleChoiceContainer}>
-        {step.options?.map((option: any, index: number) => (
+        {step.options?.map((option: unknown, index: number) => (
           <TouchableOpacity
             key={`${step.id}-${index}-${option.value}`}
             style={[
@@ -960,9 +902,7 @@ const EnhancedPreferencesScreen: React.FC<EnhancedPreferencesScreenProps> = ({
               {
                 width: progressAnim.interpolate({
                   inputRange: [0, 1],
-                  outputRange: ["0%", "100%"],
-                }),
-              },
+                  outputRange: ["0%", "100%"]})},
             ]}
           />
         </View>
@@ -978,8 +918,7 @@ const EnhancedPreferencesScreen: React.FC<EnhancedPreferencesScreenProps> = ({
             styles.questionContainer,
             {
               opacity: fadeAnim,
-              transform: [{ translateX: slideAnim }],
-            },
+              transform: [{ translateX: slideAnim }]},
           ]}
         >
           <Text style={styles.title}>{currentStepData.title}</Text>
@@ -1105,8 +1044,7 @@ const EnhancedPreferencesScreen: React.FC<EnhancedPreferencesScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8F8FF",
-  },
+    backgroundColor: "#F8F8FF"},
   header: {
     backgroundColor: "#FFFFFF",
     paddingHorizontal: 20,
@@ -1119,68 +1057,55 @@ const styles = StyleSheet.create({
     shadowColor: "#000", // iOS shadow
     shadowOffset: {
       width: 0,
-      height: 2,
-    },
+      height: 2},
     shadowOpacity: 0.1,
-    shadowRadius: 2,
-  },
+    shadowRadius: 2},
   backButton: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-  },
+    gap: 8},
   backText: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#2D1B69",
-  },
+    color: "#2D1B69"},
   progressContainer: {
     paddingHorizontal: 20,
     paddingTop: 16,
-    paddingBottom: 12,
-  },
+    paddingBottom: 12},
   progressHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 10,
-  },
+    marginBottom: 10},
   progressLabel: {
     fontSize: 18,
     fontWeight: "700",
     color: "#2D1B69",
-    letterSpacing: -0.5,
-  },
+    letterSpacing: -0.5},
   progressPercentage: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#FF6B35",
-  },
+    color: "#FF6B35"},
   progressBar: {
     height: 6,
     backgroundColor: "#E5E5E7",
     borderRadius: 3,
-    overflow: "hidden",
-  },
+    overflow: "hidden"},
   progressFill: {
     height: "100%",
     backgroundColor: "#FF6B35",
-    borderRadius: 3,
-  },
+    borderRadius: 3},
   progressText: {
     fontSize: 13,
     color: "#8E8E93",
-    marginTop: 6,
-  },
+    marginTop: 6},
   content: {
     flex: 1,
-    paddingHorizontal: 20,
-  },
+    paddingHorizontal: 20},
   questionContainer: {
     flex: 1,
     paddingTop: 5,
-    justifyContent: "flex-start",
-  },
+    justifyContent: "flex-start"},
   title: {
     fontSize: 22,
     fontWeight: "700",
@@ -1188,16 +1113,14 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 16,
     lineHeight: 26,
-    letterSpacing: -0.5,
-  },
+    letterSpacing: -0.5},
   // Serving step styles
   servingGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 12,
     justifyContent: "center",
-    paddingTop: 8,
-  },
+    paddingTop: 8},
   servingOption: {
     width: "45%",
     backgroundColor: "#FFFFFF",
@@ -1210,35 +1133,28 @@ const styles = StyleSheet.create({
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
-    shadowRadius: 4,
-  },
+    shadowRadius: 4},
   servingOptionSelected: {
     backgroundColor: "rgba(45, 27, 105, 0.1)",
-    borderColor: "#2D1B69",
-  },
+    borderColor: "#2D1B69"},
   servingIcon: {
     fontSize: 28,
-    marginBottom: 8,
-  },
+    marginBottom: 8},
   servingLabel: {
     fontSize: 14,
     color: "#666",
     fontWeight: "600",
-    textAlign: "center",
-  },
+    textAlign: "center"},
   servingLabelSelected: {
     color: "#2D1B69",
-    fontWeight: "700",
-  },
+    fontWeight: "700"},
   customValue: {
     fontSize: 12,
     color: "#4CAF50",
     fontWeight: "600",
-    marginTop: 4,
-  },
+    marginTop: 4},
   mealPrepSection: {
-    marginTop: 16,
-  },
+    marginTop: 16},
   mealPrepToggle: {
     flexDirection: "row",
     alignItems: "center",
@@ -1252,86 +1168,69 @@ const styles = StyleSheet.create({
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
-    shadowRadius: 4,
-  },
+    shadowRadius: 4},
   mealPrepToggleActive: {
     backgroundColor: "rgba(76, 175, 80, 0.1)",
-    borderColor: "#4CAF50",
-  },
+    borderColor: "#4CAF50"},
   mealPrepContent: {
-    flex: 1,
-  },
+    flex: 1},
   mealPrepText: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#666",
-  },
+    color: "#666"},
   mealPrepTextActive: {
-    color: "#4CAF50",
-  },
+    color: "#4CAF50"},
   mealPrepSubtext: {
     fontSize: 13,
     color: "#8E8E93",
-    marginTop: 2,
-  },
+    marginTop: 2},
   mealPrepSubtextActive: {
-    color: "#4CAF50",
-  },
+    color: "#4CAF50"},
   checkbox: {
     width: 24,
     height: 24,
     borderRadius: 12,
     backgroundColor: "#E0E0E0",
     justifyContent: "center",
-    alignItems: "center",
-  },
+    alignItems: "center"},
   checkboxActive: {
-    backgroundColor: "#4CAF50",
-  },
+    backgroundColor: "#4CAF50"},
   mealPrepPortions: {
-    marginTop: 16,
-  },
+    marginTop: 16},
   portionsLabel: {
     fontSize: 14,
     fontWeight: "600",
     color: "#2D1B69",
     marginBottom: 8,
-    textAlign: "center",
-  },
+    textAlign: "center"},
   portionsRow: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 8,
-    justifyContent: "center",
-  },
+    justifyContent: "center"},
   portionOption: {
     backgroundColor: "#F8F9FA",
     borderRadius: 8,
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderWidth: 2,
-    borderColor: "transparent",
-  },
+    borderColor: "transparent"},
   portionOptionSelected: {
     backgroundColor: "rgba(76, 175, 80, 0.1)",
-    borderColor: "#4CAF50",
-  },
+    borderColor: "#4CAF50"},
   portionText: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#666",
-  },
+    color: "#666"},
   portionTextSelected: {
-    color: "#4CAF50",
-  },
+    color: "#4CAF50"},
   // Appliance styles
   applianceGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 12,
     justifyContent: "center",
-    paddingTop: 8,
-  },
+    paddingTop: 8},
   applianceCard: {
     width: "45%",
     backgroundColor: "#FFFFFF",
@@ -1345,34 +1244,27 @@ const styles = StyleSheet.create({
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
-    shadowRadius: 4,
-  },
+    shadowRadius: 4},
   applianceCardSelected: {
     backgroundColor: "rgba(76, 175, 80, 0.1)",
-    borderColor: "#4CAF50",
-  },
+    borderColor: "#4CAF50"},
   applianceIcon: {
     fontSize: 32,
-    marginBottom: 8,
-  },
+    marginBottom: 8},
   applianceName: {
     fontSize: 14,
     fontWeight: "600",
     color: "#2D1B69",
     textAlign: "center",
-    marginBottom: 4,
-  },
+    marginBottom: 4},
   applianceNameSelected: {
-    color: "#4CAF50",
-  },
+    color: "#4CAF50"},
   applianceDescription: {
     fontSize: 12,
     color: "#8E8E93",
-    textAlign: "center",
-  },
+    textAlign: "center"},
   applianceDescriptionSelected: {
-    color: "#4CAF50",
-  },
+    color: "#4CAF50"},
   applianceCheckbox: {
     position: "absolute",
     top: 8,
@@ -1382,14 +1274,12 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     backgroundColor: "#4CAF50",
     justifyContent: "center",
-    alignItems: "center",
-  },
+    alignItems: "center"},
   applianceHint: {
     fontSize: 13,
     color: "#8E8E93",
     textAlign: "center",
-    marginTop: 12,
-  },
+    marginTop: 12},
   // Multi-choice styles
   optionsGrid: {
     flexDirection: "row",
@@ -1397,8 +1287,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 6,
     paddingTop: 8,
-    paddingHorizontal: 4,
-  },
+    paddingHorizontal: 4},
   optionChip: {
     flexDirection: "row",
     alignItems: "center",
@@ -1414,24 +1303,19 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 4,
     marginHorizontal: 2,
-    marginVertical: 2,
-  },
+    marginVertical: 2},
   selectedChip: {
     backgroundColor: "rgba(45, 27, 105, 0.1)",
-    borderColor: "#2D1B69",
-  },
+    borderColor: "#2D1B69"},
   chipText: {
     fontSize: 14,
     fontWeight: "500",
-    color: "#666",
-  },
+    color: "#666"},
   selectedChipText: {
     color: "#2D1B69",
-    fontWeight: "600",
-  },
+    fontWeight: "600"},
   checkIcon: {
-    marginLeft: 4,
-  },
+    marginLeft: 4},
   badgeHint: {
     flexDirection: "row",
     alignItems: "center",
@@ -1439,19 +1323,16 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     marginTop: 16,
-    gap: 8,
-  },
+    gap: 8},
   badgeHintText: {
     fontSize: 13,
     color: "#FFB800",
     fontWeight: "500",
-    flex: 1,
-  },
+    flex: 1},
   // Single choice styles
   singleChoiceContainer: {
     gap: 12,
-    paddingTop: 8,
-  },
+    paddingTop: 8},
   singleOption: {
     backgroundColor: "#FFFFFF",
     borderRadius: 12,
@@ -1464,31 +1345,24 @@ const styles = StyleSheet.create({
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
-    shadowRadius: 4,
-  },
+    shadowRadius: 4},
   selectedSingleOption: {
     backgroundColor: "rgba(45, 27, 105, 0.1)",
-    borderColor: "#2D1B69",
-  },
+    borderColor: "#2D1B69"},
   optionContent: {
-    flex: 1,
-  },
+    flex: 1},
   optionLabel: {
     fontSize: 16,
     fontWeight: "600",
     color: "#2D1B69",
-    marginBottom: 2,
-  },
+    marginBottom: 2},
   selectedOptionLabel: {
-    color: "#2D1B69",
-  },
+    color: "#2D1B69"},
   optionSubtitle: {
     fontSize: 13,
-    color: "#8E8E93",
-  },
+    color: "#8E8E93"},
   selectedOptionSubtitle: {
-    color: "#2D1B69",
-  },
+    color: "#2D1B69"},
   radioCircle: {
     width: 20,
     height: 20,
@@ -1496,17 +1370,14 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: "#E0E0E0",
     justifyContent: "center",
-    alignItems: "center",
-  },
+    alignItems: "center"},
   selectedRadioCircle: {
-    borderColor: "#2D1B69",
-  },
+    borderColor: "#2D1B69"},
   radioInner: {
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: "#2D1B69",
-  },
+    backgroundColor: "#2D1B69"},
   // Navigation styles
   navigation: {
     flexDirection: "row",
@@ -1516,44 +1387,35 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderTopWidth: 1,
-    borderTopColor: "#E5E5E7",
-  },
+    borderTopColor: "#E5E5E7"},
   navButton: {
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 8,
-    gap: 4,
-  },
+    gap: 4},
   invisibleButton: {
-    opacity: 0,
-  },
+    opacity: 0},
   nextButton: {
-    backgroundColor: "#2D1B69",
-  },
+    backgroundColor: "#2D1B69"},
   disabledButton: {
-    backgroundColor: "#E0E0E0",
-  },
+    backgroundColor: "#E0E0E0"},
   navButtonText: {
     fontSize: 14,
     fontWeight: "500",
-    color: "#2D1B69",
-  },
+    color: "#2D1B69"},
   nextButtonText: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#F8F8FF",
-  },
+    color: "#F8F8FF"},
   skipButton: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
-  },
+    gap: 4},
   skipButtonText: {
     fontSize: 13,
-    color: "#8E8E93",
-  },
+    color: "#8E8E93"},
   // Reward animations
   xpReward: {
     position: "absolute",
@@ -1567,13 +1429,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    zIndex: 1000,
-  },
+    zIndex: 1000},
   xpRewardText: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#FFFFFF",
-  },
+    color: "#FFFFFF"},
   badgeUnlock: {
     position: "absolute",
     top: "60%",
@@ -1585,34 +1445,29 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     alignItems: "center",
     gap: 8,
-    zIndex: 1000,
-  },
+    zIndex: 1000},
   badgeUnlockText: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#FFFFFF",
-  },
+    color: "#FFFFFF"},
   servingIconContainer: {
     alignItems: "center",
     justifyContent: "center",
     marginBottom: verticalScale(8),
     height: moderateScale(40),
-    width: moderateScale(40),
-  },
+    width: moderateScale(40)},
   applianceIconContainer: {
     alignItems: "center",
     justifyContent: "center",
     marginBottom: verticalScale(8),
     height: moderateScale(48),
-    width: moderateScale(48),
-  },
+    width: moderateScale(48)},
   footer: {
     backgroundColor: "#FFFFFF",
     paddingHorizontal: responsive.spacing.m,
     paddingVertical: responsive.spacing.m,
     borderTopWidth: 1,
-    borderTopColor: "#E5E5E7",
-  },
+    borderTopColor: "#E5E5E7"},
   continueButton: {
     backgroundColor: "#2D1B69",
     borderRadius: responsive.borderRadius.medium,
@@ -1620,45 +1475,38 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    gap: scale(8),
-  },
+    gap: scale(8)},
   continueButtonText: {
     fontSize: responsive.fontSize.medium,
     fontWeight: "600",
-    color: "#FFFFFF",
-  },
+    color: "#FFFFFF"},
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.5)",
     justifyContent: "center",
-    alignItems: "center",
-  },
+    alignItems: "center"},
   modalContent: {
     backgroundColor: "#FFFFFF",
     borderRadius: responsive.borderRadius.large,
     padding: responsive.spacing.l,
     marginHorizontal: responsive.spacing.l,
     position: "relative",
-    minWidth: scale(280),
-  },
+    minWidth: scale(280)},
   modalClose: {
     position: "absolute",
     top: responsive.spacing.m,
-    right: responsive.spacing.m,
-  },
+    right: responsive.spacing.m},
   modalTitle: {
     fontSize: responsive.fontSize.large,
     fontWeight: "bold",
     color: "#2D1B69",
     textAlign: "center",
-    marginBottom: verticalScale(8),
-  },
+    marginBottom: verticalScale(8)},
   modalSubtitle: {
     fontSize: responsive.fontSize.regular,
     color: "#8E8E93",
     textAlign: "center",
-    marginBottom: responsive.spacing.m,
-  },
+    marginBottom: responsive.spacing.m},
   customInput: {
     borderWidth: 2,
     borderColor: "#E5E5E7",
@@ -1667,19 +1515,15 @@ const styles = StyleSheet.create({
     paddingVertical: responsive.spacing.s,
     fontSize: responsive.fontSize.medium,
     textAlign: "center",
-    marginBottom: responsive.spacing.m,
-  },
+    marginBottom: responsive.spacing.m},
   modalButton: {
     backgroundColor: "#2D1B69",
     borderRadius: responsive.borderRadius.medium,
     paddingVertical: responsive.spacing.m,
-    alignItems: "center",
-  },
+    alignItems: "center"},
   modalButtonText: {
     fontSize: responsive.fontSize.medium,
     fontWeight: "600",
-    color: "#FFFFFF",
-  },
-});
+    color: "#FFFFFF"}});
 
 export default EnhancedPreferencesScreen;

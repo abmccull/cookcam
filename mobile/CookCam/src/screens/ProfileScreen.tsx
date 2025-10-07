@@ -6,44 +6,28 @@ import {
   ScrollView,
   TouchableOpacity,
   Image,
-  Switch,
   Alert,
   Animated,
   Share,
   Modal,
   TextInput,
   ActivityIndicator,
-  SafeAreaView,
-  FlatList,
 } from "react-native";
 import {
-  User,
   Settings,
-  Award,
-  Star,
   ChevronRight,
   LogOut,
   Camera,
-  Bell,
   Shield,
   HelpCircle,
-  Heart,
   Zap,
   Trophy,
   Flame,
-  TrendingUp,
   BarChart3,
   Share2,
-  Target,
-  Medal,
   Trash2,
   AlertTriangle,
   X,
-  ChefHat,
-  Crown,
-  Calendar,
-  Gift,
-  ImageIcon,
   DollarSign,
 } from "lucide-react-native";
 import * as ImagePicker from "expo-image-picker";
@@ -60,7 +44,6 @@ import ChefBadge from "../components/ChefBadge";
 import * as Haptics from "expo-haptics";
 import StreakCalendar from "../components/StreakCalendar";
 import { cookCamApi } from "../services/cookCamApi";
-import * as SecureStore from "expo-secure-store";
 import logger from "../utils/logger";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../App";
@@ -72,15 +55,10 @@ interface ProfileScreenProps {
 const ProfileScreen = ({ navigation }: ProfileScreenProps) => {
   const { user, logout, updateUser } = useAuth();
   const { level, xp, streak, badges } = useGamification();
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [showAnalytics, setShowAnalytics] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deletePassword, setDeletePassword] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
-  const [showBadgeModal, setShowBadgeModal] = useState(false);
-  const [selectedBadge, setSelectedBadge] = useState<any | null>(null);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
 
   // Animation values
@@ -189,7 +167,7 @@ const ProfileScreen = ({ navigation }: ProfileScreenProps) => {
         uri: imageUri,
         type: "image/jpeg",
         name: "profile-photo.jpg",
-      } as any);
+      } as unknown);
 
       // Upload to backend
       const response = await cookCamApi.uploadProfilePhoto(formData);
@@ -272,7 +250,7 @@ const ProfileScreen = ({ navigation }: ProfileScreenProps) => {
     }
   };
 
-  const handleBadgePress = (badge: any) => {
+  const handleBadgePress = (badge: unknown) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
     const unlockedText = badge.unlockedAt
@@ -309,7 +287,7 @@ const ProfileScreen = ({ navigation }: ProfileScreenProps) => {
           },
         ],
       );
-    } catch (error) {
+    } catch (_error) {
       setIsDeleting(false);
       Alert.alert("Error", "Failed to delete account. Please try again.");
     }
@@ -514,7 +492,7 @@ const ProfileScreen = ({ navigation }: ProfileScreenProps) => {
             <Text style={styles.achievementCount}>{badges.length}/12</Text>
           </View>
           <View style={styles.badgesGrid}>
-            {badges.map((badge, index) => (
+            {badges.map((badge, _index) => (
               <Animated.View
                 key={badge.id}
                 style={[

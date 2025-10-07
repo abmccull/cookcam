@@ -5,11 +5,7 @@ import {
   Star,
   Eye,
   Heart,
-  ChefHat,
-  Users,
-  Award,
-  TrendingUp,
-} from "lucide-react-native";
+  ChefHat} from "lucide-react-native";
 import ChefBadge from "./ChefBadge";
 
 interface RecipeCreatorCardProps {
@@ -38,8 +34,7 @@ const RecipeCreatorCard: React.FC<RecipeCreatorCardProps> = ({
   onPress,
   onCreatorPress,
   onSavePress,
-  size = "medium",
-}) => {
+  size = "medium"}) => {
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
       case "Easy":
@@ -185,30 +180,25 @@ const styles = StyleSheet.create({
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
-      height: 2,
-    },
+      height: 2},
     shadowOpacity: 0.08,
     shadowRadius: 4,
     elevation: 3,
-    marginBottom: 16,
-  },
+    marginBottom: 16},
   imageContainer: {
     position: "relative",
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
-    overflow: "hidden",
-  },
+    overflow: "hidden"},
   image: {
     width: "100%",
-    height: "100%",
-  },
+    height: "100%"},
   imagePlaceholder: {
     width: "100%",
     height: "100%",
     backgroundColor: "#F5F5F5",
     justifyContent: "center",
-    alignItems: "center",
-  },
+    alignItems: "center"},
   saveButton: {
     position: "absolute",
     top: 12,
@@ -218,62 +208,51 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     backgroundColor: "rgba(0, 0, 0, 0.3)",
     justifyContent: "center",
-    alignItems: "center",
-  },
+    alignItems: "center"},
   difficultyBadge: {
     position: "absolute",
     bottom: 12,
     left: 12,
     paddingHorizontal: 12,
     paddingVertical: 4,
-    borderRadius: 12,
-  },
+    borderRadius: 12},
   difficultyText: {
     fontSize: 12,
-    fontWeight: "600",
-  },
+    fontWeight: "600"},
   infoContainer: {
-    padding: 16,
-  },
+    padding: 16},
   title: {
     fontSize: 18,
     fontWeight: "600",
     color: "#2D1B69",
-    marginBottom: 8,
-  },
+    marginBottom: 8},
   statsRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 12,
-  },
+    marginBottom: 12},
   stat: {
     flexDirection: "row",
     alignItems: "center",
-    marginRight: 16,
-  },
+    marginRight: 16},
   statText: {
     fontSize: 14,
     fontWeight: "500",
     color: "#2D1B69",
-    marginLeft: 4,
-  },
+    marginLeft: 4},
   statSubtext: {
     fontSize: 12,
     color: "#8E8E93",
-    marginLeft: 2,
-  },
+    marginLeft: 2},
   prepTime: {
     fontSize: 14,
     color: "#8E8E93",
-    marginLeft: "auto",
-  },
+    marginLeft: "auto"},
   creatorRow: {
     flexDirection: "row",
     alignItems: "center",
     borderTopWidth: 1,
     borderTopColor: "#E5E5E7",
-    paddingTop: 12,
-  },
+    paddingTop: 12},
   creatorAvatar: {
     width: 24,
     height: 24,
@@ -281,69 +260,49 @@ const styles = StyleSheet.create({
     backgroundColor: "#FF6B35",
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 8,
-  },
+    marginRight: 8},
   avatarImage: {
     width: 24,
     height: 24,
-    borderRadius: 12,
-  },
+    borderRadius: 12},
   avatarText: {
     fontSize: 12,
     fontWeight: "bold",
-    color: "#FFFFFF",
-  },
+    color: "#FFFFFF"},
   creatorName: {
     fontSize: 14,
     color: "#8E8E93",
-    marginRight: 8,
-  },
-});
+    marginRight: 8}});
 
 // Size variations
 const smallStyles = StyleSheet.create({
   container: {
-    width: 160,
-  },
+    width: 160},
   imageContainer: {
-    height: 120,
-  },
+    height: 120},
   infoContainer: {
-    padding: 12,
-  },
+    padding: 12},
   title: {
-    fontSize: 14,
-  },
-});
+    fontSize: 14}});
 
 const mediumStyles = StyleSheet.create({
   container: {
-    width: "100%",
-  },
+    width: "100%"},
   imageContainer: {
-    height: 180,
-  },
+    height: 180},
   infoContainer: {
-    padding: 16,
-  },
+    padding: 16},
   title: {
-    fontSize: 18,
-  },
-});
+    fontSize: 18}});
 
 const largeStyles = StyleSheet.create({
   container: {
-    width: "100%",
-  },
+    width: "100%"},
   imageContainer: {
-    height: 240,
-  },
+    height: 240},
   infoContainer: {
-    padding: 20,
-  },
+    padding: 20},
   title: {
-    fontSize: 20,
-  },
-});
+    fontSize: 20}});
 
 export default RecipeCreatorCard;

@@ -5,11 +5,10 @@ import {
   ScrollView,
   Alert,
   Animated,
-  StatusBar,
-} from "react-native";
+  StatusBar} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
-import { useGamification, XP_VALUES } from "../context/GamificationContext";
+import { useGamification} from "../context/GamificationContext";
 import { useAuth } from "../context/AuthContext";
 import { cookCamApi } from "../services/cookCamApi";
 import LoadingAnimation from "../components/LoadingAnimation";
@@ -18,8 +17,7 @@ import { useIngredientAnalysis } from "../hooks/useIngredientAnalysis";
 import {
   getEmojiForIngredient,
   getSmartIncrement,
-  getRandomReward,
-} from "../data/ingredientReviewData";
+  getRandomReward} from "../data/ingredientReviewData";
 import {
   ReviewHeader,
   StatsRow,
@@ -27,13 +25,11 @@ import {
   AddIngredientButton,
   AddIngredientModal,
   MysteryBoxModal,
-  ContinueButton,
-} from "../components/ingredientReview";
+  ContinueButton} from "../components/ingredientReview";
 import {
   IngredientReviewScreenProps,
   Ingredient,
-  MysteryReward,
-} from "../types/ingredientReview";
+  MysteryReward} from "../types/ingredientReview";
 import { tokens, mixins } from "../styles";
 
 const OptimizedIngredientReviewScreen: React.FC<IngredientReviewScreenProps> =
@@ -48,8 +44,7 @@ const OptimizedIngredientReviewScreen: React.FC<IngredientReviewScreenProps> =
       return Math.random() < 0.25;
     });
     const [mysteryReward, setMysteryReward] = useState<MysteryReward | null>(
-      null,
-    );
+      null);
     const [showRewardModal, setShowRewardModal] = useState(false);
     const [showConfetti, setShowConfetti] = useState(false);
 
@@ -65,8 +60,7 @@ const OptimizedIngredientReviewScreen: React.FC<IngredientReviewScreenProps> =
       loading,
       hasAnalyzedImage,
       setIngredients,
-      analyzeImageIngredients,
-    } = useIngredientAnalysis(imageUri, isSimulator, user);
+      analyzeImageIngredients} = useIngredientAnalysis(imageUri, isSimulator, user);
 
     // Load real ingredients from image analysis
     useEffect(() => {
@@ -114,29 +108,24 @@ const OptimizedIngredientReviewScreen: React.FC<IngredientReviewScreenProps> =
 
               return {
                 ...ing,
-                quantity: newQty.toString(),
-              };
+                quantity: newQty.toString()};
             }
             return ing;
-          }),
-        );
+          }));
 
         // Haptic feedback
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       },
-      [setIngredients],
-    );
+      [setIngredients]);
 
     const handleRemoveIngredient = useCallback(
       (id: string) => {
         // Haptic feedback
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         setIngredients((prevIngredients) =>
-          prevIngredients.filter((item) => item.id !== id),
-        );
+          prevIngredients.filter((item) => item.id !== id));
       },
-      [setIngredients],
-    );
+      [setIngredients]);
 
     const handleAddIngredient = useCallback(() => {
       setShowAddIngredientModal(true);
@@ -152,13 +141,11 @@ const OptimizedIngredientReviewScreen: React.FC<IngredientReviewScreenProps> =
             Animated.timing(addAnimScale, {
               toValue: 1.2,
               duration: 150,
-              useNativeDriver: true,
-            }),
+              useNativeDriver: true}),
             Animated.timing(addAnimScale, {
               toValue: 1,
               duration: 150,
-              useNativeDriver: true,
-            }),
+              useNativeDriver: true}),
           ]).start();
 
           // Haptic feedback
@@ -179,22 +166,19 @@ const OptimizedIngredientReviewScreen: React.FC<IngredientReviewScreenProps> =
               id: foundIngredient.id || Date.now().toString(),
               name: foundIngredient.name || text,
               confidence: 1.0, // User-added = 100% confidence
-              emoji: getEmojiForIngredient(foundIngredient.name || text),
-            };
+              emoji: getEmojiForIngredient(foundIngredient.name || text)};
 
             // Award XP for finding real ingredient
             await addXP(5, "ADD_REAL_INGREDIENT");
           } else {
             logger.debug(
-              "⚠️ Ingredient not found in database, adding as custom",
-            );
+              "⚠️ Ingredient not found in database, adding as custom");
 
             newIngredient = {
               id: Date.now().toString(),
               name: text,
               confidence: 1.0,
-              emoji: getEmojiForIngredient(text),
-            };
+              emoji: getEmojiForIngredient(text)};
           }
 
           setIngredients((prevIngredients) => [
@@ -215,23 +199,20 @@ const OptimizedIngredientReviewScreen: React.FC<IngredientReviewScreenProps> =
             id: Date.now().toString(),
             name: text,
             confidence: 1.0,
-            emoji: getEmojiForIngredient(text),
-          };
+            emoji: getEmojiForIngredient(text)};
           setIngredients((prevIngredients) => [
             ...prevIngredients,
             newIngredient,
           ]);
         }
       },
-      [addAnimScale, addXP, ingredients.length, setIngredients],
-    );
+      [addAnimScale, addXP, ingredients.length, setIngredients]);
 
     const handleContinue = useCallback(() => {
       if (ingredients.length === 0) {
         Alert.alert(
           "No Ingredients",
-          "Please add at least one ingredient to continue.",
-        );
+          "Please add at least one ingredient to continue.");
         return;
       }
 
@@ -239,8 +220,7 @@ const OptimizedIngredientReviewScreen: React.FC<IngredientReviewScreenProps> =
 
       navigation.navigate("EnhancedPreferences", {
         ingredients,
-        imageUri,
-      });
+        imageUri});
     }, [ingredients, imageUri, navigation]);
 
     const handleMysteryBoxOpen = useCallback(async () => {
@@ -303,8 +283,7 @@ const OptimizedIngredientReviewScreen: React.FC<IngredientReviewScreenProps> =
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{
               padding: tokens.spacing.md,
-              paddingBottom: 20,
-            }}
+              paddingBottom: 20}}
           >
             {ingredients.map((ingredient, index) => (
               <IngredientCard
@@ -332,8 +311,7 @@ const OptimizedIngredientReviewScreen: React.FC<IngredientReviewScreenProps> =
                   backgroundColor: "rgba(255, 107, 53, 0.1)",
                   padding: tokens.spacing.lg,
                   borderRadius: tokens.borderRadius.medium,
-                  alignItems: "center",
-                }}
+                  alignItems: "center"}}
               >
                 <Text
                   style={[
@@ -341,8 +319,7 @@ const OptimizedIngredientReviewScreen: React.FC<IngredientReviewScreenProps> =
                     {
                       color: tokens.colors.brand.primary,
                       marginBottom: tokens.spacing.xs,
-                      textAlign: "center",
-                    },
+                      textAlign: "center"},
                   ]}
                 >
                   Start Adding Ingredients! 🥗
@@ -352,8 +329,7 @@ const OptimizedIngredientReviewScreen: React.FC<IngredientReviewScreenProps> =
                     mixins.text.body,
                     {
                       color: tokens.colors.text.secondary,
-                      textAlign: "center",
-                    },
+                      textAlign: "center"},
                   ]}
                 >
                   Tap the button below to add your ingredients manually
@@ -372,16 +348,14 @@ const OptimizedIngredientReviewScreen: React.FC<IngredientReviewScreenProps> =
                   borderRadius: tokens.borderRadius.medium,
                   borderWidth: 1,
                   borderColor: "rgba(255, 184, 0, 0.3)",
-                  marginTop: tokens.spacing.md,
-                }}
+                  marginTop: tokens.spacing.md}}
               >
                 <Text
                   style={[
                     mixins.text.body,
                     {
-                      color: tokens.colors.interactive.leaderboard,
-                      textAlign: "center",
-                    },
+                      color: tokens.colors.leaderboard,
+                      textAlign: "center"},
                   ]}
                 >
                   💡 Add at least 3 ingredients for best results!
@@ -409,16 +383,14 @@ const OptimizedIngredientReviewScreen: React.FC<IngredientReviewScreenProps> =
               paddingHorizontal: 24,
               paddingVertical: 12,
               borderRadius: tokens.borderRadius.large,
-              zIndex: 999,
-            }}
+              zIndex: 999}}
           >
             <Text
               style={[
                 mixins.text.h4,
                 {
                   fontWeight: "bold",
-                  color: tokens.colors.text.inverse,
-                },
+                  color: tokens.colors.text.inverse},
               ]}
             >
               🎉 Great variety! 🎉

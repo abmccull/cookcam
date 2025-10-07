@@ -5,7 +5,7 @@ import { useGamification } from "../context/GamificationContext";
 interface XPProgressBarProps {
   showLabels?: boolean;
   height?: number;
-  style?: any;
+  style?: unknown;
 }
 
 const XPProgressBar: React.FC<XPProgressBarProps> = ({

@@ -7,8 +7,7 @@ import {
   Modal,
   Animated,
   Dimensions,
-  ActivityIndicator,
-} from "react-native";
+  ActivityIndicator} from "react-native";
 import { Fingerprint, Scan, Shield, CheckCircle, X } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
 import BiometricAuthService from "../services/biometricAuth";
@@ -26,14 +25,12 @@ const BiometricEnablementModal: React.FC<BiometricEnablementModalProps> = ({
   visible,
   onClose,
   onEnable,
-  onSuccess,
-}) => {
+  onSuccess}) => {
   const [isLoading, setIsLoading] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [biometricMethod, setBiometricMethod] = useState(
-    "Biometric Authentication",
-  );
-  const [biometricIcon, setBiometricIcon] = useState("🔐");
+    "Biometric Authentication");
+  const [_biometricIcon, setBiometricIcon] = useState("🔐");
 
   const slideAnim = new Animated.Value(0);
   const fadeAnim = new Animated.Value(0);
@@ -47,26 +44,22 @@ const BiometricEnablementModal: React.FC<BiometricEnablementModalProps> = ({
           toValue: 1,
           useNativeDriver: true,
           tension: 100,
-          friction: 8,
-        }),
+          friction: 8}),
         Animated.timing(fadeAnim, {
           toValue: 1,
           duration: 300,
-          useNativeDriver: true,
-        }),
+          useNativeDriver: true}),
       ]).start();
     } else {
       Animated.parallel([
         Animated.timing(slideAnim, {
           toValue: 0,
           duration: 250,
-          useNativeDriver: true,
-        }),
+          useNativeDriver: true}),
         Animated.timing(fadeAnim, {
           toValue: 0,
           duration: 250,
-          useNativeDriver: true,
-        }),
+          useNativeDriver: true}),
       ]).start();
 
       // Reset states when modal closes
@@ -84,8 +77,7 @@ const BiometricEnablementModal: React.FC<BiometricEnablementModalProps> = ({
         toValue: 1,
         useNativeDriver: true,
         tension: 100,
-        friction: 6,
-      }).start();
+        friction: 6}).start();
     }
   }, [showSuccess]);
 
@@ -118,7 +110,7 @@ const BiometricEnablementModal: React.FC<BiometricEnablementModalProps> = ({
         onSuccess();
         onClose();
       }, 2000);
-    } catch (error) {
+    } catch (_error) {
       setIsLoading(false);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       // Error will be handled by parent component
@@ -145,8 +137,7 @@ const BiometricEnablementModal: React.FC<BiometricEnablementModalProps> = ({
 
   const slideTransform = slideAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [50, 0],
-  });
+    outputRange: [50, 0]});
 
   if (!visible) return null;
 
@@ -174,12 +165,9 @@ const BiometricEnablementModal: React.FC<BiometricEnablementModalProps> = ({
                   scale: successScale.interpolate({
                     inputRange: [0, 1],
                     outputRange: [1, 1.02],
-                    extrapolate: "clamp",
-                  }),
-                },
+                    extrapolate: "clamp"})},
               ],
-              opacity: fadeAnim,
-            },
+              opacity: fadeAnim},
           ]}
         >
           {/* Close Button */}
@@ -266,15 +254,13 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.5)",
     justifyContent: "center",
-    alignItems: "center",
-  },
+    alignItems: "center"},
   overlayTouch: {
     position: "absolute",
     top: 0,
     left: 0,
     right: 0,
-    bottom: 0,
-  },
+    bottom: 0},
   modal: {
     backgroundColor: "#FFFFFF",
     borderRadius: 20,
@@ -286,12 +272,10 @@ const styles = StyleSheet.create({
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
-      height: 10,
-    },
+      height: 10},
     shadowOpacity: 0.25,
     shadowRadius: 20,
-    elevation: 10,
-  },
+    elevation: 10},
   closeButton: {
     position: "absolute",
     top: 16,
@@ -302,11 +286,9 @@ const styles = StyleSheet.create({
     backgroundColor: "#F5F5F5",
     justifyContent: "center",
     alignItems: "center",
-    zIndex: 1,
-  },
+    zIndex: 1},
   content: {
-    alignItems: "center",
-  },
+    alignItems: "center"},
   iconContainer: {
     width: 80,
     height: 80,
@@ -314,8 +296,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255, 107, 53, 0.1)",
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 24,
-  },
+    marginBottom: 24},
   successIconContainer: {
     width: 80,
     height: 80,
@@ -323,58 +304,48 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(76, 175, 80, 0.1)",
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 24,
-  },
+    marginBottom: 24},
   title: {
     fontSize: 24,
     fontWeight: "bold",
     color: "#2D1B69",
     marginBottom: 12,
-    textAlign: "center",
-  },
+    textAlign: "center"},
   successTitle: {
     fontSize: 24,
     fontWeight: "bold",
     color: "#4CAF50",
     marginBottom: 12,
-    textAlign: "center",
-  },
+    textAlign: "center"},
   message: {
     fontSize: 16,
     color: "#8E8E93",
     textAlign: "center",
     lineHeight: 24,
-    marginBottom: 32,
-  },
+    marginBottom: 32},
   successMessage: {
     fontSize: 16,
     color: "#8E8E93",
     textAlign: "center",
-    lineHeight: 24,
-  },
+    lineHeight: 24},
   benefits: {
     width: "100%",
-    marginBottom: 32,
-  },
+    marginBottom: 32},
   benefit: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 12,
-  },
+    marginBottom: 12},
   benefitIcon: {
     fontSize: 16,
     marginRight: 12,
-    width: 20,
-  },
+    width: 20},
   benefitText: {
     flex: 1,
     fontSize: 16,
-    color: "#2D1B69",
-  },
+    color: "#2D1B69"},
   actions: {
     width: "100%",
-    gap: 12,
-  },
+    gap: 12},
   laterButton: {
     backgroundColor: "transparent",
     borderWidth: 1,
@@ -382,28 +353,22 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     height: 48,
     justifyContent: "center",
-    alignItems: "center",
-  },
+    alignItems: "center"},
   laterButtonText: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#8E8E93",
-  },
+    color: "#8E8E93"},
   enableButton: {
     backgroundColor: "#FF6B35",
     borderRadius: 14,
     height: 48,
     justifyContent: "center",
-    alignItems: "center",
-  },
+    alignItems: "center"},
   disabledButton: {
-    opacity: 0.7,
-  },
+    opacity: 0.7},
   enableButtonText: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#FFFFFF",
-  },
-});
+    color: "#FFFFFF"}});
 
 export default BiometricEnablementModal;

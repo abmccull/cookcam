@@ -91,11 +91,15 @@ const CreatorRecipesTab: React.FC<CreatorRecipesTabProps> = ({
   const onRefresh = async () => {
     setRefreshing(true);
     // TODO: Fetch updated recipes from API
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await new Promise<void>((resolve) => setTimeout(() => resolve(), 1000));
     setRefreshing(false);
   };
 
-  const filters = [
+  const filters: Array<{
+    key: "all" | "trending" | "popular";
+    label: string;
+    icon: React.ComponentType<{ size?: number; color?: string }>;
+  }> = [
     { key: "all", label: "All Recipes", icon: ChefHat },
     { key: "trending", label: "Trending", icon: TrendingUp },
     { key: "popular", label: "Most Popular", icon: Star },
@@ -175,7 +179,7 @@ const CreatorRecipesTab: React.FC<CreatorRecipesTabProps> = ({
               styles.filterButton,
               selectedFilter === filter.key && styles.filterButtonActive,
             ]}
-            onPress={() => setSelectedFilter(filter.key as any)}
+            onPress={() => setSelectedFilter(filter.key)}
           >
             <filter.icon
               size={16}

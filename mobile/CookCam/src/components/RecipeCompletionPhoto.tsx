@@ -10,8 +10,7 @@ import {
   Modal,
   Dimensions,
   Share,
-  Linking,
-} from "react-native";
+  Linking} from "react-native";
 import OptimizedImage from "./OptimizedImage";
 import {
   Camera as CameraIcon,
@@ -19,23 +18,21 @@ import {
   Star,
   Instagram,
   MessageCircle,
-  Trophy,
-} from "lucide-react-native";
+  Trophy} from "lucide-react-native";
 import { CameraView, Camera } from "expo-camera";
-import { cookCamApi } from "../services/cookCamApi";
-import { useGamification, XP_VALUES } from "../context/GamificationContext";
+
 import * as Haptics from "expo-haptics";
 import logger from "../utils/logger";
 
 interface RecipeCompletionPhotoProps {
   recipeId: string;
   recipeName: string;
-  onPhotoUploaded?: (photoUrl: string) => void;
+  onPhotoUploaded?: (_photoUrl: string) => void;
   onClose?: () => void;
   photoType?: "completion" | "process" | "ingredients"; // Different photo types
 }
 
-const { width: screenWidth } = Dimensions.get("window");
+const { width: _screenWidth } = Dimensions.get("window");
 
 // Social platforms configuration
 const SOCIAL_PLATFORMS = [
@@ -45,40 +42,35 @@ const SOCIAL_PLATFORMS = [
     icon: Instagram,
     color: "#E4405F",
     xp: XP_VALUES.SOCIAL_SHARE_INSTAGRAM,
-    action: "instagram-stories",
-  },
+    action: "instagram-stories"},
   {
     id: "facebook",
     name: "Facebook",
     icon: Instagram,
     color: "#1877F2",
     xp: XP_VALUES.SOCIAL_SHARE_FACEBOOK,
-    action: "facebook",
-  },
+    action: "facebook"},
   {
     id: "twitter",
     name: "Twitter",
     icon: Instagram,
     color: "#1DA1F2",
     xp: XP_VALUES.SOCIAL_SHARE_TWITTER,
-    action: "twitter",
-  },
+    action: "twitter"},
   {
     id: "whatsapp",
     name: "WhatsApp",
     icon: MessageCircle,
     color: "#25D366",
     xp: XP_VALUES.SOCIAL_SHARE_WHATSAPP,
-    action: "whatsapp",
-  },
+    action: "whatsapp"},
   {
     id: "copy",
     name: "Copy Link",
     icon: Instagram,
     color: "#666",
     xp: XP_VALUES.SOCIAL_SHARE_COPY_LINK,
-    action: "copy",
-  },
+    action: "copy"},
 ];
 
 const RecipeCompletionPhoto: React.FC<RecipeCompletionPhotoProps> = ({
@@ -86,8 +78,7 @@ const RecipeCompletionPhoto: React.FC<RecipeCompletionPhotoProps> = ({
   recipeName,
   onPhotoUploaded,
   onClose,
-  photoType = "completion",
-}) => {
+  photoType = "completion"}) => {
   const [hasPermission, setHasPermission] = useState(false);
   const camera = useRef<CameraView>(null);
   const { addXP } = useGamification();
@@ -107,23 +98,19 @@ const RecipeCompletionPhoto: React.FC<RecipeCompletionPhotoProps> = ({
       subtitle: "Show off your finished dish!",
       xp: XP_VALUES.RECIPE_COMPLETION_PHOTO,
       buttonText: "Complete & Share",
-      emoji: "🍽️",
-    },
+      emoji: "🍽️"},
     process: {
       title: "Cooking in Progress",
       subtitle: "Capture the cooking process!",
       xp: XP_VALUES.RECIPE_PROCESS_PHOTO,
       buttonText: "Share Progress",
-      emoji: "👨‍🍳",
-    },
+      emoji: "👨‍🍳"},
     ingredients: {
       title: "Ingredient Setup",
       subtitle: "Show your mise en place!",
       xp: XP_VALUES.RECIPE_INGREDIENT_PHOTO,
       buttonText: "Share Setup",
-      emoji: "🥕",
-    },
-  };
+      emoji: "🥕"}};
 
   const config = photoTypeConfig[photoType];
 
@@ -152,8 +139,7 @@ const RecipeCompletionPhoto: React.FC<RecipeCompletionPhotoProps> = ({
       if (!granted) {
         Alert.alert(
           "Camera Permission",
-          "Camera access is needed to take photos of your recipe!",
-        );
+          "Camera access is needed to take photos of your recipe!");
         return;
       }
     }
@@ -171,8 +157,7 @@ const RecipeCompletionPhoto: React.FC<RecipeCompletionPhotoProps> = ({
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
       const photo = await camera.current.takePictureAsync({
-        quality: 0.7,
-      });
+        quality: 0.7});
 
       const tempPhotoUri = photo.uri;
       setPhotoUri(tempPhotoUri);
@@ -204,13 +189,12 @@ const RecipeCompletionPhoto: React.FC<RecipeCompletionPhotoProps> = ({
 
     try {
       // Convert photo to base64 or use file URI for demo
-      const imageData = photoUri;
+      const _imageData = photoUri;
 
       // TODO: Implement photo upload in cookCamApi
       const response = {
         success: true,
-        data: { photoUrl: photoUri },
-      };
+        data: { photoUrl: photoUri }};
 
       if (response.success) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -233,18 +217,15 @@ const RecipeCompletionPhoto: React.FC<RecipeCompletionPhotoProps> = ({
             [
               {
                 text: "Share More!",
-                onPress: () => setShowSocialShare(true),
-              },
+                onPress: () => setShowSocialShare(true)},
               {
                 text: "Done",
                 onPress: () => {
                   if (!showSocialShare) {
                     handleClose();
                   }
-                },
-              },
-            ],
-          );
+                }},
+            ]);
         }
       } else {
         throw new Error("Upload failed");
@@ -264,8 +245,7 @@ const RecipeCompletionPhoto: React.FC<RecipeCompletionPhotoProps> = ({
         message: `Just made this amazing ${recipeName} using CookCam! ${
           description || "🍽️✨"
         }`,
-        url: uploadedPhotoUrl || `https://cookcam.app/recipe/${recipeId}`,
-      };
+        url: uploadedPhotoUrl || `https://cookcam.app/recipe/${recipeId}`};
 
       let success = false;
 
@@ -289,10 +269,9 @@ const RecipeCompletionPhoto: React.FC<RecipeCompletionPhotoProps> = ({
           success = true;
           break;
 
-        case "twitter":
+        case "twitter": {
           const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(
-            shareContent.message,
-          )}&url=${encodeURIComponent(shareContent.url)}`;
+            shareContent.message)}&url=${encodeURIComponent(shareContent.url)}`;
           const canOpenTwitter = await Linking.canOpenURL(twitterUrl);
           if (canOpenTwitter) {
             await Linking.openURL(twitterUrl);
@@ -302,11 +281,11 @@ const RecipeCompletionPhoto: React.FC<RecipeCompletionPhotoProps> = ({
             success = true;
           }
           break;
+        }
 
-        case "whatsapp":
+        case "whatsapp": {
           const whatsappUrl = `whatsapp://send?text=${encodeURIComponent(
-            shareContent.message,
-          )}`;
+            shareContent.message)}`;
           const canOpenWhatsApp = await Linking.canOpenURL(whatsappUrl);
           if (canOpenWhatsApp) {
             await Linking.openURL(whatsappUrl);
@@ -316,6 +295,7 @@ const RecipeCompletionPhoto: React.FC<RecipeCompletionPhotoProps> = ({
             success = true;
           }
           break;
+        }
 
         case "copy":
           // Copy link to clipboard (would need Clipboard API)
@@ -337,8 +317,7 @@ const RecipeCompletionPhoto: React.FC<RecipeCompletionPhotoProps> = ({
         Alert.alert(
           "🎉 Shared Successfully!",
           `Thanks for sharing! +${platform.xp} XP earned`,
-          [{ text: "Awesome!" }],
-        );
+          [{ text: "Awesome!" }]);
       }
     } catch (error) {
       logger.error("Share error:", error);
@@ -554,8 +533,7 @@ const RecipeCompletionPhoto: React.FC<RecipeCompletionPhotoProps> = ({
 
 const styles = StyleSheet.create({
   triggerContainer: {
-    marginVertical: 20,
-  },
+    marginVertical: 20},
   triggerButton: {
     flexDirection: "row",
     alignItems: "center",
@@ -564,29 +542,23 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 24,
     borderRadius: 12,
-    gap: 8,
-  },
+    gap: 8},
   triggerButtonText: {
     color: "#FFFFFF",
     fontSize: 16,
-    fontWeight: "600",
-  },
+    fontWeight: "600"},
   xpBadge: {
     color: "#FFB800",
     fontSize: 14,
     fontWeight: "bold",
-    marginLeft: 4,
-  },
+    marginLeft: 4},
   container: {
     flex: 1,
-    backgroundColor: "#000000",
-  },
+    backgroundColor: "#000000"},
   cameraContainer: {
-    flex: 1,
-  },
+    flex: 1},
   camera: {
-    flex: 1,
-  },
+    flex: 1},
   cameraControls: {
     position: "absolute",
     bottom: 40,
@@ -595,34 +567,29 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 40,
-  },
+    paddingHorizontal: 40},
   closeButton: {
     width: 50,
     height: 50,
     borderRadius: 25,
     backgroundColor: "rgba(0,0,0,0.5)",
     alignItems: "center",
-    justifyContent: "center",
-  },
+    justifyContent: "center"},
   captureButton: {
     width: 80,
     height: 80,
     borderRadius: 40,
     backgroundColor: "#FFFFFF",
     alignItems: "center",
-    justifyContent: "center",
-  },
+    justifyContent: "center"},
   captureButtonInner: {
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: "#FF6B35",
-  },
+    backgroundColor: "#FF6B35"},
   uploadContainer: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
-  },
+    backgroundColor: "#FFFFFF"},
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -631,25 +598,21 @@ const styles = StyleSheet.create({
     paddingTop: 60,
     paddingBottom: 20,
     borderBottomWidth: 1,
-    borderBottomColor: "#E5E5E7",
-  },
+    borderBottomColor: "#E5E5E7"},
   title: {
     fontSize: 18,
     fontWeight: "600",
-    color: "#333",
-  },
+    color: "#333"},
   photoSelectContainer: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 40,
-  },
+    paddingHorizontal: 40},
   subtitle: {
     fontSize: 16,
     color: "#666",
     textAlign: "center",
-    marginBottom: 40,
-  },
+    marginBottom: 40},
   cameraButton: {
     flexDirection: "row",
     alignItems: "center",
@@ -658,23 +621,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
     borderRadius: 12,
     marginBottom: 16,
-    gap: 12,
-  },
+    gap: 12},
   buttonText: {
     color: "#FFFFFF",
     fontSize: 16,
-    fontWeight: "600",
-  },
+    fontWeight: "600"},
   photoPreviewContainer: {
     flex: 1,
-    padding: 20,
-  },
+    padding: 20},
   photoPreview: {
     width: "100%",
     height: 300,
     borderRadius: 12,
-    marginBottom: 20,
-  },
+    marginBottom: 20},
   descriptionInput: {
     borderWidth: 1,
     borderColor: "#E5E5E7",
@@ -684,25 +643,21 @@ const styles = StyleSheet.create({
     color: "#333",
     height: 100,
     textAlignVertical: "top",
-    marginBottom: 20,
-  },
+    marginBottom: 20},
   uploadButtonContainer: {
     flexDirection: "row",
-    gap: 12,
-  },
+    gap: 12},
   retakeButton: {
     flex: 1,
     paddingVertical: 16,
     alignItems: "center",
     borderWidth: 1,
     borderColor: "#E5E5E7",
-    borderRadius: 12,
-  },
+    borderRadius: 12},
   retakeButtonText: {
     color: "#666",
     fontSize: 16,
-    fontWeight: "600",
-  },
+    fontWeight: "600"},
   uploadButton: {
     flex: 2,
     flexDirection: "row",
@@ -711,49 +666,39 @@ const styles = StyleSheet.create({
     backgroundColor: "#4CAF50",
     paddingVertical: 16,
     borderRadius: 12,
-    gap: 8,
-  },
+    gap: 8},
   uploadButtonDisabled: {
-    backgroundColor: "#CCC",
-  },
+    backgroundColor: "#CCC"},
   uploadButtonText: {
     color: "#FFFFFF",
     fontSize: 16,
-    fontWeight: "600",
-  },
+    fontWeight: "600"},
   placeholder: {
-    width: 50,
-  },
+    width: 50},
   socialShareContainer: {
     flex: 1,
-    backgroundColor: "#000000",
-  },
+    backgroundColor: "#000000"},
   socialShareContent: {
     flex: 1,
-    padding: 20,
-  },
+    padding: 20},
   photoPreviewSmall: {
     flex: 1,
     alignItems: "center",
-    justifyContent: "center",
-  },
+    justifyContent: "center"},
   socialPreviewImage: {
     width: "100%",
     height: 300,
     borderRadius: 12,
-    marginBottom: 20,
-  },
+    marginBottom: 20},
   socialShareTitle: {
     fontSize: 18,
     fontWeight: "600",
     color: "#FFFFFF",
     textAlign: "center",
-    marginBottom: 20,
-  },
+    marginBottom: 20},
   socialPlatforms: {
     gap: 12,
-    marginBottom: 30,
-  },
+    marginBottom: 30},
   socialPlatformButton: {
     padding: 16,
     borderWidth: 2,
@@ -761,32 +706,27 @@ const styles = StyleSheet.create({
     alignItems: "center",
     minHeight: 100,
     justifyContent: "center",
-    backgroundColor: "rgba(255, 255, 255, 0.05)",
-  },
+    backgroundColor: "rgba(255, 255, 255, 0.05)"},
   socialPlatformName: {
     color: "#FFFFFF",
     fontSize: 16,
     fontWeight: "600",
-    marginTop: 8,
-  },
+    marginTop: 8},
   socialPlatformXP: {
     color: "#FFFFFF",
     fontSize: 14,
-    fontWeight: "600",
-  },
+    fontWeight: "600"},
   skipSocialButton: {
     flex: 1,
     padding: 16,
     alignItems: "center",
     borderWidth: 1,
     borderColor: "#FFFFFF",
-    borderRadius: 12,
-  },
+    borderRadius: 12},
   skipSocialText: {
     color: "#FFFFFF",
     fontSize: 16,
-    fontWeight: "600",
-  },
+    fontWeight: "600"},
   xpRewardBanner: {
     flexDirection: "row",
     alignItems: "center",
@@ -794,23 +734,19 @@ const styles = StyleSheet.create({
     padding: 16,
     backgroundColor: "#FFB800",
     borderRadius: 12,
-    marginBottom: 20,
-  },
+    marginBottom: 20},
   xpRewardText: {
     color: "#FFFFFF",
     fontSize: 16,
-    fontWeight: "600",
-  },
+    fontWeight: "600"},
   doneText: {
     color: "#FFFFFF",
     fontSize: 16,
-    fontWeight: "600",
-  },
+    fontWeight: "600"},
   // Recipe claiming styles
   claimContainer: {
     marginVertical: 20,
-    paddingHorizontal: 20,
-  },
+    paddingHorizontal: 20},
   claimButton: {
     flexDirection: "row",
     alignItems: "center",
@@ -820,16 +756,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     borderRadius: 12,
     gap: 8,
-    marginBottom: 8,
-  },
+    marginBottom: 8},
   claimButtonDisabled: {
-    backgroundColor: "#CCC",
-  },
+    backgroundColor: "#CCC"},
   claimButtonText: {
     color: "#FFFFFF",
     fontSize: 18,
-    fontWeight: "bold",
-  },
+    fontWeight: "bold"},
   claimXpBadge: {
     color: "#FFB800",
     fontSize: 16,
@@ -837,15 +770,12 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255, 184, 0, 0.2)",
     paddingHorizontal: 8,
     paddingVertical: 2,
-    borderRadius: 8,
-  },
+    borderRadius: 8},
   claimDescription: {
     color: "#666",
     fontSize: 14,
     textAlign: "center",
-    lineHeight: 18,
-  },
-});
+    lineHeight: 18}});
 
 export default RecipeCompletionPhoto;
 
@@ -854,7 +784,7 @@ export const RecipeClaimButton: React.FC<{
   recipeId: string;
   recipeName: string;
   onRecipeClaimed?: () => void;
-}> = ({ recipeId, recipeName, onRecipeClaimed }) => {
+}> = ({ _recipeId, recipeName, onRecipeClaimed }) => {
   const { addXP } = useGamification();
   const [isClaiming, setIsClaiming] = useState(false);
 
@@ -875,10 +805,8 @@ export const RecipeClaimButton: React.FC<{
         [
           {
             text: "Awesome!",
-            onPress: () => onRecipeClaimed?.(),
-          },
-        ],
-      );
+            onPress: () => onRecipeClaimed?.()},
+        ]);
     } catch (error) {
       logger.error("Recipe claim error:", error);
       Alert.alert("Claim Error", "Failed to claim recipe. Please try again.");

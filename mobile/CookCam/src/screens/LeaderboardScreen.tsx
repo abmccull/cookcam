@@ -8,8 +8,7 @@ import {
   ScrollView,
   ActivityIndicator,
   Animated,
-  Alert,
-} from "react-native";
+  Alert} from "react-native";
 import OptimizedImage from "../components/OptimizedImage";
 import {
   Trophy,
@@ -19,10 +18,9 @@ import {
   TrendingUp,
   Clock,
   Users,
-  Target,
-  Info,
-  Zap,
-} from "lucide-react-native";
+  _Target,
+  _Info,
+  _Zap} from "lucide-react-native";
 import { useAuth } from "../context/AuthContext";
 import { useGamification } from "../context/GamificationContext";
 import { cookCamApi } from "../services/cookCamApi";
@@ -59,7 +57,7 @@ const LeaderboardScreen: React.FC = () => {
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
 
-  const timePeriods: { key: TimePeriod; label: string }[] = [
+  const _timePeriods: { key: TimePeriod; label: string }[] = [
     { key: "daily", label: "Today" },
     { key: "weekly", label: "Week" },
     { key: "allTime", label: "All Time" },
@@ -71,14 +69,12 @@ const LeaderboardScreen: React.FC = () => {
       Animated.timing(fadeAnim, {
         toValue: 1,
         duration: 800,
-        useNativeDriver: true,
-      }),
+        useNativeDriver: true}),
       Animated.spring(slideAnim, {
         toValue: 0,
         tension: 40,
         friction: 8,
-        useNativeDriver: true,
-      }),
+        useNativeDriver: true}),
     ]).start();
 
     // Pulse animation for challenges
@@ -87,23 +83,19 @@ const LeaderboardScreen: React.FC = () => {
         Animated.timing(pulseAnim, {
           toValue: 1.05,
           duration: 1500,
-          useNativeDriver: true,
-        }),
+          useNativeDriver: true}),
         Animated.timing(pulseAnim, {
           toValue: 1,
           duration: 1500,
-          useNativeDriver: true,
-        }),
-      ]),
-    ).start();
+          useNativeDriver: true}),
+      ])).start();
   }, []);
 
   useEffect(() => {
     loadLeaderboard().catch((error) => {
       logger.error(
         "❌ Unhandled promise rejection in loadLeaderboard:",
-        error?.message || String(error),
-      );
+        error?.message || String(error));
       setError("Failed to load leaderboard. Please try again.");
     });
   }, [selectedPeriod, leaderboardType]);
@@ -117,8 +109,7 @@ const LeaderboardScreen: React.FC = () => {
         "📊 Loading leaderboard:",
         String(leaderboardType),
         "-",
-        String(selectedPeriod),
-      );
+        String(selectedPeriod));
 
       // Refresh user stats to sync header XP with latest DB data
       await refreshUserStats();
@@ -127,23 +118,21 @@ const LeaderboardScreen: React.FC = () => {
       const response = await cookCamApi.getLeaderboard(
         50,
         selectedPeriod,
-        leaderboardType,
-      );
+        leaderboardType);
 
       if (response.success && response.data) {
         try {
           logger.debug(
             "✅ Leaderboard data received:",
-            JSON.stringify(response.data, null, 2),
-          );
-        } catch (logError) {
+            JSON.stringify(response.data, null, 2));
+        } catch (_logError) {
           logger.debug("✅ Leaderboard data received: [Object data]");
         }
 
         // Transform API response to our format
         const leaderboardData = Array.isArray(response.data)
           ? response.data
-          : (response.data as any)?.leaderboard || [];
+          : (response.data as unknown)?.leaderboard || [];
 
         if (leaderboardData.length === 0) {
           setError("No leaderboard data found. Be the first to start cooking!");
@@ -151,7 +140,7 @@ const LeaderboardScreen: React.FC = () => {
         }
 
         const transformedData: LeaderboardUser[] = leaderboardData.map(
-          (entry: any, index: number) => ({
+          (entry: unknown, index: number) => ({
             id: String(entry.users?.id || `user-${index}`),
             name: String(entry.users?.name || `User ${index + 1}`),
             avatarUrl: entry.users?.avatar_url || undefined,
@@ -159,22 +148,19 @@ const LeaderboardScreen: React.FC = () => {
             level: Number(entry.users?.level) || 1,
             rank: Number(entry.rank) || index + 1,
             xpGained: Number(entry.xp_gained) || 0,
-            recipesCooked: Number(entry.recipes_cooked) || 0,
-          }),
-        );
+            recipesCooked: Number(entry.recipes_cooked) || 0}));
 
         setLeaderboard(transformedData);
         // Check if current user is in the response
         if (user) {
           const userEntry = transformedData.find(
-            (entry) => entry.id === user.id,
-          );
+            (entry) => entry.id === user.id);
           if (userEntry) {
             setUserRank(userEntry.rank);
           } else {
             // User not in top results - get actual rank from API response
             const userRank = !Array.isArray(response.data)
-              ? (response.data as any)?.userRank
+              ? (response.data as unknown)?.userRank
               : null;
             setUserRank(userRank || null);
           }
@@ -190,8 +176,7 @@ const LeaderboardScreen: React.FC = () => {
     } catch (error: unknown) {
       logger.error(
         "❌ Error loading leaderboard:",
-        (error as any)?.message || String(error),
-      );
+        (error as unknown)?.message || String(error));
       const errorMessage =
         error instanceof Error
           ? error.message
@@ -202,7 +187,7 @@ const LeaderboardScreen: React.FC = () => {
     }
   };
 
-  const showErrorAlert = () => {
+  const _showErrorAlert = () => {
     const errorMessage =
       typeof error === "string" ? error : "Failed to load leaderboard";
     Alert.alert("Error", errorMessage, [
@@ -210,9 +195,7 @@ const LeaderboardScreen: React.FC = () => {
         text: "Try Again",
         onPress: () =>
           loadLeaderboard().catch((err) =>
-            logger.error("Retry failed:", err?.message || String(err)),
-          ),
-      },
+            logger.error("Retry failed:", err?.message || String(err)))},
       { text: "Cancel", style: "cancel" },
     ]);
   };
@@ -239,8 +222,7 @@ const LeaderboardScreen: React.FC = () => {
       xp: Number(leaderboardUser.xp) || 0,
       level: Number(leaderboardUser.level) || 1,
       rank: Number(leaderboardUser.rank) || 1,
-      xpGained: Number(leaderboardUser.xpGained) || 0,
-    };
+      xpGained: Number(leaderboardUser.xpGained) || 0};
 
     const isCurrentUser =
       safeUser.id === user?.id || safeUser.id === `current-user-${user?.id}`;
@@ -256,8 +238,7 @@ const LeaderboardScreen: React.FC = () => {
           index > 9 ? styles.separatedCard : null,
           {
             opacity: fadeAnim,
-            transform: [{ translateX: slideAnim }],
-          },
+            transform: [{ translateX: slideAnim }]},
         ]}
       >
         <View style={styles.rankContainer}>{getRankIcon(safeUser.rank)}</View>
@@ -364,8 +345,7 @@ const LeaderboardScreen: React.FC = () => {
                       ? "all time"
                       : selectedPeriod === "daily"
                         ? "today"
-                        : "this week",
-                  )}
+                        : "this week")}
                 </Text>
               </View>
             ) : null}
@@ -511,8 +491,7 @@ const LeaderboardScreen: React.FC = () => {
             style={styles.retryButton}
             onPress={() =>
               loadLeaderboard().catch((err) =>
-                logger.error("Retry failed:", err?.message || String(err)),
-              )
+                logger.error("Retry failed:", err?.message || String(err)))
             }
           >
             <Text style={styles.retryButtonText}>Retry</Text>
@@ -526,8 +505,7 @@ const LeaderboardScreen: React.FC = () => {
         >
           {Array.isArray(leaderboard) && leaderboard.length > 0 ? (
             leaderboard.map((leaderboardUser, index) =>
-              renderUserCard(leaderboardUser, index),
-            )
+              renderUserCard(leaderboardUser, index))
           ) : (
             <View style={styles.emptyContainer}>
               <Text style={styles.emptyText}>
@@ -544,39 +522,32 @@ const LeaderboardScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8F8FF",
-  },
+    backgroundColor: "#F8F8FF"},
   header: {
     paddingHorizontal: 20,
     paddingTop: 20,
     paddingBottom: 16,
     backgroundColor: "#F8F8FF",
     borderBottomWidth: 1,
-    borderBottomColor: "#E5E5E7",
-  },
+    borderBottomColor: "#E5E5E7"},
   headerTop: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    marginBottom: 12,
-  },
+    marginBottom: 12},
   headerLeft: {
-    flex: 1,
-  },
+    flex: 1},
   headerTitle: {
     fontSize: 28,
     fontWeight: "bold",
     color: "#2D1B69",
-    marginBottom: 4,
-  },
+    marginBottom: 4},
   headerSubtitle: {
     fontSize: 16,
-    color: "#8E8E93",
-  },
+    color: "#8E8E93"},
   typeSelector: {
     flexDirection: "row",
-    gap: 8,
-  },
+    gap: 8},
   typeButton: {
     flex: 1,
     flexDirection: "row",
@@ -587,27 +558,22 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     borderWidth: 1,
     borderColor: "#E5E5E7",
-    gap: 6,
-  },
+    gap: 6},
   typeButtonActive: {
     backgroundColor: "#2D1B69",
-    borderColor: "#2D1B69",
-  },
+    borderColor: "#2D1B69"},
   typeText: {
     fontSize: 14,
     color: "#8E8E93",
-    fontWeight: "600",
-  },
+    fontWeight: "600"},
   typeTextActive: {
-    color: "#F8F8FF",
-  },
+    color: "#F8F8FF"},
   periodSelector: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: 16,
-    gap: 8,
-  },
+    gap: 8},
   periodButton: {
     flexDirection: "row",
     alignItems: "center",
@@ -617,30 +583,24 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     borderWidth: 1,
     borderColor: "#E5E5E7",
-    gap: 6,
-  },
+    gap: 6},
   periodButtonActive: {
     backgroundColor: "#FF6B35",
-    borderColor: "#FF6B35",
-  },
+    borderColor: "#FF6B35"},
   periodText: {
     fontSize: 14,
     color: "#8E8E93",
-    fontWeight: "500",
-  },
+    fontWeight: "500"},
   periodTextActive: {
     color: "#F8F8FF",
-    fontWeight: "600",
-  },
+    fontWeight: "600"},
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
-    alignItems: "center",
-  },
+    alignItems: "center"},
   leaderboardList: {
     flex: 1,
-    paddingHorizontal: 20,
-  },
+    paddingHorizontal: 20},
   leaderboardContent: {
     paddingBottom: 180, // Increased padding to account for both tab bar and rank card
   },
@@ -652,106 +612,84 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: "#E5E5E7",
-  },
+    borderColor: "#E5E5E7"},
   currentUserCard: {
     borderColor: "#FF6B35",
     borderWidth: 2,
-    backgroundColor: "#FFF9F7",
-  },
+    backgroundColor: "#FFF9F7"},
   topThreeCard: {
-    backgroundColor: "#FFFEF5",
-  },
+    backgroundColor: "#FFFEF5"},
   separatedCard: {
-    marginTop: 20,
-  },
+    marginTop: 20},
   rankContainer: {
     width: 40,
-    alignItems: "center",
-  },
+    alignItems: "center"},
   rankText: {
     fontSize: 18,
     fontWeight: "bold",
-    color: "#8E8E93",
-  },
+    color: "#8E8E93"},
   userInfo: {
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
     marginLeft: 12,
-    marginRight: 12,
-  },
+    marginRight: 12},
   avatar: {
     width: 48,
     height: 48,
     borderRadius: 24,
     backgroundColor: "#FF6B35",
     alignItems: "center",
-    justifyContent: "center",
-  },
+    justifyContent: "center"},
   avatarImage: {
     width: 48,
     height: 48,
-    borderRadius: 24,
-  },
+    borderRadius: 24},
   avatarText: {
     fontSize: 20,
     fontWeight: "bold",
-    color: "#F8F8FF",
-  },
+    color: "#F8F8FF"},
   nameContainer: {
     marginLeft: 12,
-    flex: 1,
-  },
+    flex: 1},
   nameRow: {
     flexDirection: "row",
     alignItems: "center",
-    flexWrap: "wrap",
-  },
+    flexWrap: "wrap"},
   userName: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#2D1B69",
-  },
+    color: "#2D1B69"},
   currentUserName: {
-    color: "#FF6B35",
-  },
+    color: "#FF6B35"},
   youText: {
     fontSize: 14,
     color: "#FF6B35",
-    fontWeight: "500",
-  },
+    fontWeight: "500"},
   userLevel: {
     fontSize: 14,
     color: "#8E8E93",
-    marginTop: 2,
-  },
+    marginTop: 2},
   xpContainer: {
     alignItems: "flex-end",
-    minWidth: 70,
-  },
+    minWidth: 70},
   xpText: {
     fontSize: 18,
     fontWeight: "bold",
-    color: "#2D1B69",
-  },
+    color: "#2D1B69"},
   topThreeXP: {
-    color: "#FF6B35",
-  },
+    color: "#FF6B35"},
   xpLabel: {
     fontSize: 12,
-    color: "#8E8E93",
-  },
+    color: "#8E8E93"},
   xpGained: {
     fontSize: 11,
     color: "#4CAF50",
-    marginTop: 2,
-  },
+    marginTop: 2},
   totalXpSubtext: {
     fontSize: 11,
     color: "#8E8E93",
-    marginTop: 2,
-  },
+    marginTop: 2},
   compactRankBadge: {
     backgroundColor: "rgba(102, 187, 106, 0.1)",
     borderRadius: 12,
@@ -763,51 +701,41 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
     marginTop: 6,
     borderWidth: 1,
-    borderColor: "rgba(102, 187, 106, 0.2)",
-  },
+    borderColor: "rgba(102, 187, 106, 0.2)"},
   compactRankText: {
     fontSize: 12,
     fontWeight: "600",
-    color: "#66BB6A",
-  },
+    color: "#66BB6A"},
   errorContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    padding: 16,
-  },
+    padding: 16},
   errorText: {
     fontSize: 16,
     color: "#FF6B35",
     fontWeight: "600",
-    marginBottom: 12,
-  },
+    marginBottom: 12},
   retryButton: {
     padding: 12,
     borderRadius: 12,
-    backgroundColor: "#FF6B35",
-  },
+    backgroundColor: "#FF6B35"},
   retryButtonText: {
     fontSize: 16,
     color: "#FFFFFF",
-    fontWeight: "600",
-  },
+    fontWeight: "600"},
   loadingText: {
     fontSize: 16,
     color: "#8E8E93",
-    marginTop: 12,
-  },
+    marginTop: 12},
   emptyContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    padding: 32,
-  },
+    padding: 32},
   emptyText: {
     fontSize: 16,
     color: "#8E8E93",
-    textAlign: "center",
-  },
-});
+    textAlign: "center"}});
 
 export default LeaderboardScreen;

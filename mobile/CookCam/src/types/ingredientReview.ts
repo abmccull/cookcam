@@ -10,7 +10,7 @@ export interface Ingredient {
 }
 
 export interface IngredientReviewScreenProps {
-  navigation: any;
+  navigation: unknown;
   route: {
     params: {
       imageUri: string;
@@ -45,14 +45,14 @@ export interface StatsRowProps {
 export interface IngredientCardProps {
   ingredient: Ingredient;
   index: number;
-  addAnimScale: any;
-  onQuantityChange: (id: string, action: "increase" | "decrease") => void;
-  onRemove: (id: string) => void;
+  addAnimScale: unknown;
+  onQuantityChange: (_id: string, _action: "increase" | "decrease") => void;
+  onRemove: (_id: string) => void;
 }
 
 export interface QuantityControlsProps {
   ingredient: Ingredient;
-  onQuantityChange: (id: string, action: "increase" | "decrease") => void;
+  onQuantityChange: (_id: string, _action: "increase" | "decrease") => void;
 }
 
 export interface ConfidenceBarProps {
@@ -60,7 +60,7 @@ export interface ConfidenceBarProps {
 }
 
 export interface AddIngredientButtonProps {
-  addAnimScale: any;
+  addAnimScale: unknown;
   onAddIngredient: () => void;
 }
 
@@ -72,9 +72,9 @@ export interface MysteryBoxModalProps {
 
 export interface IngredientListProps {
   ingredients: Ingredient[];
-  addAnimScale: any;
-  onQuantityChange: (id: string, action: "increase" | "decrease") => void;
-  onRemoveIngredient: (id: string) => void;
+  addAnimScale: unknown;
+  onQuantityChange: (_id: string, _action: "increase" | "decrease") => void;
+  onRemoveIngredient: (_id: string) => void;
   onAddIngredient: () => void;
 }
 

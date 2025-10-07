@@ -13,7 +13,7 @@ jest.mock('react-native', () => {
 });
 
 // Mock context provider
-const MockGamificationProvider = ({ children, value }: any) => (
+const MockGamificationProvider = ({ children, value }: unknown) => (
   <GamificationContext.Provider value={value}>
     {children}
   </GamificationContext.Provider>

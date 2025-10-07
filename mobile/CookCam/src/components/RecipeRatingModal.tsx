@@ -10,17 +10,15 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
-  Image,
-} from "react-native";
+  Image} from "react-native";
 import { Star, X, Camera } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
-import * as ImagePicker from "expo-image-picker";
 import RecipeCompletionPhoto from "./RecipeCompletionPhoto";
 
 interface RecipeRatingModalProps {
   visible: boolean;
   onClose: () => void;
-  onSubmit: (rating: RatingData) => void;
+  onSubmit: (_rating: RatingData) => void;
   recipeName: string;
   recipeId: string;
 }
@@ -43,8 +41,7 @@ const RecipeRatingModal: React.FC<RecipeRatingModalProps> = ({
   onClose,
   onSubmit,
   recipeName,
-  recipeId, // eslint-disable-line @typescript-eslint/no-unused-vars
-}) => {
+  recipeId}) => {
   // Future: Use recipeId for analytics tracking
   const [overallRating, setOverallRating] = useState(0);
   const [subRatings, setSubRatings] = useState({
@@ -52,8 +49,7 @@ const RecipeRatingModal: React.FC<RecipeRatingModalProps> = ({
     ease: 0,
     presentation: 0,
     accuracy: 0,
-    value: 0,
-  });
+    value: 0});
   const [review, setReview] = useState("");
   const [showSubRatings, setShowSubRatings] = useState(false);
   const [showPhotoModal, setShowPhotoModal] = useState(false);
@@ -65,9 +61,8 @@ const RecipeRatingModal: React.FC<RecipeRatingModalProps> = ({
 
   const renderStars = (
     rating: number,
-    onPress: (value: number) => void,
-    size = 32,
-  ) => {
+    onPress: (_value: number) => void,
+    size = 32) => {
     return (
       <View style={styles.starsContainer}>
         {[1, 2, 3, 4, 5].map((value) => (
@@ -100,8 +95,7 @@ const RecipeRatingModal: React.FC<RecipeRatingModalProps> = ({
       overallRating,
       subRatings: showSubRatings ? subRatings : {},
       review: review.trim() || undefined,
-      images: uploadedPhotos.length > 0 ? uploadedPhotos : undefined,
-    };
+      images: uploadedPhotos.length > 0 ? uploadedPhotos : undefined};
 
     onSubmit(ratingData);
     resetForm();
@@ -114,8 +108,7 @@ const RecipeRatingModal: React.FC<RecipeRatingModalProps> = ({
       ease: 0,
       presentation: 0,
       accuracy: 0,
-      value: 0,
-    });
+      value: 0});
     setReview("");
     setShowSubRatings(false);
     setUploadedPhotos([]);
@@ -192,8 +185,7 @@ const RecipeRatingModal: React.FC<RecipeRatingModalProps> = ({
                       subRatings[category.key as keyof typeof subRatings],
                       (value) =>
                         setSubRatings({ ...subRatings, [category.key]: value }),
-                      24,
-                    )}
+                      24)}
                   </View>
                 ))}
               </View>
@@ -277,31 +269,26 @@ const styles = StyleSheet.create({
   modalContainer: {
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "flex-end",
-  },
+    justifyContent: "flex-end"},
   modalContent: {
     backgroundColor: "#FFFFFF",
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     maxHeight: "90%",
-    paddingBottom: 20,
-  },
+    paddingBottom: 20},
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: "#E5E5E7",
-  },
+    borderBottomColor: "#E5E5E7"},
   title: {
     fontSize: 20,
     fontWeight: "bold",
-    color: "#2D1B69",
-  },
+    color: "#2D1B69"},
   closeButton: {
-    padding: 4,
-  },
+    padding: 4},
   recipeName: {
     fontSize: 18,
     fontWeight: "600",
@@ -309,68 +296,54 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 16,
     marginBottom: 24,
-    paddingHorizontal: 20,
-  },
+    paddingHorizontal: 20},
   ratingSection: {
     alignItems: "center",
-    marginBottom: 24,
-  },
+    marginBottom: 24},
   sectionTitle: {
     fontSize: 16,
     fontWeight: "600",
     color: "#2D1B69",
-    marginBottom: 12,
-  },
+    marginBottom: 12},
   starsContainer: {
     flexDirection: "row",
-    gap: 8,
-  },
+    gap: 8},
   starButton: {
-    padding: 4,
-  },
+    padding: 4},
   ratingText: {
     fontSize: 14,
     color: "#8E8E93",
-    marginTop: 8,
-  },
+    marginTop: 8},
   toggleButton: {
     alignSelf: "center",
     paddingVertical: 8,
     paddingHorizontal: 16,
-    marginBottom: 16,
-  },
+    marginBottom: 16},
   toggleText: {
     fontSize: 14,
     color: "#FF6B35",
-    fontWeight: "500",
-  },
+    fontWeight: "500"},
   subRatingsSection: {
     paddingHorizontal: 20,
-    marginBottom: 24,
-  },
+    marginBottom: 24},
   subRatingItem: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 16,
-  },
+    marginBottom: 16},
   subRatingLabel: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    flex: 1,
-  },
+    flex: 1},
   subRatingEmoji: {
-    fontSize: 20,
-  },
+    fontSize: 20},
   subRatingText: {
     fontSize: 14,
-    color: "#2D1B69",
-  },
+    color: "#2D1B69"},
   reviewSection: {
     paddingHorizontal: 20,
-    marginBottom: 20,
-  },
+    marginBottom: 20},
   reviewInput: {
     borderWidth: 1,
     borderColor: "#E5E5E7",
@@ -379,14 +352,12 @@ const styles = StyleSheet.create({
     minHeight: 100,
     fontSize: 16,
     color: "#2D1B69",
-    textAlignVertical: "top",
-  },
+    textAlignVertical: "top"},
   characterCount: {
     fontSize: 12,
     color: "#8E8E93",
     textAlign: "right",
-    marginTop: 4,
-  },
+    marginTop: 4},
   addPhotoButton: {
     flexDirection: "row",
     alignItems: "center",
@@ -398,44 +369,35 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#FF6B35",
     borderRadius: 12,
-    borderStyle: "dashed",
-  },
+    borderStyle: "dashed"},
   addPhotoText: {
     fontSize: 14,
     color: "#FF6B35",
-    fontWeight: "500",
-  },
+    fontWeight: "500"},
   submitButton: {
     backgroundColor: "#FF6B35",
     marginHorizontal: 20,
     paddingVertical: 16,
     borderRadius: 12,
-    alignItems: "center",
-  },
+    alignItems: "center"},
   submitButtonDisabled: {
-    backgroundColor: "#E5E5E7",
-  },
+    backgroundColor: "#E5E5E7"},
   submitButtonText: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#FFFFFF",
-  },
+    color: "#FFFFFF"},
   photoCount: {
     fontSize: 14,
     color: "#FF6B35",
     fontWeight: "500",
-    marginLeft: 4,
-  },
+    marginLeft: 4},
   photosContainer: {
     marginHorizontal: 20,
-    marginBottom: 20,
-  },
+    marginBottom: 20},
   uploadedPhoto: {
     width: 80,
     height: 80,
     borderRadius: 8,
-    marginRight: 8,
-  },
-});
+    marginRight: 8}});
 
 export default RecipeRatingModal;

@@ -61,7 +61,7 @@ const StatsRow: React.FC<StatsRowProps> = React.memo(({
       />
 
       <View style={mixins.layout.centerContent}>
-        <Camera size={20} color={tokens.colors.interactive.leaderboard} />
+        <Camera size={20} color={tokens.colors.leaderboard} />
         <Text
           style={[
             mixins.text.h4,
@@ -108,7 +108,7 @@ const StatsRow: React.FC<StatsRowProps> = React.memo(({
                 {
                   fontSize: tokens.fontSize.xs,
                   fontWeight: "600",
-                  color: tokens.colors.interactive.leaderboard,
+                  color: tokens.colors.leaderboard,
                   marginTop: tokens.spacing.xs / 2,
                 },
               ]}

@@ -50,10 +50,10 @@ export interface PreferencesState {
 }
 
 export interface PreferencesScreenProps {
-  navigation: any;
+  navigation: unknown;
   route: {
     params: {
-      ingredients: any[];
+      ingredients: unknown[];
       imageUri?: string;
     };
   };
@@ -63,7 +63,7 @@ export interface PreferencesScreenProps {
 export interface QuizProgressProps {
   currentStep: number;
   totalSteps: number;
-  progressAnim: any;
+  progressAnim: unknown;
 }
 
 export interface QuizNavigationProps {
@@ -80,33 +80,33 @@ export interface ServingStepProps {
   selectedServing: ServingOption;
   mealPrepEnabled: boolean;
   mealPrepPortions: number;
-  onServingSelection: (option: ServingOption) => void;
+  onServingSelection: (_option: ServingOption) => void;
   onToggleMealPrep: () => void;
-  onMealPrepPortions: (portions: number) => void;
+  onMealPrepPortions: (_portions: number) => void;
 }
 
 export interface AppliancesStepProps {
   appliances: Appliance[];
-  onToggleAppliance: (applianceId: string) => void;
+  onToggleAppliance: (_applianceId: string) => void;
 }
 
 export interface MultiChoiceStepProps {
   options: string[];
   selectedOptions: string[];
-  onToggleOption: (option: string) => void;
+  onToggleOption: (_option: string) => void;
   showBadgeHint?: boolean;
 }
 
 export interface SingleChoiceStepProps {
   options: QuizOption[];
   selectedValue: string;
-  onSelectOption: (value: string) => void;
+  onSelectOption: (_value: string) => void;
 }
 
 export interface CustomServingModalProps {
   visible: boolean;
   customAmount: string;
-  onAmountChange: (amount: string) => void;
+  onAmountChange: (_amount: string) => void;
   onSubmit: () => void;
   onClose: () => void;
 }

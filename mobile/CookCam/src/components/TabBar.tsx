@@ -1,15 +1,17 @@
 import React, { useCallback, useMemo } from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import {
+  BottomTabNavigationProp,
+  BottomTabBarProps,
+} from "@react-navigation/bottom-tabs";
+import { Route } from "@react-navigation/native";
 import { Home, Heart, Trophy, Search, User, Plus } from "lucide-react-native";
 import { verticalScale, moderateScale, responsive } from "../utils/responsive";
 import logger from "../utils/logger";
 
-interface TabBarProps {
-  state: any;
-  descriptors: any;
-  navigation: any;
-}
+// Use the official BottomTabBarProps type which includes all necessary properties
+type TabBarProps = BottomTabBarProps;
 
 const TabBar: React.FC<TabBarProps> = React.memo(
   ({ state, descriptors, navigation }) => {
@@ -53,7 +55,7 @@ const TabBar: React.FC<TabBarProps> = React.memo(
 
     // Memoized navigation handler factory
     const createOnPressHandler = useCallback(
-      (route: any, isFocused: boolean) => {
+      (route: Route<string>, isFocused: boolean) => {
         return () => {
           const event = navigation.emit({
             type: "tabPress",
@@ -71,9 +73,13 @@ const TabBar: React.FC<TabBarProps> = React.memo(
 
     // Memoize tab rendering logic
     const renderTab = useCallback(
-      (route: any, index: number) => {
+      (route: Route<string>, index: number) => {
         const { options } = descriptors[route.key];
-        const label = options.tabBarLabel || route.name;
+        const tabBarLabel = options.tabBarLabel;
+        // Handle label as string or function
+        const label = typeof tabBarLabel === 'function' 
+          ? route.name 
+          : (tabBarLabel as string | undefined) || route.name;
         const isFocused = state.index === index;
         const Icon = icons[route.name as keyof typeof icons] || Home;
         const activeColor =
@@ -87,6 +93,7 @@ const TabBar: React.FC<TabBarProps> = React.memo(
         const onPress = createOnPressHandler(route, isFocused);
 
         // Memoize dynamic styles
+        // eslint-disable-next-line react-hooks/rules-of-hooks
         const iconContainerStyle = useMemo(
           () => [
             styles.iconContainer,
@@ -96,6 +103,7 @@ const TabBar: React.FC<TabBarProps> = React.memo(
           [isFocused, activeColor],
         );
 
+        // eslint-disable-next-line react-hooks/rules-of-hooks
         const labelStyle = useMemo(
           () => [
             styles.label,

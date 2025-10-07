@@ -1,12 +1,20 @@
-import React, { useRef, useEffect } from 'react';
-import { NavigationContainer } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { StatusBar } from 'expo-status-bar';
-import { View, ActivityIndicator } from 'react-native';
+import React, { useRef, useEffect, useState } from 'react';
+import { NavigationContainer, NavigationContainerRef, RouteProp } from '@react-navigation/native';
+import { createNativeStackNavigator, NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { createBottomTabNavigator, BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+
+import { View, ActivityIndicator, Text, Button } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Camera, Heart, Trophy, User, Home, DollarSign } from 'lucide-react-native';
+import { ErrorBoundary } from 'react-error-boundary';
+import * as Sentry from '@sentry/react-native';
+
+// Initialize Sentry (add your DSN from sentry.io)
+Sentry.init({
+  dsn: process.env.REACT_APP_SENTRY_DSN || '',
+  debug: __DEV__});
 
 // Context Providers
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -16,7 +24,7 @@ import { TempDataProvider } from './context/TempDataContext';
 
 // Screens
 import WelcomeScreen from './screens/WelcomeScreen';
-import OnboardingScreen from './screens/OnboardingScreen';
+// OnboardingScreen - REMOVED: Replaced by DemoOnboardingScreen in new flow
 import LoginScreen from './screens/LoginScreen';
 import SignupScreen from './screens/SignupScreen';
 import MainScreen from './screens/MainScreen';
@@ -45,14 +53,39 @@ import ColdOpenScreen from './screens/ColdOpenScreen';
 import DeepLinkService from './services/DeepLinkService';
 import AppShell from './components/AppShell';
 import XPNotificationProvider from './components/XPNotificationProvider';
+import logger from './utils/logger';
 
 // Navigation Types
 export type RootStackParamList = {
   // Auth Flow
   Welcome: undefined;
-  Onboarding: undefined;
+  // Onboarding: undefined; // REMOVED: Replaced by DemoOnboarding
+  DemoOnboarding: undefined; // Moved to auth flow
+  RecipeCarousel: {
+    recipes?: Array<{
+      id: string;
+      title: string;
+      image: string;
+      time: number;
+      difficulty: string;
+    }>;
+    initialIndex?: number;
+  };
   Login: undefined;
   Signup: undefined;
+  PlanSelection: { source?: string };
+  PlanPaywall: {
+    source?: string;
+    feature?: string;
+    selectedPlan?: string;
+    tempData?: unknown;
+  };
+  AccountGate: {
+    requiredFeature?: string;
+    onContinue?: () => void;
+    intendedPlan?: string;
+    tempData?: unknown;
+  };
   
   // Main App Tabs
   MainTabs: undefined;
@@ -60,7 +93,6 @@ export type RootStackParamList = {
   // Stack Screens
   Main: undefined;
   Camera: undefined;
-  DemoOnboarding: undefined;
   IngredientReview: {
     ingredients: Array<{
       id: string;
@@ -102,33 +134,14 @@ export type RootStackParamList = {
   CreatorOnboarding: undefined;
   CreatorKYC: undefined;
   Subscription: undefined;
-  PlanSelection: undefined;
-  PlanPaywall: {
-    source?: string;
-    feature?: string;
-    selectedPlan?: string;
-    tempData?: any;
-  };
+  // PlanSelection - Moved to auth flow (duplicates removed from here)
+  // PlanPaywall - Moved to auth flow (duplicates removed from here)
   Preferences: undefined;
   EnhancedPreferences: undefined;
   NotificationPreferences: undefined;
   Discover: undefined;
-  RecipeCarousel: {
-    recipes: Array<{
-      id: string;
-      title: string;
-      image: string;
-      time: number;
-      difficulty: string;
-    }>;
-    initialIndex?: number;
-  };
-  AccountGate: {
-    requiredFeature?: string;
-    onContinue?: () => void;
-    intendedPlan?: string;
-    tempData?: any;
-  };
+  // RecipeCarousel - Moved to auth flow (used during onboarding demo)
+  // AccountGate - Moved to auth flow (used during onboarding)
   ExampleFeatureGate: undefined;
   ColdOpen: undefined;
 };
@@ -164,18 +177,18 @@ function HomeStackNavigator() {
 
 // Type for bottom tab screen props
 type TabScreenProps = {
-  navigation: any;
-  route: any;
+  navigation: BottomTabNavigationProp<TabParamList>;
+  route: RouteProp<TabParamList>;
 };
 
 // Wrapped screen components that correctly pass navigation props
-const WrappedHomeStack = (props: TabScreenProps) => <AppShell><HomeStackNavigator /></AppShell>;
-const WrappedFavorites = (props: TabScreenProps) => <AppShell><FavoritesScreen navigation={props.navigation} /></AppShell>;
-const WrappedLeaderboard = (props: TabScreenProps) => <AppShell><LeaderboardScreen /></AppShell>;
-const WrappedProfile = (props: TabScreenProps) => <AppShell><ProfileScreen navigation={props.navigation} /></AppShell>;
+const WrappedHomeStack = (_props: TabScreenProps) => <AppShell><HomeStackNavigator /></AppShell>;
+const WrappedFavorites = (props: TabScreenProps) => <AppShell><FavoritesScreen navigation={props.navigation as unknown as NativeStackNavigationProp<RootStackParamList, "Favorites">} /></AppShell>;
+const WrappedLeaderboard = (_props: TabScreenProps) => <AppShell><LeaderboardScreen /></AppShell>;
+const WrappedProfile = (props: TabScreenProps) => <AppShell><ProfileScreen navigation={props.navigation as unknown as NativeStackNavigationProp<RootStackParamList, "Profile">} /></AppShell>;
 
 // Wrapped Creator screen
-const WrappedCreator = (props: TabScreenProps) => <AppShell><CreatorScreen navigation={props.navigation} /></AppShell>;
+const WrappedCreator = (props: TabScreenProps) => <AppShell><CreatorScreen navigation={props.navigation as unknown as NativeStackNavigationProp<RootStackParamList, "Creator">} /></AppShell>;
 
 // Main Tab Navigator
 function MainTabs() {
@@ -214,10 +227,8 @@ function MainTabs() {
         tabBarStyle: {
           backgroundColor: '#FFFFFF',
           borderTopWidth: 1,
-          borderTopColor: '#E0E0E0',
-        },
-        headerShown: false,
-      })}
+          borderTopColor: '#E0E0E0'},
+        headerShown: false})}
     >
       <Tab.Screen
         name="HomeStack"
@@ -239,50 +250,60 @@ function MainTabs() {
   );
 }
 
-// Auth Navigator
+// Auth Navigator - Handles onboarding and authentication flow
 function AuthNavigator() {
   return (
     <Stack.Navigator 
       initialRouteName="Welcome"
       screenOptions={{ headerShown: false }}
     >
+      {/* Welcome & Demo Flow */}
       <Stack.Screen name="Welcome" component={WelcomeScreen} />
-      <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+      <Stack.Screen name="DemoOnboarding" component={DemoOnboardingScreen} />
+      <Stack.Screen name="RecipeCarousel" component={RecipeCarouselScreen} />
+      
+      {/* Plan Selection & Paywall */}
+      <Stack.Screen name="PlanSelection" component={PlanSelectionSheet} />
+      <Stack.Screen name="PlanPaywall" component={PlanPaywallScreen} />
+      
+      {/* Authentication */}
       <Stack.Screen name="AccountGate" component={AccountGateScreen} />
       <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="Signup" component={SignupScreen} />
-      <Stack.Screen name="PlanSelection" component={PlanSelectionSheet} />
-      <Stack.Screen name="PlanPaywall" component={PlanPaywallScreen} />
       <Stack.Screen name="CreatorKYC" component={CreatorKYCScreen} />
     </Stack.Navigator>
   );
 }
 
-// Main App Navigator
+// Main App Navigator - Handles authenticated app screens
 function AppNavigator() {
   return (
     <Stack.Navigator 
       initialRouteName="MainTabs"
       screenOptions={{ headerShown: false }}
     >
+      {/* Main App */}
       <Stack.Screen name="MainTabs" component={MainTabs} />
-      <Stack.Screen name="DemoOnboarding" component={DemoOnboardingScreen} />
-      <Stack.Screen name="IngredientReview" component={IngredientReviewScreen as any} />
+      <Stack.Screen name="ColdOpen" component={ColdOpenScreen} />
+      
+      {/* Recipe Flow */}
+      <Stack.Screen name="IngredientReview" component={IngredientReviewScreen} />
       <Stack.Screen name="CookMode" component={CookModeScreen} />
+      <Stack.Screen name="Discover" component={DiscoverScreen} />
+      
+      {/* Creator */}
       <Stack.Screen name="Creator" component={CreatorScreen} />
       <Stack.Screen name="CreatorOnboarding" component={CreatorOnboardingScreen} />
       <Stack.Screen name="CreatorKYC" component={CreatorKYCScreen} />
-      <Stack.Screen name="Subscription" component={SubscriptionScreen} />
-      <Stack.Screen name="PlanSelection" component={PlanSelectionSheet} />
-      <Stack.Screen name="PlanPaywall" component={PlanPaywallScreen} />
+      
+      {/* Settings & Preferences */}
       <Stack.Screen name="Preferences" component={PreferencesScreen} />
-      <Stack.Screen name="EnhancedPreferences" component={EnhancedPreferencesScreen as any} />
+      <Stack.Screen name="EnhancedPreferences" component={EnhancedPreferencesScreen} />
       <Stack.Screen name="NotificationPreferences" component={NotificationPreferencesScreen} />
-      <Stack.Screen name="Discover" component={DiscoverScreen} />
-      <Stack.Screen name="RecipeCarousel" component={RecipeCarouselScreen} />
-      <Stack.Screen name="AccountGate" component={AccountGateScreen} />
+      <Stack.Screen name="Subscription" component={SubscriptionScreen} />
+      
+      {/* Feature Gates */}
       <Stack.Screen name="ExampleFeatureGate" component={ExampleFeatureGateScreen} />
-      <Stack.Screen name="ColdOpen" component={ColdOpenScreen} />
     </Stack.Navigator>
   );
 }
@@ -299,7 +320,24 @@ function LoadingScreen() {
 // Root Navigator Component
 function RootNavigator() {
   const { user, isLoading } = useAuth();
-  const navigationRef = useRef<any>(null);
+  const navigationRef = useRef<NavigationContainerRef<RootStackParamList>>(null);
+  const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
+  const [checkingOnboarding, setCheckingOnboarding] = useState(true);
+
+  // Check onboarding status
+  useEffect(() => {
+    const checkOnboarding = async () => {
+      try {
+        const done = await AsyncStorage.getItem('onboardingDone');
+        setHasCompletedOnboarding(done === 'true');
+      } catch (error) {
+        logger.error('Error checking onboarding status:', error);
+      } finally {
+        setCheckingOnboarding(false);
+      }
+    };
+    checkOnboarding();
+  }, []);
 
   useEffect(() => {
     const deepLinkService = DeepLinkService.getInstance();
@@ -321,7 +359,7 @@ function RootNavigator() {
     }
   }, [user]);
 
-  if (isLoading) {
+  if (isLoading || checkingOnboarding) {
     return <LoadingScreen />;
   }
 
@@ -333,36 +371,45 @@ function RootNavigator() {
         Login: 'login',
         Signup: 'signup',
         MainTabs: 'main',
-        CookMode: 'recipe/:recipeId',
-      },
-    },
-  };
+        CookMode: 'recipe/:recipeId'}}};
+
+  // Show onboarding if: not logged in AND onboarding not complete
+  const showOnboarding = !user && !hasCompletedOnboarding;
 
   return (
     <NavigationContainer ref={navigationRef} linking={linking}>
       <XPNotificationProvider>
-        {user ? <AppNavigator /> : <AuthNavigator />}
+        {showOnboarding ? <AuthNavigator /> : <AppNavigator />}
       </XPNotificationProvider>
     </NavigationContainer>
   );
 }
 
+const ErrorFallback = ({ error, resetErrorBoundary }: { error: Error; resetErrorBoundary: () => void }) => (
+  <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+    <Text>Something went wrong: {error.message}</Text>
+    <Button title="Try again" onPress={resetErrorBoundary} />
+  </View>
+);
+
 // Main App Component
 function App() {
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaProvider>
-        <AuthProvider>
-          <SubscriptionProvider>
-            <GamificationProvider>
-              <TempDataProvider>
-                <RootNavigator />
-              </TempDataProvider>
-            </GamificationProvider>
-          </SubscriptionProvider>
-        </AuthProvider>
-      </SafeAreaProvider>
-    </GestureHandlerRootView>
+    <ErrorBoundary FallbackComponent={ErrorFallback} onReset={() => { /* reset logic */ }}>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <SafeAreaProvider>
+          <AuthProvider>
+            <SubscriptionProvider>
+              <GamificationProvider>
+                <TempDataProvider>
+                  <RootNavigator />
+                </TempDataProvider>
+              </GamificationProvider>
+            </SubscriptionProvider>
+          </AuthProvider>
+        </SafeAreaProvider>
+      </GestureHandlerRootView>
+    </ErrorBoundary>
   );
 }
 

@@ -37,39 +37,35 @@ export interface TempDataState {
 
 interface TempDataContextType {
   tempData: TempDataState;
-  setTempScanData: (data: TempScanData) => void;
-  addTempRecipe: (recipe: TempRecipeData) => void;
-  setTempUserPreferences: (preferences: TempUserPreferences) => void;
-  setSelectedPlan: (plan: "consumer" | "creator") => void;
+  setTempScanData: (_data: TempScanData) => void;
+  addTempRecipe: (_recipe: TempRecipeData) => void;
+  setTempUserPreferences: (_preferences: TempUserPreferences) => void;
+  setSelectedPlan: (_plan: "consumer" | "creator") => void;
   clearTempData: () => void;
   exportTempData: () => TempDataState;
 }
 
 const TempDataContext = createContext<TempDataContextType | undefined>(
-  undefined,
-);
+  undefined);
 
 const initialState: TempDataState = {
   tempScanData: null,
   tempRecipeHistory: [],
   tempUserPreferences: null,
-  selectedPlan: null,
-};
+  selectedPlan: null};
 
 interface TempDataProviderProps {
   children: ReactNode;
 }
 
 export const TempDataProvider: React.FC<TempDataProviderProps> = ({
-  children,
-}) => {
+  children}) => {
   const [tempData, setTempData] = useState<TempDataState>(initialState);
 
   const setTempScanData = (data: TempScanData) => {
     setTempData((prev) => ({
       ...prev,
-      tempScanData: data,
-    }));
+      tempScanData: data}));
   };
 
   const addTempRecipe = (recipe: TempRecipeData) => {
@@ -82,15 +78,13 @@ export const TempDataProvider: React.FC<TempDataProviderProps> = ({
   const setTempUserPreferences = (preferences: TempUserPreferences) => {
     setTempData((prev) => ({
       ...prev,
-      tempUserPreferences: preferences,
-    }));
+      tempUserPreferences: preferences}));
   };
 
   const setSelectedPlan = (plan: "consumer" | "creator") => {
     setTempData((prev) => ({
       ...prev,
-      selectedPlan: plan,
-    }));
+      selectedPlan: plan}));
   };
 
   const clearTempData = () => {
@@ -108,8 +102,7 @@ export const TempDataProvider: React.FC<TempDataProviderProps> = ({
     setTempUserPreferences,
     setSelectedPlan,
     clearTempData,
-    exportTempData,
-  };
+    exportTempData};
 
   return (
     <TempDataContext.Provider value={value}>
@@ -118,6 +111,8 @@ export const TempDataProvider: React.FC<TempDataProviderProps> = ({
   );
 };
 
+// Exporting hook alongside provider is standard React Context pattern
+// eslint-disable-next-line react-refresh/only-export-components
 export const useTempData = (): TempDataContextType => {
   const context = useContext(TempDataContext);
   if (context === undefined) {

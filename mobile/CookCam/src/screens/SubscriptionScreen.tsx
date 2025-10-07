@@ -7,39 +7,34 @@ import {
   TouchableOpacity,
   SafeAreaView,
   Alert,
-  ActivityIndicator,
-} from "react-native";
+  ActivityIndicator} from "react-native";
 import {
   Crown,
   Star,
   TrendingUp,
   DollarSign,
   Shield,
-  Zap,
-} from "lucide-react-native";
+  Zap} from "lucide-react-native";
 import { useSubscription } from "../context/SubscriptionContext";
 import { useAuth } from "../context/AuthContext";
 import {
   SubscriptionProduct,
-  SubscriptionStatus,
-} from "../services/subscriptionService";
+  _SubscriptionStatus} from "../services/subscriptionService";
 import SubscriptionService from "../services/subscriptionService";
 import logger from "../utils/logger";
 
 interface SubscriptionScreenProps {
-  navigation: any;
+  navigation: unknown;
 }
 
 const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({
-  navigation,
-}) => {
+  navigation}) => {
   const {
     state,
     purchaseSubscription,
     autoSubscribeCreator,
     isCreator,
-    restorePurchases,
-  } = useSubscription();
+    restorePurchases} = useSubscription();
   const { user } = useAuth();
   const [products, setProducts] = useState<SubscriptionProduct[]>([]);
   const [loading, setLoading] = useState(false);
@@ -74,9 +69,8 @@ const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({
       Alert.alert(
         "Success!",
         "Your subscription has been activated. Welcome to CookCam Premium!",
-        [{ text: "OK", onPress: () => navigation.goBack() }],
-      );
-    } catch (error: any) {
+        [{ text: "OK", onPress: () => navigation.goBack() }]);
+    } catch (error: unknown) {
       logger.error("Purchase failed:", error);
 
       if (error.message?.includes("cancelled")) {
@@ -87,8 +81,7 @@ const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({
       Alert.alert(
         "Purchase Failed",
         "Unable to complete your purchase. Please try again.",
-        [{ text: "OK" }],
-      );
+        [{ text: "OK" }]);
     } finally {
       setLoading(false);
       setSelectedProduct(null);
@@ -112,16 +105,13 @@ const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({
           [
             {
               text: "Get Started",
-              onPress: () => navigation.navigate("Creator"),
-            },
-          ],
-        );
+              onPress: () => navigation.navigate("Creator")},
+          ]);
       } else {
         Alert.alert(
           "Auto-Subscribe Failed",
           "Unable to activate Creator subscription. Please try manually subscribing.",
-          [{ text: "OK" }],
-        );
+          [{ text: "OK" }]);
       }
     } catch (error) {
       logger.error("Auto-subscribe failed:", error);
@@ -141,21 +131,19 @@ const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({
     setLoading(true);
 
     try {
-      const restored = await restorePurchases();
+      const _restored = await restorePurchases();
 
       // restorePurchases returns void, so we'll just show success
       Alert.alert(
         "Restore Attempted",
         "Restore purchases has been initiated. Check your subscription status.",
-        [{ text: "OK" }],
-      );
+        [{ text: "OK" }]);
     } catch (error) {
       logger.error("Restore failed:", error);
       Alert.alert(
         "Restore Failed",
         "Unable to restore purchases. Please try again.",
-        [{ text: "OK" }],
-      );
+        [{ text: "OK" }]);
     } finally {
       setLoading(false);
     }
@@ -228,8 +216,7 @@ const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({
                 <Zap size={14} color="#4CAF50" />
                 <Text style={styles.featureText}>{feature}</Text>
               </View>
-            ),
-          )}
+            ))}
           {product.tier === "creator" && (
             <>
               <View style={styles.featureItem}>
@@ -318,29 +305,24 @@ const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f8f9fa",
-  },
+    backgroundColor: "#f8f9fa"},
   scrollView: {
-    flex: 1,
-  },
+    flex: 1},
   header: {
     alignItems: "center",
     paddingVertical: 32,
-    paddingHorizontal: 20,
-  },
+    paddingHorizontal: 20},
   title: {
     fontSize: 28,
     fontWeight: "bold",
     color: "#1a1a1a",
     textAlign: "center",
-    marginBottom: 8,
-  },
+    marginBottom: 8},
   subtitle: {
     fontSize: 16,
     color: "#6b7280",
     textAlign: "center",
-    lineHeight: 22,
-  },
+    lineHeight: 22},
   autoSubscribeButton: {
     flexDirection: "row",
     alignItems: "center",
@@ -350,17 +332,14 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     paddingVertical: 16,
     borderRadius: 12,
-    gap: 8,
-  },
+    gap: 8},
   autoSubscribeText: {
     color: "#FFD700",
     fontSize: 16,
-    fontWeight: "600",
-  },
+    fontWeight: "600"},
   productsContainer: {
     paddingHorizontal: 20,
-    gap: 16,
-  },
+    gap: 16},
   productCard: {
     backgroundColor: "white",
     borderRadius: 16,
@@ -370,122 +349,97 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
-    elevation: 4,
-  },
+    elevation: 4},
   currentTier: {
-    backgroundColor: "#f0fdf4",
-  },
+    backgroundColor: "#f0fdf4"},
   productHeader: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 12,
-  },
+    marginBottom: 12},
   productTitleContainer: {
     flex: 1,
-    marginLeft: 12,
-  },
+    marginLeft: 12},
   productTitle: {
     fontSize: 20,
-    fontWeight: "bold",
-  },
+    fontWeight: "bold"},
   productPrice: {
     fontSize: 14,
     color: "#6b7280",
-    marginTop: 2,
-  },
+    marginTop: 2},
   popularBadge: {
     backgroundColor: "#FFD700",
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 6,
-  },
+    borderRadius: 6},
   popularText: {
     fontSize: 12,
     fontWeight: "bold",
-    color: "#1a1a1a",
-  },
+    color: "#1a1a1a"},
   productDescription: {
     fontSize: 14,
     color: "#6b7280",
     lineHeight: 20,
-    marginBottom: 12,
-  },
+    marginBottom: 12},
   trialInfo: {
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 8,
-    gap: 6,
-  },
+    gap: 6},
   trialText: {
     fontSize: 14,
     color: "#4CAF50",
-    fontWeight: "500",
-  },
+    fontWeight: "500"},
   revenueShare: {
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 12,
-    gap: 6,
-  },
+    gap: 6},
   revenueText: {
     fontSize: 14,
     color: "#4CAF50",
-    fontWeight: "500",
-  },
+    fontWeight: "500"},
   productFeatures: {
-    marginBottom: 16,
-  },
+    marginBottom: 16},
   featureItem: {
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 6,
-    gap: 8,
-  },
+    gap: 8},
   featureText: {
     fontSize: 14,
-    color: "#374151",
-  },
+    color: "#374151"},
   subscribeButton: {
     paddingVertical: 14,
     borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 48,
-  },
+    minHeight: 48},
   subscribeButtonText: {
     color: "white",
     fontSize: 16,
-    fontWeight: "600",
-  },
+    fontWeight: "600"},
   currentButton: {
-    backgroundColor: "#e5e7eb",
-  },
+    backgroundColor: "#e5e7eb"},
   currentButtonText: {
     color: "#6b7280",
     fontSize: 16,
-    fontWeight: "600",
-  },
+    fontWeight: "600"},
   restoreButton: {
     alignItems: "center",
     paddingVertical: 16,
-    marginVertical: 20,
-  },
+    marginVertical: 20},
   restoreButtonText: {
     color: "#007AFF",
     fontSize: 16,
-    textDecorationLine: "underline",
-  },
+    textDecorationLine: "underline"},
   footer: {
     alignItems: "center",
     paddingVertical: 20,
-    paddingHorizontal: 40,
-  },
+    paddingHorizontal: 40},
   footerText: {
     fontSize: 14,
     color: "#6b7280",
     textAlign: "center",
-    lineHeight: 20,
-  },
-});
+    lineHeight: 20}});
 
 export default SubscriptionScreen;

@@ -36,6 +36,7 @@ export function OptimizedSubscriptionProvider({
 }
 
 // Combined hook that provides access to all subscription functionality
+// eslint-disable-next-line react-refresh/only-export-components
 export function useSubscription() {
   const subscriptionState = useSubscriptionState();
   const featureAccess = useFeatureAccess();
@@ -72,6 +73,7 @@ export function useSubscription() {
 }
 
 // Re-export optimized feature gate hook
+// eslint-disable-next-line react-refresh/only-export-components
 export { useFeatureGate };
 
 // Re-export types for convenience

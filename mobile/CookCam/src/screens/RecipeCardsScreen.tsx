@@ -6,20 +6,18 @@ import {
   StyleSheet,
   Dimensions,
   Alert,
-  Modal,
-  ScrollView,
-} from "react-native";
+  _Modal,
+  ScrollView} from "react-native";
 import {
-  Heart,
+  _Heart,
   X,
   RotateCcw,
   ChefHat,
-  Clock,
-  Users,
-  Plus,
-  ArrowRight,
-  Flame,
-} from "lucide-react-native";
+  _Clock,
+  _Users,
+  _Plus,
+  _ArrowRight,
+  _Flame} from "lucide-react-native";
 import * as Haptics from "expo-haptics";
 import { cookCamApi } from "../services/cookCamApi";
 import LoadingAnimation from "../components/LoadingAnimation";
@@ -28,28 +26,26 @@ import SafeScreen from "../components/SafeScreen";
 import { Recipe } from "../utils/recipeTypes";
 import logger from "../utils/logger";
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
+const { width: _SCREEN_WIDTH, height: _SCREEN_HEIGHT } = Dimensions.get("window");
 
 interface RecipeCardsScreenProps {
-  navigation: any;
-  route: any;
+  navigation: unknown;
+  route: unknown;
 }
 
 const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
   navigation,
-  route,
-}) => {
+  route}) => {
   const { ingredients = [], preferences = {} } = route.params || {};
 
   const [recipes, setRecipes] = useState<Recipe[]>([]);
-  const [rawPreviews, setRawPreviews] = useState<any[]>([]);
+  const [rawPreviews, setRawPreviews] = useState<unknown[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isGeneratingDetailed, setIsGeneratingDetailed] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [previousRecipeTitles, setPreviousRecipeTitles] = useState<string[]>(
-    [],
-  );
+    []);
   const [allDismissedTitles, setAllDismissedTitles] = useState<string[]>([]);
 
   const generateRecipes = useCallback(async () => {
@@ -65,9 +61,8 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
         cookingTime: preferences.cookingTime,
         difficulty: preferences.difficulty,
         dietary: preferences.dietary,
-        cuisine: preferences.cuisine,
-      });
-      const detectedIngredients = ingredients.map((ing: any) => ing.name);
+        cuisine: preferences.cuisine});
+      const detectedIngredients = ingredients.map((ing: unknown) => ing.name);
 
       // Map frontend preferences to the structure the backend API expects
       const apiPreferences = {
@@ -85,14 +80,12 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
         mealPrepPortions: preferences.mealPrepPortions || null,
         mealType: preferences.mealType || "dinner",
         // Add all previously dismissed recipe titles to avoid duplicates
-        excludeRecipes: allDismissedTitles,
-      };
+        excludeRecipes: allDismissedTitles};
 
       logger.debug("🚀 Sending to backend API:", {
         detectedIngredients,
         userPreferences: apiPreferences,
-        excludingRecipes: previousRecipeTitles,
-      });
+        excludingRecipes: previousRecipeTitles});
 
       const response = await cookCamApi.generatePreviews({
         detectedIngredients,
@@ -106,7 +99,7 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
         setRawPreviews(previews);
 
         const formattedRecipes: Recipe[] = previews.map(
-          (p: any, index: number) => ({
+          (p: unknown, index: number) => ({
             id: p.id || `preview-${sessionId}-${index}`, // Use sessionId for better tracking
             title: p.title,
             description: p.description,
@@ -119,8 +112,7 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
             previewData: p,
             isPreview: true, // Flag to indicate this is a preview, not a saved recipe
             // ... other fields from your Recipe type
-          }),
-        );
+          }));
 
         setRecipes(formattedRecipes);
         logger.info(`✅ Found ${formattedRecipes.length} recipes.`);
@@ -131,7 +123,7 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
       } else {
         throw new Error("No recipe previews were generated.");
       }
-    } catch (e: any) {
+    } catch (e: unknown) {
       logger.error("❌ Recipe generation failed", e);
       setError(e.message || "Could not fetch recipes.");
     } finally {
@@ -156,14 +148,12 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
 
     // Find the original preview data using the recipe's ID
     const recipePreviewData = rawPreviews.find(
-      (p) => (p.id || `preview-${p.title}`) === recipe.id,
-    );
+      (p) => (p.id || `preview-${p.title}`) === recipe.id);
 
     if (!recipePreviewData || !sessionId) {
       Alert.alert(
         "Error",
-        "Unable to generate detailed recipe. Session data is missing.",
-      );
+        "Unable to generate detailed recipe. Session data is missing.");
       return;
     }
 
@@ -176,8 +166,7 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
 
       const detailedResponse = await cookCamApi.generateDetailedRecipe({
         selectedPreview: recipePreviewData,
-        sessionId: sessionId,
-      });
+        sessionId: sessionId});
 
       logger.debug("📦 Raw detailed recipe response:", {
         success: detailedResponse.success,
@@ -185,8 +174,7 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
         dataKeys: detailedResponse.data
           ? Object.keys(detailedResponse.data)
           : [],
-        fullResponse: JSON.stringify(detailedResponse, null, 2),
-      });
+        fullResponse: JSON.stringify(detailedResponse, null, 2)});
 
       // Handle response validation with flexible structure
       const responseData = detailedResponse.data?.data || detailedResponse.data;
@@ -196,24 +184,20 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
         logger.debug("✅ Detailed recipe generated successfully", {
           hasIngredients: !!detailedRecipe.ingredients,
           hasInstructions: !!detailedRecipe.instructions,
-          instructionsCount: detailedRecipe.instructions?.length,
-        });
+          instructionsCount: detailedRecipe.instructions?.length});
 
         const cookModeRecipe: Recipe = {
           ...recipe,
           ingredients: detailedRecipe.ingredients || recipe.ingredients,
           instructions:
-            detailedRecipe.instructions?.map((inst: any) =>
-              typeof inst === "string" ? inst : inst.instruction,
-            ) || [],
-          tips: detailedRecipe.tips || [],
-        };
+            detailedRecipe.instructions?.map((inst: unknown) =>
+              typeof inst === "string" ? inst : inst.instruction) || [],
+          tips: detailedRecipe.tips || []};
 
         navigation.navigate("CookMode", {
           recipe: cookModeRecipe,
           sessionId: sessionId,
-          detailedRecipeId: responseData.stored_recipe?.id,
-        });
+          detailedRecipeId: responseData.stored_recipe?.id});
       } else {
         logger.error("❌ Invalid response structure:", {
           success: detailedResponse.success,
@@ -222,8 +206,7 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
           hasRecipe: !!(
             detailedResponse.data?.data?.recipe || detailedResponse.data?.recipe
           ),
-          fullResponse: detailedResponse,
-        });
+          fullResponse: detailedResponse});
         throw new Error("Invalid detailed recipe response format");
       }
     } catch (error) {
@@ -245,13 +228,12 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
       logger.debug("❤️ Toggling favorite for recipe:", recipe.title);
 
       // Check if this is a preview recipe (not yet saved)
-      if ((recipe as any).isPreview) {
+      if ((recipe as unknown).isPreview) {
         // First, we need to generate and save the detailed recipe
         const recipePreviewData = rawPreviews.find(
           (p) =>
             (p.id || `preview-${sessionId}-${rawPreviews.indexOf(p)}`) ===
-            recipe.id,
-        );
+            recipe.id);
 
         if (!recipePreviewData || !sessionId) {
           throw new Error("Unable to save recipe. Session data is missing.");
@@ -261,8 +243,7 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
 
         const detailedResponse = await cookCamApi.generateDetailedRecipe({
           selectedPreview: recipePreviewData,
-          sessionId: sessionId,
-        });
+          sessionId: sessionId});
 
         const favoriteResponseData =
           detailedResponse.data?.data || detailedResponse.data;
@@ -281,8 +262,7 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
             Alert.alert(
               "Added to Favorites! ❤️",
               `Recipe "${recipe.title}" has been saved and added to your favorites!`,
-              [{ text: "OK" }],
-            );
+              [{ text: "OK" }]);
           } else {
             throw new Error("Recipe was saved but failed to add to favorites");
           }
@@ -298,8 +278,7 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
           Alert.alert(
             "Success!",
             `Recipe "${recipe.title}" has been ${response.data?.favorited ? "added to" : "removed from"} your favorites!`,
-            [{ text: "OK" }],
-          );
+            [{ text: "OK" }]);
         } else {
           throw new Error(response.error || "Failed to update favorite status");
         }
@@ -321,7 +300,7 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
   };
 
   // Handle refreshing recipes
-  const handleRefreshRecipes = () => {
+  const _handleRefreshRecipes = () => {
     generateRecipes();
   };
 
@@ -330,8 +309,7 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
     isLoading,
     isGeneratingDetailed,
     error: !!error,
-    hasSessionId: !!sessionId,
-  });
+    hasSessionId: !!sessionId});
 
   return (
     <SafeScreen style={styles.container} includeBottom={false}>
@@ -389,8 +367,7 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
               isLoading={false}
               onAllCardsComplete={() => {
                 logger.info(
-                  "🔄 All recipes dismissed, auto-refreshing with exclusions",
-                );
+                  "🔄 All recipes dismissed, auto-refreshing with exclusions");
                 logger.debug("Previous recipe titles:", previousRecipeTitles);
                 generateRecipes();
               }}
@@ -426,32 +403,26 @@ const RecipeCardsScreen: React.FC<RecipeCardsScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8F9FA",
-  },
+    backgroundColor: "#F8F9FA"},
   header: {
     paddingHorizontal: 20,
     paddingTop: 5,
     paddingBottom: 5,
-    alignItems: "center",
-  },
+    alignItems: "center"},
   title: {
     fontSize: 26,
     fontWeight: "bold",
-    color: "#2D1B69",
-  },
+    color: "#2D1B69"},
   subtitle: {
     fontSize: 16,
     color: "#6c757d",
-    marginTop: 4,
-  },
+    marginTop: 4},
   contentContainer: {
     flex: 1,
-    justifyContent: "flex-start",
-  },
+    justifyContent: "flex-start"},
   cardStackContainer: {
     flex: 1,
-    marginBottom: 10,
-  },
+    marginBottom: 10},
   errorOverlay: {
     position: "absolute",
     top: 0,
@@ -461,28 +432,24 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0, 0, 0, 0.5)",
     justifyContent: "center",
     alignItems: "center",
-    zIndex: 1000,
-  },
+    zIndex: 1000},
   errorContainer: {
     backgroundColor: "#FFFFFF",
     padding: 20,
     margin: 20,
     borderRadius: 16,
-    alignItems: "center",
-  },
+    alignItems: "center"},
   errorTitle: {
     fontSize: 18,
     fontWeight: "bold",
     color: "#2D1B69",
     marginBottom: 8,
-    textAlign: "center",
-  },
+    textAlign: "center"},
   errorText: {
     fontSize: 14,
     color: "#666",
     textAlign: "center",
-    marginBottom: 16,
-  },
+    marginBottom: 16},
   retryButton: {
     backgroundColor: "#FF6B35",
     flexDirection: "row",
@@ -490,21 +457,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderRadius: 8,
-    gap: 8,
-  },
+    gap: 8},
   retryText: {
     color: "#FFFFFF",
     fontSize: 16,
-    fontWeight: "600",
-  },
+    fontWeight: "600"},
   swipeInstructionsContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
     marginHorizontal: 20,
     marginTop: "auto", // Push to bottom of the content container
     marginBottom: 20,
-    gap: 12,
-  },
+    gap: 12},
   swipeInstructionCard: {
     flex: 1,
     flexDirection: "row",
@@ -517,26 +481,21 @@ const styles = StyleSheet.create({
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
-      height: 3,
-    },
+      height: 3},
     shadowOpacity: 0.12,
     shadowRadius: 8,
     elevation: 6,
-    gap: 8,
-  },
+    gap: 8},
   swipeIconContainer: {
     width: 28,
     height: 28,
     borderRadius: 14,
     backgroundColor: "rgba(248, 249, 250, 0.9)",
     alignItems: "center",
-    justifyContent: "center",
-  },
+    justifyContent: "center"},
   swipeText: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#666",
-  },
-});
+    color: "#666"}});
 
 export default RecipeCardsScreen;

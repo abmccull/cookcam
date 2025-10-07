@@ -187,7 +187,7 @@ const RecipeCard: React.FC<RecipeCardProps> = React.memo(
             <TouchableOpacity style={styles.actionButton} onPress={handleLike}>
               <Heart
                 size={moderateScale(20)}
-                color={tokens.colors.interactive.favorite}
+                color={tokens.colors.favorite}
               />
               <Text style={styles.actionText}>{recipe.likes}</Text>
             </TouchableOpacity>
@@ -323,4 +323,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default RecipeCard;
+export default React.memo(RecipeCard);

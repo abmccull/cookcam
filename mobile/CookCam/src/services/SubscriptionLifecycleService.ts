@@ -42,8 +42,7 @@ class SubscriptionLifecycleService {
   private gracePeriodDays = 7; // 7 days grace period after cancellation
   private freeTierLimits = {
     scansPerDay: 3,
-    recipesPerDay: 2,
-  };
+    recipesPerDay: 2};
 
   private constructor() {}
 
@@ -58,13 +57,12 @@ class SubscriptionLifecycleService {
   /**
    * Get current subscription state for a user
    */
-  async getSubscriptionState(userId: string): Promise<SubscriptionState> {
+  async getSubscriptionState(_userId: string): Promise<SubscriptionState> {
     try {
       // For now, return free tier state until user is authenticated
       // The actual subscription check will happen after login
       logger.debug(
-        "Subscription state check - returning free tier for unauthenticated user",
-      );
+        "Subscription state check - returning free tier for unauthenticated user");
       return this.getFreeTierState();
     } catch (error) {
       logger.error("Error getting subscription state:", error);
@@ -103,20 +101,17 @@ class SubscriptionLifecycleService {
    */
   async handleSubscriptionCanceled(
     userId: string,
-    cancelReason?: string,
-  ): Promise<void> {
+    cancelReason?: string): Promise<void> {
     try {
       logger.debug(
         `🚫 Subscription canceled for user ${userId}. Reason: ${
           cancelReason || "Not specified"
-        }`,
-      );
+        }`);
 
       // Store cancellation info locally
       await AsyncStorage.setItem(
         "subscription_canceled_at",
-        new Date().toISOString(),
-      );
+        new Date().toISOString());
       await AsyncStorage.setItem("cancel_reason", cancelReason || "");
 
       // Update user state in backend
@@ -127,7 +122,7 @@ class SubscriptionLifecycleService {
           headers: {
             "Content-Type": "application/json",
             // TODO: Add proper authentication header
-            // 'Authorization': `Bearer ${userToken}`,
+            // 'Authorization': `Bearer ${userToken}`
           },
           body: JSON.stringify({
             userId,
@@ -156,8 +151,7 @@ class SubscriptionLifecycleService {
       // Store expiration info
       await AsyncStorage.setItem(
         "subscription_expired_at",
-        new Date().toISOString(),
-      );
+        new Date().toISOString());
 
       // Start grace period
       await this.startGracePeriod(userId);
@@ -174,14 +168,12 @@ class SubscriptionLifecycleService {
    */
   async handlePaymentFailed(
     userId: string,
-    failureReason?: string,
-  ): Promise<void> {
+    failureReason?: string): Promise<void> {
     try {
       logger.debug(
         `💳 Payment failed for user ${userId}. Reason: ${
           failureReason || "Not specified"
-        }`,
-      );
+        }`);
 
       // Store payment failure info
       await AsyncStorage.setItem("payment_failed_at", new Date().toISOString());
@@ -194,8 +186,7 @@ class SubscriptionLifecycleService {
         [
           { text: "Update Payment", onPress: () => this.openPaymentUpdate() },
           { text: "Later", style: "cancel" },
-        ],
-      );
+        ]);
 
       // Track payment failure
       this.trackPaymentFailure(userId, failureReason);
@@ -222,23 +213,20 @@ class SubscriptionLifecycleService {
         show: true,
         type: "payment_failed",
         message: "Payment failed. Update your payment method to continue.",
-        cta: "Update Payment",
-      };
+        cta: "Update Payment"};
     }
 
     // Grace period - gentle reminder
     if (isInGracePeriod && gracePeriodEnd) {
       const daysLeft = Math.ceil(
-        (gracePeriodEnd.getTime() - Date.now()) / (24 * 60 * 60 * 1000),
-      );
+        (gracePeriodEnd.getTime() - Date.now()) / (24 * 60 * 60 * 1000));
       return {
         show: true,
         type: "grace_period",
         message: `You have ${daysLeft} day${
           daysLeft !== 1 ? "s" : ""
         } left to reactivate your subscription.`,
-        cta: "Reactivate",
-      };
+        cta: "Reactivate"};
     }
 
     // Fully expired - win back
@@ -248,16 +236,14 @@ class SubscriptionLifecycleService {
         type: "win_back",
         message:
           "Miss unlimited recipes? Get back to cooking with a special offer!",
-        cta: "See Offers",
-      };
+        cta: "See Offers"};
     }
 
     return {
       show: false,
       type: null,
       message: "",
-      cta: "",
-    };
+      cta: ""};
   }
 
   /**
@@ -265,8 +251,7 @@ class SubscriptionLifecycleService {
    */
   async getWinBackOffer(
     userId: string,
-    subscriptionState: SubscriptionState,
-  ): Promise<{
+    subscriptionState: SubscriptionState): Promise<{
     hasOffer: boolean;
     discountPercent?: number;
     trialDays?: number;
@@ -274,15 +259,14 @@ class SubscriptionLifecycleService {
     expiresAt?: Date;
   }> {
     try {
-      const { tier, canceledAt } = subscriptionState;
+      const { _tier, canceledAt } = subscriptionState;
 
       if (!canceledAt) {
         return { hasOffer: false };
       }
 
       const daysSinceCancellation = Math.floor(
-        (Date.now() - canceledAt.getTime()) / (24 * 60 * 60 * 1000),
-      );
+        (Date.now() - canceledAt.getTime()) / (24 * 60 * 60 * 1000));
 
       // Different offers based on how long they've been gone
       if (daysSinceCancellation <= 7) {
@@ -331,14 +315,12 @@ class SubscriptionLifecycleService {
    */
   async reactivateSubscription(
     userId: string,
-    offerCode?: string,
-  ): Promise<{ success: boolean; message: string }> {
+    offerCode?: string): Promise<{ success: boolean; message: string }> {
     try {
       logger.debug(
         `🔄 Reactivating subscription for user ${userId} with offer: ${
           offerCode || "none"
-        }`,
-      );
+        }`);
 
       // Call backend API to reactivate subscription
       const response = await fetch(
@@ -348,7 +330,7 @@ class SubscriptionLifecycleService {
           headers: {
             "Content-Type": "application/json",
             // TODO: Add proper authentication header
-            // 'Authorization': `Bearer ${userToken}`,
+            // 'Authorization': `Bearer ${userToken}`
           },
           body: JSON.stringify({
             userId,
@@ -359,8 +341,7 @@ class SubscriptionLifecycleService {
 
       if (!response.ok) {
         throw new Error(
-          `Failed to reactivate subscription: ${response.status}`,
-        );
+          `Failed to reactivate subscription: ${response.status}`);
       }
 
       // Clear cancellation flags
@@ -373,14 +354,12 @@ class SubscriptionLifecycleService {
 
       return {
         success: true,
-        message: "Welcome back! Your subscription has been reactivated.",
-      };
+        message: "Welcome back! Your subscription has been reactivated."};
     } catch (error) {
       logger.error("Error reactivating subscription:", error);
       return {
         success: false,
-        message: "Failed to reactivate subscription. Please try again.",
-      };
+        message: "Failed to reactivate subscription. Please try again."};
     }
   }
 
@@ -406,22 +385,19 @@ class SubscriptionLifecycleService {
       canAccessCookMode: true,
       canFavoriteRecipes: true,
       canAccessLeaderboard: true,
-      hasAds: false,
-    };
+      hasAds: false};
 
     if (tier === "creator") {
       return {
         ...baseAccess,
         canCreateRecipes: true,
-        canEarnRevenue: true,
-      };
+        canEarnRevenue: true};
     }
 
     return {
       ...baseAccess,
       canCreateRecipes: false,
-      canEarnRevenue: false,
-    };
+      canEarnRevenue: false};
   }
 
   private getGracePeriodAccess(tier: UserTier): FeatureAccess {
@@ -451,8 +427,7 @@ class SubscriptionLifecycleService {
       canAccessLeaderboard: true,
       canCreateRecipes: false,
       canEarnRevenue: false,
-      hasAds: true,
-    };
+      hasAds: true};
   }
 
   private getFreeTierAccess(): FeatureAccess {
@@ -466,8 +441,7 @@ class SubscriptionLifecycleService {
       canAccessLeaderboard: true,
       canCreateRecipes: false,
       canEarnRevenue: false,
-      hasAds: true,
-    };
+      hasAds: true};
   }
 
   private getFreeTierState(): SubscriptionState {
@@ -479,8 +453,7 @@ class SubscriptionLifecycleService {
       gracePeriodEnd: null,
       isInGracePeriod: false,
       paymentFailed: false,
-      canReactivate: true,
-    };
+      canReactivate: true};
   }
 
   private async scheduleGracePeriodReminder(userId: string): Promise<void> {
@@ -490,15 +463,12 @@ class SubscriptionLifecycleService {
 
   private async startGracePeriod(userId: string): Promise<void> {
     const gracePeriodEnd = new Date(
-      Date.now() + this.gracePeriodDays * 24 * 60 * 60 * 1000,
-    );
+      Date.now() + this.gracePeriodDays * 24 * 60 * 60 * 1000);
     await AsyncStorage.setItem(
       "grace_period_end",
-      gracePeriodEnd.toISOString(),
-    );
+      gracePeriodEnd.toISOString());
     logger.debug(
-      `⏳ Started grace period for user ${userId} until ${gracePeriodEnd.toLocaleDateString()}`,
-    );
+      `⏳ Started grace period for user ${userId} until ${gracePeriodEnd.toLocaleDateString()}`);
   }
 
   private openPaymentUpdate(): void {
@@ -521,15 +491,13 @@ class SubscriptionLifecycleService {
 
   private trackReactivation(userId: string, offerCode?: string): void {
     logger.debug(
-      `📊 Tracked reactivation for user ${userId} with offer: ${offerCode}`,
-    );
+      `📊 Tracked reactivation for user ${userId} with offer: ${offerCode}`);
   }
 
   private async processUserDowngrade(
     _userId: string,
     _fromTier: string,
-    _toTier: string,
-  ) {
+    _toTier: string) {
     // Implementation of processUserDowngrade method
   }
 }

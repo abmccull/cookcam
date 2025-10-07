@@ -8,8 +8,7 @@ import {
   Alert,
   ActivityIndicator,
   Linking,
-  ScrollView,
-} from "react-native";
+  ScrollView} from "react-native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RouteProp } from "@react-navigation/native";
 import { RootStackParamList } from "../App";
@@ -19,11 +18,9 @@ import {
   Shield,
   Clock,
   ExternalLink,
-  CheckCircle,
-} from "lucide-react-native";
+  CheckCircle} from "lucide-react-native";
 import StripeConnectService, {
-  CreatorAccountStatus,
-} from "../services/StripeConnectService";
+  CreatorAccountStatus} from "../services/StripeConnectService";
 import * as SecureStore from "expo-secure-store";
 import { useAuth } from "../context/AuthContext";
 import logger from "../utils/logger";
@@ -35,8 +32,7 @@ interface CreatorKYCScreenProps {
 
 const CreatorKYCScreen: React.FC<CreatorKYCScreenProps> = ({
   navigation,
-  route,
-}) => {
+  _route}) => {
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [connectAccountId, setConnectAccountId] = useState<string | null>(null);
@@ -55,8 +51,7 @@ const CreatorKYCScreen: React.FC<CreatorKYCScreenProps> = ({
     try {
       // Check if user already has a Connect account
       const existingAccountId = await SecureStore.getItemAsync(
-        "stripe_connect_account_id",
-      );
+        "stripe_connect_account_id");
       if (existingAccountId) {
         setConnectAccountId(existingAccountId);
         await checkAccountStatus(existingAccountId);
@@ -66,7 +61,7 @@ const CreatorKYCScreen: React.FC<CreatorKYCScreenProps> = ({
     }
   };
 
-  const checkAccountStatus = async (accountId: string) => {
+  const checkAccountStatus = async (_accountId: string) => {
     try {
       setIsLoading(true);
 
@@ -99,15 +94,13 @@ const CreatorKYCScreen: React.FC<CreatorKYCScreenProps> = ({
         firstName: user?.name?.split(" ")[0] || "Creator",
         lastName: user?.name?.split(" ")[1] || "User",
         businessType: "individual",
-        country: "US",
-      });
+        country: "US"});
 
       if (result.success) {
         setConnectAccountId(result.accountId);
         await SecureStore.setItemAsync(
           "stripe_connect_account_id",
-          result.accountId,
-        );
+          result.accountId);
 
         // If onboarding URL is provided directly, use it
         if (result.onboardingUrl) {
@@ -118,8 +111,7 @@ const CreatorKYCScreen: React.FC<CreatorKYCScreenProps> = ({
           const accountLink = await stripeConnectService.createAccountLink(
             result.accountId,
             "cookcam://creator-kyc-complete",
-            "cookcam://creator-kyc-refresh",
-          );
+            "cookcam://creator-kyc-refresh");
 
           setKycStep("onboarding");
           await openStripeOnboarding(accountLink.url);
@@ -131,8 +123,7 @@ const CreatorKYCScreen: React.FC<CreatorKYCScreenProps> = ({
       Alert.alert(
         "Setup Failed",
         "We had trouble setting up your creator account. Please try again.",
-        [{ text: "Retry", onPress: () => setKycStep("intro") }],
-      );
+        [{ text: "Retry", onPress: () => setKycStep("intro") }]);
     } finally {
       setIsLoading(false);
     }
@@ -156,8 +147,7 @@ const CreatorKYCScreen: React.FC<CreatorKYCScreenProps> = ({
       Alert.alert(
         "Browser Error",
         "Unable to open the verification process. Please try again.",
-        [{ text: "OK" }],
-      );
+        [{ text: "OK" }]);
     }
   };
 
@@ -193,8 +183,7 @@ const CreatorKYCScreen: React.FC<CreatorKYCScreenProps> = ({
 
       navigation.reset({
         index: 0,
-        routes: [{ name: "Main" }],
-      });
+        routes: [{ name: "Main" }]});
     } catch (error) {
       logger.error("Error completing setup:", error);
       Alert.alert("Error", "Failed to complete setup. Please try again.");
@@ -410,26 +399,21 @@ const CreatorKYCScreen: React.FC<CreatorKYCScreenProps> = ({
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#F8F8FF",
-  },
+    backgroundColor: "#F8F8FF"},
   container: {
-    flex: 1,
-  },
+    flex: 1},
   content: {
     flex: 1,
     paddingHorizontal: 24,
-    paddingTop: 24,
-  },
+    paddingTop: 24},
   centerContent: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    paddingHorizontal: 24,
-  },
+    paddingHorizontal: 24},
   header: {
     alignItems: "center",
-    marginBottom: 32,
-  },
+    marginBottom: 32},
   iconContainer: {
     width: 80,
     height: 80,
@@ -437,83 +421,67 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFF3F0",
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 16,
-  },
+    marginBottom: 16},
   successIcon: {
-    backgroundColor: "#E8F5E8",
-  },
+    backgroundColor: "#E8F5E8"},
   title: {
     fontSize: 28,
     fontWeight: "bold",
     color: "#2D1B69",
     marginBottom: 8,
-    textAlign: "center",
-  },
+    textAlign: "center"},
   subtitle: {
     fontSize: 16,
     color: "#8E8E93",
     textAlign: "center",
-    lineHeight: 22,
-  },
+    lineHeight: 22},
   benefitsSection: {
-    marginBottom: 32,
-  },
+    marginBottom: 32},
   sectionTitle: {
     fontSize: 18,
     fontWeight: "600",
     color: "#2D1B69",
-    marginBottom: 16,
-  },
+    marginBottom: 16},
   benefitItem: {
     flexDirection: "row",
     alignItems: "flex-start",
-    marginBottom: 16,
-  },
+    marginBottom: 16},
   benefitContent: {
     flex: 1,
-    marginLeft: 12,
-  },
+    marginLeft: 12},
   benefitTitle: {
     fontSize: 16,
     fontWeight: "600",
     color: "#2D1B69",
-    marginBottom: 4,
-  },
+    marginBottom: 4},
   benefitText: {
     fontSize: 14,
     color: "#8E8E93",
-    lineHeight: 20,
-  },
+    lineHeight: 20},
   kycInfo: {
     backgroundColor: "#FFFFFF",
     padding: 20,
     borderRadius: 12,
-    marginBottom: 24,
-  },
+    marginBottom: 24},
   kycTitle: {
     fontSize: 16,
     fontWeight: "600",
     color: "#2D1B69",
-    marginBottom: 8,
-  },
+    marginBottom: 8},
   kycText: {
     fontSize: 14,
     color: "#8E8E93",
     lineHeight: 20,
-    marginBottom: 16,
-  },
+    marginBottom: 16},
   kycSteps: {
-    marginLeft: 8,
-  },
+    marginLeft: 8},
   kycStepText: {
     fontSize: 14,
     color: "#8E8E93",
-    marginBottom: 4,
-  },
+    marginBottom: 4},
   footer: {
     paddingHorizontal: 24,
-    paddingBottom: 24,
-  },
+    paddingBottom: 24},
   startButton: {
     backgroundColor: "#FF6B35",
     flexDirection: "row",
@@ -521,121 +489,101 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingVertical: 16,
     borderRadius: 12,
-    marginBottom: 12,
-  },
+    marginBottom: 12},
   startButtonText: {
     fontSize: 18,
     fontWeight: "600",
     color: "#FFFFFF",
-    marginRight: 8,
-  },
+    marginRight: 8},
   startButtonIcon: {
-    marginLeft: 4,
-  },
+    marginLeft: 4},
   footerNote: {
     fontSize: 12,
     color: "#8E8E93",
     textAlign: "center",
-    lineHeight: 16,
-  },
+    lineHeight: 16},
   loadingTitle: {
     fontSize: 20,
     fontWeight: "600",
     color: "#2D1B69",
     marginTop: 16,
     marginBottom: 8,
-    textAlign: "center",
-  },
+    textAlign: "center"},
   loadingText: {
     fontSize: 16,
     color: "#8E8E93",
     textAlign: "center",
-    lineHeight: 22,
-  },
+    lineHeight: 22},
   statusInfo: {
     backgroundColor: "#FFFFFF",
     padding: 20,
     borderRadius: 12,
     marginVertical: 24,
-    width: "100%",
-  },
+    width: "100%"},
   statusText: {
     fontSize: 16,
     color: "#2D1B69",
     textAlign: "center",
-    lineHeight: 24,
-  },
+    lineHeight: 24},
   checkStatusButton: {
     backgroundColor: "#FFFFFF",
     borderWidth: 2,
     borderColor: "#FF6B35",
     paddingVertical: 12,
     paddingHorizontal: 24,
-    borderRadius: 12,
-  },
+    borderRadius: 12},
   checkStatusText: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#FF6B35",
-  },
+    color: "#FF6B35"},
   accountInfo: {
     backgroundColor: "#E8F5E8",
     padding: 20,
     borderRadius: 12,
     marginVertical: 24,
-    width: "100%",
-  },
+    width: "100%"},
   accountInfoTitle: {
     fontSize: 16,
     fontWeight: "600",
     color: "#2D1B69",
     marginBottom: 8,
-    textAlign: "center",
-  },
+    textAlign: "center"},
   accountInfoText: {
     fontSize: 14,
     color: "#66BB6A",
     textAlign: "center",
-    lineHeight: 22,
-  },
+    lineHeight: 22},
   completeButton: {
     backgroundColor: "#66BB6A",
     paddingVertical: 16,
     paddingHorizontal: 32,
     borderRadius: 12,
     width: "100%",
-    alignItems: "center",
-  },
+    alignItems: "center"},
   completeButtonText: {
     fontSize: 18,
     fontWeight: "600",
-    color: "#FFFFFF",
-  },
+    color: "#FFFFFF"},
   errorTitle: {
     fontSize: 24,
     fontWeight: "bold",
     color: "#FF3B30",
     marginBottom: 16,
-    textAlign: "center",
-  },
+    textAlign: "center"},
   errorText: {
     fontSize: 16,
     color: "#8E8E93",
     textAlign: "center",
     lineHeight: 22,
-    marginBottom: 32,
-  },
+    marginBottom: 32},
   retryButton: {
     backgroundColor: "#FF6B35",
     paddingVertical: 16,
     paddingHorizontal: 32,
-    borderRadius: 12,
-  },
+    borderRadius: 12},
   retryButtonText: {
     fontSize: 18,
     fontWeight: "600",
-    color: "#FFFFFF",
-  },
-});
+    color: "#FFFFFF"}});
 
 export default CreatorKYCScreen;

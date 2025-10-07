@@ -1,12 +1,11 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { cookCamApi } from "./cookCamApi";
-import { apiService } from "./apiService";
-import { secureStorage, SECURE_KEYS } from "./secureStorage";
+
 
 // Event types
 interface AnalyticsEvent {
   eventName: string;
-  properties?: Record<string, any>;
+  properties?: Record<string, unknown>;
   timestamp: Date;
   sessionId: string;
   userId?: string | undefined;
@@ -63,8 +62,7 @@ class AnalyticsService {
 
           this.track("session_resumed", {
             previousDuration: timeSinceLastActivity,
-            totalEvents: session.events.length,
-          });
+            totalEvents: session.events.length});
 
           return;
         }
@@ -80,8 +78,7 @@ class AnalyticsService {
         sessionId,
         startTime: new Date(),
         lastActivity: new Date(),
-        events: [],
-      };
+        events: []};
 
       await this.saveSession();
 
@@ -96,8 +93,7 @@ class AnalyticsService {
         sessionId: `fallback_${Date.now()}`,
         startTime: new Date(),
         lastActivity: new Date(),
-        events: [],
-      };
+        events: []};
     }
   }
 
@@ -127,8 +123,7 @@ class AnalyticsService {
       try {
         await AsyncStorage.setItem(
           "analytics_session",
-          JSON.stringify(this.currentSession),
-        );
+          JSON.stringify(this.currentSession));
       } catch (error) {
         logger.error("Failed to save analytics session:", error);
       }
@@ -136,13 +131,12 @@ class AnalyticsService {
   }
 
   // Track an event
-  async track(eventName: string, properties?: Record<string, any>) {
+  async track(eventName: string, properties?: Record<string, unknown>) {
     try {
       // Limit memory usage - if queue is too large, skip tracking
       if (this.eventQueue.length > 100) {
         logger.warn(
-          "⚠️ Analytics queue too large, skipping event to prevent memory issues",
-        );
+          "⚠️ Analytics queue too large, skipping event to prevent memory issues");
         return;
       }
 
@@ -177,13 +171,11 @@ class AnalyticsService {
         userId = await Promise.race([
           this.getUserId(),
           new Promise<undefined>((resolve) =>
-            setTimeout(() => resolve(undefined), 1000),
-          ), // 1 second timeout
+            setTimeout(() => resolve(undefined), 1000)), // 1 second timeout
         ]);
-      } catch (error) {
+      } catch (_error) {
         logger.warn(
-          "⚠️ Failed to get user ID for analytics, continuing without it",
-        );
+          "⚠️ Failed to get user ID for analytics, continuing without it");
         userId = undefined;
       }
 
@@ -192,12 +184,10 @@ class AnalyticsService {
         properties: {
           ...properties,
           platform: "mobile",
-          timestamp: new Date().toISOString(),
-        },
+          timestamp: new Date().toISOString()},
         timestamp: new Date(),
         sessionId: this.currentSession?.sessionId || `emergency_${Date.now()}`,
-        userId: userId,
-      };
+        userId: userId};
 
       // Add to queue and session
       this.eventQueue.push(event);
@@ -223,7 +213,7 @@ class AnalyticsService {
   }
 
   // Alias for track method (for backward compatibility)
-  async trackEvent(eventName: string, properties?: Record<string, any>) {
+  async trackEvent(eventName: string, properties?: Record<string, unknown>) {
     return this.track(eventName, properties);
   }
 
@@ -296,21 +286,19 @@ class AnalyticsService {
   }
 
   // Track screen view
-  trackScreenView(screenName: string, properties?: Record<string, any>) {
+  trackScreenView(screenName: string, properties?: Record<string, unknown>) {
     this.track("screen_view", {
       screen_name: screenName,
-      ...properties,
-    }).catch((error) => {
+      ...properties}).catch((error) => {
       logger.error("Failed to track screen view:", error);
     });
   }
 
   // Track user actions
-  trackUserAction(action: string, properties?: Record<string, any>) {
+  trackUserAction(action: string, properties?: Record<string, unknown>) {
     this.track("user_action", {
       action,
-      ...properties,
-    }).catch((error) => {
+      ...properties}).catch((error) => {
       logger.error("Failed to track user action:", error);
     });
   }
@@ -337,8 +325,7 @@ class AnalyticsService {
       ingredient_count: result.ingredientCount,
       average_confidence: result.confidence,
       processing_time_ms: result.processingTime,
-      image_size_bytes: result.imageSize,
-    }).catch((error) => {
+      image_size_bytes: result.imageSize}).catch((error) => {
       logger.error("Failed to track ingredient scan:", error);
     });
   }
@@ -354,8 +341,7 @@ class AnalyticsService {
       ingredient_count: result.ingredientCount,
       recipe_complexity: result.recipeComplexity,
       generation_time_ms: result.generationTime,
-      success: result.success,
-    }).catch((error) => {
+      success: result.success}).catch((error) => {
       logger.error("Failed to track recipe generation:", error);
     });
   }
@@ -367,30 +353,26 @@ class AnalyticsService {
       | "upgrade_clicked"
       | "subscription_started"
       | "subscription_cancelled",
-    properties?: Record<string, any>,
-  ) {
+    properties?: Record<string, unknown>) {
     this.track("subscription_event", {
       subscription_event: event,
-      ...properties,
-    });
+      ...properties});
   }
 
   // Track feature usage
-  trackFeatureUsage(feature: string, properties?: Record<string, any>) {
+  trackFeatureUsage(feature: string, properties?: Record<string, unknown>) {
     this.track("feature_usage", {
       feature_name: feature,
-      ...properties,
-    });
+      ...properties});
   }
 
   // Track errors
-  trackError(error: Error, context?: Record<string, any>) {
+  trackError(error: Error, context?: Record<string, unknown>) {
     this.track("error", {
       error_message: error.message,
       error_stack: error.stack,
       error_name: error.name,
-      ...context,
-    });
+      ...context});
   }
 
   // Track performance metrics
@@ -398,19 +380,16 @@ class AnalyticsService {
     this.track("performance", {
       metric_name: metric,
       value,
-      unit,
-    });
+      unit});
   }
 
   // Track engagement
   trackEngagement(
     action: "recipe_saved" | "recipe_shared" | "tip_sent" | "review_left",
-    properties?: Record<string, any>,
-  ) {
+    properties?: Record<string, unknown>) {
     this.track("engagement", {
       engagement_action: action,
-      ...properties,
-    });
+      ...properties});
   }
 
   // Get session duration
@@ -435,8 +414,7 @@ class AnalyticsService {
 
       this.track("session_ended", {
         session_duration_ms: duration,
-        total_events: this.currentSession.events.length,
-      });
+        total_events: this.currentSession.events.length});
 
       // Flush remaining events
       await this.flush();
@@ -495,15 +473,13 @@ export function useAnalytics() {
       analyticsService.trackFeatureUsage.bind(analyticsService),
     trackError: analyticsService.trackError.bind(analyticsService),
     trackPerformance: analyticsService.trackPerformance.bind(analyticsService),
-    trackEngagement: analyticsService.trackEngagement.bind(analyticsService),
-  };
+    trackEngagement: analyticsService.trackEngagement.bind(analyticsService)};
 }
 
 // Screen tracking hook
 export function useScreenTracking(
   screenName: string,
-  properties?: Record<string, any>,
-) {
+  properties?: Record<string, unknown>) {
   useEffect(() => {
     analyticsService.trackScreenView(screenName, properties);
   }, [screenName]);

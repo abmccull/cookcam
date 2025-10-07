@@ -1,3 +1,5 @@
+import React from "react";
+
 export interface CreatorTier {
   id: number;
   title: string;
@@ -13,7 +15,7 @@ export interface CreatorTip {
   id: string;
   title: string;
   description: string;
-  icon: any;
+  icon: React.ComponentType<{ size?: number; color?: string }>;
   category: "content" | "growth" | "monetization";
 }
 
@@ -28,10 +30,10 @@ export interface CreatorAnalytics {
   referrals: {
     total: number;
     active: number;
-    data: any[];
+    data: unknown[];
   };
-  recipes: any[];
-  recentTips: any[];
+  recipes: unknown[];
+  recentTips: unknown[];
   stripeAccount?: {
     isConnected: boolean;
     canReceivePayouts: boolean;
@@ -48,7 +50,7 @@ export interface CreatorEarnings {
 }
 
 export interface CreatorScreenProps {
-  navigation: any;
+  navigation: unknown;
 }
 
 export interface CreatorTierCardProps {
@@ -56,8 +58,8 @@ export interface CreatorTierCardProps {
   nextTier: CreatorTier | undefined;
   analytics: CreatorAnalytics | null;
   progressToNext: number;
-  progressAnim: any;
-  fadeAnim: any;
+  progressAnim: unknown;
+  fadeAnim: unknown;
 }
 
 export interface CreatorLinkSectionProps {
@@ -87,16 +89,16 @@ export interface CreatorTipsSectionProps {
 }
 
 export interface SubscriptionGateProps {
-  navigation: any;
-  fadeAnim: any;
-  slideAnim: any;
+  navigation: unknown;
+  fadeAnim: unknown;
+  slideAnim: unknown;
 }
 
 export interface CreatorOnboardingProps {
-  navigation: any;
-  fadeAnim: any;
-  slideAnim: any;
-  pulseAnim: any;
+  navigation: unknown;
+  fadeAnim: unknown;
+  slideAnim: unknown;
+  pulseAnim: unknown;
   onBecomeCreator: () => void;
 }
 
@@ -105,5 +107,5 @@ export interface CreatorSuccessStory {
   quote: string;
   author: string;
   stats: string;
-  icon?: any;
+  icon?: unknown;
 }

@@ -9,11 +9,10 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
-  Alert,
-} from "react-native";
+  Alert} from "react-native";
 import { Mail, Lock, Eye, EyeOff, ChefHat } from "lucide-react-native";
 import { useAuth } from "../context/AuthContext";
-import { secureStorage } from "../services/secureStorage";
+
 import BiometricLogin from "../components/BiometricLogin";
 import BiometricEnablementModal from "../components/BiometricEnablementModal";
 import BiometricAuthService from "../services/biometricAuth";
@@ -27,7 +26,7 @@ import logger from "../utils/logger";
 // } from 'react-native-reanimated';
 
 interface LoginScreenProps {
-  navigation: any;
+  navigation: unknown;
 }
 
 const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
@@ -78,11 +77,10 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
       }, 1000);
 
       // Navigation will be handled by the auth state change in App.tsx
-    } catch (error) {
+    } catch (_error) {
       Alert.alert(
         "Error",
-        "Login failed. Please check your credentials and try again.",
-      );
+        "Login failed. Please check your credentials and try again.");
     } finally {
       setLoading(false);
     }
@@ -104,8 +102,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
         "Biometric Login Failed",
         error instanceof Error
           ? error.message
-          : "Please try logging in with your password.",
-      );
+          : "Please try logging in with your password.");
     } finally {
       setLoading(false);
       logger.debug("🔐 Biometric login loading state cleared");
@@ -136,8 +133,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
           : "Failed to enable biometric login";
       Alert.alert(
         "Error",
-        `${errorMessage}. You can enable it later in settings.`,
-      );
+        `${errorMessage}. You can enable it later in settings.`);
       throw error; // Re-throw so modal can handle it
     }
   };
@@ -165,13 +161,11 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
           hasHardware: capabilities.hasHardware,
           isEnrolled: capabilities.isEnrolled,
           fingerprintAvailable: capabilities.fingerprintAvailable,
-          faceIdAvailable: capabilities.faceIdAvailable,
-        },
+          faceIdAvailable: capabilities.faceIdAvailable},
         isEnabled,
         hasStoredCredentials: !!credentials,
         credentialsEmail: credentials?.email,
-        hasRefreshToken: !!credentials?.refreshToken,
-      });
+        hasRefreshToken: !!credentials?.refreshToken});
     } catch (error) {
       logger.error("❌ Debug biometric status error:", error);
     }
@@ -189,8 +183,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   const handleForgotPassword = () => {
     Alert.alert(
       "Forgot Password",
-      "Password reset functionality will be available soon. Please contact support if you need help accessing your account.",
-    );
+      "Password reset functionality will be available soon. Please contact support if you need help accessing your account.");
   };
 
   return (
@@ -315,32 +308,25 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8F8FF",
-  },
+    backgroundColor: "#F8F8FF"},
   keyboardView: {
-    flex: 1,
-  },
+    flex: 1},
   header: {
     alignItems: "center",
     paddingTop: 60,
-    paddingBottom: 40,
-  },
+    paddingBottom: 40},
   logoContainer: {
-    marginBottom: 20,
-  },
+    marginBottom: 20},
   title: {
     fontSize: 36,
     fontWeight: "bold",
     color: "#2D1B69",
-    marginBottom: 8,
-  },
+    marginBottom: 8},
   subtitle: {
     fontSize: 16,
-    color: "#8E8E93",
-  },
+    color: "#8E8E93"},
   form: {
-    paddingHorizontal: 24,
-  },
+    paddingHorizontal: 24},
   inputContainer: {
     flexDirection: "row",
     alignItems: "center",
@@ -350,72 +336,55 @@ const styles = StyleSheet.create({
     borderColor: "#E5E5E7",
     paddingHorizontal: 16,
     marginBottom: 16,
-    height: 56,
-  },
+    height: 56},
   inputIcon: {
-    marginRight: 12,
-  },
+    marginRight: 12},
   input: {
     flex: 1,
     fontSize: 16,
-    color: "#2D1B69",
-  },
+    color: "#2D1B69"},
   eyeIcon: {
-    padding: 4,
-  },
+    padding: 4},
   forgotPassword: {
     alignSelf: "flex-end",
-    marginBottom: 24,
-  },
+    marginBottom: 24},
   forgotPasswordText: {
     fontSize: 14,
-    color: "#FF6B35",
-  },
+    color: "#FF6B35"},
   loginButton: {
     backgroundColor: "#FF6B35",
     borderRadius: 28,
     height: 56,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 24,
-  },
+    marginBottom: 24},
   disabledButton: {
-    opacity: 0.7,
-  },
+    opacity: 0.7},
   loginButtonText: {
     fontSize: 18,
     fontWeight: "600",
-    color: "#F8F8FF",
-  },
+    color: "#F8F8FF"},
   divider: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 24,
-  },
+    marginBottom: 24},
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: "#E5E5E7",
-  },
+    backgroundColor: "#E5E5E7"},
   dividerText: {
     marginHorizontal: 16,
     fontSize: 14,
-    color: "#8E8E93",
-  },
+    color: "#8E8E93"},
   signupContainer: {
-    alignItems: "center",
-  },
+    alignItems: "center"},
   signupText: {
     fontSize: 16,
-    color: "#8E8E93",
-  },
+    color: "#8E8E93"},
   signupLink: {
     color: "#FF6B35",
-    fontWeight: "600",
-  },
+    fontWeight: "600"},
   biometricButton: {
-    marginBottom: 24,
-  },
-});
+    marginBottom: 24}});
 
 export default LoginScreen;

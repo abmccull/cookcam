@@ -7,18 +7,15 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Animated, Alert } from "react-native";
 import * as Haptics from "expo-haptics";
 import { useAuth } from "../context/AuthContext";
-import { useGamification, XP_VALUES } from "../context/GamificationContext";
 import {
   PreferencesState,
   ServingOption,
-  Appliance,
-} from "../types/preferences";
+  _Appliance} from "../types/preferences";
 import {
   SERVING_OPTIONS,
   DEFAULT_APPLIANCES,
   QUIZ_STEPS,
-  DEFAULT_PREFERENCES,
-} from "../data/preferencesData";
+  DEFAULT_PREFERENCES} from "../data/preferencesData";
 
 export function usePreferencesQuiz() {
   const { user } = useAuth();
@@ -44,8 +41,7 @@ export function usePreferencesQuiz() {
     difficulty: DEFAULT_PREFERENCES.difficulty,
     dietary: [...DEFAULT_PREFERENCES.dietary],
     cuisine: [...DEFAULT_PREFERENCES.cuisine],
-    hasCompletedPreferences: false,
-  });
+    hasCompletedPreferences: false});
 
   // Modal states
   const [showCustomInput, setShowCustomInput] = useState(false);
@@ -63,33 +59,30 @@ export function usePreferencesQuiz() {
       toValue: (state.currentStep + 1) / QUIZ_STEPS.length,
       tension: 50,
       friction: 7,
-      useNativeDriver: false,
-    }).start();
+      useNativeDriver: false}).start();
   }, [state.currentStep, progressAnim]);
 
   const loadUserDefaults = useCallback(() => {
     if (user) {
-      const defaultServing = (user as any).default_serving_size || 2;
+      const defaultServing = (user as unknown).default_serving_size || 2;
       const defaultOption =
         SERVING_OPTIONS.find((opt) => opt.value === defaultServing) ||
         SERVING_OPTIONS[1];
 
-      const userAppliances = (user as any).kitchen_appliances;
+      const userAppliances = (user as unknown).kitchen_appliances;
       const updatedAppliances =
         userAppliances && Array.isArray(userAppliances)
           ? DEFAULT_APPLIANCES.map((appliance) => ({
               ...appliance,
-              selected: userAppliances.includes(appliance.id),
-            }))
+              selected: userAppliances.includes(appliance.id)}))
           : DEFAULT_APPLIANCES;
 
       setState((prev) => ({
         ...prev,
         selectedServing: defaultOption,
-        mealPrepEnabled: (user as any).meal_prep_enabled || false,
-        mealPrepPortions: (user as any).default_meal_prep_count || 4,
-        appliances: updatedAppliances,
-      }));
+        mealPrepEnabled: (user as unknown).meal_prep_enabled || false,
+        mealPrepPortions: (user as unknown).default_meal_prep_count || 4,
+        appliances: updatedAppliances}));
     }
   }, [user]);
 
@@ -100,13 +93,11 @@ export function usePreferencesQuiz() {
         Animated.timing(fadeAnim, {
           toValue: 0,
           duration: 150,
-          useNativeDriver: true,
-        }),
+          useNativeDriver: true}),
         Animated.timing(slideAnim, {
           toValue: direction === "next" ? -50 : 50,
           duration: 150,
-          useNativeDriver: true,
-        }),
+          useNativeDriver: true}),
       ]).start(() => {
         slideAnim.setValue(direction === "next" ? 50 : -50);
 
@@ -114,18 +105,15 @@ export function usePreferencesQuiz() {
           Animated.timing(fadeAnim, {
             toValue: 1,
             duration: 150,
-            useNativeDriver: true,
-          }),
+            useNativeDriver: true}),
           Animated.timing(slideAnim, {
             toValue: 0,
             duration: 150,
-            useNativeDriver: true,
-          }),
+            useNativeDriver: true}),
         ]).start();
       });
     },
-    [fadeAnim, slideAnim],
-  );
+    [fadeAnim, slideAnim]);
 
   const handleNext = useCallback(() => {
     if (state.currentStep < QUIZ_STEPS.length - 1) {
@@ -172,10 +160,8 @@ export function usePreferencesQuiz() {
           label: `${amount} people`,
           value: amount,
           icon: "✏️",
-          isCustom: true,
-        },
-        customServingAmount: "",
-      }));
+          isCustom: true},
+        customServingAmount: ""}));
       setShowCustomInput(false);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } else {
@@ -200,9 +186,7 @@ export function usePreferencesQuiz() {
       appliances: prev.appliances.map((appliance) =>
         appliance.id === applianceId
           ? { ...appliance, selected: !appliance.selected }
-          : appliance,
-      ),
-    }));
+          : appliance)}));
   }, []);
 
   const toggleOption = useCallback(
@@ -226,8 +210,7 @@ export function usePreferencesQuiz() {
         });
       }
     },
-    [state.currentStep],
-  );
+    [state.currentStep]);
 
   const selectSingleOption = useCallback(
     (value: string) => {
@@ -242,8 +225,7 @@ export function usePreferencesQuiz() {
         setState((prev) => ({ ...prev, difficulty: value }));
       }
     },
-    [state.currentStep],
-  );
+    [state.currentStep]);
 
   // Validation
   const canProceed = useCallback((): boolean => {
@@ -277,8 +259,7 @@ export function usePreferencesQuiz() {
       toValue: 1,
       tension: 50,
       friction: 7,
-      useNativeDriver: true,
-    }).start();
+      useNativeDriver: true}).start();
 
     // Hide after 2 seconds
     setTimeout(() => {
@@ -286,8 +267,7 @@ export function usePreferencesQuiz() {
         toValue: 0,
         tension: 50,
         friction: 7,
-        useNativeDriver: true,
-      }).start(() => setShowXPReward(false));
+        useNativeDriver: true}).start(() => setShowXPReward(false));
     }, 2000);
 
     await addXP(XP_VALUES.COMPLETE_PREFERENCES, "COMPLETE_PREFERENCES");
@@ -301,16 +281,14 @@ export function usePreferencesQuiz() {
         toValue: 1,
         tension: 50,
         friction: 7,
-        useNativeDriver: true,
-      }).start();
+        useNativeDriver: true}).start();
 
       setTimeout(() => {
         Animated.spring(badgeScale, {
           toValue: 0,
           tension: 50,
           friction: 7,
-          useNativeDriver: true,
-        }).start(() => setShowBadgeUnlock(false));
+          useNativeDriver: true}).start(() => setShowBadgeUnlock(false));
       }, 3000);
 
       await unlockBadge("cuisine_explorer");
@@ -361,6 +339,5 @@ export function usePreferencesQuiz() {
 
     // Data
     steps: QUIZ_STEPS,
-    servingOptions: SERVING_OPTIONS,
-  };
+    servingOptions: SERVING_OPTIONS};
 }

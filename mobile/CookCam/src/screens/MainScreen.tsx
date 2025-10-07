@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect,useRef } from "react";
 import {
   View,
   Text,
@@ -8,8 +8,7 @@ import {
   Animated,
   Dimensions,
   ImageBackground,
-  Alert,
-} from "react-native";
+  Alert} from "react-native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../App";
 import {
@@ -21,11 +20,10 @@ import {
   Zap,
   Flame,
   Star,
-  Users,
+  _Users,
   TrendingUp,
-  Gift,
-  Calendar,
-} from "lucide-react-native";
+  _Gift,
+  Calendar} from "lucide-react-native";
 import * as Haptics from "expo-haptics";
 
 // Context and services
@@ -37,7 +35,7 @@ import SafeScreen from "../components/SafeScreen";
 import GamificationService from "../services/gamificationService";
 import logger from "../utils/logger";
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
+const { width: SCREEN_WIDTH, height: _SCREEN_HEIGHT } = Dimensions.get("window");
 
 // Level thresholds - must match backend/context exactly
 const LEVEL_THRESHOLDS = [
@@ -59,7 +57,7 @@ interface MainScreenProps {
 
 const MainScreen: React.FC<MainScreenProps> = ({ navigation }) => {
   const { user } = useAuth();
-  const { xp, level, streak, badges, addXP, levelProgress, nextLevelXP } =
+  const { xp, _level, streak, badges, addXP, levelProgress, nextLevelXP } =
     useGamification();
 
   // State - only for UI interactions, no mock data
@@ -86,7 +84,7 @@ const MainScreen: React.FC<MainScreenProps> = ({ navigation }) => {
 
   const checkDailyCheckInStatus = async () => {
     // Check if user has checked in today from backend/storage
-    const today = new Date().toDateString();
+    const _today = new Date().toDateString();
     // In a real implementation, this would check backend or AsyncStorage
     // For now, assume they haven't checked in today
     setHasCheckedInToday(false);
@@ -112,20 +110,17 @@ const MainScreen: React.FC<MainScreenProps> = ({ navigation }) => {
       Animated.timing(heroOpacity, {
         toValue: 1,
         duration: 800,
-        useNativeDriver: true,
-      }),
+        useNativeDriver: true}),
       Animated.spring(heroScale, {
         toValue: 1,
         tension: 50,
         friction: 7,
-        useNativeDriver: true,
-      }),
+        useNativeDriver: true}),
       Animated.timing(statsSlide, {
         toValue: 0,
         duration: 600,
         delay: 200,
-        useNativeDriver: true,
-      }),
+        useNativeDriver: true}),
     ]).start();
   };
 
@@ -136,15 +131,12 @@ const MainScreen: React.FC<MainScreenProps> = ({ navigation }) => {
         Animated.timing(pulseAnim, {
           toValue: 1.05,
           duration: 1500,
-          useNativeDriver: true,
-        }),
+          useNativeDriver: true}),
         Animated.timing(pulseAnim, {
           toValue: 1,
           duration: 1500,
-          useNativeDriver: true,
-        }),
-      ]),
-    ).start();
+          useNativeDriver: true}),
+      ])).start();
   };
 
   // Action handlers
@@ -178,8 +170,7 @@ const MainScreen: React.FC<MainScreenProps> = ({ navigation }) => {
       default:
         Alert.alert(
           "Coming Soon!",
-          "This feature is being prepared for you! 🎉",
-        );
+          "This feature is being prepared for you! 🎉");
     }
   };
 
@@ -214,8 +205,7 @@ const MainScreen: React.FC<MainScreenProps> = ({ navigation }) => {
     if (correctLevel >= 10 && !celebratedAchievements.has(achievementKey)) {
       return {
         text: "👑 Reached Level 10 - Master Chef!",
-        key: achievementKey,
-      };
+        key: achievementKey};
     }
     if (correctLevel >= 8 && !celebratedAchievements.has(achievementKey)) {
       return { text: "⭐ Reached Level 8!", key: achievementKey };
@@ -229,8 +219,7 @@ const MainScreen: React.FC<MainScreenProps> = ({ navigation }) => {
     ) {
       return {
         text: "🏆 Badge collector supreme!",
-        key: `badges-${badges.length}`,
-      };
+        key: `badges-${badges.length}`};
     }
     if (
       xp >= 2500 &&
@@ -238,8 +227,7 @@ const MainScreen: React.FC<MainScreenProps> = ({ navigation }) => {
     ) {
       return {
         text: "🌟 Amazing progress!",
-        key: `xp-${Math.floor(xp / 500) * 500}`,
-      };
+        key: `xp-${Math.floor(xp / 500) * 500}`};
     }
     return null;
   };
@@ -254,8 +242,7 @@ const MainScreen: React.FC<MainScreenProps> = ({ navigation }) => {
 
     // Mark this achievement as celebrated
     setCelebratedAchievements(
-      (prev) => new Set([...prev, recentAchievement.key]),
-    );
+      (prev) => new Set([...prev, recentAchievement.key]));
   };
 
   return (
@@ -271,8 +258,7 @@ const MainScreen: React.FC<MainScreenProps> = ({ navigation }) => {
             styles.heroSection,
             {
               opacity: heroOpacity,
-              transform: [{ scale: heroScale }],
-            },
+              transform: [{ scale: heroScale }]},
           ]}
         >
           <View style={styles.greetingContainer}>
@@ -365,7 +351,7 @@ const MainScreen: React.FC<MainScreenProps> = ({ navigation }) => {
         <FeatureGate
           feature="scan"
           userId={user?.id || ""}
-          onUpgrade={() => navigation.navigate("PlanSelection")}
+          onUpgrade={() => navigation.navigate("PlanSelection", {})}
         >
           <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
             <TouchableOpacity
@@ -465,35 +451,28 @@ const MainScreen: React.FC<MainScreenProps> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8F8FF",
-  },
+    backgroundColor: "#F8F8FF"},
   scrollView: {
-    flex: 1,
-  },
+    flex: 1},
   scrollContent: {
-    paddingBottom: 20,
-  },
+    paddingBottom: 20},
   heroSection: {
     paddingHorizontal: 24,
     paddingVertical: 10,
-    marginBottom: 6,
-  },
+    marginBottom: 6},
   greetingContainer: {
     marginBottom: 6,
-    alignItems: "center",
-  },
+    alignItems: "center"},
   greeting: {
     fontSize: 24,
     fontWeight: "bold",
     color: "#2D1B69",
     marginBottom: 4,
-    textAlign: "center",
-  },
+    textAlign: "center"},
   motivationalText: {
     fontSize: 16,
     color: "#8E8E93",
-    fontStyle: "italic",
-  },
+    fontStyle: "italic"},
   levelDisplay: {
     flexDirection: "row",
     alignItems: "center",
@@ -504,8 +483,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
-    elevation: 3,
-  },
+    elevation: 3},
   levelBadge: {
     flexDirection: "row",
     alignItems: "center",
@@ -513,39 +491,32 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 12,
-    marginRight: 12,
-  },
+    marginRight: 12},
   levelText: {
     fontSize: 14,
     fontWeight: "600",
     color: "#FFB800",
-    marginLeft: 4,
-  },
+    marginLeft: 4},
   xpContainer: {
-    flex: 1,
-  },
+    flex: 1},
   xpProgressBar: {
     height: 6,
     backgroundColor: "#F0F0F0",
     borderRadius: 3,
-    marginBottom: 4,
-  },
+    marginBottom: 4},
   xpProgressFill: {
     height: "100%",
     backgroundColor: "#4CAF50",
-    borderRadius: 3,
-  },
+    borderRadius: 3},
   xpText: {
     fontSize: 12,
     color: "#8E8E93",
-    fontWeight: "500",
-  },
+    fontWeight: "500"},
   statsRow: {
     flexDirection: "row",
     paddingHorizontal: 24,
     marginBottom: 20,
-    gap: 12,
-  },
+    gap: 12},
   statCard: {
     flex: 1,
     backgroundColor: "#FFFFFF",
@@ -556,24 +527,20 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
-    elevation: 2,
-  },
+    elevation: 2},
   statValue: {
     fontSize: 20,
     fontWeight: "bold",
     color: "#2D1B69",
     marginTop: 8,
-    marginBottom: 4,
-  },
+    marginBottom: 4},
   statLabel: {
     fontSize: 12,
     color: "#8E8E93",
-    fontWeight: "500",
-  },
+    fontWeight: "500"},
   achievementBanner: {
     marginHorizontal: 24,
-    marginBottom: 20,
-  },
+    marginBottom: 20},
   achievementContent: {
     flexDirection: "row",
     alignItems: "center",
@@ -581,20 +548,17 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: "#FF6B35",
     borderRadius: 16,
-    padding: 16,
-  },
+    padding: 16},
   achievementText: {
     flex: 1,
     fontSize: 16,
     fontWeight: "600",
     color: "#2D1B69",
-    marginLeft: 12,
-  },
+    marginLeft: 12},
   achievementAction: {
     fontSize: 12,
     color: "#FF6B35",
-    fontWeight: "500",
-  },
+    fontWeight: "500"},
   scanButton: {
     backgroundColor: "#FF6B35",
     marginHorizontal: 24,
@@ -606,27 +570,22 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 16,
     elevation: 8,
-    position: "relative",
-  },
+    position: "relative"},
   scanContent: {
     flexDirection: "row",
-    alignItems: "center",
-  },
+    alignItems: "center"},
   scanTextContainer: {
     flex: 1,
-    marginLeft: 16,
-  },
+    marginLeft: 16},
   scanTitle: {
     fontSize: 20,
     fontWeight: "bold",
     color: "#FFFFFF",
-    marginBottom: 4,
-  },
+    marginBottom: 4},
   scanSubtitle: {
     fontSize: 14,
     color: "#FFFFFF",
-    opacity: 0.9,
-  },
+    opacity: 0.9},
   xpBadge: {
     position: "absolute",
     top: 16,
@@ -636,14 +595,12 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255, 255, 255, 0.2)",
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 12,
-  },
+    borderRadius: 12},
   xpBadgeText: {
     fontSize: 12,
     fontWeight: "600",
     color: "#FFFFFF",
-    marginLeft: 4,
-  },
+    marginLeft: 4},
   dailyCheckInCard: {
     backgroundColor: "#E8F5E9",
     marginHorizontal: 24,
@@ -651,46 +608,38 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 20,
     borderWidth: 1,
-    borderColor: "#C8E6C9",
-  },
+    borderColor: "#C8E6C9"},
   dailyCheckInHeader: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 8,
-  },
+    marginBottom: 8},
   dailyCheckInTitle: {
     flex: 1,
     fontSize: 18,
     fontWeight: "600",
     color: "#2D1B69",
-    marginLeft: 12,
-  },
+    marginLeft: 12},
   dailyCheckInXP: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#66BB6A",
-  },
+    color: "#66BB6A"},
   dailyCheckInSubtitle: {
     fontSize: 14,
     color: "#66BB6A",
     lineHeight: 20,
-    marginBottom: 4,
-  },
+    marginBottom: 4},
   quickActionsContainer: {
     paddingHorizontal: 24,
-    marginBottom: 24,
-  },
+    marginBottom: 24},
   sectionTitle: {
     fontSize: 20,
     fontWeight: "bold",
     color: "#2D1B69",
-    marginBottom: 16,
-  },
+    marginBottom: 16},
   quickActionsGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 12,
-  },
+    gap: 12},
   quickActionCard: {
     width: (SCREEN_WIDTH - 60) / 2, // Account for margins and gap
     backgroundColor: "#FFFFFF",
@@ -701,18 +650,14 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
-    elevation: 2,
-  },
+    elevation: 2},
   quickActionText: {
     fontSize: 14,
     fontWeight: "600",
     color: "#2D1B69",
     marginTop: 8,
-    textAlign: "center",
-  },
+    textAlign: "center"},
   bottomPadding: {
-    height: 20,
-  },
-});
+    height: 20}});
 
 export default MainScreen;

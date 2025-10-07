@@ -9,14 +9,13 @@ import logger from "../utils/logger";
  */
 
 // Keychain service identifiers
-const KEYCHAIN_SERVICE = "CookCam";
+const _KEYCHAIN_SERVICE = "CookCam";
 
 // Keys for sensitive data (stored in Keychain)
 export const SECURE_KEYS = {
   ACCESS_TOKEN: "supabase-access-token",
   REFRESH_TOKEN: "supabase-refresh-token",
-  USER_ID: "user-id",
-} as const;
+  USER_ID: "user-id"} as const;
 
 // Keys for non-sensitive data (stored in AsyncStorage)
 export const STORAGE_KEYS = {
@@ -31,8 +30,7 @@ export const STORAGE_KEYS = {
   CREATOR_KYC_COMPLETED: "creator_kyc_completed",
   SUBSCRIPTION_EXPIRED_AT: "subscription_expired_at",
   PAYMENT_FAILED_AT: "payment_failed_at",
-  GRACE_PERIOD_END: "grace_period_end",
-} as const;
+  GRACE_PERIOD_END: "grace_period_end"} as const;
 
 class SecureStorage {
   private static instance: SecureStorage;
@@ -62,10 +60,9 @@ class SecureStorage {
       await SecureStore.getItemAsync(SECURE_KEYS.ACCESS_TOKEN);
       this.keychainAvailable = true;
       return true;
-    } catch (error) {
+    } catch (_error) {
       logger.warn(
-        "⚠️ Keychain not available, falling back to AsyncStorage for tokens. This is less secure but allows development to continue.",
-      );
+        "⚠️ Keychain not available, falling back to AsyncStorage for tokens. This is less secure but allows development to continue.");
       this.keychainAvailable = false;
       return false;
     }
@@ -129,8 +126,7 @@ class SecureStorage {
    */
   async setAuthTokens(
     accessToken: string,
-    refreshToken?: string,
-  ): Promise<void> {
+    refreshToken?: string): Promise<void> {
     await this.setSecureItem(SECURE_KEYS.ACCESS_TOKEN, accessToken);
     if (refreshToken) {
       await this.setSecureItem(SECURE_KEYS.REFRESH_TOKEN, refreshToken);
@@ -177,7 +173,7 @@ class SecureStorage {
   /**
    * Store JSON data in AsyncStorage
    */
-  async setJsonItem(key: string, value: any): Promise<void> {
+  async setJsonItem(key: string, value: unknown): Promise<void> {
     try {
       const jsonString = JSON.stringify(value);
       await this.setItem(key, jsonString);
@@ -196,8 +192,7 @@ class SecureStorage {
     } catch (error) {
       logger.error(
         `Error getting item from AsyncStorage for key: ${key}`,
-        error,
-      );
+        error);
       return null;
     }
   }
@@ -227,8 +222,7 @@ class SecureStorage {
     } catch (error) {
       logger.error(
         `Error removing item from AsyncStorage for key: ${key}`,
-        error,
-      );
+        error);
     }
   }
 
@@ -283,8 +277,7 @@ class SecureStorage {
   async getBiometryType(): Promise<string | null> {
     try {
       const biometryType = await SecureStore.getItemAsync(
-        SECURE_KEYS.ACCESS_TOKEN,
-      );
+        SECURE_KEYS.ACCESS_TOKEN);
       return biometryType;
     } catch (error) {
       logger.error("Error getting biometry type:", error);

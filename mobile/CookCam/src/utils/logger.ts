@@ -34,7 +34,7 @@ class Logger {
     return level >= this.logLevel;
   }
 
-  private formatMessage(level: string, message: string, ...args: any[]): void {
+  private formatMessage(level: string, message: string, ...args: unknown[]): void {
     if (this.isProduction && level === "DEBUG") return;
 
     const timestamp = new Date().toISOString();
@@ -57,44 +57,44 @@ class Logger {
     }
   }
 
-  debug(message: string, ...args: any[]): void {
+  debug(message: string, ...args: unknown[]): void {
     if (this.shouldLog(LOG_LEVELS.DEBUG)) {
       this.formatMessage("DEBUG", message, ...args);
     }
   }
 
-  info(message: string, ...args: any[]): void {
+  info(message: string, ...args: unknown[]): void {
     if (this.shouldLog(LOG_LEVELS.INFO)) {
       this.formatMessage("INFO", message, ...args);
     }
   }
 
-  warn(message: string, ...args: any[]): void {
+  warn(message: string, ...args: unknown[]): void {
     if (this.shouldLog(LOG_LEVELS.WARN)) {
       this.formatMessage("WARN", message, ...args);
     }
   }
 
-  error(message: string, ...args: any[]): void {
+  error(message: string, ...args: unknown[]): void {
     if (this.shouldLog(LOG_LEVELS.ERROR)) {
       this.formatMessage("ERROR", message, ...args);
     }
   }
 
   // Convenience methods for common patterns
-  success(message: string, ...args: any[]): void {
+  success(message: string, ...args: unknown[]): void {
     this.info(`✅ ${message}`, ...args);
   }
 
-  apiCall(method: string, url: string, ...args: any[]): void {
+  apiCall(method: string, url: string, ...args: unknown[]): void {
     this.debug(`🔄 API ${method.toUpperCase()} ${url}`, ...args);
   }
 
-  gamification(message: string, ...args: any[]): void {
+  gamification(message: string, ...args: unknown[]): void {
     this.debug(`🎮 ${message}`, ...args);
   }
 
-  deepLink(message: string, ...args: any[]): void {
+  deepLink(message: string, ...args: unknown[]): void {
     this.debug(`🔗 ${message}`, ...args);
   }
 }

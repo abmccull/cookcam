@@ -151,49 +151,167 @@ router.post('/cancel', authenticateUser, async (req: Request, res: Response) => 
 
 // Stripe webhook endpoint (updated to handle Connect events)
 router.post('/webhook/stripe', async (req: Request, res: Response) => {
+  const startTime = Date.now();
+  
   try {
     if (!stripe) {
+      logger.error('❌ Stripe not configured for webhooks');
       return res.status(500).json({ error: 'Stripe not configured' });
     }
 
     const sig = req.headers['stripe-signature'] as string;
     const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
+    if (!sig) {
+      logger.warn('❌ Webhook received without signature');
+      return res.status(400).json({ error: 'Missing signature' });
+    }
+
     if (!endpointSecret) {
-      logger.error('Stripe webhook secret not configured');
+      logger.error('❌ Stripe webhook secret not configured');
       return res.status(500).json({ error: 'Webhook not configured' });
     }
 
-    let event;
+    let event: Stripe.Event;
 
+    // Step 1: Verify webhook signature
     try {
       event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
+      logger.debug('✅ Webhook signature verified', {
+        eventId: event.id,
+        type: event.type,
+      });
     } catch (err: any) {
-      logger.error('Stripe webhook signature verification failed', { error: err.message });
-      return res.status(400).send(`Webhook Error: ${err.message}`);
+      logger.error('❌ Stripe webhook signature verification failed', {
+        error: err.message,
+        signature: sig.substring(0, 20) + '...',
+      });
+      return res.status(400).json({
+        error: 'Invalid signature',
+        message: err.message,
+      });
     }
 
-    logger.info('Processing Stripe webhook', {
+    // Step 2: Check for idempotency (prevent duplicate processing)
+    const { supabase } = await import('../index');
+    const { data: existingWebhook } = await supabase
+      .from('stripe_webhook_events')
+      .select('id, processed_at, status')
+      .eq('event_id', event.id)
+      .single();
+
+    if (existingWebhook) {
+      if (existingWebhook.status === 'processed') {
+        logger.info('⚠️  Webhook already processed (idempotency)', {
+          eventId: event.id,
+          type: event.type,
+          processedAt: existingWebhook.processed_at,
+        });
+        return res.json({
+          received: true,
+          processed: false,
+          reason: 'duplicate',
+          message: 'Event already processed',
+        });
+      } else if (existingWebhook.status === 'processing') {
+        logger.warn('⚠️  Webhook currently being processed', {
+          eventId: event.id,
+          type: event.type,
+        });
+        return res.json({
+          received: true,
+          processed: false,
+          reason: 'in_progress',
+          message: 'Event currently being processed',
+        });
+      }
+    }
+
+    // Step 3: Record webhook event for idempotency
+    await supabase.from('stripe_webhook_events').upsert({
+      event_id: event.id,
+      event_type: event.type,
+      status: 'processing',
+      received_at: new Date().toISOString(),
+      payload: event,
+    });
+
+    logger.info('🔄 Processing Stripe webhook', {
       type: event.type,
       id: event.id,
       created: event.created,
+      livemode: event.livemode,
     });
 
-    // Handle Connect events
-    if (
-      event.type.startsWith('account.') ||
-      event.type.startsWith('payout.') ||
-      event.type === 'transfer.created'
-    ) {
-      await stripeConnectService.handleConnectWebhook(event);
-    } else {
-      // Handle regular subscription events
-      await subscriptionService.handleStripeWebhook(event);
-    }
+    // Step 4: Process webhook based on type
+    try {
+      if (
+        event.type.startsWith('account.') ||
+        event.type.startsWith('payout.') ||
+        event.type === 'transfer.created'
+      ) {
+        // Handle Connect events
+        await stripeConnectService.handleConnectWebhook(event);
+      } else {
+        // Handle regular subscription events
+        await subscriptionService.handleStripeWebhook(event);
+      }
 
-    res.json({ received: true, processed: event.type });
+      // Mark as successfully processed
+      await supabase
+        .from('stripe_webhook_events')
+        .update({
+          status: 'processed',
+          processed_at: new Date().toISOString(),
+          processing_duration_ms: Date.now() - startTime,
+        })
+        .eq('event_id', event.id);
+
+      logger.info('✅ Webhook processed successfully', {
+        eventId: event.id,
+        type: event.type,
+        durationMs: Date.now() - startTime,
+      });
+
+      res.json({
+        received: true,
+        processed: true,
+        eventType: event.type,
+        durationMs: Date.now() - startTime,
+      });
+    } catch (processingError: any) {
+      // Mark as failed for retry
+      await supabase
+        .from('stripe_webhook_events')
+        .update({
+          status: 'failed',
+          error_message: processingError.message || 'Processing failed',
+          processing_duration_ms: Date.now() - startTime,
+        })
+        .eq('event_id', event.id);
+
+      logger.error('❌ Webhook processing failed', {
+        eventId: event.id,
+        type: event.type,
+        error: processingError.message,
+        stack: processingError.stack,
+      });
+
+      // Return 200 to acknowledge receipt but log failure
+      // Stripe will retry automatically
+      res.status(200).json({
+        received: true,
+        processed: false,
+        error: 'Processing failed - will retry',
+      });
+    }
   } catch (error: unknown) {
-    logger.error('Stripe webhook error', { error, type: (error as any)?.type });
+    logger.error('❌ Stripe webhook error', {
+      error,
+      type: (error as any)?.type,
+      durationMs: Date.now() - startTime,
+    });
+    // Return 500 to trigger Stripe retry
     res.status(500).json({ error: 'Webhook processing failed' });
   }
 });

@@ -6,8 +6,7 @@ import {
   TouchableOpacity,
   SafeAreaView,
   Alert,
-  ActivityIndicator,
-} from "react-native";
+  ActivityIndicator} from "react-native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RouteProp } from "@react-navigation/native";
 import { RootStackParamList } from "../App";
@@ -21,13 +20,12 @@ interface AccountGateScreenProps {
 
 const AccountGateScreen: React.FC<AccountGateScreenProps> = ({
   navigation,
-  route,
-}) => {
+  route}) => {
   const [isLoading, setIsLoading] = useState(false);
   const [loadingType, setLoadingType] = useState<
     "apple" | "google" | "email" | null
   >(null);
-  const { intendedPlan = "cooking", tempData } = route.params || {};
+  const { intendedPlan = "cooking", _tempData } = route.params || {};
 
   const handleAppleSignIn = async () => {
     try {
@@ -38,16 +36,15 @@ const AccountGateScreen: React.FC<AccountGateScreenProps> = ({
       logger.debug("🍎 Apple Sign-In initiated");
 
       // Simulate successful auth
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      await new Promise<void>((resolve) => setTimeout(() => resolve(), 2000));
 
       // Navigate to plan selection after successful auth
-      navigation.navigate("PlanSelection");
+      navigation.navigate("PlanSelection", {});
     } catch (error) {
       logger.error("Apple Sign-In error:", error);
       Alert.alert(
         "Sign-In Failed",
-        "There was a problem with Apple Sign-In. Please try again.",
-      );
+        "There was a problem with Apple Sign-In. Please try again.");
     } finally {
       setIsLoading(false);
       setLoadingType(null);
@@ -63,16 +60,15 @@ const AccountGateScreen: React.FC<AccountGateScreenProps> = ({
       logger.debug("🔍 Google Sign-In initiated");
 
       // Simulate successful auth
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      await new Promise<void>((resolve) => setTimeout(() => resolve(), 2000));
 
       // Navigate to plan selection after successful auth
-      navigation.navigate("PlanSelection");
+      navigation.navigate("PlanSelection", {});
     } catch (error) {
       logger.error("Google Sign-In error:", error);
       Alert.alert(
         "Sign-In Failed",
-        "There was a problem with Google Sign-In. Please try again.",
-      );
+        "There was a problem with Google Sign-In. Please try again.");
     } finally {
       setIsLoading(false);
       setLoadingType(null);
@@ -181,37 +177,30 @@ const AccountGateScreen: React.FC<AccountGateScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8F8FF",
-  },
+    backgroundColor: "#F8F8FF"},
   content: {
     flex: 1,
     paddingHorizontal: 24,
-    justifyContent: "center",
-  },
+    justifyContent: "center"},
   header: {
     alignItems: "center",
-    marginBottom: 48,
-  },
+    marginBottom: 48},
   title: {
     fontSize: 28,
     fontWeight: "bold",
     color: "#2D1B69",
     marginBottom: 12,
-    textAlign: "center",
-  },
+    textAlign: "center"},
   subtitle: {
     fontSize: 16,
     color: "#8E8E93",
     textAlign: "center",
-    lineHeight: 22,
-  },
+    lineHeight: 22},
   planText: {
     color: "#FF6B35",
-    fontWeight: "600",
-  },
+    fontWeight: "600"},
   authOptions: {
-    marginBottom: 32,
-  },
+    marginBottom: 32},
   authButton: {
     flexDirection: "row",
     alignItems: "center",
@@ -220,71 +209,56 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     borderRadius: 12,
     marginBottom: 16,
-    minHeight: 56,
-  },
+    minHeight: 56},
   appleButton: {
-    backgroundColor: "#000000",
-  },
+    backgroundColor: "#000000"},
   googleButton: {
     backgroundColor: "#FFFFFF",
     borderWidth: 1,
-    borderColor: "#E0E0E0",
-  },
+    borderColor: "#E0E0E0"},
   emailButton: {
     backgroundColor: "#F0F0F0",
     borderWidth: 1,
-    borderColor: "#E0E0E0",
-  },
+    borderColor: "#E0E0E0"},
   authButtonText: {
     fontSize: 16,
     fontWeight: "600",
     marginLeft: 12,
-    color: "#FFFFFF",
-  },
+    color: "#FFFFFF"},
   googleText: {
-    color: "#2D1B69",
-  },
+    color: "#2D1B69"},
   emailText: {
-    color: "#2D1B69",
-  },
+    color: "#2D1B69"},
   googleIcon: {
     width: 24,
     height: 24,
     backgroundColor: "#4285F4",
     borderRadius: 4,
     alignItems: "center",
-    justifyContent: "center",
-  },
+    justifyContent: "center"},
   googleG: {
     color: "#FFFFFF",
     fontSize: 14,
-    fontWeight: "bold",
-  },
+    fontWeight: "bold"},
   planReminder: {
     backgroundColor: "#FFFFFF",
     padding: 16,
     borderRadius: 12,
     marginBottom: 32,
     borderLeftWidth: 4,
-    borderLeftColor: "#FF6B35",
-  },
+    borderLeftColor: "#FF6B35"},
   planReminderText: {
     fontSize: 14,
     color: "#2D1B69",
-    textAlign: "center",
-  },
+    textAlign: "center"},
   boldText: {
-    fontWeight: "bold",
-  },
+    fontWeight: "bold"},
   footer: {
-    alignItems: "center",
-  },
+    alignItems: "center"},
   footerText: {
     fontSize: 12,
     color: "#8E8E93",
     textAlign: "center",
-    lineHeight: 16,
-  },
-});
+    lineHeight: 16}});
 
 export default AccountGateScreen;

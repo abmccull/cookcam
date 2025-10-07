@@ -8,14 +8,12 @@ import React, {
   useContext,
   useCallback,
   useEffect,
-  ReactNode,
-} from "react";
+  ReactNode} from "react";
 import * as SecureStore from "expo-secure-store";
 import {
   cookCamApi,
   SubscriptionTier,
-  CreatorRevenue,
-} from "../services/cookCamApi";
+  CreatorRevenue} from "../services/cookCamApi";
 import SubscriptionService from "../services/subscriptionService";
 import { useAuth } from "./AuthContext";
 import { useSubscriptionState, SubscriptionProduct } from "./SubscriptionState";
@@ -37,14 +35,14 @@ export interface SubscriptionActionsContextType {
   refreshData: () => Promise<void>;
 
   // Subscription management (App Store/Google Play)
-  purchaseSubscription: (productId: string) => Promise<void>;
+  purchaseSubscription: (_productId: string) => Promise<void>;
   restorePurchases: () => Promise<void>;
   openSubscriptionManagement: () => Promise<void>;
 
   // Creator functions
-  autoSubscribeCreator: (userId: string) => Promise<boolean>;
-  generateAffiliateLink: (campaignName?: string) => Promise<string>;
-  requestPayout: (amount: number) => Promise<void>;
+  autoSubscribeCreator: (_userId: string) => Promise<boolean>;
+  generateAffiliateLink: (_campaignName?: string) => Promise<string>;
+  requestPayout: (_amount: number) => Promise<void>;
 }
 
 // Context
@@ -53,8 +51,7 @@ const SubscriptionActionsContext =
 
 // Provider component
 export function SubscriptionActionsProvider({
-  children,
-}: {
+  children}: {
   children: ReactNode;
 }) {
   const { user } = useAuth();
@@ -64,8 +61,7 @@ export function SubscriptionActionsProvider({
   const [creatorState, setCreatorState] = React.useState<CreatorState>({
     isCreator: false,
     creatorRevenue: null,
-    creatorLoading: false,
-  });
+    creatorLoading: false});
 
   // Load subscription data from API
   const loadSubscriptionData = useCallback(async () => {
@@ -82,8 +78,7 @@ export function SubscriptionActionsProvider({
       } catch (tiersError) {
         logger.warn(
           "Could not load subscription tiers from API, using fallback data:",
-          tiersError,
-        );
+          tiersError);
 
         // Fallback tiers for development/offline mode
         const fallbackTiers: SubscriptionTier[] = [
@@ -102,9 +97,7 @@ export function SubscriptionActionsProvider({
             limits: {
               daily_scans: 5,
               monthly_recipes: 10,
-              saved_recipes: 50,
-            },
-          },
+              saved_recipes: 50}},
           {
             id: "tier_regular",
             slug: "regular",
@@ -120,9 +113,7 @@ export function SubscriptionActionsProvider({
             ],
             limits: {
               monthly_recipes: 500,
-              saved_recipes: 1000,
-            },
-          },
+              saved_recipes: 1000}},
           {
             id: "tier_creator",
             slug: "creator",
@@ -137,10 +128,8 @@ export function SubscriptionActionsProvider({
               "Revenue sharing",
             ],
             limits: {
-              saved_recipes: 5000,
-            },
-            revenue_share_percentage: 70,
-          },
+              saved_recipes: 5000},
+            revenue_share_percentage: 70},
         ];
 
         dispatch({ type: "SET_TIERS", tiers: fallbackTiers });
@@ -152,7 +141,7 @@ export function SubscriptionActionsProvider({
         const productsResponse =
           await subscriptionService.getAvailableProducts();
         const formattedProducts: SubscriptionProduct[] = productsResponse.map(
-          (product: any) => ({
+          (product: unknown) => ({
             productId: product.productId,
             price: product.price,
             localizedPrice: product.localizedPrice,
@@ -160,9 +149,7 @@ export function SubscriptionActionsProvider({
             title: product.title,
             description: product.description,
             tier: product.productId.includes("creator") ? "creator" : "regular",
-            freeTrialPeriod: "3 days",
-          }),
-        );
+            freeTrialPeriod: "3 days"}));
         dispatch({ type: "SET_PRODUCTS", products: formattedProducts });
       } catch (error) {
         logger.warn("Could not load IAP products:", error);
@@ -173,34 +160,29 @@ export function SubscriptionActionsProvider({
       if (user) {
         logger.debug("Loading subscription for user:", {
           userId: user.id,
-          userEmail: user.email,
-        });
+          userEmail: user.email});
 
         const subscriptionResponse = await cookCamApi.getSubscriptionStatus();
         logger.debug("Subscription response:", {
           success: subscriptionResponse.success,
           data: subscriptionResponse.data,
-          error: subscriptionResponse.error,
-        });
+          error: subscriptionResponse.error});
 
         if (subscriptionResponse.success) {
           dispatch({
             type: "SET_SUBSCRIPTION",
-            subscription: subscriptionResponse.data || null,
-          });
+            subscription: subscriptionResponse.data || null});
 
           // Cache subscription data locally
           if (subscriptionResponse.data) {
             await SecureStore.setItemAsync(
               "subscription_data",
-              JSON.stringify(subscriptionResponse.data),
-            );
+              JSON.stringify(subscriptionResponse.data));
           }
         }
       } else {
         logger.debug(
-          "User not authenticated, skipping subscription status check",
-        );
+          "User not authenticated, skipping subscription status check");
         // Try to load from cache if available
         try {
           const cachedData =
@@ -219,8 +201,7 @@ export function SubscriptionActionsProvider({
       logger.error("Failed to load subscription data:", error);
       dispatch({
         type: "SET_ERROR",
-        error: "Failed to load subscription data",
-      });
+        error: "Failed to load subscription data"});
       dispatch({ type: "SET_LOADING", loading: false });
     }
   }, [user, dispatch]);
@@ -240,8 +221,7 @@ export function SubscriptionActionsProvider({
           ...prev,
           creatorRevenue: revenueResponse.data || null,
           isCreator: true,
-          creatorLoading: false,
-        }));
+          creatorLoading: false}));
       } else {
         setCreatorState((prev) => ({ ...prev, creatorLoading: false }));
       }
@@ -253,7 +233,7 @@ export function SubscriptionActionsProvider({
 
   // Auto-subscribe creator to their tier
   const autoSubscribeCreator = useCallback(
-    async (userId: string): Promise<boolean> => {
+    async (_userId: string): Promise<boolean> => {
       try {
         logger.debug("Auto-subscribing creator to Creator tier...");
         // TODO: Implement actual auto-subscribe logic via API
@@ -264,8 +244,7 @@ export function SubscriptionActionsProvider({
         return false;
       }
     },
-    [],
-  );
+    []);
 
   // Purchase subscription
   const purchaseSubscription = useCallback(
@@ -283,15 +262,13 @@ export function SubscriptionActionsProvider({
         logger.error("Failed to purchase subscription:", error);
         dispatch({
           type: "SET_ERROR",
-          error: "Failed to purchase subscription",
-        });
+          error: "Failed to purchase subscription"});
         throw error;
       } finally {
         dispatch({ type: "SET_LOADING", loading: false });
       }
     },
-    [dispatch, loadSubscriptionData],
-  );
+    [dispatch, loadSubscriptionData]);
 
   // Restore purchases
   const restorePurchases = useCallback(async () => {
@@ -349,8 +326,7 @@ export function SubscriptionActionsProvider({
         throw error;
       }
     },
-    [],
-  );
+    []);
 
   // Request payout
   const requestPayout = useCallback(
@@ -365,8 +341,7 @@ export function SubscriptionActionsProvider({
         throw error;
       }
     },
-    [loadCreatorData],
-  );
+    [loadCreatorData]);
 
   // Refresh all data
   const refreshData = useCallback(async () => {
@@ -380,8 +355,7 @@ export function SubscriptionActionsProvider({
       setCreatorState({
         isCreator: false,
         creatorRevenue: null,
-        creatorLoading: false,
-      });
+        creatorLoading: false});
       return;
     }
 
@@ -405,8 +379,7 @@ export function SubscriptionActionsProvider({
           refreshData();
         }
       },
-      5 * 60 * 1000,
-    );
+      5 * 60 * 1000);
 
     return () => clearInterval(interval);
   }, [
@@ -435,8 +408,7 @@ export function SubscriptionActionsProvider({
       openSubscriptionManagement,
       autoSubscribeCreator,
       generateAffiliateLink,
-      requestPayout,
-    }),
+      requestPayout}),
     [
       creatorState,
       loadSubscriptionData,
@@ -448,8 +420,7 @@ export function SubscriptionActionsProvider({
       autoSubscribeCreator,
       generateAffiliateLink,
       requestPayout,
-    ],
-  );
+    ]);
 
   return (
     <SubscriptionActionsContext.Provider value={contextValue}>
@@ -459,12 +430,12 @@ export function SubscriptionActionsProvider({
 }
 
 // Hook to use subscription actions context
+// eslint-disable-next-line react-refresh/only-export-components
 export function useSubscriptionActions() {
   const context = useContext(SubscriptionActionsContext);
   if (!context) {
     throw new Error(
-      "useSubscriptionActions must be used within a SubscriptionActionsProvider",
-    );
+      "useSubscriptionActions must be used within a SubscriptionActionsProvider");
   }
   return context;
 }

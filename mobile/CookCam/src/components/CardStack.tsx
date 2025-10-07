@@ -5,26 +5,25 @@ import {
   StyleSheet,
   Dimensions,
   TouchableOpacity,
-  ActivityIndicator,
-} from "react-native";
+  ActivityIndicator} from "react-native";
 import Animated, { Layout } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 import { Recipe } from "../utils/recipeTypes";
 import SwipeableCard from "./SwipeableCard"; // Import the corrected component
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
-const CARD_WIDTH = screenWidth * 0.9;
-const CARD_HEIGHT = screenWidth * 1.2;
+const _CARD_WIDTH = screenWidth * 0.9;
+const _CARD_HEIGHT = screenWidth * 1.2;
 
 interface CardStackProps {
   recipes: Recipe[];
-  onCookRecipe: (recipe: Recipe) => void;
-  onFavoriteRecipe: (recipe: Recipe) => void;
-  onViewRecipeDetails: (recipe: Recipe) => void;
+  onCookRecipe: (_recipe: Recipe) => void;
+  onFavoriteRecipe: (_recipe: Recipe) => void;
+  onViewRecipeDetails: (_recipe: Recipe) => void;
   onRefreshRecipes: () => void;
   isLoading: boolean;
   onAllCardsComplete?: () => void;
-  onSwipeLeft?: (recipe: Recipe) => void;
+  onSwipeLeft?: (_recipe: Recipe) => void;
 }
 
 const CardStack: React.FC<CardStackProps> = ({
@@ -35,8 +34,7 @@ const CardStack: React.FC<CardStackProps> = ({
   onViewRecipeDetails,
   isLoading,
   onAllCardsComplete,
-  onSwipeLeft,
-}) => {
+  onSwipeLeft}) => {
   const [cardStack, setCardStack] = useState(recipes);
 
   useEffect(() => {
@@ -67,8 +65,7 @@ const CardStack: React.FC<CardStackProps> = ({
       }
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     },
-    [onCookRecipe, onAllCardsComplete, onSwipeLeft],
-  );
+    [onCookRecipe, onAllCardsComplete, onSwipeLeft]);
 
   const handleSelect = useCallback((recipe: Recipe) => {
     setCardStack((prev) => [recipe, ...prev.filter((r) => r.id !== recipe.id)]);
@@ -90,7 +87,7 @@ const CardStack: React.FC<CardStackProps> = ({
         cardStack
           .slice(0, 3)
           .reverse()
-          .map((recipe: Recipe, index: number) => {
+          .map((recipe: Recipe, _index: number) => {
             // The actual index in the full stack determines its position
             const stackIndex = cardStack.findIndex((r) => r.id === recipe.id);
             return (
@@ -125,27 +122,21 @@ const styles = StyleSheet.create({
     justifyContent: "flex-start",
     alignItems: "center",
     width: "100%",
-    paddingTop: 20,
-  },
+    paddingTop: 20},
   cardContainer: {
     width: screenWidth,
-    height: screenHeight * 0.75,
-  },
+    height: screenHeight * 0.75},
   emptyContainer: {
     flex: 1,
     justifyContent: "center",
-    alignItems: "center",
-  },
+    alignItems: "center"},
   emptyTitle: {
     fontSize: 24,
-    fontWeight: "bold",
-  },
+    fontWeight: "bold"},
   refreshText: {
     fontSize: 16,
     color: "#FF6B35",
     fontWeight: "600",
-    marginTop: 20,
-  },
-});
+    marginTop: 20}});
 
 export default CardStack;

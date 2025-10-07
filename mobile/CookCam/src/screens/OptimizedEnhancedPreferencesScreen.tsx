@@ -16,8 +16,7 @@ import {
   Modal,
   TextInput,
   Animated,
-  StatusBar,
-} from "react-native";
+  StatusBar} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
   ChevronLeft,
@@ -25,11 +24,9 @@ import {
   SkipForward,
   X,
   Star,
-  Trophy,
-} from "lucide-react-native";
+  Trophy} from "lucide-react-native";
 import { usePreferencesQuiz } from "../hooks/usePreferencesQuiz";
 import { PreferencesScreenProps } from "../types/preferences";
-import { XP_VALUES } from "../context/GamificationContext";
 
 // Decomposed Components
 import QuizProgress from "../components/preferences/QuizProgress";
@@ -40,8 +37,7 @@ import SingleChoiceStep from "../components/preferences/SingleChoiceStep";
 
 const OptimizedEnhancedPreferencesScreen: React.FC<PreferencesScreenProps> = ({
   navigation,
-  route,
-}) => {
+  route}) => {
   const { ingredients, imageUri } = route.params;
 
   const {
@@ -70,7 +66,7 @@ const OptimizedEnhancedPreferencesScreen: React.FC<PreferencesScreenProps> = ({
     toggleOption,
     selectSingleOption,
     canProceed,
-    handleContinue,
+    handleContinue: _handleContinue,
 
     // Modal handlers
     setShowCustomInput,
@@ -78,8 +74,7 @@ const OptimizedEnhancedPreferencesScreen: React.FC<PreferencesScreenProps> = ({
 
     // Data
     steps,
-    servingOptions,
-  } = usePreferencesQuiz();
+    servingOptions} = usePreferencesQuiz();
 
   const currentStepData = steps[state.currentStep];
   const isLastStep = state.currentStep === steps.length - 1;
@@ -102,9 +97,7 @@ const OptimizedEnhancedPreferencesScreen: React.FC<PreferencesScreenProps> = ({
             dietary: state.dietary,
             cuisine: state.cuisine,
             cookingTime: state.cookingTime,
-            difficulty: state.difficulty,
-          },
-        });
+            difficulty: state.difficulty}});
       }, 2500); // Allow time for animations
     }
   }, [state.hasCompletedPreferences, navigation, ingredients, imageUri, state]);
@@ -132,7 +125,7 @@ const OptimizedEnhancedPreferencesScreen: React.FC<PreferencesScreenProps> = ({
           />
         );
 
-      case "multi":
+      case "multi": {
         const isOptionsArray = Array.isArray(currentStepData.options);
         const options = isOptionsArray
           ? currentStepData.options!.map((opt) => opt.label)
@@ -148,6 +141,7 @@ const OptimizedEnhancedPreferencesScreen: React.FC<PreferencesScreenProps> = ({
             showBadgeHint={currentStepData.id === "cuisine"}
           />
         );
+      }
 
       case "single":
         return (
@@ -202,8 +196,7 @@ const OptimizedEnhancedPreferencesScreen: React.FC<PreferencesScreenProps> = ({
             styles.questionContainer,
             {
               opacity: fadeAnim,
-              transform: [{ translateX: slideAnim }],
-            },
+              transform: [{ translateX: slideAnim }]},
           ]}
         >
           <Text style={styles.title}>{currentStepData.title}</Text>
@@ -315,8 +308,7 @@ const OptimizedEnhancedPreferencesScreen: React.FC<PreferencesScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8F8FF",
-  },
+    backgroundColor: "#F8F8FF"},
   header: {
     backgroundColor: "#FFFFFF",
     paddingHorizontal: 20,
@@ -329,27 +321,22 @@ const styles = StyleSheet.create({
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 2,
-  },
+    shadowRadius: 2},
   backButton: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-  },
+    gap: 8},
   backText: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#2D1B69",
-  },
+    color: "#2D1B69"},
   content: {
     flex: 1,
-    paddingHorizontal: 20,
-  },
+    paddingHorizontal: 20},
   questionContainer: {
     flex: 1,
     paddingTop: 5,
-    justifyContent: "flex-start",
-  },
+    justifyContent: "flex-start"},
   title: {
     fontSize: 22,
     fontWeight: "700",
@@ -357,8 +344,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 16,
     lineHeight: 26,
-    letterSpacing: -0.5,
-  },
+    letterSpacing: -0.5},
   navigation: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -367,44 +353,35 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderTopWidth: 1,
-    borderTopColor: "#E5E5E7",
-  },
+    borderTopColor: "#E5E5E7"},
   navButton: {
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 8,
-    gap: 4,
-  },
+    gap: 4},
   invisibleButton: {
-    opacity: 0,
-  },
+    opacity: 0},
   nextButton: {
-    backgroundColor: "#2D1B69",
-  },
+    backgroundColor: "#2D1B69"},
   disabledButton: {
-    backgroundColor: "#E0E0E0",
-  },
+    backgroundColor: "#E0E0E0"},
   navButtonText: {
     fontSize: 14,
     fontWeight: "500",
-    color: "#2D1B69",
-  },
+    color: "#2D1B69"},
   nextButtonText: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#F8F8FF",
-  },
+    color: "#F8F8FF"},
   skipButton: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
-  },
+    gap: 4},
   skipButtonText: {
     fontSize: 13,
-    color: "#8E8E93",
-  },
+    color: "#8E8E93"},
   // Reward animations
   xpReward: {
     position: "absolute",
@@ -418,13 +395,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    zIndex: 1000,
-  },
+    zIndex: 1000},
   xpRewardText: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#FFFFFF",
-  },
+    color: "#FFFFFF"},
   badgeUnlock: {
     position: "absolute",
     top: "60%",
@@ -436,46 +411,39 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     alignItems: "center",
     gap: 8,
-    zIndex: 1000,
-  },
+    zIndex: 1000},
   badgeUnlockText: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#FFFFFF",
-  },
+    color: "#FFFFFF"},
   // Modal styles
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.5)",
     justifyContent: "center",
-    alignItems: "center",
-  },
+    alignItems: "center"},
   modalContent: {
     backgroundColor: "#FFFFFF",
     borderRadius: 16,
     padding: 24,
     marginHorizontal: 24,
     position: "relative",
-    minWidth: 280,
-  },
+    minWidth: 280},
   modalClose: {
     position: "absolute",
     top: 16,
-    right: 16,
-  },
+    right: 16},
   modalTitle: {
     fontSize: 18,
     fontWeight: "bold",
     color: "#2D1B69",
     textAlign: "center",
-    marginBottom: 8,
-  },
+    marginBottom: 8},
   modalSubtitle: {
     fontSize: 16,
     color: "#8E8E93",
     textAlign: "center",
-    marginBottom: 16,
-  },
+    marginBottom: 16},
   customInput: {
     borderWidth: 2,
     borderColor: "#E5E5E7",
@@ -484,19 +452,15 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     fontSize: 16,
     textAlign: "center",
-    marginBottom: 16,
-  },
+    marginBottom: 16},
   modalButton: {
     backgroundColor: "#2D1B69",
     borderRadius: 8,
     paddingVertical: 16,
-    alignItems: "center",
-  },
+    alignItems: "center"},
   modalButtonText: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#FFFFFF",
-  },
-});
+    color: "#FFFFFF"}});
 
 export default OptimizedEnhancedPreferencesScreen;

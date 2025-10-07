@@ -11,21 +11,61 @@ export enum LogLevel {
 
 class Logger {
   private isDevelopment = process.env.NODE_ENV !== 'production';
+  
+  // Sensitive keys that should be scrubbed from logs (Phase 3.2: PII Protection)
+  private sensitiveKeys = [
+    'password',
+    'token',
+    'secret',
+    'apiKey',
+    'api_key',
+    'authorization',
+    'cookie',
+    'receipt',
+    'purchaseToken',
+    'stripeToken',
+    'cardNumber',
+    'cvv',
+    'ssn',
+    'socialSecurityNumber',
+  ];
+
+  /**
+   * Scrub sensitive data from log context (Phase 3.2)
+   */
+  private scrubSensitiveData(context?: LogContext): LogContext {
+    if (!context) return {};
+
+    const scrubbed: LogContext = {};
+    for (const [key, value] of Object.entries(context)) {
+      // Check if key is sensitive
+      if (this.sensitiveKeys.some(sensitive => key.toLowerCase().includes(sensitive.toLowerCase()))) {
+        scrubbed[key] = '[REDACTED]';
+      } else if (value && typeof value === 'object' && !Array.isArray(value)) {
+        // Recursively scrub nested objects
+        scrubbed[key] = this.scrubSensitiveData(value as LogContext);
+      } else {
+        scrubbed[key] = value;
+      }
+    }
+    return scrubbed;
+  }
 
   private formatMessage(level: LogLevel, message: string, context?: LogContext): string {
     const timestamp = new Date().toISOString();
+    const scrubbedContext = this.scrubSensitiveData(context);
     const baseLog = {
       timestamp,
       level: level.toUpperCase(),
       message,
-      ...context,
+      ...scrubbedContext,
     };
 
     if (this.isDevelopment) {
       // Pretty format for development
       const contextStr =
-        context && Object.keys(context).length > 0
-          ? `\n  Context: ${JSON.stringify(context, null, 2)}`
+        scrubbedContext && Object.keys(scrubbedContext).length > 0
+          ? `\n  Context: ${JSON.stringify(scrubbedContext, null, 2)}`
           : '';
       return `[${timestamp}] ${level.toUpperCase()}: ${message}${contextStr}`;
     } else {

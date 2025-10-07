@@ -39,20 +39,8 @@ export const errorHandler = (
     message = err.message;
     code = err.code || code;
     isOperational = err.isOperational;
-  } else if (err.name === 'ValidationError') {
-    // Mongoose validation error
-    statusCode = 400;
-    message = 'Validation error';
-    code = 'VALIDATION_ERROR';
-    isOperational = true;
-  } else if (err.name === 'CastError') {
-    // Mongoose cast error
-    statusCode = 400;
-    message = 'Invalid ID format';
-    code = 'INVALID_ID';
-    isOperational = true;
   } else if (err.name === 'JsonWebTokenError') {
-    // JWT error
+    // JWT error (though we primarily use Supabase auth)
     statusCode = 401;
     message = 'Invalid token';
     code = 'INVALID_TOKEN';
@@ -62,6 +50,14 @@ export const errorHandler = (
     statusCode = 401;
     message = 'Token expired';
     code = 'TOKEN_EXPIRED';
+    isOperational = true;
+  } else if ('code' in err && typeof (err as any).code === 'string') {
+    // PostgreSQL/Supabase error codes
+    const pgError = err as any;
+    const dbErrorResult = handleDatabaseError(pgError);
+    statusCode = dbErrorResult.statusCode;
+    message = dbErrorResult.message;
+    code = dbErrorResult.code || code;
     isOperational = true;
   }
 
@@ -152,21 +148,62 @@ export const formatValidationErrors = (errors: ValidationError[]): string => {
 };
 
 // Database error handler
-export const handleDatabaseError = (error: { code?: string; message?: string }): AppError => {
-  // PostgreSQL error codes
-  if (error.code === '23505') {
-    // Unique constraint violation
-    return new AppError('Resource already exists', 409, 'DUPLICATE_ENTRY');
-  } else if (error.code === '23503') {
-    // Foreign key violation
-    return new AppError('Related resource not found', 400, 'FOREIGN_KEY_ERROR');
-  } else if (error.code === '22P02') {
-    // Invalid input syntax
-    return new AppError('Invalid input format', 400, 'INVALID_INPUT');
+export const handleDatabaseError = (error: { code?: string; message?: string; details?: string }): AppError => {
+  // PostgreSQL error codes - https://www.postgresql.org/docs/current/errcodes-appendix.html
+  switch (error.code) {
+    case '23505':
+      // Unique constraint violation
+      return new AppError('Resource already exists', 409, 'DUPLICATE_ENTRY');
+    
+    case '23503':
+      // Foreign key violation
+      return new AppError('Related resource not found', 400, 'FOREIGN_KEY_ERROR');
+    
+    case '22P02':
+      // Invalid text representation
+      return new AppError('Invalid input format', 400, 'INVALID_INPUT');
+    
+    case '23502':
+      // Not null violation
+      return new AppError('Required field is missing', 400, 'REQUIRED_FIELD_MISSING');
+    
+    case '23514':
+      // Check constraint violation
+      return new AppError('Value does not meet constraints', 400, 'CONSTRAINT_VIOLATION');
+    
+    case '42501':
+      // Insufficient privilege
+      return new AppError('Insufficient permissions', 403, 'INSUFFICIENT_PERMISSIONS');
+    
+    case '42P01':
+      // Undefined table
+      return new AppError('Resource not found', 404, 'RESOURCE_NOT_FOUND');
+    
+    case '40001':
+      // Serialization failure (deadlock)
+      return new AppError('Database transaction failed, please retry', 409, 'TRANSACTION_CONFLICT');
+    
+    case '53300':
+      // Too many connections
+      return new AppError('Service temporarily unavailable', 503, 'SERVICE_OVERLOADED');
+    
+    case 'PGRST116':
+      // PostgREST: No rows found (Supabase specific)
+      return new AppError('Resource not found', 404, 'NOT_FOUND');
+    
+    case 'PGRST301':
+      // PostgREST: JWT expired (Supabase specific)
+      return new AppError('Session expired', 401, 'TOKEN_EXPIRED');
+    
+    default:
+      // Generic database error - don't expose internal details
+      logger.error('Unhandled database error', {
+        code: error.code,
+        message: error.message,
+        details: error.details,
+      });
+      return new AppError('Database operation failed', 500, 'DATABASE_ERROR');
   }
-
-  // Default database error
-  return new AppError('Database operation failed', 500, 'DATABASE_ERROR');
 };
 
 // External service error handler

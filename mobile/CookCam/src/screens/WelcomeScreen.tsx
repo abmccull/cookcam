@@ -12,6 +12,7 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../App";
 import AIChefIcon from "../components/AIChefIcon";
 import { User, UserPlus } from "lucide-react-native";
+import { analyticsService } from "../services/analyticsService";
 
 interface WelcomeScreenProps {
   navigation: NativeStackNavigationProp<RootStackParamList>;
@@ -52,7 +53,11 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ navigation }) => {
   };
 
   const handleImNew = () => {
-    navigation.navigate("Onboarding");
+    analyticsService.track('onboarding_started', {
+      source: 'welcome_screen',
+      timestamp: new Date().toISOString()
+    });
+    navigation.navigate('DemoOnboarding');
   };
 
   return (
@@ -87,6 +92,10 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ navigation }) => {
             style={[styles.button, styles.primaryButton]}
             onPress={handleImNew}
             activeOpacity={0.9}
+            accessible={true}
+            accessibilityLabel="I'm new to CookCam"
+            accessibilityHint="Start your cooking journey with AI-powered recipes"
+            accessibilityRole="button"
           >
             <UserPlus size={24} color="#FFFFFF" />
             <Text style={styles.primaryButtonText}>I'm new</Text>
@@ -98,6 +107,10 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ navigation }) => {
             style={[styles.button, styles.secondaryButton]}
             onPress={handleSignIn}
             activeOpacity={0.9}
+            accessible={true}
+            accessibilityLabel="Sign in to existing account"
+            accessibilityHint="Log in to access your saved recipes and preferences"
+            accessibilityRole="button"
           >
             <User size={24} color="#2D1B69" />
             <Text style={styles.secondaryButtonText}>Sign In</Text>

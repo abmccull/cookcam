@@ -166,40 +166,43 @@ export interface Recipe {
 
   // Preview recipe functionality
   isPreview?: boolean; // Flag to indicate this is a preview, not a saved recipe
-  previewData?: any; // Original preview data from API
+  previewData?: unknown; // Original preview data from API
 }
 
 // Utility functions for Recipe format conversion
-export const normalizeRecipe = (recipe: any): Recipe => {
+export const normalizeRecipe = (recipe: unknown): Recipe => {
+  // Cast to partial record for safe property access
+  const recipeData = recipe as Partial<Record<string, unknown>>;
+  
   return {
-    ...recipe,
+    ...(recipeData as unknown as Recipe),
     // Normalize time properties
     prepTime:
-      recipe.prepTime ||
-      (recipe.cookingTime
-        ? parseInt(recipe.cookingTime.replace(/\D/g, ""), 10) / 2
+      (recipeData.prepTime as number | undefined) ||
+      (recipeData.cookingTime
+        ? parseInt(String(recipeData.cookingTime).replace(/\D/g, ""), 10) / 2
         : 0),
     cookTime:
-      recipe.cookTime ||
-      (recipe.cookingTime
-        ? parseInt(recipe.cookingTime.replace(/\D/g, ""), 10) / 2
+      (recipeData.cookTime as number | undefined) ||
+      (recipeData.cookingTime
+        ? parseInt(String(recipeData.cookingTime).replace(/\D/g, ""), 10) / 2
         : 0),
     cookingTime:
-      recipe.cookingTime ||
-      (recipe.prepTime && recipe.cookTime
-        ? `${recipe.prepTime + recipe.cookTime} min`
+      (recipeData.cookingTime as string | undefined) ||
+      (recipeData.prepTime && recipeData.cookTime
+        ? `${(recipeData.prepTime as number) + (recipeData.cookTime as number)} min`
         : undefined),
 
     // Normalize cuisine properties
-    cuisineType: recipe.cuisineType || recipe.cuisine,
-    cuisine: recipe.cuisine || recipe.cuisineType,
+    cuisineType: (recipeData.cuisineType as string | undefined) || (recipeData.cuisine as string | undefined),
+    cuisine: (recipeData.cuisine as string | undefined) || (recipeData.cuisineType as string | undefined),
 
     // Normalize nutrition
-    calories: recipe.calories || recipe.macros?.calories,
+    calories: (recipeData.calories as number | undefined) || ((recipeData.macros as { calories?: number } | undefined)?.calories),
 
     // Ensure required properties have defaults
-    ingredients: recipe.ingredients || [],
-    tags: recipe.tags || [],
+    ingredients: (recipeData.ingredients as (RecipeIngredient | string)[] | undefined) || [],
+    tags: (recipeData.tags as string[] | undefined) || [],
   };
 };
 

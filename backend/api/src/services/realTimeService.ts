@@ -1,6 +1,5 @@
 import { Server as HttpServer } from 'http';
 import { Server as SocketIOServer, Socket } from 'socket.io';
-import jwt from 'jsonwebtoken';
 import { logger } from '../utils/logger';
 import { supabase } from '../index';
 
@@ -56,27 +55,44 @@ export class RealTimeService {
   }
 
   private setupAuthentication() {
-    this.io.use((socket: AuthenticatedSocket, next: (err?: Error) => void) => {
+    this.io.use(async (socket: AuthenticatedSocket, next: (err?: Error) => void) => {
       try {
         const token =
           socket.handshake.auth.token || socket.handshake.headers.authorization?.split(' ')[1];
 
         if (!token) {
+          logger.warn('❌ WebSocket auth failed: no token provided');
           return next(new Error('Authentication token required'));
         }
 
-        const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
-        socket.userId = decoded.id;
+        // Use Supabase token validation (consistent with REST API)
+        const {
+          data: { user },
+          error,
+        } = await supabase.auth.getUser(token);
+
+        if (error || !user) {
+          logger.warn('❌ WebSocket auth failed: invalid Supabase token', {
+            error: error?.message,
+          });
+          return next(new Error('Invalid or expired token'));
+        }
+
+        // Set user information on socket
+        socket.userId = user.id;
         socket.user = {
-          id: decoded.id,
-          email: decoded.email,
-          name: decoded.name,
+          id: user.id,
+          email: user.email || '',
+          name: user.user_metadata?.name || user.email || 'Unknown',
         };
 
-        logger.info('🔐 User authenticated for WebSocket', { userId: decoded.id });
+        logger.info('🔐 User authenticated for WebSocket', {
+          userId: user.id,
+          socketId: socket.id,
+        });
         next();
       } catch (error: unknown) {
-        logger.error('❌ WebSocket authentication failed', { error });
+        logger.error('❌ WebSocket authentication error', { error });
         next(new Error('Authentication failed'));
       }
     });
@@ -565,6 +581,26 @@ export class RealTimeService {
 
   public getConnectionCount(): number {
     return this.userConnections.size;
+  }
+
+  // Graceful shutdown method
+  public shutdown(): void {
+    logger.info('Shutting down WebSocket service...');
+    
+    // Notify all connected clients
+    this.io.emit('server_shutdown', {
+      message: 'Server is shutting down for maintenance',
+      timestamp: new Date().toISOString(),
+    });
+
+    // Close all connections
+    this.io.close(() => {
+      logger.info('✅ All WebSocket connections closed');
+    });
+
+    // Clear internal state
+    this.activeSessions.clear();
+    this.userConnections.clear();
   }
 }
 

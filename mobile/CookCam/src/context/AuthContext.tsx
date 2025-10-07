@@ -3,13 +3,11 @@ import React, {
   useContext,
   useState,
   useEffect,
-  ReactNode,
-} from "react";
+  ReactNode} from "react";
 import {
   secureStorage,
   SECURE_KEYS,
-  STORAGE_KEYS,
-} from "../services/secureStorage";
+  STORAGE_KEYS} from "../services/secureStorage";
 import { supabase } from "../services/supabaseClient";
 import BiometricAuthService from "../services/biometricAuth";
 import { apiClient } from "../services/api";
@@ -35,22 +33,21 @@ interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   isCreatingProfile: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  loginWithBiometrics: (credentials: {
+  login: (_email: string, _password: string) => Promise<void>;
+  loginWithBiometrics: (_credentials: {
     email: string;
     token: string;
     refreshToken?: string;
   }) => Promise<void>;
-  enableBiometricLogin: (email: string, token: string) => Promise<void>;
+  enableBiometricLogin: (_email: string, _token: string) => Promise<void>;
   disableBiometricLogin: () => Promise<void>;
   signup: (
-    email: string,
-    password: string,
-    name: string,
-    isCreator: boolean,
-  ) => Promise<void>;
-  logout: (navigation?: any) => Promise<void>;
-  updateUser: (updates: Partial<User>) => void;
+    _email: string,
+    _password: string,
+    _name: string,
+    _isCreator: boolean) => Promise<void>;
+  logout: (_navigation?: unknown) => Promise<void>;
+  updateUser: (_updates: Partial<User>) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -74,14 +71,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     // Listen for auth state changes
     const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      data: { subscription }} = supabase.auth.onAuthStateChange(async (event, session) => {
       logger.debug("🔐 Auth state changed:", event, session?.user?.id);
 
       if (isBiometricLoginInProgress) {
         logger.debug(
-          "🔐 Biometric login in progress, onAuthStateChange listener is standing down.",
-        );
+          "🔐 Biometric login in progress, onAuthStateChange listener is standing down.");
         return;
       }
 
@@ -108,8 +103,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const {
         data: { session },
-        error,
-      } = await supabase.auth.getSession();
+        error} = await supabase.auth.getSession();
 
       if (error) {
         logger.error("Session check error:", error);
@@ -132,8 +126,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       await secureStorage.setSecureItem(TOKEN_KEY, accessToken);
       logger.debug(
-        `🔄 [loadUserProfile] Token stored. Fetching profile via API...`,
-      );
+        `🔄 [loadUserProfile] Token stored. Fetching profile via API...`);
 
       // Use our backend API instead of direct Supabase query to avoid session issues
       const response = await apiClient.getUserProfile();
@@ -141,8 +134,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       logger.debug(`🔄 [loadUserProfile] API response:`, {
         success: response.success,
         hasData: !!response.data,
-        error: response.error,
-      });
+        error: response.error});
 
       if (!response.success) {
         if (
@@ -164,7 +156,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
 
       if (response.data) {
-        const userData = response.data;
+        // Type assertion for database user data
+        const userData = response.data as {
+          id: string;
+          email: string;
+          name?: string;
+          is_creator?: boolean;
+          creator_tier?: number;
+          level?: number;
+          total_xp?: number;
+          xp?: number;
+          streak_current?: number;
+          avatar_url?: string;
+        };
         const formattedUser: User = {
           id: userData.id,
           email: userData.email,
@@ -182,8 +186,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         };
         logger.debug("✅ User profile loaded successfully:", {
           id: formattedUser.id,
-          email: formattedUser.email,
-        });
+          email: formattedUser.email});
         setUser(formattedUser);
       }
     } catch (error) {
@@ -199,8 +202,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Get the user's auth data first
       const {
         data: { user: authUser },
-        error: authError,
-      } = await supabase.auth.getUser();
+        error: authError} = await supabase.auth.getUser();
 
       if (authError || !authUser) {
         logger.error("Error getting auth user:", authError);
@@ -221,8 +223,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             level: 1,
             xp: 0,
             total_xp: 0,
-            streak_current: 0,
-          },
+            streak_current: 0},
         ])
         .select()
         .single();
@@ -251,7 +252,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         };
         setUser(formattedUser);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Failed to create user profile:", error);
     } finally {
       setIsCreatingProfile(false);
@@ -263,8 +264,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setIsLoading(true);
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
-        password,
-      });
+        password});
 
       if (error) {
         throw new Error(error.message);
@@ -281,21 +281,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
         if (wasEnabled && hasStoredCredentials) {
           logger.debug(
-            "🔐 Refreshing biometric credentials after password login",
-          );
+            "🔐 Refreshing biometric credentials after password login");
           try {
             // Update stored credentials with fresh tokens
             await biometricService.storeCredentialsForBiometric(
               email,
               data.session.access_token,
-              data.session.refresh_token,
-            );
+              data.session.refresh_token);
             logger.debug("✅ Biometric credentials refreshed successfully");
           } catch (biometricError) {
             logger.error(
               "Failed to refresh biometric credentials:",
-              biometricError,
-            );
+              biometricError);
             // Don't fail the login if biometric refresh fails
           }
         }
@@ -320,54 +317,45 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       if (!credentials.refreshToken) {
         throw new Error(
-          "Your session has expired. Please sign in with your password to refresh biometric login.",
-        );
+          "Your session has expired. Please sign in with your password to refresh biometric login.");
       }
 
       logger.debug(
-        "🔐 [loginWithBiometrics] Using refresh token to get new session",
-      );
+        "🔐 [loginWithBiometrics] Using refresh token to get new session");
       const { data: refreshData, error: refreshError } =
         await supabase.auth.setSession({
           access_token: credentials.token,
-          refresh_token: credentials.refreshToken,
-        });
+          refresh_token: credentials.refreshToken});
 
       if (refreshError) {
         logger.error(
           "🔐 [loginWithBiometrics] Refresh token failed:",
-          refreshError.message,
-        );
+          refreshError.message);
         throw new Error(
-          "Your session has expired. Please sign in with your password to refresh biometric login.",
-        );
+          "Your session has expired. Please sign in with your password to refresh biometric login.");
       }
 
       if (refreshData.session?.user) {
         logger.debug(
-          "✅ [loginWithBiometrics] Session refreshed successfully.",
-        );
+          "✅ [loginWithBiometrics] Session refreshed successfully.");
 
         // Small delay to ensure session is fully established in Supabase client
-        await new Promise((resolve) => setTimeout(resolve, 100));
+        await new Promise<void>((resolve) => setTimeout(() => resolve(), 100));
 
         // Explicitly load the user profile now that the session is guaranteed to be stable.
         await loadUserProfile(
           refreshData.session.user.id,
-          refreshData.session.access_token,
-        );
+          refreshData.session.access_token);
 
         // Store the new tokens for the *next* biometric login.
         const biometricService = BiometricAuthService.getInstance();
         await biometricService.storeCredentialsForBiometric(
           credentials.email,
           refreshData.session.access_token,
-          refreshData.session.refresh_token,
-        );
+          refreshData.session.refresh_token);
       } else {
         throw new Error(
-          "Failed to refresh session. Please log in with your password.",
-        );
+          "Failed to refresh session. Please log in with your password.");
       }
     } catch (error) {
       logger.error("❌ [loginWithBiometrics] Error:", error);
@@ -379,7 +367,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const enableBiometricLogin = async (email: string, token: string) => {
+  const enableBiometricLogin = async (email: string, _token: string) => {
     try {
       const biometricService = BiometricAuthService.getInstance();
 
@@ -387,15 +375,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const capabilities = await biometricService.checkBiometricCapabilities();
       if (!capabilities.isAvailable) {
         throw new Error(
-          "Biometric authentication is not available on this device",
-        );
+          "Biometric authentication is not available on this device");
       }
 
       // Get current session to access both access and refresh tokens
       const {
         data: { session },
-        error: sessionError,
-      } = await supabase.auth.getSession();
+        error: sessionError} = await supabase.auth.getSession();
 
       logger.debug("🔐 enableBiometricLogin - session data:", {
         hasSession: !!session,
@@ -405,8 +391,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         refreshTokenLength: session?.refresh_token?.length,
         sessionError: sessionError?.message,
         userId: session?.user?.id,
-        userEmail: session?.user?.email,
-      });
+        userEmail: session?.user?.email});
 
       if (sessionError || !session) {
         throw new Error("Could not access current session for biometric setup");
@@ -423,8 +408,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       await biometricService.storeCredentialsForBiometric(
         email,
         session.access_token,
-        session.refresh_token,
-      );
+        session.refresh_token);
       await biometricService.setBiometricEnabled(true);
 
       // Verify the credentials were stored correctly
@@ -436,12 +420,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         storedRefreshTokenLength: storedCredentials?.refreshToken?.length,
         tokensMatch: storedCredentials?.token === session.access_token,
         refreshTokensMatch:
-          storedCredentials?.refreshToken === session.refresh_token,
-      });
+          storedCredentials?.refreshToken === session.refresh_token});
 
       logger.debug(
-        "✅ Biometric login enabled successfully with refresh token",
-      );
+        "✅ Biometric login enabled successfully with refresh token");
     } catch (error) {
       logger.error("Failed to enable biometric login:", error);
       throw error;
@@ -463,8 +445,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     email: string,
     password: string,
     name: string,
-    isCreator: boolean,
-  ) => {
+    isCreator: boolean) => {
     try {
       setIsLoading(true);
       const { data, error } = await supabase.auth.signUp({
@@ -472,10 +453,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         password,
         options: {
           data: {
-            name: name,
-          },
-        },
-      });
+            name: name}}});
 
       if (error) {
         throw new Error(error.message);
@@ -493,8 +471,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             level: 1,
             xp: 0,
             total_xp: 0,
-            streak_current: 0,
-          },
+            streak_current: 0},
         ]);
 
         if (profileError) {
@@ -513,7 +490,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const logout = async (navigation?: any) => {
+  const logout = async (_navigation?: unknown) => {
     try {
       await supabase.auth.signOut();
       setUser(null);
@@ -580,14 +557,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         disableBiometricLogin,
         signup,
         logout,
-        updateUser,
-      }}
+        updateUser}}
     >
       {children}
     </AuthContext.Provider>
   );
 };
 
+// Exporting hook alongside provider is standard React Context pattern
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
   if (!context) {

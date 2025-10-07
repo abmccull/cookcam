@@ -1,5 +1,5 @@
 import { apiService, ApiResponse } from "./apiService";
-import { API_ENDPOINTS } from "../config/api";
+import { FeatureUsage } from "../types/api";
 
 // Types for CookCam API responses
 export interface User {
@@ -373,18 +373,18 @@ class CookCamApi {
   // Generate recipe previews (Stage 1)
   async generatePreviews(data: {
     detectedIngredients: string[];
-    userPreferences: any;
+    userPreferences: unknown;
     sessionId?: string;
-  }): Promise<ApiResponse<any>> {
-    return apiService.post<any>("/api/v1/recipes/generate-previews", data);
+  }): Promise<ApiResponse<unknown>> {
+    return apiService.post<unknown>("/api/v1/recipes/generate-previews", data);
   }
 
   // Generate detailed recipe (Stage 2)
   async generateDetailedRecipe(data: {
-    selectedPreview: any;
+    selectedPreview: unknown;
     sessionId: string;
-  }): Promise<ApiResponse<any>> {
-    return apiService.post<any>("/api/v1/recipes/generate-detailed", data);
+  }): Promise<ApiResponse<unknown>> {
+    return apiService.post<unknown>("/api/v1/recipes/generate-detailed", data);
   }
 
   async saveRecipe(recipe: Partial<Recipe>): Promise<ApiResponse<Recipe>> {
@@ -403,8 +403,8 @@ class CookCamApi {
   async getSavedRecipes(
     limit: number = 20,
     offset: number = 0,
-  ): Promise<ApiResponse<any>> {
-    return apiService.get<any>(
+  ): Promise<ApiResponse<unknown>> {
+    return apiService.get<unknown>(
       `/api/v1/recipes/saved/my?limit=${limit}&offset=${offset}`,
     );
   }
@@ -461,7 +461,7 @@ class CookCamApi {
   async addXP(
     xpAmount: number,
     action: string,
-    metadata?: any,
+    metadata?: Record<string, unknown>,
   ): Promise<ApiResponse> {
     return apiService.post(API_ENDPOINTS.gamification.xp, {
       xp_amount: xpAmount,
@@ -520,8 +520,8 @@ class CookCamApi {
 
   async checkFeatureAccess(
     feature: string,
-  ): Promise<ApiResponse<{ hasAccess: boolean; usage?: any }>> {
-    return apiService.get<{ hasAccess: boolean; usage?: any }>(
+  ): Promise<ApiResponse<{ hasAccess: boolean; usage?: FeatureUsage }>> {
+    return apiService.get<{ hasAccess: boolean; usage?: FeatureUsage }>(
       API_ENDPOINTS.subscription.feature(feature),
     );
   }
@@ -550,8 +550,8 @@ class CookCamApi {
   async linkUserToReferral(
     userId: string,
     referralCode: string,
-  ): Promise<ApiResponse<any>> {
-    return apiService.post<any>("/api/v1/auth/link-referral", {
+  ): Promise<ApiResponse<unknown>> {
+    return apiService.post<unknown>("/api/v1/auth/link-referral", {
       referralCode: referralCode,
     });
   }
@@ -574,7 +574,7 @@ class CookCamApi {
 
   async getCreatorAnalytics(
     period: "week" | "month" | "year" = "month",
-  ): Promise<ApiResponse<any>> {
+  ): Promise<ApiResponse<unknown>> {
     return apiService.get(
       `${API_ENDPOINTS.subscription.creator.analytics}?period=${period}`,
     );
@@ -645,7 +645,7 @@ class CookCamApi {
   // Analytics Methods
   async trackEvent(
     eventName: string,
-    properties?: Record<string, any>,
+    properties?: Record<string, unknown>,
   ): Promise<ApiResponse> {
     return apiService.post(API_ENDPOINTS.analytics.track, {
       event_type: eventName,
@@ -706,7 +706,7 @@ class CookCamApi {
         latency: isHealthy ? latency : undefined,
         error: isHealthy ? undefined : "Health check failed",
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       return {
         connected: false,
         error: error.message || "Connection failed",

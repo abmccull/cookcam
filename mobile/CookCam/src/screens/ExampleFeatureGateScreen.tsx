@@ -5,19 +5,15 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
-  Alert,
-} from "react-native";
+  Alert} from "react-native";
 import FeatureGate, {
-  UnlimitedScansGate,
   PremiumRecipesGate,
   CreatorToolsGate,
-  UsageLimit,
-} from "../components/FeatureGate";
+  UsageLimit} from "../components/FeatureGate";
 import { AnalyticsDashboard } from "../components/AnalyticsDashboard";
 import {
   useSubscription,
-  useFeatureGate,
-} from "../context/SubscriptionContext";
+  useFeatureGate} from "../context/SubscriptionContext";
 import { useAnalytics, useScreenTracking } from "../services/analyticsService";
 import { useAuth } from "../context/AuthContext";
 
@@ -30,16 +26,14 @@ export default function ExampleFeatureGateScreen() {
     isSubscribed,
     hasActiveTrial,
     canUseFeature,
-    getRemainingUsage,
-  } = useSubscription();
+    getRemainingUsage} = useSubscription();
 
   const { hasAccess: canScanUnlimited } = useFeatureGate("unlimited_scans");
   const analytics = useAnalytics();
 
   // Track screen view
   useScreenTracking("feature_gate_example", {
-    subscription_tier: state.currentSubscription?.tier_slug || "free",
-  });
+    subscription_tier: state.currentSubscription?.tier_slug || "free"});
 
   // Example: Scanning with feature gate
   const handleScan = () => {
@@ -56,13 +50,10 @@ export default function ExampleFeatureGateScreen() {
             text: "Upgrade Now",
             onPress: () => {
               analytics.trackSubscriptionEvent("upgrade_clicked", {
-                trigger: "scan_limit",
-              });
+                trigger: "scan_limit"});
               // Navigate to subscription screen
-            },
-          },
-        ],
-      );
+            }},
+        ]);
       return;
     }
 
@@ -71,8 +62,7 @@ export default function ExampleFeatureGateScreen() {
     analytics.trackIngredientScan({
       ingredientCount: Math.floor(Math.random() * 5) + 1,
       confidence: 0.85,
-      processingTime: 1500,
-    });
+      processingTime: 1500});
   };
 
   // Example: Premium recipe generation
@@ -81,8 +71,7 @@ export default function ExampleFeatureGateScreen() {
 
     if (!canUseFeature("premium_recipes")) {
       analytics.trackSubscriptionEvent("upgrade_prompt_shown", {
-        feature: "premium_recipes",
-      });
+        feature: "premium_recipes"});
       Alert.alert(
         "Premium Feature",
         "This advanced recipe requires a premium subscription",
@@ -92,12 +81,9 @@ export default function ExampleFeatureGateScreen() {
             text: "Upgrade",
             onPress: () => {
               analytics.trackSubscriptionEvent("upgrade_clicked", {
-                feature: "premium_recipes",
-              });
-            },
-          },
-        ],
-      );
+                feature: "premium_recipes"});
+            }},
+        ]);
       return;
     }
 
@@ -106,8 +92,7 @@ export default function ExampleFeatureGateScreen() {
       ingredientCount: 8,
       recipeComplexity: "complex",
       generationTime: 3000,
-      success: true,
-    });
+      success: true});
   };
 
   const remainingScans = getRemainingUsage("daily_scans");
@@ -258,8 +243,7 @@ export default function ExampleFeatureGateScreen() {
               style={styles.upgradeButton}
               onPress={() => {
                 analytics.trackSubscriptionEvent("upgrade_clicked", {
-                  source: "settings",
-                });
+                  source: "settings"});
                 // Navigate to subscription screen
               }}
             >
@@ -276,8 +260,7 @@ export default function ExampleFeatureGateScreen() {
 function FeatureItem({
   feature,
   name,
-  icon,
-}: {
+  icon}: {
   feature: string;
   name: string;
   icon: string;
@@ -300,24 +283,20 @@ function FeatureItem({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8F9FA",
-  },
+    backgroundColor: "#F8F9FA"},
   header: {
     padding: 20,
     backgroundColor: "#FFFFFF",
     borderBottomWidth: 1,
-    borderBottomColor: "#E9ECEF",
-  },
+    borderBottomColor: "#E9ECEF"},
   title: {
     fontSize: 24,
     fontWeight: "bold",
-    color: "#343A40",
-  },
+    color: "#343A40"},
   subtitle: {
     fontSize: 14,
     color: "#6C757D",
-    marginTop: 4,
-  },
+    marginTop: 4},
   section: {
     margin: 16,
     backgroundColor: "#FFFFFF",
@@ -327,106 +306,83 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 3,
-  },
+    elevation: 3},
   sectionTitle: {
     fontSize: 18,
     fontWeight: "bold",
     color: "#343A40",
-    marginBottom: 16,
-  },
+    marginBottom: 16},
   actionButton: {
     backgroundColor: "#007BFF",
     padding: 12,
     borderRadius: 8,
     alignItems: "center",
-    marginBottom: 8,
-  },
+    marginBottom: 8},
   actionButtonText: {
     color: "#FFFFFF",
     fontSize: 16,
-    fontWeight: "600",
-  },
+    fontWeight: "600"},
   premiumButton: {
-    backgroundColor: "#6F42C1",
-  },
+    backgroundColor: "#6F42C1"},
   premiumButtonText: {
-    color: "#FFFFFF",
-  },
+    color: "#FFFFFF"},
   usageText: {
     fontSize: 12,
     color: "#6C757D",
     textAlign: "center",
-    marginTop: 4,
-  },
+    marginTop: 4},
   creatorTools: {
-    gap: 8,
-  },
+    gap: 8},
   creatorButton: {
     backgroundColor: "#28A745",
     padding: 12,
     borderRadius: 8,
-    alignItems: "center",
-  },
+    alignItems: "center"},
   creatorButtonText: {
     color: "#FFFFFF",
     fontSize: 14,
-    fontWeight: "600",
-  },
+    fontWeight: "600"},
   featuresList: {
-    gap: 8,
-  },
+    gap: 8},
   featureItem: {
     flexDirection: "row",
     alignItems: "center",
     padding: 12,
     backgroundColor: "#F8F9FA",
-    borderRadius: 8,
-  },
+    borderRadius: 8},
   featureIcon: {
     fontSize: 20,
-    marginRight: 12,
-  },
+    marginRight: 12},
   featureName: {
     flex: 1,
     fontSize: 16,
-    color: "#343A40",
-  },
+    color: "#343A40"},
   featureStatus: {
-    fontSize: 16,
-  },
+    fontSize: 16},
   featureStatusActive: {
-    color: "#28A745",
-  },
+    color: "#28A745"},
   analyticsPlaceholder: {
     padding: 40,
     alignItems: "center",
     backgroundColor: "#F8F9FA",
-    borderRadius: 8,
-  },
+    borderRadius: 8},
   placeholderText: {
     fontSize: 14,
     color: "#6C757D",
-    textAlign: "center",
-  },
+    textAlign: "center"},
   subscriptionInfo: {
-    alignItems: "center",
-  },
+    alignItems: "center"},
   subscriptionText: {
     fontSize: 16,
     color: "#343A40",
-    marginBottom: 8,
-  },
+    marginBottom: 8},
   upgradeButton: {
     backgroundColor: "#FF6B35",
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
-    marginTop: 8,
-  },
+    marginTop: 8},
   upgradeButtonText: {
     color: "#FFFFFF",
     fontSize: 16,
-    fontWeight: "600",
-  },
-});
+    fontWeight: "600"}});

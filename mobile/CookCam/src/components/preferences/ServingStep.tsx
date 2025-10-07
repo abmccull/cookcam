@@ -7,7 +7,6 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Check } from 'lucide-react-native';
 import { ServingStepProps } from '../../types/preferences';
-import { MEAL_PREP_PORTIONS } from '../../data/preferencesData';
 import ServingSizeIcon from '../ServingSizeIcon';
 import { moderateScale, verticalScale } from '../../utils/responsive';
 

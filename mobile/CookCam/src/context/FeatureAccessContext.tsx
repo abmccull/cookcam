@@ -9,8 +9,7 @@ import React, {
   useReducer,
   useCallback,
   useEffect,
-  ReactNode,
-} from "react";
+  ReactNode} from "react";
 import { cookCamApi } from "../services/cookCamApi";
 import { useSubscriptionState } from "./SubscriptionState";
 import logger from "../utils/logger";
@@ -38,10 +37,10 @@ export interface FeatureAccessContextType {
   state: FeatureAccessState;
 
   // Feature access methods
-  checkFeatureAccess: (feature: string) => Promise<boolean>;
-  canUseFeature: (feature: string) => boolean;
-  getRemainingUsage: (feature: string) => number | null;
-  showUpgradePrompt: (feature: string) => void;
+  checkFeatureAccess: (_feature: string) => Promise<boolean>;
+  canUseFeature: (_feature: string) => boolean;
+  getRemainingUsage: (_feature: string) => number | null;
+  showUpgradePrompt: (_feature: string) => void;
 
   // Bulk operations
   refreshAllFeatures: () => Promise<void>;
@@ -52,14 +51,12 @@ const initialState: FeatureAccessState = {
   featureAccess: {},
   usageLimits: {},
   showPaywall: false,
-  loading: {},
-};
+  loading: {}};
 
 // Optimized reducer
 function featureAccessReducer(
   state: FeatureAccessState,
-  action: FeatureAccessAction,
-): FeatureAccessState {
+  action: FeatureAccessAction): FeatureAccessState {
   switch (action.type) {
     case "SET_FEATURE_ACCESS": {
       const newFeatureAccess = { ...state.featureAccess };
@@ -76,8 +73,7 @@ function featureAccessReducer(
         ...state,
         featureAccess: newFeatureAccess,
         usageLimits: newUsageLimits,
-        loading: newLoading,
-      };
+        loading: newLoading};
     }
 
     case "SET_FEATURE_LOADING": {
@@ -104,8 +100,7 @@ function featureAccessReducer(
 
 // Context
 const FeatureAccessContext = createContext<FeatureAccessContextType | null>(
-  null,
-);
+  null);
 
 // Provider component
 export function FeatureAccessProvider({ children }: { children: ReactNode }) {
@@ -124,8 +119,7 @@ export function FeatureAccessProvider({ children }: { children: ReactNode }) {
             type: "SET_FEATURE_ACCESS",
             feature,
             hasAccess: response.data.hasAccess,
-            usage: response.data.usage,
-          });
+            usage: response.data.usage});
           return response.data.hasAccess;
         }
         return false;
@@ -135,16 +129,14 @@ export function FeatureAccessProvider({ children }: { children: ReactNode }) {
         return false;
       }
     },
-    [],
-  );
+    []);
 
   // Check if feature can be used (cached)
   const canUseFeature = useCallback(
     (feature: string): boolean => {
       return state.featureAccess[feature] ?? false;
     },
-    [state.featureAccess],
-  );
+    [state.featureAccess]);
 
   // Get remaining usage for a feature
   const getRemainingUsage = useCallback(
@@ -155,8 +147,7 @@ export function FeatureAccessProvider({ children }: { children: ReactNode }) {
       }
       return Math.max(0, usage.limit - usage.used);
     },
-    [state.usageLimits],
-  );
+    [state.usageLimits]);
 
   // Show upgrade prompt
   const showUpgradePrompt = useCallback((feature: string) => {
@@ -164,8 +155,7 @@ export function FeatureAccessProvider({ children }: { children: ReactNode }) {
     // Track analytics
     cookCamApi.trackEvent("paywall_shown", {
       feature,
-      trigger: "feature_gate",
-    });
+      trigger: "feature_gate"});
   }, []);
 
   // Refresh all feature access data
@@ -192,8 +182,7 @@ export function FeatureAccessProvider({ children }: { children: ReactNode }) {
       canUseFeature,
       getRemainingUsage,
       showUpgradePrompt,
-      refreshAllFeatures,
-    }),
+      refreshAllFeatures}),
     [
       state,
       checkFeatureAccess,
@@ -201,8 +190,7 @@ export function FeatureAccessProvider({ children }: { children: ReactNode }) {
       getRemainingUsage,
       showUpgradePrompt,
       refreshAllFeatures,
-    ],
-  );
+    ]);
 
   return (
     <FeatureAccessContext.Provider value={contextValue}>
@@ -212,17 +200,18 @@ export function FeatureAccessProvider({ children }: { children: ReactNode }) {
 }
 
 // Hook to use feature access context
+// eslint-disable-next-line react-refresh/only-export-components
 export function useFeatureAccess() {
   const context = useContext(FeatureAccessContext);
   if (!context) {
     throw new Error(
-      "useFeatureAccess must be used within a FeatureAccessProvider",
-    );
+      "useFeatureAccess must be used within a FeatureAccessProvider");
   }
   return context;
 }
 
 // Feature gate hook (optimized)
+// eslint-disable-next-line react-refresh/only-export-components
 export function useFeatureGate(feature: string) {
   const { state, checkFeatureAccess, showUpgradePrompt } = useFeatureAccess();
 
@@ -251,8 +240,6 @@ export function useFeatureGate(feature: string) {
       usage,
       remaining: usage ? Math.max(0, usage.limit - usage.used) : null,
       isLoading,
-      checkAndPrompt,
-    }),
-    [hasAccess, usage, isLoading, checkAndPrompt],
-  );
+      checkAndPrompt}),
+    [hasAccess, usage, isLoading, checkAndPrompt]);
 }

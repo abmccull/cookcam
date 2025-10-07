@@ -5,8 +5,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
-  Switch,
-} from "react-native";
+  Switch} from "react-native";
 import { Fingerprint, Scan, Shield, Info } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
 import BiometricAuthService from "../services/biometricAuth";
@@ -15,7 +14,7 @@ import { secureStorage } from "../services/secureStorage";
 import logger from "../utils/logger";
 
 interface BiometricSettingsProps {
-  style?: any;
+  style?: unknown;
 }
 
 const BiometricSettings: React.FC<BiometricSettingsProps> = ({ style }) => {
@@ -23,9 +22,8 @@ const BiometricSettings: React.FC<BiometricSettingsProps> = ({ style }) => {
   const [isEnabled, setIsEnabled] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [biometricMethod, setBiometricMethod] = useState(
-    "Biometric Authentication",
-  );
-  const [capabilities, setCapabilities] = useState<any>(null);
+    "Biometric Authentication");
+  const [capabilities, setCapabilities] = useState<unknown>(null);
 
   const { user, enableBiometricLogin, disableBiometricLogin } = useAuth();
   const biometricService = BiometricAuthService.getInstance();
@@ -48,8 +46,7 @@ const BiometricSettings: React.FC<BiometricSettingsProps> = ({ style }) => {
       logger.debug("🔐 Biometric status:", {
         available: caps.isAvailable,
         enabled,
-        method,
-      });
+        method});
     } catch (error) {
       logger.error("❌ Error checking biometric status:", error);
       setIsAvailable(false);
@@ -71,16 +68,14 @@ const BiometricSettings: React.FC<BiometricSettingsProps> = ({ style }) => {
             "Not Available",
             !capabilities?.hasHardware
               ? "This device doesn't support biometric authentication."
-              : "Please set up biometric authentication (fingerprint or face recognition) in your device settings first.",
-          );
+              : "Please set up biometric authentication (fingerprint or face recognition) in your device settings first.");
           return;
         }
 
         // Test biometric authentication first
         const authResult = await biometricService.authenticateWithBiometrics({
           promptMessage: `Set up ${biometricMethod} for CookCam`,
-          cancelLabel: "Cancel",
-        });
+          cancelLabel: "Cancel"});
 
         if (authResult.success) {
           // Get current session token
@@ -91,8 +86,7 @@ const BiometricSettings: React.FC<BiometricSettingsProps> = ({ style }) => {
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             Alert.alert(
               "Success!",
-              `${biometricMethod} has been enabled for your account. You can now use it to sign in quickly.`,
-            );
+              `${biometricMethod} has been enabled for your account. You can now use it to sign in quickly.`);
           } else {
             throw new Error("No valid session token found");
           }
@@ -115,16 +109,13 @@ const BiometricSettings: React.FC<BiometricSettingsProps> = ({ style }) => {
                   await disableBiometricLogin();
                   setIsEnabled(false);
                   Haptics.notificationAsync(
-                    Haptics.NotificationFeedbackType.Success,
-                  );
+                    Haptics.NotificationFeedbackType.Success);
                   Alert.alert("Disabled", "Biometric login has been disabled.");
-                } catch (error) {
+                } catch (_error) {
                   Alert.alert("Error", "Failed to disable biometric login.");
                 }
-              },
-            },
-          ],
-        );
+              }},
+          ]);
       }
     } catch (error) {
       logger.error("❌ Error toggling biometric authentication:", error);
@@ -132,8 +123,7 @@ const BiometricSettings: React.FC<BiometricSettingsProps> = ({ style }) => {
         "Error",
         error instanceof Error
           ? error.message
-          : "Failed to update biometric settings.",
-      );
+          : "Failed to update biometric settings.");
     } finally {
       setIsLoading(false);
     }
@@ -212,52 +202,42 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: "#E5E5E7",
-  },
+    borderColor: "#E5E5E7"},
   settingRow: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-  },
+    justifyContent: "space-between"},
   leftContent: {
     flexDirection: "row",
     alignItems: "center",
     flex: 1,
-    marginRight: 16,
-  },
+    marginRight: 16},
   textContent: {
     marginLeft: 12,
-    flex: 1,
-  },
+    flex: 1},
   title: {
     fontSize: 16,
     fontWeight: "600",
     color: "#2D1B69",
-    marginBottom: 2,
-  },
+    marginBottom: 2},
   description: {
     fontSize: 14,
     color: "#8E8E93",
-    lineHeight: 18,
-  },
+    lineHeight: 18},
   disabledText: {
-    color: "#C7C7CC",
-  },
+    color: "#C7C7CC"},
   infoRow: {
     flexDirection: "row",
     alignItems: "flex-start",
     marginTop: 12,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: "#F0F0F0",
-  },
+    borderTopColor: "#F0F0F0"},
   infoText: {
     fontSize: 13,
     color: "#FF6B35",
     marginLeft: 8,
     flex: 1,
-    lineHeight: 16,
-  },
-});
+    lineHeight: 16}});
 
 export default BiometricSettings;
